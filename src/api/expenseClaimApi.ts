@@ -488,7 +488,12 @@ export async function getAdvanceByIdForView(
 
 export async function getAdvanceStatementPdf(
   id: string,
-  filters: { from_date?: string; to_date?: string } = {},
+  filters: {
+    from_date?: string;
+    to_date?: string;
+    page?: number;
+    page_size?: number;
+  } = {},
 ): Promise<Blob> {
   const resp: AxiosResponse = await api.get(
     ExpenseClaimAPI.getPdf,

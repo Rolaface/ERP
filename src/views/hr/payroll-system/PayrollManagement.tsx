@@ -22,11 +22,11 @@ import {
   showLoading,
   closeSwal,
 } from "../../../utils/alert";
-import type { PayrollRecord, PayrollEntry } from "../../../types/payrolltypes";
-import { runPayrollValidation } from "./utils";
+import type { PayrollRecord, PayrollEntry } from "../../../types/Payroll/payrolltypes";
+import { runPayrollValidation } from "./../../../utils/payroll_Utils/payrollValidation";
 import { PayrollDashboard } from "./Payrolldashboard ";
 import { EmployeeDetailPage } from "./Employeedetailpage";
-import { PayslipModal } from "./PayslipModal";
+import { PayslipModal } from "../../../components/Hr/payrollmodal/PayslipModal";
 import { QuickCreateModal } from "../../../components/Hr/payrollmodal/QuickCreatePayrollModal";
 import { PayrollValidationModal } from "../../../components/Hr/payrollmodal/payrollvalidationmodal";
 import { usePermission } from "../../../hooks/permission/usePermission";

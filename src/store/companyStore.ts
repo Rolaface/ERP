@@ -5,6 +5,7 @@ type CompanyState = {
   companyName: string;
   baseCurrency: string;
   currencySymbol: string;
+  companyPhone?: string;
   domain: "Service" | "Product" | "";
   industryType: string;
   companyAddress: {
@@ -16,7 +17,7 @@ type CompanyState = {
     postalCode?: string;
     country?: string;
   };
-
+  isZraEnabled: boolean;
   isHydrated: boolean;
 
   setCompanyInfo: (data: {
@@ -24,6 +25,7 @@ type CompanyState = {
     baseCurrency?: string;
     currencySymbol?: string;
     domain?: "Service" | "Product" | "";
+    companyPhone?: string;
     industryType?: string;
     companyAddress?: {
       addressLine1?: string;
@@ -37,6 +39,7 @@ type CompanyState = {
   }) => void;
 
   setCurrencySymbol: (symbol: string) => void;
+   setZraEnabled: (value: boolean) => void; 
 
   clearCompanyInfo: () => void;
 
@@ -51,13 +54,15 @@ export const useCompanyStore = create<CompanyState>()(
       currencySymbol: "",
       domain: "",
       industryType: "",
-
+companyPhone: "",
       companyAddress: {},
       isHydrated: false,
+      isZraEnabled: false,
 
       setCompanyInfo: (data) =>
         set((state) => ({
           companyName: data.companyName ?? state.companyName,
+          companyPhone: data.companyPhone ?? state.companyPhone,
 
           baseCurrency: data.baseCurrency ?? state.baseCurrency,
 
@@ -73,14 +78,18 @@ export const useCompanyStore = create<CompanyState>()(
           currencySymbol: symbol,
         }),
 
+       setZraEnabled: (value) => set({ isZraEnabled: value }),
+
       clearCompanyInfo: () =>
         set({
           companyName: "",
           baseCurrency: "",
+          companyPhone: "",
           currencySymbol: "",
           domain: "",
           industryType: "",
           companyAddress: {},
+          isZraEnabled: false,
         }),
 
       setHydrated: () =>

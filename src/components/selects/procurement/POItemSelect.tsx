@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { getAllItems } from "../../../api/itemApi";
 import { showApiError } from "../../../utils/alert";
 import { Package, ChevronDown, Search, X, Loader2 } from "lucide-react";
+import { useCompanyStore } from "../../../store/companyStore";
 
 type Item = {
   id: string;
@@ -13,6 +14,9 @@ type Item = {
   vatRate?: number;
   vatCd?: string;
   taxCode?: string;
+  is_stock_item?: number;
+   isMtvItem?: number;   
+  rrp_rate?: number; 
 };
 
 interface POItemSelectProps {
@@ -20,6 +24,7 @@ interface POItemSelectProps {
   selectedId?: string;
   taxCategory?: string;
   className?: string;
+  invoiceType?: "Product" | "Service";
   onChange: (item: Item) => void;
 }
 
@@ -54,6 +59,7 @@ export default function POItemSelect({
   taxCategory,
   onChange,
   className = "",
+  invoiceType,
 }: POItemSelectProps) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
@@ -62,11 +68,15 @@ export default function POItemSelect({
   const [dropRect, setDropRect] = useState<DOMRect | null>(null);
   const [displayName, setDisplayName] = useState(value);
 
+  // NEW: tracks which row in the open list is keyboard-highlighted.
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+
   const triggerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
   const loadedRef = useRef(false);
 
   const fetchItems = useCallback(
@@ -81,11 +91,17 @@ export default function POItemSelect({
           q || undefined,
         );
         if (id !== requestIdRef.current) return;
-        const rawList = Array.isArray(res?.data?.data)
+        // const rawList = Array.isArray(res?.data?.data)
+        let rawList = Array.isArray(res?.data?.data)
           ? res.data.data
           : Array.isArray(res?.data)
             ? res.data
             : [];
+        if (invoiceType === "Product") {
+          rawList = rawList.filter((item: any) => item.is_stock_item === 1);
+        } else if (invoiceType === "Service") {
+          rawList = rawList.filter((item: any) => item.is_stock_item === 0);
+        }
         setItems(rawList);
       } catch (err) {
         if (id !== requestIdRef.current) return;
@@ -95,7 +111,7 @@ export default function POItemSelect({
         if (id === requestIdRef.current) setLoading(false);
       }
     },
-    [taxCategory],
+    [taxCategory, invoiceType],
   );
 
   useEffect(() => {
@@ -122,7 +138,7 @@ export default function POItemSelect({
     setDisplayName(value || "");
     setOpen(false);
     loadedRef.current = false;
-  }, [taxCategory, value]);
+  }, [taxCategory, value, invoiceType]);
 
   useEffect(() => {
     if (!open) return;
@@ -149,6 +165,11 @@ export default function POItemSelect({
     };
   }, [open]);
 
+  // NEW: whenever the visible list changes, reset the keyboard highlight to the top.
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [items]);
+
   const handleOpen = useCallback(() => {
     setDropRect(triggerRef.current?.getBoundingClientRect() ?? null);
     setOpen(true);
@@ -174,8 +195,20 @@ export default function POItemSelect({
     [onChange],
   );
 
+  // NEW: selects whichever row is currently keyboard-highlighted.
+  const selectHighlighted = () => {
+    const item = items[highlightedIndex];
+    if (!item) return;
+    handleSelect(item);
+  };
+
   return (
-    <div className={`w-full min-w-0 ${className}`}>
+    // NEW: data-nav-ignore stops a parent spreadsheet grid's arrow-key
+    // handler from hijacking keys while this dropdown is open.
+    <div
+      className={`w-full min-w-0 ${className}`}
+      data-nav-ignore={open ? "true" : undefined}
+    >
       {/* TRIGGER — items-start so icon stays top-aligned when name wraps */}
       <div
         ref={triggerRef}
@@ -185,11 +218,15 @@ export default function POItemSelect({
         tabIndex={0}
         onClick={handleOpen}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") handleOpen();
+          // NEW: ArrowDown also opens the dropdown, like a native <select>.
+          if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+            e.preventDefault();
+            handleOpen();
+          }
         }}
         className="flex items-center gap-1 px-1.5 py-1 border border-theme rounded min-h-[28px]
   bg-card text-main text-[11px] cursor-pointer select-none w-full
-  hover:border-primary focus:outline-none focus:border-primary
+  hover:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary
   transition-colors duration-150"
       >
         {!displayName && <Package className="w-3 h-3 text-muted shrink-0" />}
@@ -215,6 +252,9 @@ export default function POItemSelect({
             ref={dropdownRef}
             role="listbox"
             style={dropStyle}
+            // NEW: portal content renders outside this DOM subtree, so it
+            // needs its own nav-ignore flag too.
+            data-nav-ignore="true"
             className="bg-card border border-theme rounded-lg shadow-xl flex flex-col overflow-hidden"
           >
             <div className="flex items-center gap-2 px-3 py-2 border-b border-theme bg-app">
@@ -223,10 +263,31 @@ export default function POItemSelect({
                 ref={inputRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                // NEW: full keyboard navigation inside the open list.
                 onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    setOpen(false);
-                    setSearch("");
+                  switch (e.key) {
+                    case "ArrowDown":
+                      e.preventDefault();
+                      setHighlightedIndex((i) =>
+                        Math.min(i + 1, items.length - 1),
+                      );
+                      break;
+                    case "ArrowUp":
+                      e.preventDefault();
+                      setHighlightedIndex((i) => Math.max(i - 1, 0));
+                      break;
+                    case "Enter":
+                      e.preventDefault();
+                      selectHighlighted();
+                      break;
+                    case "Escape":
+                      e.preventDefault();
+                      setOpen(false);
+                      setSearch("");
+                      break;
+                    case "Tab":
+                      setOpen(false);
+                      break;
                   }
                 }}
                 placeholder="Search by name or code…"
@@ -276,31 +337,42 @@ export default function POItemSelect({
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((item) => (
-                      <tr
-                        key={item.id}
-                        role="option"
-                        aria-selected={item.id === selectedId}
-                        onClick={() => handleSelect(item)}
-                        className={[
-                          "border-b border-theme last:border-none cursor-pointer transition-colors duration-100",
-                          item.id === selectedId
-                            ? "bg-primary/10"
-                            : "hover:bg-primary/5 active:bg-primary/10",
-                        ].join(" ")}
-                      >
-                        <td className="px-3 py-2 align-middle">
-                          <p className="font-medium text-main text-[11px] leading-snug break-words whitespace-normal">
-                            {item.itemName}
-                          </p>
-                        </td>
-                        <td className="px-3 py-2 align-middle">
-                          <p className="text-[10px] text-muted break-all">
-                            {item.id}
-                          </p>
-                        </td>
-                      </tr>
-                    ))}
+                    {items.map((item, index) => {
+                      // NEW: is this the keyboard-highlighted row?
+                      const isHighlighted = index === highlightedIndex;
+                      return (
+                        <tr
+                          key={item.id}
+                          role="option"
+                          aria-selected={item.id === selectedId}
+                          // NEW: keep the highlighted row scrolled into view.
+                          ref={(el) => {
+                            if (isHighlighted) {
+                              el?.scrollIntoView({ block: "nearest" });
+                            }
+                          }}
+                          // NEW: hovering syncs mouse and keyboard highlight.
+                          onMouseEnter={() => setHighlightedIndex(index)}
+                          onClick={() => handleSelect(item)}
+                          className={[
+                            "border-b border-theme last:border-none row-interactive",
+                            item.id === selectedId ? "bg-primary/10" : "",
+                            isHighlighted ? "row-highlighted" : "",
+                          ].join(" ")}
+                        >
+                          <td className="px-3 py-2 align-middle">
+                            <p className="font-medium text-main text-[11px] leading-snug break-words whitespace-normal">
+                              {item.itemName}
+                            </p>
+                          </td>
+                          <td className="px-3 py-2 align-middle">
+                            <p className="text-[10px] text-muted break-all">
+                              {item.id}
+                            </p>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}

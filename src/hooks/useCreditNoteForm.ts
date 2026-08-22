@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useCompanyStore } from "../store/companyStore";
 import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
-import { createCreditNote, updateCreditNote } from "../api/CreditNoteapi";
+import { createCreditNote, getCreditNoteReasons, updateCreditNote } from "../api/CreditNoteapi";
 import { showApiError, showSuccess } from "../utils/alert";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 import { useUnsavedChanges } from "./useUnsavedChanges";
@@ -22,6 +22,8 @@ export interface CreditNoteItem {
   rate: number;
   batch_no: string;
   warehouse: string;
+  conversion_factor: number;
+  max_qty?: number;
 }
 
 export interface CustomerMeta {
@@ -32,16 +34,25 @@ export interface CustomerMeta {
 export interface CreditNoteFormState {
   return_against: string;
   customer: CustomerMeta | null;
-  update_stock: boolean;
+
+  reason: string;
+  code: string;
+  description: string;
   items: CreditNoteItem[];
+  exchange_rate: number;
 }
 
 const EMPTY_FORM: CreditNoteFormState = {
   return_against: "",
   customer: null,
-  update_stock: true,
+  reason: "",
+  code: "",
+  description: "",
+
   items: [],
+  exchange_rate: 1, 
 };
+
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -56,6 +67,38 @@ export function useCreditNoteForm(
   const [form, setForm] = useState<CreditNoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const invoiceSelectTokenRef = useRef(0);
+  const [reasonOptions, setReasonOptions] = useState<{ code: string; reason: string }[]>([]); const [reasonsLoading, setReasonsLoading] = useState(false);
+  // ── Fetch credit note reasons ────────────────────────────────────────────
+ useEffect(() => {
+  const fetchReasons = async () => {
+    setReasonsLoading(true);
+    try {
+      const values = await getCreditNoteReasons();
+      setReasonOptions(values);
+    } catch (err) {
+      console.error("Failed to fetch credit note reasons", err);
+    } finally {
+      setReasonsLoading(false);
+    }
+  };
+  fetchReasons();
+}, []);
+
+// ── Reason search ─────────────────────────────────────────────────────────
+
+const fetchReasonOptions = useCallback(
+  async (query: string): Promise<{ code: string; reason: string }[]> => {
+    try {
+      const values = await getCreditNoteReasons(query);
+      return values;
+    } catch (err) {
+      console.error("Failed to fetch credit note reasons", err);
+      return [];
+    }
+  },
+  [],
+);
 
   // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
@@ -63,31 +106,59 @@ export function useCreditNoteForm(
   useEffect(() => {
     if (!initialData) return;
 
+    let parsedRemarks: { name?: string; reason?: string; code?: string; description?: string } = {};
+    const rawRemarks = initialData.reason ?? initialData.remarks; 
+    if (typeof rawRemarks === "string" && rawRemarks.trim()) {
+      try {
+        parsedRemarks = JSON.parse(rawRemarks);
+      } catch {
+        parsedRemarks = {};
+      }
+    } else if (initialData.remarks && typeof initialData.remarks === "object") {
+      parsedRemarks = initialData.remarks;
+    }
     setForm({
-      return_against: initialData.return_against || "",
+      return_against: initialData.return_against || initialData.id || initialData.piId || "",
       customer: {
-        id: initialData.customer || "",
-        name: initialData.customer || "",
+        id: initialData.customerId || initialData.customer || "",
+        name: initialData.customerName || initialData.customer_name || initialData.customer || "",
       },
-      update_stock: !!initialData.update_stock,
+      
+      reason: initialData.reason || parsedRemarks.reason || parsedRemarks.name || "",
+      code: initialData.code || parsedRemarks.code || "",
+      description: initialData.description || parsedRemarks.description || "",
       items: (initialData.items || []).map((it: any) => ({
-        item_code: it.item_code,
-        item_name: it.item_name,
-        qty: Number(it.qty),
-        rate: Number(it.rate),
-        batch_no: it.batch_no || "",
+        item_code: it.itemCode || it.item_code || "",
+        item_name: it.itemName || it.item_name || "",
+        qty: Math.abs(Number(it.quantity ?? it.qty ?? 0)),
+        rate: Number(it.rate ?? 0),
+        batch_no: it.batchNo || it.batch_no || "",
         warehouse: it.warehouse || "",
       })),
+
+      exchange_rate: Number(initialData.exchangeRate ?? initialData.exchange_rate) || 1,
     });
-    // initialData population is not a user edit, so we do NOT markDirty here
   }, [initialData]);
 
+
   // ── Invoice search ───────────────────────────────────────────────────────
+
+  const RETURNABLE_INVOICE_STATUSES = "Partly Paid,Unpaid,Overdue";
+
 
   const fetchInvoiceOptions = useCallback(
     async (query: string): Promise<InvoiceOption[]> => {
       try {
-        const res = await getAllSalesInvoices(1, 50, "", "asc", query);
+        const res = await getAllSalesInvoices(
+          1,                              // page
+          50,                             // page_size
+          "",                             // sortBy
+          "asc",                          // sortOrder
+          query,                          // search
+          undefined,                      // customer
+          undefined,                      // minOutstanding
+          RETURNABLE_INVOICE_STATUSES,    // status
+        );
         return (res?.data ?? []).map((inv: any) => ({
           value: inv.id,
           label: inv.id,
@@ -102,32 +173,62 @@ export function useCreditNoteForm(
   );
 
   // ── Invoice select → fetch full details & populate form ─────────────────
+const handleInvoiceSelect = useCallback(
+  async (opt: InvoiceOption) => {
+    if (!opt?.value) {
+      invoiceSelectTokenRef.current += 1;
+      setInvoiceLoading(false);
 
-  const handleInvoiceSelect = useCallback(async (opt: InvoiceOption) => {
+      setForm((prev) => ({
+        ...prev,
+        return_against: "",
+        customer: null,
+        items: [],
+        exchange_rate: 1,
+      }));
+
+      markDirty();
+      return;
+    }
+
+    const token = ++invoiceSelectTokenRef.current;
+
     setForm((prev) => ({
       ...prev,
       return_against: opt.value,
-      customer: { id: opt.customerId, name: opt.customerName },
+      customer: {
+        id: opt.customerId,
+        name: opt.customerName,
+      },
       items: [],
     }));
-    markDirty(); // user explicitly chose an invoice — mark dirty
 
+    markDirty();
     setInvoiceLoading(true);
+
     try {
-      const res = await getSalesInvoiceById(opt.value);
+      const res = await getSalesInvoiceById(opt.value, true, false);
+
+      if (token !== invoiceSelectTokenRef.current) return;
+
       const data = res?.data ?? res?.message?.data;
+
       if (!data) return;
 
       const mappedItems: CreditNoteItem[] = (data.items ?? []).map(
         (it: any): CreditNoteItem => ({
           item_code: it.itemCode ?? "",
           item_name: it.itemName ?? it.itemCode ?? "",
-          qty: -(Math.abs(Number(it.quantity) || 1)),
+          qty: -(Math.abs(Number(it.quantity)) || 1),
           rate: Number(it.rate) || 0,
           batch_no: it.batchNo ?? "",
           warehouse: it.warehouse ?? "",
+          conversion_factor: Number(it.conversion_factor) || 1,
+          max_qty: Math.abs(Number(it.quantity)) || 1,
         }),
       );
+
+      if (token !== invoiceSelectTokenRef.current) return;
 
       setForm((prev) => ({
         ...prev,
@@ -135,35 +236,40 @@ export function useCreditNoteForm(
           id: data.customerId ?? opt.customerId,
           name: data.customerName ?? opt.customerName,
         },
+        exchange_rate:
+          Number(data.exchangeRate ?? data.conversionRate) || 1,
         items: mappedItems,
       }));
     } catch (err) {
+      if (token !== invoiceSelectTokenRef.current) return;
+
       console.error("Failed to load invoice details", err);
       showApiError("Failed to load invoice details");
     } finally {
-      setInvoiceLoading(false);
+      if (token === invoiceSelectTokenRef.current) {
+        setInvoiceLoading(false);
+      }
     }
-  }, [markDirty]);
-
-  // ── Item mutations ───────────────────────────────────────────────────────
-
-const handleItemChange = useCallback(
-  (
-    index: number,
-    field: keyof CreditNoteItem,
-    value: string | number | null,
-  ) => {
+  },
+  [markDirty],
+);
+  const handleItemChange = useCallback(
+    (
+      index: number,
+      field: keyof CreditNoteItem,
+      value: string | number | null,
+    ) => {
       setForm((prev) => {
         const items = [...prev.items];
- items[index] = {
-  ...items[index],
-  [field]:
-    value === null
-      ? null
-      : field === "qty" || field === "rate"
-        ? Number(value)
-        : value,
-};
+        items[index] = {
+          ...items[index],
+          [field]:
+            value === null
+              ? null
+              : field === "qty" || field === "rate"
+                ? Number(value)
+                : value,
+        };
         return { ...prev, items };
       });
       markDirty();
@@ -192,29 +298,47 @@ const handleItemChange = useCallback(
     markDirty();
   }, [markDirty]);
 
-  const toggleUpdateStock = useCallback(() => {
-    setForm((prev) => ({ ...prev, update_stock: !prev.update_stock }));
+
+  const setReason = useCallback((reason: string, code: string) => {
+    setForm((prev) => ({
+      ...prev,
+      reason,
+      code,
+      description: code === "07" ? prev.description : "",
+    }));
     markDirty();
   }, [markDirty]);
-
+  const setDescription = useCallback((description: string) => {
+    setForm((prev) => ({ ...prev, description }));
+    markDirty();
+  }, [markDirty]);
   // ── Reset ────────────────────────────────────────────────────────────────
 
-  const reset = useCallback(() => {
-    setForm(EMPTY_FORM);
-    resetDirty();
-  }, [resetDirty]);
+const reset = useCallback(() => {
+  invoiceSelectTokenRef.current += 1;
+  setInvoiceLoading(false);
+  setForm(EMPTY_FORM);
+  resetDirty();
+}, [resetDirty]);
 
   // ── Validation ───────────────────────────────────────────────────────────
 
   const validate = useCallback((): string | null => {
+    if (!form.reason) return "Please select a credit note reason";
+    if (
+      form.code === "07" &&
+      !form.description.trim()
+    ) {
+      return "Please provide a brief description for the reason";
+    }
     if (!form.return_against) return "Please select an invoice";
     if (!form.customer?.id)
       return "Customer could not be resolved from the selected invoice";
     if (form.items.length === 0) return "At least one item is required";
-    for (const it of form.items) {
-      if (!it.warehouse)
-        return `Warehouse is required for: ${it.item_name || it.item_code}`;
-    }
+    // for (const it of form.items) {
+    //   if (!it.warehouse)
+    //     return `Warehouse is required for: ${it.item_name || it.item_code}`;
+    // }
     return null;
   }, [form]);
 
@@ -236,35 +360,31 @@ const handleItemChange = useCallback(
         return_against: form.return_against,
         customer: form.customer!.id,
         company: companyName,
-        update_stock: form.update_stock ? (1 as const) : (0 as const),
+      update_stock: 1 as const,
+        conversion_rate: form.exchange_rate,
         update_outstanding_for_self: 1 as const,
+        reason:JSON.stringify({
+          name: form.reason,
+          reason: form.reason,
+          code: form.code,
+          description: form.description,
+        }),
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),
           rate: Number(it.rate),
           ...(it.batch_no ? { batch_no: it.batch_no } : {}),
           warehouse: it.warehouse,
+          conversion_factor: it.conversion_factor, 
         })),
       };
 
       setSaving(true);
       try {
-        const res = isEdit && initialData?.name
-          ? await updateCreditNote(initialData.name, {
-              is_return: 1,
-              return_against: form.return_against,
-              customer: form.customer!.id,
-              company: companyName,
-              update_stock: form.update_stock ? 1 : 0,
-              update_outstanding_for_self: 1,
-              items: form.items.map((it) => ({
-                item_code: it.item_code,
-                qty: Number(it.qty),
-                rate: Number(it.rate),
-                ...(it.batch_no ? { batch_no: it.batch_no } : {}),
-                warehouse: it.warehouse,
-              })),
-            })
+        const docId = initialData?.name || initialData?.piId || initialData?.id;
+
+        const res = isEdit && docId
+          ? await updateCreditNote(docId, payload)
           : await createCreditNote(payload);
 
         if (!res || ![200, 201].includes(res.status_code)) {
@@ -290,14 +410,13 @@ const handleItemChange = useCallback(
         }
 
         showSuccess(res.message);
-        resetDirty(); // clear dirty flag on successful save
+        resetDirty(); 
         onSuccess?.(res.data);
         onClose?.();
-        useDataRefreshStore
-          .getState()
-          .triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
+        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
       } catch (err: any) {
         console.error("Credit note save failed", err);
+        console.error("Backend response:", err?.response?.data);
         showApiError(err);
       } finally {
         setSaving(false);
@@ -323,13 +442,18 @@ const handleItemChange = useCallback(
     handleItemChange,
     handleWarehouseDefault,
     removeItem,
-    toggleUpdateStock,
+    
     reset,
     handleSubmit,
     validate,
     // expose guard helpers so the modal can wire up close protection
+    reasonOptions,
+    reasonsLoading,
+    setReason,
+    setDescription,
     markDirty,
     resetDirty,
     handleCloseWithConfirm,
+    fetchReasonOptions
   };
 }

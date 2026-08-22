@@ -13,16 +13,29 @@ export interface CreditNotePayload {
   company: string;
   update_stock: 0 | 1;
   update_outstanding_for_self: 0 | 1;
+  
+  //   remarks?: {             
+  //   name: string;
+  //   reason: string;
+  //   code:string;
+  //   description: string;
+  // };
+reason?:string
   items: {
     item_code: string;
-    qty: number;          // negative number
+    qty: number;          
     rate: number;
-    batch_no?: string;    // omitted if empty
+    batch_no?: string;    
     warehouse: string;
   }[];
 }
  
- 
+export interface CreditNoteReasonOption {
+  code: string;
+  reason: string;
+}
+
+
 export interface CreditNoteResponse {
   status_code: number;
   data: Record<string, any> | null;
@@ -77,6 +90,8 @@ export async function getAllCreditNotes(
   page: number = 1,
   page_size: number = 10,
   search: string = "",
+  sortBy: string = "",
+  sortOrder: "asc" | "desc" = "asc",
 ): Promise<any> {
   const limit_start = (page - 1) * page_size;
 
@@ -85,7 +100,9 @@ export async function getAllCreditNotes(
     start: limit_start,
     pageSize: page_size,
     search,
-    searchFields: ["name", "customer_name", "return_against","grand_total", "status", "posting_date", "currency"],
+    searchFields: ["name", "customer_name", "return_against", "grand_total", "status", "posting_date", "currency"],
+    sortBy,
+    sortOrder,
   });
 
   const resp: AxiosResponse = await api.get(
@@ -103,7 +120,7 @@ export async function getAllCreditNotes(
   const total = pagination.total ?? items.length;
 
   return {
-    data: items,   
+    data: items,
     pagination: {
       total,
       total_pages: (pagination.total_pages ?? Math.ceil(total / page_size)) || 1,
@@ -112,7 +129,6 @@ export async function getAllCreditNotes(
     },
   };
 }
-
 export async function updateCreditNote(
   invoiceId: string,
   payload: CreditNotePayload,
@@ -185,4 +201,30 @@ export async function getCreditNoteById(invoiceId: string): Promise<any> {
     `${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`
   );
   return resp.data;
+}
+
+export async function getCreditNoteReasons(search: string = ""): Promise<CreditNoteReasonOption[]> {
+  const query = buildListParams({
+    fields: ["*"],
+    search,
+    searchFields: ["reason", "name"],
+  });
+
+  const resp: AxiosResponse = await api.get(
+    `/api/resource/Custom Sales Invoice Credit Note Reason?${query}`,
+  );
+  const json = resp.data ?? {};
+  const list = (json.data || []).map((d: any) => ({
+    code: d.code ?? d.name,
+    reason: d.reason ?? d.credit_note_reason ?? d.name,
+  }));
+
+  // Keep "Other" at the end of the list, rest alphabetically sorted
+  return list.sort((a: CreditNoteReasonOption, b: CreditNoteReasonOption) => {
+    const aIsOther = a.reason.startsWith("Other");
+    const bIsOther = b.reason.startsWith("Other");
+    if (aIsOther && !bIsOther) return 1;
+    if (!aIsOther && bIsOther) return -1;
+    return a.reason.localeCompare(b.reason);
+  });
 }

@@ -27,6 +27,10 @@ export interface InvoiceDetail {
   destnCountryCd?: string;
   billingAddress?: string;
   shippingAddress?: string;
+  reason?: string;
+  remarks?: string,
+  description?: string;
+  paymentMode?: string;
   paymentInformation?: {
     paymentTerms?: string;
     paymentMethod?: string;
@@ -42,6 +46,7 @@ export interface InvoiceDetail {
     itemCode?: string;
     itemName?: string;
     description?: string;
+    isServiceItem?: boolean;
     uom?: string;
     quantity?: number;
     rate?: number;
@@ -165,7 +170,6 @@ const stripHtml = (html?: string | null): string[] => {
     .map((l) => l.trim())
     .filter(Boolean);
 };
-
 // Address card from display HTML string
 const AddressCard: React.FC<{
   label: string;
@@ -259,9 +263,26 @@ const InvoiceDetailModal: React.FC<Props> = ({
 }) => {
   if (!open) return null;
 
-  const hasAddresses = data?.billingAddress || data?.shippingAddress;
+
+ const parsedReason = (() => {
+  if (!data?.reason) return null;
+  if (typeof data.reason === "object") return data.reason;
+  try {
+    return JSON.parse(data.reason);
+  } catch {
+    return null;
+  }
+})();
+
+const displayReason = parsedReason?.reason ?? parsedReason?.name ?? data?.reason;
+const displayDescription = parsedReason?.description ?? data?.description;
+const hasAddresses = data?.billingAddress || data?.shippingAddress;
 
   const items = data?.items ?? [];
+  const hasServiceItems = items.some((it: any) => it.isServiceItem);
+  const itemsGridCols = hasServiceItems
+    ? "minmax(0,1.3fr) minmax(0,1.3fr) 60px 90px 90px 96px"
+    : "minmax(0,2fr) 60px 90px 90px 96px";
   // Support both API shapes: total / net_total
   const subtotal = data?.total ?? data?.net_total;
   const taxTotal = data?.total_tax ?? data?.taxTotal ?? 0;
@@ -652,6 +673,27 @@ const InvoiceDetailModal: React.FC<Props> = ({
                 <F label="Customer" value={data.customerName} />
                 <F label="TPIN" value={data.customerTpin || null} mono />
               </div>
+              {(displayReason) && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: displayDescription ? "1fr 1fr" : "1fr",
+                    gap: 10,
+                    marginBottom: 7,
+                  }}
+                >
+                  <F
+                    label="Credit Note Reason"
+                    value={displayReason}
+                  />
+                  {displayDescription && (
+                    <F
+                      label="Description"
+                      value={displayDescription}
+                    />
+                  )}
+                </div>
+              )}
               <div
                 style={{
                   display: "grid",
@@ -721,10 +763,10 @@ const InvoiceDetailModal: React.FC<Props> = ({
                 }}
               >
                 {/* Header — wider disc column to prevent overlap of "10.145%" + amount */}
-                <div
+              <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "minmax(0,2fr) 60px 90px 90px 96px",
+                    gridTemplateColumns: itemsGridCols,
                     padding: "6px 10px",
                     background: "var(--table-head)",
                     color: "var(--table-head-text)",
@@ -736,6 +778,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                   }}
                 >
                   <span>Item</span>
+                  {hasServiceItems && <span>Description</span>}
                   <span style={{ textAlign: "right" }}>Qty</span>
                   <span style={{ textAlign: "right" }}>Price</span>
                   <span style={{ textAlign: "right" }}>Disc.</span>
@@ -766,8 +809,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                       className="idm-irow"
                       style={{
                         display: "grid",
-                        gridTemplateColumns:
-                          "minmax(0,2fr) 60px 90px 90px 96px",
+                        gridTemplateColumns: itemsGridCols,
                         padding: "7px 10px",
                         gap: 4,
                         borderTop: "1px solid var(--border)",
@@ -782,9 +824,9 @@ const InvoiceDetailModal: React.FC<Props> = ({
                               fontSize: 12,
                               fontWeight: 600,
                               color: "var(--text)",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
+                              whiteSpace: "normal",
+                              wordBreak: "break-word",
+                              lineHeight: 1.4,
                             }}
                           >
                             {displayName}
@@ -867,9 +909,35 @@ const InvoiceDetailModal: React.FC<Props> = ({
                             >
                               Exp: {fmtDate(it.expDate)}
                             </span>
-                          )}
+                         )}
                         </div>
                       </div>
+
+                      {/* ── Description (only when at least one item is a service item) ── */}
+                      {hasServiceItems && (
+                        <Tooltip
+                          content={
+                            (it as any).isServiceItem
+                              ? it.description || "—"
+                              : "—"
+                          }
+                        >
+                          <p
+                            style={{
+                              fontSize: 12,
+                            color: "var(--text)",
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                            lineHeight: 1.4,
+                            paddingTop: 1,
+                            }}
+                          >
+                            {(it as any).isServiceItem
+                              ? it.description || "—"
+                              : "—"}
+                          </p>
+                        </Tooltip>
+                      )}
 
                       {/* ── Qty ── */}
                       <Tooltip
@@ -921,6 +989,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                                   color: "var(--danger)",
                                   fontVariantNumeric: "tabular-nums",
                                   lineHeight: 1.3,
+                                  
                                 }}
                               >
                                 {discountPercent}%
@@ -942,7 +1011,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                             </>
                           ) : (
                             <p style={{ fontSize: 12, color: "var(--muted)" }}>
-                              —
+                              
                             </p>
                           )}
                         </div>
@@ -982,13 +1051,13 @@ const InvoiceDetailModal: React.FC<Props> = ({
                 >
                   {[
                     {
-                      label: "Subtotal",
+                      label: "Sub Total",
                       val: fmt(subtotal, currency),
                       big: false,
                       red: false,
                     },
                     {
-                      label: "Taxes",
+                      label: "Tax Total",
                       val: fmt(taxTotal, currency),
                       big: false,
                       red: false,
@@ -1003,7 +1072,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                     (data as any).roundingAdjustment !== 0
                       ? [
                           {
-                            label: "Round Off",
+                            label: "Rounding Adjustment",
                             val: fmt((data as any).roundingAdjustment, currency),
                             big: false,
                             red: false,
@@ -1080,8 +1149,8 @@ const InvoiceDetailModal: React.FC<Props> = ({
                       value={data.terms?.selling?.payment?.notes ?? null}
                     />
                     <F
-                      label="Method"
-                      value={data.paymentInformation.paymentMethod}
+                      label="Payment Mode"
+                      value={data.paymentMode}
                     />
                     <F label="Bank" value={data.paymentInformation.bankName} />
                     {data.paymentInformation.accountNumber && (

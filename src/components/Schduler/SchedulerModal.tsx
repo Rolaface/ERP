@@ -119,7 +119,7 @@ const subtitle =
   mode === "add"
     ? "Add a new scheduler"
     : mode === "edit"
-    ? "Update scheduler details"
+    ? "Edit scheduler details"
     : "View scheduler details";
 
 return (

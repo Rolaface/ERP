@@ -74,17 +74,17 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
     return (
       <div className="rounded-lg bg-card p-2 shadow-sm">
         <div className="overflow-x-auto overflow-y-visible">
-          <table className="w-full table-fixed border-collapse text-[10px] leading-tight">
+          <table className="w-[800px] table-fixed border-collapse text-[10px] leading-tight">
             <thead>
               <tr className="border-b border-theme">
                 <th className="w-[44px] px-2 py-1 text-left text-[11px] font-medium text-muted">
                   #
                 </th>
-                <th className="min-w-[260px] px-2 py-1 text-left text-[11px] font-medium text-muted">
-                  Tax Category
+                <th className="w-[130px] px-2 py-1 text-left text-[11px] font-medium text-muted">
+                  Sales Category
                 </th>
-                <th className="min-w-[260px] px-2 py-1 text-left text-[11px] font-medium text-muted">
-                  Tax Template
+                <th className="w-[200px] pl-6 pr-2 py-1 text-left text-[11px] font-medium text-muted">
+                  Tax Type
                 </th>
                 {/* Action column — only trash, no duplicate */}
                 <th className="w-[44px]" />
@@ -100,12 +100,17 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                 const templateCell = (
                   <SearchSelect2
                     label=""
-                    value={row.taxTemplate}
-                    onChange={(value) =>
-                      onTaxRowChange(absoluteIndex, "taxTemplate", value)
-                    }
+                    value={row.taxTemplateDisplay || row.taxTemplate}
+                    onChange={(value, option) => {
+                      onTaxRowChange(absoluteIndex, "taxTemplate", value);
+                      onTaxRowChange(
+                        absoluteIndex,
+                        "taxTemplateDisplay",
+                        option?.label || value,
+                      );
+                    }}
                     fetchOptions={fetchTaxTemplateOptions}
-                    placeholder="Search tax template..."
+                    placeholder="Search tax type..."
                   />
                 );
 
@@ -118,7 +123,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                       {absoluteIndex + 1}
                     </td>
 
-                    <td className="min-w-[220px] px-1 py-1 align-middle">
+                    <td className="px-1 py-1 align-middle">
                       <div className="flex items-center min-h-[28px]">
                         <div
                           className={[
@@ -130,6 +135,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                         >
                           <TaxCategorySelect
                             value={row.taxCategory}
+                            placeholder="Search sales category..."
                             onChange={(value) =>
                               onTaxRowChange(
                                 absoluteIndex,
@@ -142,30 +148,29 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                       </div>
                     </td>
 
-                    <td className="min-w-[220px] px-1 py-1 align-middle">
-                      <div
-                        className={[
-                          "flex items-center h-[28px] rounded",
-                          errors?.[`taxRows.${absoluteIndex}.taxTemplate`]
-                            ? "ring-1 ring-danger"
-                            : "",
-                        ].join(" ")}
-                      >
-                        {taxes && taxes.length > 0 ? (
-                          <Tooltip
-                            content={<TaxTooltipContent taxes={taxes} />}
-                          >
-                            <div className="relative z-50 w-full">
-                              {templateCell}
-                            </div>
-                          </Tooltip>
-                        ) : (
-                          templateCell
-                        )}
-                      </div>
+                    <td className="pl-6 pr-1 py-1 align-middle">                      <div
+                      className={[
+                        "flex items-center h-[28px] rounded",
+                        errors?.[`taxRows.${absoluteIndex}.taxTemplate`]
+                          ? "ring-1 ring-danger"
+                          : "",
+                      ].join(" ")}
+                    >
+                      {taxes && taxes.length > 0 ? (
+                        <Tooltip
+                          content={<TaxTooltipContent taxes={taxes} />}
+                        >
+                          <div className="relative z-50 w-full">
+                            {templateCell}
+                          </div>
+                        </Tooltip>
+                      ) : (
+                        templateCell
+                      )}
+                    </div>
                     </td>
                     {/* Actions: only Remove (no duplicate) */}
-                    <td className="px-0.5 py-1">
+                    <td className="px-8 py-1">
                       <Tooltip content="Remove row">
                         <button
                           type="button"

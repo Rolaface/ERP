@@ -1,5 +1,6 @@
 import React from "react";
 import { PurchaseOrderDetail } from "../../../types/Supply/purchaseOrder";
+import { getGLNameWithoutAbbreviation } from "../../../api/utils/glAccountUtils";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -589,7 +590,7 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                 <F label="Currency" value={data.currency} />
                 <F label="Tax Category" value={data.taxCategory} />
                 <F label="Incoterms" value={data.incoterms} />
-                <F label="Cost Center" value={data.costCenter} />
+                <F label="Cost Center" value={getGLNameWithoutAbbreviation(data.costCenter)} />
               </div>
               <div
                 style={{
@@ -764,7 +765,7 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                                 color: "var(--muted)",
                               }}
                             >
-                              {it.warehouse}
+                              {getGLNameWithoutAbbreviation(it.warehouse)}
                             </span>
                           )}
                           {it.requiredBy && (

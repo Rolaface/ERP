@@ -15,24 +15,33 @@ export function useSalaryComponents() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-const fetchAll = useCallback(async () => {
-  try {
-    setLoading(true);
+  // ADD: sort state
+  const [sortBy, setSortBy] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-    const start = (page - 1) * pageSize;
+  const fetchAll = useCallback(async () => {
+    try {
+      setLoading(true);
 
-    const response = await getAllSalaryComponents(start, pageSize, search);
+      const start = (page - 1) * pageSize;
 
-    setRows(response.data);
-    setTotalItems(response.pagination.total);
-    setTotalPages(response.pagination.total_pages);
+      const response = await getAllSalaryComponents(
+        start,
+        pageSize,
+        search,
+        sortBy,        
+        sortOrder,      
+      );
 
-  } catch (err: any) {
-    showApiError(err?.message ?? "Failed to load salary components");
-  } finally {
-    setLoading(false);
-  }
-}, [page, pageSize, search]);
+      setRows(response.data);
+      setTotalItems(response.pagination.total);
+      setTotalPages(response.pagination.total_pages);
+    } catch (err: any) {
+      showApiError(err?.message ?? "Failed to load salary components");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, search, sortBy, sortOrder]); 
 
   useEffect(() => {
     fetchAll();
@@ -50,5 +59,9 @@ const fetchAll = useCallback(async () => {
     totalPages,
     totalItems,
     fetchAll,
+    sortBy,       
+    setSortBy,      
+    sortOrder,     
+    setSortOrder,   
   };
 }

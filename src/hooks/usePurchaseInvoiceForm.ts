@@ -9,6 +9,7 @@ import {
 } from "../utils/alert";
 import type { ApiAddress, BoxType } from "../hooks/useAddressLogic";
 import { getPurchaseOrders } from "../api/procurement/PurchaseOrderApi";
+import { useCompanyStore } from "../store/companyStore";
 import type {
   PurchaseInvoiceFormData,
   POTab,
@@ -27,7 +28,7 @@ import {
   createPurchaseInvoice,
   getPurchaseInvoiceById,
   updatePurchaseInvoice,
-  uploadPIAttachment
+  uploadPIAttachment,
 } from "../api/procurement/PurchaseInvoiceApi";
 import {
   mapUIToCreatePI,
@@ -50,7 +51,6 @@ import { removeAttachment } from "../api/Email/EmailApi";
 import { fireManagedSwal } from "../utils/swalManager";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
-
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
@@ -68,19 +68,19 @@ type AddressKey = keyof PurchaseInvoiceFormData["addresses"];
 const addressStub = (id: string, type: string): ApiAddress | null =>
   id
     ? {
-      id,
-      title: id,
-      type,
-      addressType: type,
-      addressLine1: "",
-      addressLine2: "",
-      city: "",
-      state: "",
-      country: "",
-      pincode: "",
-      phone: "",
-      email: "",
-    }
+        id,
+        title: id,
+        type,
+        addressType: type,
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        state: "",
+        country: "",
+        pincode: "",
+        phone: "",
+        email: "",
+      }
     : null;
 
 // ─────────────────────────────────────────────
@@ -91,7 +91,6 @@ import dayjs from "dayjs";
 
 const calculateDueDate = (invoiceDate: string, terms: string) => {
   if (!invoiceDate) return "";
-
 
   if (!terms) {
     const date = dayjs(invoiceDate, "YYYY-MM-DD", true);
@@ -116,6 +115,7 @@ export const usePurchaseInvoiceForm = ({
   const [usePO, setUsePO] = useState(false);
   const [activeTab, setActiveTab] = useState<POTab>("details");
   const [saving, setSaving] = useState(false);
+  const supplierSelectTokenRef = useRef(0);
   const [poList, setPoList] = useState<any[]>([]);
   const [customShippingRule, setCustomShippingRule] = useState("");
   const [customIncoterm, setCustomIncoterm] = useState("");
@@ -124,6 +124,7 @@ export const usePurchaseInvoiceForm = ({
   const [companyDefaults, setCompanyDefaults] = useState<
     Partial<PurchaseInvoiceFormData>
   >({});
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
   // Address selector state — mirrors PO hook exactly
   const [selected, setSelected] = useState<Record<BoxType, ApiAddress | null>>({
@@ -303,18 +304,12 @@ export const usePurchaseInvoiceForm = ({
 
     const terms = form.terms?.buying?.payment?.dueDates ?? "";
 
-    const due = calculateDueDate(
-      form.supplierInvoiceDate,
-      terms
-    );
+    const due = calculateDueDate(form.supplierInvoiceDate, terms);
 
     if (due) {
       setForm((prev) => ({ ...prev, dueDate: due }));
     }
-  }, [
-    form.supplierInvoiceDate,
-    form.terms?.buying?.payment?.dueDates,
-  ]);
+  }, [form.supplierInvoiceDate, form.terms?.buying?.payment?.dueDates]);
 
   // ── Load PI in edit mode ───────────────────
   useEffect(() => {
@@ -339,17 +334,18 @@ export const usePurchaseInvoiceForm = ({
           (res.data as any)?.terms?.terms?.buying?.payment?.attachments ??
           [];
 
-        const existingAttachments: ExistingAttachment[] = rawAttachments.map((a: any) => ({
-          name: a.file_name ?? a.name ?? "Attachment",
-          url: a.file_url ?? a.url,
-          file_size: a.file_size,
-          isExisting: true,
-            fid: a.fid ?? a.id ?? a.name, 
-
-        }));
+        const existingAttachments: ExistingAttachment[] = rawAttachments.map(
+          (a: any) => ({
+            name: a.file_name ?? a.name ?? "Attachment",
+            url: a.file_url ?? a.url,
+            file_size: a.file_size,
+            isExisting: true,
+            fid: a.fid ?? a.id ?? a.name,
+          }),
+        );
 
         setForm({ ...mapped, attachments: existingAttachments });
-        
+
         const supplierAddrId = mapped.addresses?.supplierAddress?.id || "";
         const dispatchAddrId = mapped.addresses?.dispatchAddress?.id || "";
         const shippingAddrId = mapped.addresses?.shippingAddress?.id || "";
@@ -454,43 +450,43 @@ export const usePurchaseInvoiceForm = ({
 
   // ── Totals (derived from items) ────────────
   useEffect(() => {
-  let qty_sum  = 0;
-  let gross    = 0;
-  let disc_sum = 0;
-  let sub      = 0;
-  let tax      = 0;
+    let qty_sum = 0;
+    let gross = 0;
+    let disc_sum = 0;
+    let sub = 0;
+    let tax = 0;
 
-  form.items.forEach((item) => {
-    const qty      = Number(item.quantity || 0);
-    const rate     = Number(item.rate     || 0);
-    const discount = Number(item.discount || 0);
-    const vatRate  = Number(item.vatRate  || 0);
+    form.items.forEach((item) => {
+      const qty = Number(item.quantity || 0);
+      const rate = Number(item.rate || 0);
+      const discount = Number(item.discount || 0);
+      const vatRate = Number(item.vatRate || 0);
 
-    const lineGross    = qty * rate;
-    const lineDiscount = lineGross * (discount / 100);
-    const lineNet      = lineGross - lineDiscount;
-    const lineTax      = lineNet   * (vatRate  / 100);
+      const lineGross = qty * rate;
+      const lineDiscount = lineGross * (discount / 100);
+      const lineNet = lineGross - lineDiscount;
+      const lineTax = lineNet * (vatRate / 100);
 
-    qty_sum  += qty;
-    gross    += lineGross;
-    disc_sum += lineDiscount;
-    sub      += lineNet;
-    tax      += lineTax;
-  });
+      qty_sum += qty;
+      gross += lineGross;
+      disc_sum += lineDiscount;
+      sub += lineNet;
+      tax += lineTax;
+    });
 
-  const grandTotal    = sub + tax;
-  const totalQuantity = qty_sum;
+    const grandTotal = sub + tax;
+    const totalQuantity = qty_sum;
 
-  setForm((p) => ({
-    ...p,
-    totalQuantity,
-    subTotal:    sub,
-      totalAmount:   gross,    
-    totalDiscount: disc_sum,
-    totalTax:    tax,
-    grandTotal,
-  }));
-}, [form.items]);
+    setForm((p) => ({
+      ...p,
+      totalQuantity,
+      subTotal: sub,
+      totalAmount: gross,
+      totalDiscount: disc_sum,
+      totalTax: tax,
+      grandTotal,
+    }));
+  }, [form.items]);
 
   // ── Field defaults ─────────────────────────
   useFieldDefault(isOpen, form.costCenter, fetchCostCenters, (val) =>
@@ -500,11 +496,12 @@ export const usePurchaseInvoiceForm = ({
     setForm((prev) => ({ ...prev, project: val })),
   );
   useFieldDefault(
-    isOpen && !pId,  // only auto-default in create mode
+    isOpen && !pId, // only auto-default in create mode
     form.warehouse,
-    () => getAllWarehouses().then((list: string[]) =>
-      list.map((w) => ({ value: w, label: w }))
-    ),
+    () =>
+      getAllWarehouses().then((list: string[]) =>
+        list.map((w) => ({ value: w, label: w })),
+      ),
     (val) => setForm((prev) => ({ ...prev, warehouse: val })),
   );
 
@@ -538,19 +535,6 @@ export const usePurchaseInvoiceForm = ({
     if (name === "attachments") {
       const file = Array.isArray(value) ? (value as File[]) : [];
       setForm((prev) => ({ ...prev, attachments: file }));
-      return;
-    }
-
-    if (name === "updateStock") {
-      setForm((prev) => ({
-        ...prev,
-        updateStock: target.checked,
-        warehouse: target.checked ? prev.warehouse : "",
-        items: prev.items.map((item) => ({
-          ...item,
-          warehouse: target.checked ? item.warehouse : "",
-        })),
-      }));
       return;
     }
 
@@ -632,6 +616,7 @@ export const usePurchaseInvoiceForm = ({
       freshSupplierId: string,
       boxKey: "supplierBilling" | "supplierDispatch",
       autoSelect = true,
+      requestToken?: number,
     ) => {
       if (!freshSupplierId) return;
 
@@ -647,6 +632,15 @@ export const usePurchaseInvoiceForm = ({
 
       try {
         const data = await getAddressList(apiParams);
+
+        // Bail if a clear (or newer supplier selection) invalidated this request.
+        if (
+          requestToken !== undefined &&
+          requestToken !== supplierSelectTokenRef.current
+        ) {
+          return;
+        }
+
         setAddresses((prev) => ({ ...prev, [boxKey]: data }));
 
         if (autoSelect && data?.length > 0) {
@@ -666,50 +660,54 @@ export const usePurchaseInvoiceForm = ({
     [handleFormChange], // handleFormChange has stable ref (no deps), so this is safe
   );
 
+  const handleRemoveAttachment = async (idx: number) => {
+    const target = form.attachments?.[idx];
+    if (!target) return;
 
- const handleRemoveAttachment = async (idx: number) => {
-  const target = form.attachments?.[idx];
-  if (!target) return;
+    const isExisting = !(target instanceof File) && (target as any).isExisting;
+    const fileName =
+      target instanceof File ? target.name : (target as any).name;
 
-  const isExisting = !(target instanceof File) && (target as any).isExisting;
-  const fileName = target instanceof File ? target.name : (target as any).name;
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: "Remove attachment?",
+      text: `Remove "${fileName}"?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, remove",
+    });
+    if (!confirm.isConfirmed) return;
 
-  const confirm = await fireManagedSwal({
-    icon: "warning",
-    title: "Remove attachment?",
-    text: `Remove "${fileName}"?`,
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, remove",
-  });
-  if (!confirm.isConfirmed) return;
-
-  if (isExisting) {
-    try {
-      showLoading("Removing attachment...");
-      await removeAttachment(
-        (target as any).fid,
-        String(pId),
-        "Purchase Invoice",
-      );
-      closeSwal();
-      showSuccess("Attachment removed");
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-      return; // delete fail ho gaya to UI se mat hatao
+    if (isExisting) {
+      try {
+        showLoading("Removing attachment...");
+        await removeAttachment(
+          (target as any).fid,
+          String(pId),
+          "Purchase Invoice",
+        );
+        closeSwal();
+        showSuccess("Attachment removed");
+      } catch (err) {
+        closeSwal();
+        showApiError(err);
+        return; // delete fail ho gaya to UI se mat hatao
+      }
     }
-  }
 
-  setForm((prev) => ({
-    ...prev,
-    attachments: (prev.attachments ?? []).filter((_, i) => i !== idx),
-  }));
-};
+    setForm((prev) => ({
+      ...prev,
+      attachments: (prev.attachments ?? []).filter((_, i) => i !== idx),
+    }));
+  };
+  // ── Supplier ───────────────────────────────
   // ── Supplier ───────────────────────────────
   const handleSupplierChange = async (sup: any) => {
     if (!sup) return;
+
+    const requestToken = ++supplierSelectTokenRef.current;
+
     setForm((prev) => ({
       ...prev,
       supplierId: sup.id || sup.value || "",
@@ -717,6 +715,10 @@ export const usePurchaseInvoiceForm = ({
 
     try {
       const res = await getSupplierById(sup.id || sup.value);
+
+      // A clear (or a newer supplier selection) happened while this was in flight.
+      if (requestToken !== supplierSelectTokenRef.current) return;
+
       const supplier =
         res?.message?.data ||
         res?.data?.message?.data ||
@@ -756,10 +758,25 @@ export const usePurchaseInvoiceForm = ({
           },
         };
       });
+
+      if (requestToken !== supplierSelectTokenRef.current) return;
+
       await Promise.all([
-        loadAddressesForSupplier(supplier.id || "", "supplierBilling"),
-        loadAddressesForSupplier(supplier.id || "", "supplierDispatch"),
+        loadAddressesForSupplier(
+          supplier.id || "",
+          "supplierBilling",
+          true,
+          requestToken,
+        ),
+        loadAddressesForSupplier(
+          supplier.id || "",
+          "supplierDispatch",
+          true,
+          requestToken,
+        ),
       ]);
+
+      if (requestToken !== supplierSelectTokenRef.current) return;
 
       // Sync selectedIds when supplier address is loaded
       const supplierPrimaryAddress =
@@ -850,7 +867,7 @@ export const usePurchaseInvoiceForm = ({
           vatCd: selectedTax?.taxName || "",
 
           description: str(item.description || ""),
-          warehouse: form.updateStock ? str(item.warehouse) : "",
+          warehouse: str(item.warehouse),
           packingUnit: Number(item.packingUnit || 0),
           packingSize: Number(item.packingSize || 0),
           packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
@@ -978,9 +995,9 @@ export const usePurchaseInvoiceForm = ({
           : {}),
         ...(shippingAddrId
           ? {
-            companyShipping: addressStub(shippingAddrId, "Shipping"),
-            companyBilling: addressStub(shippingAddrId, "Billing"),
-          }
+              companyShipping: addressStub(shippingAddrId, "Shipping"),
+              companyBilling: addressStub(shippingAddrId, "Billing"),
+            }
           : {}),
         ...(dispatchAddrId
           ? { supplierDispatch: addressStub(dispatchAddrId, "Dispatch") }
@@ -1047,6 +1064,46 @@ export const usePurchaseInvoiceForm = ({
     }
   };
 
+  const handleSupplierClear = useCallback(() => {
+    // Invalidate any in-flight supplier/address fetches so their
+    // responses can't repopulate the form after this clear.
+    supplierSelectTokenRef.current++;
+
+    setForm((prev) => ({
+      ...prev,
+      supplier: emptyPOForm.supplier,
+      supplierId: emptyPOForm.supplierId,
+      supplierCode: emptyPOForm.supplierCode,
+      supplierEmail: emptyPOForm.supplierEmail,
+      supplierPhone: emptyPOForm.supplierPhone,
+      supplierContact: emptyPOForm.supplierContact,
+      supplierContactDisplay: emptyPOForm.supplierContactDisplay,
+      taxCategory: emptyPOForm.taxCategory,
+      poNumber: "",
+      addresses: {
+        ...prev.addresses,
+        supplierAddress: emptyPOForm.addresses.supplierAddress,
+      },
+    }));
+
+    setSelected((prev) => ({
+      ...prev,
+      supplierBilling: null,
+      supplierDispatch: null,
+    }));
+    setSelectedIds((prev) => ({
+      ...prev,
+      supplierBilling: "",
+      supplierDispatch: "",
+    }));
+    setAddresses((prev) => ({
+      ...prev,
+      supplierBilling: [],
+      supplierDispatch: [],
+    }));
+    setPoList([]);
+    setUsePO(false);
+  }, []);
   const handleTogglePO = (checked: boolean) => {
     setUsePO(checked);
     if (!checked) setForm((prev) => ({ ...prev, poNumber: "" }));
@@ -1065,13 +1122,13 @@ export const usePurchaseInvoiceForm = ({
         i !== idx
           ? item
           : {
-            ...item,
-            [name]: isNum
-              ? value === "" || value === null
-                ? null
-                : Number(value)
-              : value,
-          },
+              ...item,
+              [name]: isNum
+                ? value === "" || value === null
+                  ? null
+                  : Number(value)
+                : value,
+            },
       );
       return { ...p, items };
     });
@@ -1080,10 +1137,7 @@ export const usePurchaseInvoiceForm = ({
   const addItem = () => {
     setForm((p) => ({
       ...p,
-      items: [
-        ...p.items,
-        { ...emptyItem, warehouse: p.updateStock ? (p.warehouse ?? "") : "" },
-      ],
+      items: [...p.items, { ...emptyItem, warehouse: p.warehouse ?? "" }],
     }));
   };
 
@@ -1123,6 +1177,11 @@ export const usePurchaseInvoiceForm = ({
         .map((r: any) => r.tax_type)
         .filter((t: string) => t && t.trim() !== "");
 
+      const useRrpPrice = isZraEnabled && Number(data?.isMtvItem) === 1;
+      const resolvedRate = useRrpPrice
+        ? Number(data?.rrp_rate ?? 0)
+        : Number(data.buyingPrice || 0);
+
       setForm((prev) => {
         const items = [...prev.items];
         items[idx] = {
@@ -1130,7 +1189,7 @@ export const usePurchaseInvoiceForm = ({
           itemCode: data.id,
           itemName: data.itemName,
           description: data.description,
-          rate: Number(data.buyingPrice || 0),
+          rate: resolvedRate,
           uom: data.unitOfMeasureCd,
           vatRate: Number(selectedTax?.totalTaxRate || 0),
           vatCd: selectedTax?.taxName || "",
@@ -1305,21 +1364,21 @@ export const usePurchaseInvoiceForm = ({
 
       // ── Step 3: Upload attachments using createdPId as docname ──
       const newFiles = (form.attachments ?? []).filter(
-        (a): a is File => a instanceof File
+        (a): a is File => a instanceof File,
       );
 
       if (newFiles.length && createdPId) {
         await Promise.all(
-          newFiles.map((file) => uploadPIAttachment(file, String(createdPId)))
+          newFiles.map((file) => uploadPIAttachment(file, String(createdPId))),
         );
       }
 
       // ── Step 4: Success ────────────────────────────────────────────
       showSuccess(
         res.message ||
-        (isEditMode
-          ? "Purchase Invoice updated successfully"
-          : "Purchase Invoice created successfully"),
+          (isEditMode
+            ? "Purchase Invoice updated successfully"
+            : "Purchase Invoice created successfully"),
       );
       useDataRefreshStore
         .getState()
@@ -1419,6 +1478,8 @@ export const usePurchaseInvoiceForm = ({
     setLoading,
     handleRemoveAttachment,
     handleAddressRemove,
+    handleSupplierClear,
+
     handleAddressSelect: (boxKey: BoxType, addr: ApiAddress) => {
       setSelected((prev) => ({ ...prev, [boxKey]: addr }));
       setSelectedIds((prev) => ({ ...prev, [boxKey]: addr.id }));

@@ -9,7 +9,7 @@ import {
   Trash2,
   FileText,
   Ban,
-  CheckCircle
+  CheckCircle,
 } from "lucide-react";
 
 import { JournalEntriesModal } from "../../store/modalStore";
@@ -18,10 +18,13 @@ import { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
 import {
   getJournalEntries,
   deleteJournalEntryById,
-  updateJournalEntryStatus
+  updateJournalEntryStatus,
 } from "../../api/Accounting/JournalEntryApi";
 import { showApiError, showSuccess, showConfirm } from "../../utils/alert";
-import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
+import ActionButton, {
+  ActionGroup,
+  ActionMenu,
+} from "../../components/ui/Table/ActionButton";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError";
@@ -36,7 +39,7 @@ export interface JournalEntry {
   posting_date?: string;
   total_debit?: number;
   total_credit?: number;
-  docstatus?: number; 
+  docstatus?: number;
   user_remark?: string;
 }
 
@@ -75,9 +78,10 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
               }}
               className={`
                 w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
-                ${action.danger
-                  ? "text-danger hover:bg-danger/10"
-                  : "text-main hover:bg-row-hover"
+                ${
+                  action.danger
+                    ? "text-danger hover:bg-danger/10"
+                    : "text-main hover:bg-row-hover"
                 }
               `}
             >
@@ -103,11 +107,11 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [hasMore, setHasMore] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-    const [filters, setFilters] = useState({
-  from_date: "",
-  to_date: "", 
-  orderBy: "creation desc"
-});
+  const [filters, setFilters] = useState({
+    from_date: "",
+    to_date: "",
+    orderBy: "creation desc",
+  });
 
   const fetchJE = useCallback(async () => {
     setLoading(true);
@@ -123,7 +127,6 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       ];
 
       const limitStart = (currentPage - 1) * pageSize;
-    
 
       // let apiFilters: any = undefined;
       // if (filters.from_date && filters.to_date) {
@@ -131,10 +134,12 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       //   apiFilters = [[filterField, "between", [filters.from_date, filters.to_date]]];
       // }
       let apiFilters: any[][] = [];
-      
+
       if (filters.from_date && filters.to_date) {
-        const filterField = filters.orderBy.startsWith("posting_date") ? "posting_date" : "creation";
-        
+        const filterField = filters.orderBy.startsWith("posting_date")
+          ? "posting_date"
+          : "creation";
+
         if (filterField === "creation") {
           apiFilters.push([filterField, ">=", `${filters.from_date} 00:00:00`]);
           apiFilters.push([filterField, "<=", `${filters.to_date} 23:59:59`]);
@@ -145,7 +150,14 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         }
       }
 
-      const res = await getJournalEntries(fields,apiFilters, limitStart, pageSize, searchTerm || undefined, filters.orderBy);
+      const res = await getJournalEntries(
+        fields,
+        apiFilters,
+        limitStart,
+        pageSize,
+        searchTerm || undefined,
+        filters.orderBy,
+      );
       const entriesData = res?.data || res?.message?.data;
       const pagination = res?.pagination || res?.message?.pagination;
 
@@ -168,7 +180,9 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         setTotalPages(1);
       }
     } catch (err: any) {
-      setError(err?.message || "An error occurred while fetching journal entries.");
+      setError(
+        err?.message || "An error occurred while fetching journal entries.",
+      );
     } finally {
       setLoading(false);
     }
@@ -182,30 +196,45 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const handleSubmitEntry = async (id: string) => {
-    try {
-      setLoading(true);
-      await updateJournalEntryStatus(id, "approved");
-      showSuccess(`Entry ${id} has been submitted successfully.`);
-      fetchJE();
-    } catch (err: any) {
-      showApiError(parseFrappeError(err) || err?.response?.data?.message || err?.message || "Failed to submit entry.");
-      setLoading(false);
-    }
-  };
+const handleSubmitEntry = async (id: string) => {
+  const isConfirmed = await showConfirm(
+    `Are you sure you want to approve entry ${id}?`,
+    {
+      title: "Approve Entry",
+      confirmButtonText: "Yes, Approve",
+      confirmButtonColor: "#16a34a",
+      cancelButtonText: "No, Keep",
+    },
+  );
+  if (!isConfirmed) return;
+
+  try {
+    setLoading(true);
+    await updateJournalEntryStatus(id, "approved");
+    showSuccess(`Entry ${id} has been approved successfully.`);
+    fetchJE();
+  } catch (err: any) {
+    showApiError(
+      parseFrappeError(err) ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to approve entry.",
+    );
+    setLoading(false);
+  }
+};
 
   const handleCancelEntry = async (id: string) => {
-
-        const isConfirmed = await showConfirm(
-              `Are you sure you want to cancel entry ${id}?`,
-              {
-                title: "Cancel Entry",
-                confirmButtonText: "Yes, Cancel",
-                confirmButtonColor: "#ef4444",
-                cancelButtonText: "No, Keep",
-              }
-            );
-            if (!isConfirmed) return;
+    const isConfirmed = await showConfirm(
+      `Are you sure you want to cancel entry ${id}?`,
+      {
+        title: "Cancel Entry",
+        confirmButtonText: "Yes, Cancel",
+        confirmButtonColor: "#ef4444",
+        cancelButtonText: "No, Keep",
+      },
+    );
+    if (!isConfirmed) return;
 
     try {
       setLoading(true);
@@ -213,7 +242,12 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       showSuccess(`Entry ${id} has been cancelled successfully.`);
       fetchJE();
     } catch (err: any) {
-      showApiError(parseFrappeError(err) || err?.response?.data?.message || err?.message || "Failed to cancel entry.");
+      showApiError(
+        parseFrappeError(err) ||
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to cancel entry.",
+      );
       setLoading(false);
     }
   };
@@ -225,7 +259,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         title: "Delete Entry",
         confirmButtonText: "Yes, Delete",
         confirmButtonColor: "#ef4444",
-      }
+      },
     );
     if (!isConfirmed) return;
 
@@ -235,7 +269,12 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       showSuccess(`Entry ${id} has been successfully deleted.`);
       fetchJE();
     } catch (err: any) {
-      showApiError(parseFrappeError(err) || err?.response?.data?.message || err?.message || "Failed to delete entry.");
+      showApiError(
+        parseFrappeError(err) ||
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to delete entry.",
+      );
       setLoading(false);
     }
   };
@@ -271,7 +310,20 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const formatDate = (date?: string | Date) => {
     if (!date) return "";
 
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const months = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
 
     if (typeof date === "string") {
       const [year, month, day] = date.split("T")[0].split("-").map(Number);
@@ -302,7 +354,9 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       header: "Posting Date",
       align: "left",
       render: (row: JournalEntry) => (
-        <span className="text-xs text-muted">{formatDate(row.posting_date) || "—"}</span>
+        <span className="text-xs text-muted">
+          {formatDate(row.posting_date) || "—"}
+        </span>
       ),
     },
     // {
@@ -329,21 +383,21 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
     //   },
     // },
     {
-  key: "docstatus",
-  header: "Status",
-  align: "left",
-  render: (row: JournalEntry) => {
-    let label = "Draft";
+      key: "docstatus",
+      header: "Status",
+      align: "left",
+      render: (row: JournalEntry) => {
+        let label = "Draft";
 
-    if (row.docstatus === 1) {
-      label = "Submitted";
-    } else if (row.docstatus === 2) {
-      label = "Cancelled";
-    }
+        if (row.docstatus === 1) {
+          label = "Approved";
+        } else if (row.docstatus === 2) {
+          label = "Cancelled";
+        }
 
-    return <StatusBadge status={label} />;
-  },
-},
+        return <StatusBadge status={label} />;
+      },
+    },
     {
       key: "total_debit",
       header: "Total Debit",
@@ -388,7 +442,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         // Submit action (only for Drafts)
         if (isDraft) {
           customMenuActions.push({
-            label: "Submit",
+            label: "Approve",
             icon: <CheckCircle size={14} className="text-success" />,
             onClick: () => handleSubmitEntry(row.name),
           });
@@ -400,7 +454,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
             label: "Cancel Entry",
             icon: <Ban size={14} />,
             danger: true,
-            dividerBefore: isDraft, 
+            dividerBefore: isDraft,
             onClick: () => handleCancelEntry(row.name),
           });
         } else {
@@ -420,20 +474,22 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
               type="view"
               iconOnly
               onClick={() =>
-                JournalEntriesModal(row.name, false, { isReadOnly: true } as any)
+                JournalEntriesModal(row.name, false, {
+                  isReadOnly: true,
+                } as any)
               }
             />
 
             {/* Edit is only available if it is a Draft (docstatus === 0) */}
             {/* {isDraft && ( */}
-              <ActionButton
-                type="edit"
-                iconOnly
-                disabled= {!isDraft}
-                onClick={() =>
-                  JournalEntriesModal(row.name, true, { onSuccess: fetchJE })
-                }
-              />
+            <ActionButton
+              type="edit"
+              iconOnly
+              disabled={!isDraft}
+              onClick={() =>
+                JournalEntriesModal(row.name, true, { onSuccess: fetchJE })
+              }
+            />
             {/* )} */}
 
             {/* Render action menu if there are options available */}
@@ -449,21 +505,21 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   return (
     <div className="flex flex-col gap-4">
       <Table
-      extraFilters={ 
+        extraFilters={
           <>
             <DateRangeFilter
               from={filters.from_date}
               to={filters.to_date}
               onChange={(range: any) => {
                 setFilters((prev) => ({ ...prev, ...range }));
-                setCurrentPage(1); // Fixed from setPage(1)
+                setCurrentPage(1);
               }}
             />
             <select
               value={filters.orderBy}
               onChange={(e) => {
                 setFilters((prev) => ({ ...prev, orderBy: e.target.value }));
-                setCurrentPage(1); 
+                setCurrentPage(1);
               }}
               className="border-gray-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 py-1 px-2 border outline-none"
             >
@@ -495,9 +551,10 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
           setCurrentPage(1);
         }}
         onPageChange={setCurrentPage}
+        onRowDoubleClick={(row: JournalEntry) =>
+          JournalEntriesModal(row.name, false, { isReadOnly: true } as any)
+        }
       />
-
-
     </div>
   );
 };

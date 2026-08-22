@@ -6,7 +6,9 @@ import React, {
   useMemo,
 } from "react";
 import { createPortal } from "react-dom";
+import { User } from "lucide-react";
 import { getAllCustomers } from "../../api/customerApi";
+import SelectShell from "../../components/ui/select/SelectShell";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -44,6 +46,9 @@ interface CustomerSelectProps {
   error?: string;
 }
 
+const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 300;
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 const mapCustomer = (c: any): Customer => ({
@@ -80,6 +85,15 @@ function getDropStyle(
   return { position: "fixed", ...vertPos, left, width, zIndex: 9999 };
 }
 
+// getAllCustomers() returns resp.data directly — backend body shape is
+// { status_code, message, data: Customer[] } based on the `res.status_code`
+// / `res.data` check already used below, so no extra unwrap needed here.
+function extractCustomerList(res: any): any[] {
+  if (Array.isArray(res?.data)) return res.data;
+  if (Array.isArray(res?.data?.data)) return res.data.data;
+  return [];
+}
+
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
 export default function CustomerSelect({
@@ -97,47 +111,104 @@ export default function CustomerSelect({
 }: CustomerSelectProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
-  const [fetched, setFetched] = useState(false);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value);
   const [dropRect, setDropRect] = useState<DOMRect | null>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const optionRefs = useRef<Array<HTMLLIElement | null>>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
 
-  // ── Sync display value ────────────────────────────────────────────────────
-  useEffect(() => {
-    setSearch(value);
-  }, [value]);
+  // ── Hydration guards ────────────────────────────────────────────────────
+  // Problem this solves: the old code re-derived `search` from
+  // `customers.find(c => c.id === selectedId)` inside an effect that also
+  // depended on `customers`. Since `customers` is overwritten by every
+  // debounced fetch (including ones already in flight when the user clears
+  // the field), that effect kept re-firing after a clear and silently
+  // re-selected the last record — as long as the *old* selectedId hadn't
+  // been wiped from the parent yet.
+  //
+  // Fix: only hydrate `search` from `customers` ONCE per distinct
+  // `selectedId`. Track which id we've already hydrated for, and track
+  // explicit "user just cleared this" intent so a stale/in-flight
+  // `customers` update or a late-propagating parent prop can never
+  // resurrect the value.
+  const hydratedIdRef = useRef<string | undefined>(undefined);
+  const suppressUntilIdChangesRef = useRef(false);
 
   useEffect(() => {
+    if (open) return;
+
+    // Controlled `value` (a display name) always wins when present.
     if (value) {
+      suppressUntilIdChangesRef.current = false;
+      hydratedIdRef.current = selectedId;
       setSearch(value);
       return;
     }
-    if (selectedId && customers.length > 0) {
-      const found = customers.find((c) => c.id === selectedId);
-      if (found) setSearch(found.name);
-    }
-  }, [value, selectedId, customers]);
 
-  // ── Outside click ─────────────────────────────────────────────────────────
+    // No value and no id → field is genuinely empty.
+    if (!selectedId) {
+      hydratedIdRef.current = undefined;
+      suppressUntilIdChangesRef.current = false;
+      setSearch("");
+      return;
+    }
+
+    // A selectedId is present but user explicitly cleared it moments ago
+    // and the parent hasn't propagated the clear yet — do NOT re-hydrate,
+    // even though selectedId is technically still the old value.
+    if (suppressUntilIdChangesRef.current) {
+      setSearch("");
+      return;
+    }
+
+    // Already hydrated this exact id — don't redo it every time
+    // `customers` refetches (e.g. from reopening / re-searching later).
+    if (hydratedIdRef.current === selectedId) return;
+
+    const found = customers.find((c) => c.id === selectedId);
+    if (found) {
+      hydratedIdRef.current = selectedId;
+      setSearch(found.name);
+    }
+    // If not found yet (customers hasn't loaded that id), wait for the
+    // next `customers` update — effect re-runs via the dependency array.
+  }, [value, selectedId, customers, open]);
+
+  // Once the parent actually propagates a new/different selectedId
+  // (including becoming undefined), lift the suppression.
+  useEffect(() => {
+    suppressUntilIdChangesRef.current = false;
+  }, [selectedId]);
+
+  const clearSelection = useCallback(() => {
+    suppressUntilIdChangesRef.current = true;
+    hydratedIdRef.current = undefined;
+    setSearch("");
+    onClear?.();
+  }, [onClear]);
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (
-        dropdownRef.current?.contains(t) ||
-        containerRef.current?.contains(t)
-      )
+      if (dropdownRef.current?.contains(t) || containerRef.current?.contains(t))
         return;
       setOpen(false);
+      if (!search.trim()) {
+        clearSelection();
+        return;
+      }
       if (!customers.find((c) => c.name === search)) setSearch(value);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [open, search, customers, value]);
+  }, [open, search, customers, value, clearSelection]);
 
   // ── Reposition on scroll / resize ────────────────────────────────────────
   useEffect(() => {
@@ -152,46 +223,74 @@ export default function CustomerSelect({
     };
   }, [open]);
 
-  // ── Load customers once ───────────────────────────────────────────────────
-  const loadCustomers = useCallback(async () => {
-    if (fetched) return;
-    try {
-      setLoading(true);
-      const res = await getAllCustomers(1, 1000, taxCategory, "", "active");
-      if (res?.status_code !== 200) return;
-      const raw: any[] = Array.isArray(res.data) ? res.data : [];
-      setCustomers(raw.map(mapCustomer));
-      setFetched(true);
-    } catch (err) {
-      console.error("CustomerSelect: failed to load customers", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetched, taxCategory]);
+  // ── Server-side search (backend supports page, page_size, taxCategory, search, status) ──
+  const fetchCustomers = useCallback(
+    async (searchTerm: string) => {
+      const requestId = ++requestIdRef.current;
+      try {
+        setLoading(true);
+        const res = await getAllCustomers(
+          1,
+          PAGE_SIZE,
+          taxCategory,
+          searchTerm,
+          "active",
+        );
+        if (requestId !== requestIdRef.current) return; // stale response, ignore
+        if (res?.status_code !== 200) {
+          setCustomers([]);
+          return;
+        }
+        const raw = extractCustomerList(res);
+        setCustomers(raw.map(mapCustomer));
+      } catch (err) {
+        console.error("CustomerSelect: failed to load customers", err);
+        if (requestId === requestIdRef.current) setCustomers([]);
+      } finally {
+        if (requestId === requestIdRef.current) setLoading(false);
+      }
+    },
+    [taxCategory],
+  );
+
+  // Debounced trigger whenever the search text changes while the dropdown is open
+  useEffect(() => {
+    if (!open) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchCustomers(search);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [search, open, fetchCustomers]);
 
   const handleOpen = useCallback(() => {
     if (disabled) return;
     setDropRect(containerRef.current?.getBoundingClientRect() ?? null);
     setOpen(true);
     inputRef.current?.select();
-    loadCustomers();
-  }, [disabled, loadCustomers]);
+    fetchCustomers(search);
+  }, [disabled, fetchCustomers, search]);
 
-  // ── Filtered list ─────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.id.toLowerCase().includes(q) ||
-        (c.customerCode ?? "").toLowerCase().includes(q),
-    );
-  }, [customers, search]);
+  // ── Reset highlight whenever the list changes ──────────────────────────────
+  useEffect(() => {
+    setHighlightedIndex(customers.length > 0 ? 0 : -1);
+  }, [customers]);
+
+  // ── Keep highlighted option in view ────────────────────────────────────────
+  useEffect(() => {
+    if (highlightedIndex < 0) return;
+    optionRefs.current[highlightedIndex]?.scrollIntoView({ block: "nearest" });
+  }, [highlightedIndex]);
 
   // ── Select ────────────────────────────────────────────────────────────────
   const handleSelect = (c: Customer) => {
+    suppressUntilIdChangesRef.current = false;
+    hydratedIdRef.current = c.id;
     setSearch(c.name);
     setOpen(false);
+    setHighlightedIndex(-1);
     onChange({
       id: c.id,
       name: c.name,
@@ -201,6 +300,59 @@ export default function CustomerSelect({
       status: c.status,
       taxCategory: c.taxCategory,
     });
+  };
+
+  // ── Keyboard navigation inside the dropdown ─────────────────────────────────
+  // While the dropdown is open, arrow keys move the highlight instead of
+  // bubbling up to any outer grid/spreadsheet navigation handler.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open) {
+      // Let ArrowDown open the dropdown, like a native select.
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        handleOpen();
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setHighlightedIndex((prev) =>
+          customers.length === 0 ? -1 : (prev + 1) % customers.length,
+        );
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setHighlightedIndex((prev) =>
+          customers.length === 0
+            ? -1
+            : (prev - 1 + customers.length) % customers.length,
+        );
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (highlightedIndex >= 0 && customers[highlightedIndex]) {
+          handleSelect(customers[highlightedIndex]);
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        setOpen(false);
+        setHighlightedIndex(-1);
+        // Same intentional-clear handling as the outside-click case.
+        if (!search.trim()) {
+          clearSelection();
+        } else if (!customers.find((c) => c.name === search)) {
+          setSearch(value);
+        }
+        break;
+      case "Tab":
+        // Let Tab move focus naturally; just close the dropdown.
+        setOpen(false);
+        setHighlightedIndex(-1);
+        break;
+    }
   };
 
   // ── Dropdown style ────────────────────────────────────────────────────────
@@ -219,34 +371,42 @@ export default function CustomerSelect({
         </span>
       )}
 
-      <div ref={containerRef} className="relative w-full">
-        <input
-          ref={inputRef}
-          type="text"
-          autoComplete="off"
+      <div
+        ref={containerRef}
+        className="relative w-full"
+        data-nav-ignore={open ? "true" : undefined}
+      >
+        <SelectShell
+          icon={!search ? <User /> : undefined}
+          error={Boolean(error)}
           disabled={disabled}
-          className={[
-            "py-1 px-2 border rounded text-[11px] text-main bg-card w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap",
-            disabled
-              ? "opacity-50 cursor-not-allowed border-theme"
-              : error
-                ? "border-red-400/60"
-                : "border-theme hover:border-primary/40 focus:outline-none focus:border-primary",
-          ].join(" ")}
-          placeholder={loading ? "Loading..." : placeholder}
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            if (!open) {
-              setDropRect(
-                containerRef.current?.getBoundingClientRect() ?? null,
-              );
-              setOpen(true);
-              loadCustomers();
-            }
-          }}
-          onFocus={handleOpen}
-        />
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            autoComplete="off"
+            disabled={disabled}
+            placeholder={loading ? "Loading..." : placeholder}
+            value={search}
+            onChange={(e) => {
+              const next = e.target.value;
+              // Any manual typing counts as leaving the previously
+              // selected record — don't let a trailing hydration effect
+              // stomp over what the user is typing.
+              suppressUntilIdChangesRef.current = !next.trim();
+              setSearch(next);
+              if (!open) {
+                setDropRect(
+                  containerRef.current?.getBoundingClientRect() ?? null,
+                );
+                setOpen(true);
+              }
+            }}
+            onFocus={handleOpen}
+            onKeyDown={handleKeyDown}
+            className="overflow-hidden text-ellipsis whitespace-nowrap"
+          />
+        </SelectShell>
 
         {error && (
           <p className="text-[10px] text-red-500 mt-1 font-medium">{error}</p>
@@ -260,20 +420,23 @@ export default function CustomerSelect({
             ref={dropdownRef}
             style={dropStyle}
             className="bg-card border border-theme rounded-lg shadow-xl overflow-hidden"
+            data-nav-ignore="true"
           >
             <ul className="max-h-56 overflow-y-auto text-[11px]">
               {loading ? (
-                <li className="px-3 py-2 text-muted text-[11px]">
-                  Loading…
-                </li>
-              ) : filtered.length === 0 ? (
+                <li className="px-3 py-2 text-muted text-[11px]">Loading…</li>
+              ) : customers.length === 0 ? (
                 <li className="px-3 py-2 text-muted text-[11px]">
                   {search ? `No match for "${search}"` : "No customers found"}
                 </li>
               ) : (
-                filtered.map((c) => (
+                customers.map((c, idx) => (
                   <li
                     key={c.id}
+                    ref={(el) => {
+                      optionRefs.current[idx] = el;
+                    }}
+                    onMouseEnter={() => setHighlightedIndex(idx)}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       handleSelect(c);
@@ -281,9 +444,11 @@ export default function CustomerSelect({
                     onClick={() => {}}
                     className={[
                       "px-3 py-1.5 cursor-pointer border-b border-theme last:border-none transition-colors",
-                      c.id === selectedId
+                      idx === highlightedIndex
                         ? "bg-primary/10 text-primary font-semibold"
-                        : "hover:bg-primary/5 text-main",
+                        : c.id === selectedId
+                          ? "bg-primary/10 text-primary font-semibold"
+                          : "hover:bg-primary/5 text-main",
                     ].join(" ")}
                   >
                     <div className="flex justify-between items-center gap-2">

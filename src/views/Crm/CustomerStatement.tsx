@@ -43,18 +43,36 @@ const VOUCHER_OPTIONS = [
   { value: "Journal Entry", label: "Journal Entry" },
 ];
 
-const fmt = (n: number) => (n || 0).toLocaleString("en-IN");
+// const fmt = (n: number) => (n || 0).toLocaleString("en-IN");
+const fmt = (n: number, symbol?: string) => {
+  const value = n || 0;
+  const isNeg = value < 0;
+  const abs = Math.abs(value);
+  // return `${isNeg ? "-" : ""}${symbol ? symbol + " " : ""}${abs.toLocaleString("en-IN")}`;
+  return `${symbol ? symbol + " " : ""}${isNeg ? "-" : ""}${abs.toLocaleString("en-IN")}`;
+};
 
-const fmtDateRange = (from?: string, to?: string) => {
-  if (!from && !to) return "";
+const fmtDateRange = (
+  from?: string,
+  to?: string,
+  openingBalanceDate?: string,
+) => {
   const d = (s: string) =>
     new Date(s).toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
+
+  if (!from && !to) {
+    return openingBalanceDate
+      ? `${d(openingBalanceDate)} – ${d(new Date().toISOString())}`
+      : "";
+  }
+
   if (from && to) return `${d(from)} – ${d(to)}`;
-  return from ? `From ${d(from)}` : `Up to ${d(to!)}`;
+  if (from) return `From ${d(from)}`;
+  return `Up to ${d(to!)}`;
 };
 
 const triggerDownload = (blob: Blob, filename: string) => {
@@ -72,7 +90,9 @@ const StatCell = ({
   value,
   valueClass,
   highlight = false,
-}: StatCellProps) => (
+  currencySymbol,
+  // }: StatCellProps) => (
+}: StatCellProps & { currencySymbol?: string }) => (
   <div
     className={`flex flex-col justify-center gap-1.5 px-4 sm:px-6 py-4 min-w-[120px] sm:min-w-[148px] flex-shrink-0 ${highlight ? "bg-danger/5" : ""}`}
   >
@@ -85,7 +105,8 @@ const StatCell = ({
     <span
       className={`text-lg sm:text-[22px] font-black leading-none tabular-nums ${valueClass}`}
     >
-      {fmt(value)}
+      {/* {fmt(value)} */}
+      {fmt(value, currencySymbol)}
     </span>
   </div>
 );
@@ -95,7 +116,9 @@ const AgingCell = ({
   value,
   active = false,
   warn = false,
-}: AgingCellProps) => {
+  currencySymbol,
+  // }: AgingCellProps) => {
+}: AgingCellProps & { currencySymbol?: string }) => {
   const isHot = warn && value > 0;
   return (
     <div
@@ -109,7 +132,8 @@ const AgingCell = ({
       <span
         className={`text-[12px] sm:text-[13px] font-black tabular-nums ${active ? "text-primary" : isHot ? "text-danger" : "text-main"}`}
       >
-        {fmt(value)}
+        {/* {fmt(value)} */}
+        {fmt(value, currencySymbol)}
       </span>
     </div>
   );
@@ -317,7 +341,7 @@ const PdfButton = ({
   const [viewer, setViewer] = useState<{ blobUrl: string; blob: Blob } | null>(
     null,
   );
-const [emailUploading, setEmailUploading] = useState(false);
+  const [emailUploading, setEmailUploading] = useState(false);
   const cachedRef = useRef<Blob | null>(null);
   const dateRange = fmtDateRange(fromDate, toDate);
   const filename = `Statement_${customerName.replace(/\s+/g, "_")}_${dateRange.replace(/[\s–]/g, "")}.pdf`;
@@ -355,7 +379,7 @@ const [emailUploading, setEmailUploading] = useState(false);
     if (action === "download") {
       triggerDownload(blob, filename);
     }
-   if (action === "share") {
+    if (action === "share") {
       try {
         setEmailUploading(true);
         const file = new File([blob], filename, { type: "application/pdf" });
@@ -365,7 +389,9 @@ const [emailUploading, setEmailUploading] = useState(false);
           invoiceNumber: customerId,
           contactEmail: defaultEmail,
           customerName,
-          invoiceAttachments: [{ name: uploaded.name, file_name: uploaded.file_name }],
+          invoiceAttachments: [
+            { name: uploaded.name, file_name: uploaded.file_name },
+          ],
           periodText,
         });
       } catch (err) {
@@ -432,8 +458,6 @@ const [emailUploading, setEmailUploading] = useState(false);
           onClose={closeViewer}
         />
       )}
-
-      
     </>
   );
 };
@@ -531,8 +555,9 @@ const CustomerStatement = ({
       align: "right" as const,
       render: (row: LedgerEntry) =>
         row.debit > 0 ? (
-          <span className="text-xs font-bold text-warning">
-            {fmt(row.debit)}
+          <span className="text-xs font-bold text-warning whitespace-nowrap">
+            {/* {fmt(row.debit)} */}
+            {fmt(row.debit, data?.currency_symbol)}
           </span>
         ) : (
           <span className="text-muted text-xs">—</span>
@@ -544,8 +569,9 @@ const CustomerStatement = ({
       align: "right" as const,
       render: (row: LedgerEntry) =>
         row.credit > 0 ? (
-          <span className="text-xs font-bold text-success">
-            {fmt(row.credit)}
+          <span className="text-xs font-bold text-success whitespace-nowrap">
+            {/* {fmt(row.credit)} */}
+            {fmt(row.credit, data?.currency_symbol)}
           </span>
         ) : (
           <span className="text-muted text-xs">—</span>
@@ -559,10 +585,9 @@ const CustomerStatement = ({
         const neg = row.balance < 0;
         return (
           <span
-            className={`text-sm font-black tabular-nums ${row.balance === 0 ? "text-muted" : neg ? "text-danger" : "text-primary"}`}
+            className={`text-sm font-black whitespace-nowrap tabular-nums ${row.balance === 0 ? "text-muted" : neg ? "text-danger" : "text-primary"}`}
           >
-            {neg ? "−" : ""}
-            {fmt(row.balance)}
+            {fmt(row.balance, data?.currency_symbol)}
           </span>
         );
       },
@@ -607,12 +632,14 @@ const CustomerStatement = ({
           icon={<TrendingUp size={12} className="text-warning" />}
           value={totalDebit}
           valueClass="text-warning"
+          currencySymbol={data.currency_symbol}
         />
         <StatCell
           label="Total Credit"
           icon={<TrendingDown size={12} className="text-success" />}
           value={totalCredit}
           valueClass="text-success"
+          currencySymbol={data.currency_symbol}
         />
         <StatCell
           label="Net Outstanding"
@@ -625,6 +652,7 @@ const CustomerStatement = ({
           value={netOutstanding}
           valueClass={netOutstanding > 0 ? "text-danger" : "text-muted"}
           highlight={netOutstanding > 0}
+          currencySymbol={data.currency_symbol}
         />
 
         <div className="flex flex-1 items-stretch min-w-0">
@@ -640,19 +668,31 @@ const CustomerStatement = ({
             </span>
           </div>
           <div className="flex flex-1 divide-x divide-theme">
-            <AgingCell label="Not Due Yet" value={data.aging.current} active />
-            <AgingCell label="1 - 30 Days Overdue" value={data.aging["1_30"]} />
+            <AgingCell
+              label="Not Due Yet"
+              value={data.aging.current}
+              active
+              currencySymbol={data.currency_symbol}
+            />
+            <AgingCell
+              label="1 - 30 Days Overdue"
+              value={data.aging["1_30"]}
+              currencySymbol={data.currency_symbol}
+            />
             <AgingCell
               label="31 - 60 Days Overdue"
               value={data.aging["31_60"]}
+              currencySymbol={data.currency_symbol}
             />
             <AgingCell
               label="61 - 90 Days Overdue"
               value={data.aging["61_90"]}
+              currencySymbol={data.currency_symbol}
             />
             <AgingCell
               label="90 + Days Overdue"
               value={data.aging["90_plus"]}
+              currencySymbol={data.currency_symbol}
               warn
             />
           </div>
@@ -698,7 +738,11 @@ const CustomerStatement = ({
               toDate={toDate}
               voucherType={voucherType}
               defaultEmail={customerEmail ?? data.customerEmail}
-              periodText={fmtDateRange(fromDate, toDate)}
+              periodText={fmtDateRange(
+                fromDate,
+                toDate,
+                data.ledger?.[0]?.date,
+              )}
             />
           </div>
         </div>

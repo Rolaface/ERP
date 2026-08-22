@@ -4,11 +4,12 @@ import {
   LayoutDashboard,
   FileSignature,
   FileClock,
-  Receipt,
+  File,
   FileMinus,
   BarChart3,
   TrendingUp,
-  ShoppingCart
+  ShoppingCart,
+  BadgePercent
 } from "lucide-react";
 import {
   AppPage,
@@ -20,6 +21,7 @@ import AppSkeleton from "../../components/ui/AppSkeleton";
 import { usePermission } from "../../hooks/permission/usePermission";
 import { useUrlTab } from "../../hooks/useUrlTab";
 
+const SalesOrderTable = lazy(() => import("./SalesOrder"));
 const QuotationsTable = lazy(() => import("./Quotations"));
 const InvoiceTable = lazy(() => import("./Invoices"));
 const ReportTable = lazy(() => import("./Reports"));
@@ -27,9 +29,12 @@ const POS = lazy(() => import("./POS"));
 const SalesDashboard = lazy(() => import("./SalesDashboard"));
 const ProformaInvoicesTable = lazy(() => import("./ProformaInvoice"));
 const CreditNotesTable = lazy(() => import("./CreditNotesTable"));
+const SalesDebitNotesTable = lazy(() => import("./SalesDebitNotesTable"));
 const SalesAnalytics = lazy(() => import("./SalesAnalytics"));
 
 type OutletContextType = {
+  openSalesOrderCreate: () => void;
+  openSalesOrderEdit: (salesOrderNumber: string, data: any) => void;
   openInvoiceCreate: () => void;
   openInvoiceEdit: (invoiceNumber: string, data: any) => void;
   openProformaCreate: () => void;
@@ -52,6 +57,13 @@ const ALL_SALES_TAB = [
     module: null,
   },
   {
+    id: "salesOrder",
+    label: "Sales Order",
+    icon: <BadgePercent size={16} strokeWidth={1.75} />,
+    module: "Sales Order",
+    action: "read" as const,
+  },
+  {
     id: "quotations",
     label: "Quotations",
     icon: <FileSignature size={16} strokeWidth={1.75} />,
@@ -68,13 +80,20 @@ const ALL_SALES_TAB = [
   {
     id: "invoices",
     label: "Invoices",
-    icon: <Receipt size={16} strokeWidth={1.75} />,
+    icon: <File size={16} strokeWidth={1.75} />,
     module: "Sales Invoice",
     action: "read" as const,
   },
   {
     id: "creditNotes",
     label: "Credit Notes",
+    icon: <FileMinus size={16} strokeWidth={1.75} />,
+    module: "Sales Invoice",
+    action: "read" as const,
+  },
+  {
+    id: "salesDebitNotes",
+    label: "Sales Debit Notes",
     icon: <FileMinus size={16} strokeWidth={1.75} />,
     module: "Sales Invoice",
     action: "read" as const,
@@ -105,7 +124,7 @@ const SalesModule: React.FC = () => {
     [can]
   );
 
-  const { openInvoiceCreate, openProformaCreate, openQuotationCreate } =
+  const { openInvoiceCreate, openProformaCreate, openQuotationCreate, openSalesOrderCreate } =
     useOutletContext<OutletContextType>();
 
   const fallbackTab = salesTabs[0]?.id ?? DEFAULT_TAB;
@@ -123,7 +142,21 @@ const SalesModule: React.FC = () => {
   const renderTab = () => {
     switch (resolvedTab) {
       case "salesdashboard":
-        return <SalesDashboard />;
+        return (
+          <SalesDashboard
+            onNavigateTab={handleTabChange}
+            availableTabIds={salesTabs.map((t) => t.id)}
+          />
+        );
+      
+      case "salesOrder":
+        return (
+          <SalesOrderTable
+            key={activeTab}
+            onAddSalesOrder={() => openSalesOrderCreate?.()}
+            onExportSalesOrder={() => console.log("Export sales orders")}
+          />
+        );
       case "quotations":
         return (
           <QuotationsTable
@@ -152,6 +185,8 @@ const SalesModule: React.FC = () => {
         return <POS />;
       case "creditNotes":
         return <CreditNotesTable />;
+      case "salesDebitNotes":
+        return <SalesDebitNotesTable />;
       case "reports":
         return <ReportTable />;
       case "salesAnalytics":

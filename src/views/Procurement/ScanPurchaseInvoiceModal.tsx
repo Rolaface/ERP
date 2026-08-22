@@ -72,8 +72,7 @@ const ScanPIModal: React.FC<ScanPIModalProps> = ({
     // TODO:
     // API integration later
 
-    console.log("Selected PI:", piId);
-    console.log("Selected File:", file);
+    
 
     onClose();
   };

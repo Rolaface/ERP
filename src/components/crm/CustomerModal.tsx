@@ -6,6 +6,7 @@ import {
   MapPin,
   Users,
   User,
+  Search,
 } from "lucide-react";
 import Tooltip from "../Tooltip";
 import TaxCategorySelect from "../selects/TaxCategorySelect";
@@ -14,7 +15,11 @@ import SearchSelect2 from "../ui/modal/SearchSelect2";
 import AddressBlock from "../ui/modal/AddressBlock";
 import CustomerGroupSearchSelect from "../selects/customergroupSelect";
 import { Card } from "../ui/modal/formComponent";
-import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
+import {
+  ModalInput,
+  ModalSelect,
+  NumericInput,
+} from "../ui/modal/modalComponent";
 import { PaymentInfoTab } from "../../components/procurement/supply/PaymentInfoTab";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
@@ -28,6 +33,10 @@ import type { CustomerDetail } from "../../types/customer";
 import type { StandardModalProps } from "../../types/modal";
 import PhoneCodeSelect from "../common/PhoneCodeSelect";
 import type { ActiveTab } from "../../hooks/Usecustomerform";
+import { useCompanyStore } from "../../store/companyStore";
+import { useCompanyDefaultsStore } from "../../store/Companydefaultsstore";
+import { selectPrincipals } from "../../api/customerApi";
+import { showApiError } from "../../utils/alert";
 
 type CustomerModalProps = StandardModalProps<unknown, CustomerDetail>;
 
@@ -46,6 +55,26 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       : `customer-create-${Date.now()}`);
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+  const isRvatAgent = useCompanyDefaultsStore((s) => {
+    const value = s.defaults?.is_rvat_agent;
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      return ["1", "true", "yes", "y"].includes(normalized);
+    }
+    return false;
+  });
+  const [isPrincipalModalOpen, setIsPrincipalModalOpen] = React.useState(false);
+  const [principalOptions, setPrincipalOptions] = React.useState<any[]>([]);
+  const [principalLoading, setPrincipalLoading] = React.useState(false);
+  const [selectedPrincipalName, setSelectedPrincipalName] = React.useState("");
+  const [principalSearch, setPrincipalSearch] = React.useState("");
+
+  React.useEffect(() => {
+    useCompanyDefaultsStore.getState().fetchDefaults();
+  }, []);
 
   const {
     form,
@@ -84,6 +113,85 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     return didSave;
   };
 
+  const showPrincipalLookup = isZraEnabled && isRvatAgent;
+
+  const filteredPrincipalOptions = React.useMemo(() => {
+    const q = principalSearch.trim().toLowerCase();
+    if (!q) return principalOptions;
+    return principalOptions.filter((p: any) =>
+      [p.principalNm, p.tpin, p.tin, p.principalEmail, p.accountNo]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(q)),
+    );
+  }, [principalOptions, principalSearch]);
+
+  const handleOpenPrincipalLookup = async () => {
+    if (!showPrincipalLookup) return;
+
+    setPrincipalSearch("");
+
+    setPrincipalLoading(true);
+    setIsPrincipalModalOpen(true);
+
+    try {
+      const res = await selectPrincipals();
+      const list =
+        res?.data?.taxpayerPrincipalList ??
+        res?.taxpayerPrincipalList ??
+        res?.message?.data?.taxpayerPrincipalList ??
+        [];
+
+      setPrincipalOptions(list);
+    } catch (error) {
+      setPrincipalOptions([]);
+      showApiError(error);
+    } finally {
+      setPrincipalLoading(false);
+    }
+  };
+
+  const handleSelectPrincipal = (principal: any) => {
+    const fullName = principal?.principalNm || "";
+    const email = principal?.principalEmail || "";
+    const phone = principal?.principalTelNo || "";
+    const address = principal?.principalAddress || "";
+    const tpin = principal?.tpin || "";
+    const tin = principal?.tin || "";
+    const accountNo = principal?.accountNo || "";
+    const principalId = principal?.id || "";
+
+    setForm((prev) => ({
+      ...prev,
+      name: fullName || prev.name,
+      tpin: tpin || prev.tpin,
+      displayName: fullName || prev.displayName,
+      registration_no: tin || prev.registration_no || "",
+      accountNumber: accountNo || prev.accountNumber,
+      principalId: principalId || prev.principalId,
+      contacts: prev.contacts.map((contact) =>
+        contact.isPrimary
+          ? {
+            ...contact,
+            firstName: fullName || contact.firstName,
+            email: email || contact.email,
+            mobileNumber: phone.replace(/\D/g, "") || contact.mobileNumber,
+            mobile: phone
+              ? `${contact.mobileCode || ""}${phone.replace(/\D/g, "")}`
+              : contact.mobile,
+          }
+          : contact,
+      ),
+      addresses: prev.addresses.map((addressEntry) =>
+        addressEntry.type === "Billing"
+          ? { ...addressEntry, line1: address || addressEntry.line1 }
+          : addressEntry,
+      ),
+    }));
+
+    setSelectedPrincipalName(fullName);
+    setIsPrincipalModalOpen(false);
+  };
+
   const footer = (
     <ModalFooter
       onCancel={handleCloseWithWarning}
@@ -107,7 +215,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       title={isEditMode ? "Edit Customer" : "Add Customer"}
       subtitle={
         isEditMode
-          ? "Update customer information"
+          ? "Edit and Manage customer information"
           : "Fill in the details to add a new customer"
       }
       icon={isEditMode ? Building2 : Users}
@@ -129,8 +237,8 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 type="button"
                 onClick={() => setActiveTab(tab)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === tab
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                  ? "text-primary border-b-[3px] border-primary"
+                  : "text-muted border-b-[3px] border-transparent hover:text-main"
                   }`}
               >
                 {tab === "details" && <User className="w-4 h-4" />}
@@ -156,6 +264,37 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
               subtitle="Essential customer details"
               icon={<User className="w-5 h-5 text-primary" />}
             >
+              {showPrincipalLookup && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-4">
+                  <div className="md:col-span-3 flex items-center justify-between gap-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-4 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                        <Search className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-semibold text-main truncate">
+                          {selectedPrincipalName
+                            ? `Prefilled from ${selectedPrincipalName}`
+                            : "Have a ZRA Principal?"}
+                        </p>
+                        <p className="text-[10px] text-muted">
+                          {selectedPrincipalName
+                            ? "Details imported — click to pick a different principal."
+                            : "Auto-fill name, contact and address instantly from ZRA."}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleOpenPrincipalLookup}
+                      className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-[11px] font-medium text-white hover:bg-primary/90 transition-colors"
+                    >
+                      {selectedPrincipalName ? "Change" : "Import from ZRA"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5  mt-4">
                 <Tooltip content={form.type || "Select Customer Type"}>
                   <ModalSelect
@@ -250,11 +389,13 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   <TaxCategorySelect
                     label="Tax Category"
                     value={form.customerTaxCategory}
+                    required
                     onChange={(value) =>
                       handleChange({
                         target: { name: "customerTaxCategory", value },
                       } as React.ChangeEvent<HTMLSelectElement>)
                     }
+                    error={errors.customerTaxCategory}
                   />
                 </Tooltip>
                 <Tooltip content={form.tpin || "Tax identification"}>
@@ -304,14 +445,28 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     {/* Country Code */}
                     <PhoneCodeSelect
                       value={primaryContact?.mobileCode ?? ""}
-                      onChange={(code) => updatePrimaryContact("mobileCode", code)}
+                      onChange={(code) =>
+                        updatePrimaryContact("mobileCode", code)
+                      }
                     />
 
                     {/* Actual Mobile Number */}
                     <input
                       name="mobileNumber"
                       value={primaryContact?.mobileNumber ?? ""}
-                      onChange={handlePrimaryContactChange}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/\D/g, "");
+                        handlePrimaryContactChange({
+                          ...e,
+                          target: { ...e.target, name: "mobileNumber", value: digitsOnly },
+                        });
+                      }}
+                      onKeyDown={(e) => {
+                        if (!/[0-9]/.test(e.key) && !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
+                      inputMode="numeric"
                       placeholder="Enter number"
                       className="flex-1 py-1 px-2 border rounded text-[11px] text-main  bg-card border-[var(--border)] hover:border-primary/40"
                     />
@@ -322,7 +477,6 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                       {errors.contactMobile}
                     </span>
                   )}
-
                 </div>
 
                 <Tooltip
@@ -340,6 +494,66 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     className="no-spinner"
                   />
                 </Tooltip>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mt-4">
+                <div className="flex flex-col text-sm group min-w-0 w-full">
+                  <span className="block text-[10px] font-medium text-main mb-1">
+                    Credit Limit
+                  </span>
+                  <Tooltip content={String(form.creditLimit ?? "") || "Enter credit limit"}>
+                    <NumericInput
+                      name="creditLimit"
+                      value={
+                        form.creditLimit === "" || form.creditLimit == null
+                          ? null
+                          : Number(form.creditLimit)
+                      }
+                      onChange={(value) =>
+                        handleChange({
+                          target: { name: "creditLimit", value: value ?? "" },
+                        } as React.ChangeEvent<HTMLInputElement>)
+                      }
+                      placeholder="Enter credit limit"
+                      decimalScale={4}
+                      className={`w-full ${errors.creditLimit ? "border-danger" : ""}`}
+                    />
+                  </Tooltip>
+                  {errors.creditLimit && (
+                    <span className="text-[10px] text-danger mt-1">{errors.creditLimit}</span>
+                  )}
+                </div>
+                <div className="flex items-end pb-2">
+                  <label className="flex items-center gap-2 text-[11px] font-medium text-main cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="bypassCreditLimit"
+                      checked={!!form.bypassCreditLimit}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          bypassCreditLimit: e.target.checked,
+                        }))
+                      }
+                    />
+                    Bypass For Sales Order
+                  </label>
+                </div>
+                <div className="flex items-end pb-2">
+                  <label className="flex items-center gap-2 text-[11px] font-medium text-main cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="strictCreditLimit"
+                      checked={!!form.strictCreditLimit}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          strictCreditLimit: e.target.checked,
+                        }))
+                      }
+                    />
+                    Enforce Strict Credit Limit
+                  </label>
+                </div>
               </div>
             </Card>
           )}
@@ -423,6 +637,65 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
           )}
         </div>
       </form>
+
+      <MinimizableModal
+        modalId={`${resolvedModalId}-principals`}
+        isOpen={isPrincipalModalOpen}
+        onClose={() => {
+          setIsPrincipalModalOpen(false);
+          setPrincipalSearch("");
+        }}
+        title="Select Principal"
+        subtitle="Choose a principal to prefill the customer form"
+        icon={Users}
+        maxWidth="lg"
+        height="70vh"
+      >
+        <div className="p-4">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <input
+              type="text"
+              value={principalSearch}
+              onChange={(e) => setPrincipalSearch(e.target.value)}
+              placeholder="Search by name, TPIN or email..."
+              className="w-64 pl-9 pr-3 py-2 border rounded text-[12px] text-main bg-card border-[var(--border)] hover:border-primary/40"
+              autoFocus
+            />
+          </div>
+
+          {principalLoading ? (
+            <div className="text-sm text-muted">Loading principals...</div>
+          ) : filteredPrincipalOptions.length === 0 ? (
+            <div className="text-sm text-muted">
+              {principalOptions.length === 0
+                ? "No principals found."
+                : "No principals match your search."}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filteredPrincipalOptions.map((principal) => (
+                <button
+                  key={principal.id ?? `${principal.tpin}-${principal.accountNo}`}
+                  type="button"
+                  onClick={() => handleSelectPrincipal(principal)}
+                  className="w-full rounded-lg border border-[var(--border)] bg-card p-3 text-left hover:border-primary/40 hover:bg-primary/5"
+                >
+                  <div className="text-sm font-medium text-main">
+                    {principal.principalNm || principal.tpin}
+                  </div>
+                  <div className="mt-1 text-[11px] text-muted">
+                    {principal.principalEmail}
+                  </div>
+                  <div className="mt-1 text-[11px] text-muted">
+                    {principal.principalAddress}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </MinimizableModal>
     </MinimizableModal>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
 import {
@@ -12,6 +12,10 @@ import {
   getshift,
   getEmployees,
 } from "../../../api/utils/frappeUtilsApi";
+import {
+  getNextEmployeeNumber,
+  checkEmployeeNumberAvailability,
+} from "../../../api/Employee/employeeNumberApi";
 import { resolveLabel } from "../../../api/utils/labelResolver";
 import DatePickerInput from "../../calendar/DatePickerInput";
 
@@ -22,6 +26,8 @@ type EmploymentTabProps = {
   Level: string[];
   managers: { name: string; employeeId: string }[];
   hrManagers: { name: string; employeeId: string }[];
+  isEditMode?: boolean;
+  employeeId?: string;
 };
 
 const EMPLOYMENT_STATUS_OPTIONS = [
@@ -35,6 +41,8 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
   formData,
   handleInputChange,
   hrManagers,
+  isEditMode = false,
+  employeeId,
 }) => {
   const isContractBased =
     formData.employment_type === "Contract" ||
@@ -42,6 +50,113 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
     formData.employment_type === "Intern";
 
   const isLeft = formData.employmentStatus === "Left";
+
+  // ── Employee Number: suggestion + live availability ───────────────────
+  const [employeeNumberStatus, setEmployeeNumberStatus] = useState<
+    "idle" | "checking" | "available" | "taken" | "error"
+  >("idle");
+
+  const [employeeNumberMessage, setEmployeeNumberMessage] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasPrefilledRef = useRef(false);
+
+  const originalEmployeeNumberRef = useRef<string | null>(null);
+  const hasCapturedOriginalRef = useRef(false);
+
+  useEffect(() => {
+    if (isEditMode && !hasCapturedOriginalRef.current) {
+      originalEmployeeNumberRef.current = formData.employee_number ?? "";
+      hasCapturedOriginalRef.current = true;
+    }
+  }, [isEditMode]);
+  useEffect(() => {
+    if (isEditMode) return;
+    if (hasPrefilledRef.current) return;
+    if (formData.employee_number) {
+      hasPrefilledRef.current = true;
+      return;
+    }
+
+    hasPrefilledRef.current = true;
+    (async () => {
+      try {
+        const res = await getNextEmployeeNumber();
+        const suggested =
+          res?.data?.data?.employee_number ??
+          res?.message?.data?.employee_number;
+        if (suggested) {
+          handleInputChange("employee_number", suggested);
+        }
+      } catch {}
+    })();
+  }, [isEditMode]);
+
+  useEffect(() => {
+    const value = formData.employee_number?.trim();
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (!value) {
+      setEmployeeNumberStatus("idle");
+      setEmployeeNumberMessage("");
+      return;
+    }
+
+    // Edit mode + value unchanged from what this employee started with →
+    // skip the check entirely, don't show any indicator.
+    if (
+      isEditMode &&
+      hasCapturedOriginalRef.current &&
+      value === originalEmployeeNumberRef.current
+    ) {
+      setEmployeeNumberStatus("idle");
+      setEmployeeNumberMessage("");
+      return;
+    }
+
+    setEmployeeNumberStatus("checking");
+    setEmployeeNumberMessage("");
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await checkEmployeeNumberAvailability(
+          value,
+          isEditMode ? employeeId : undefined,
+        );
+
+        const body = res?.message ?? res;
+        const inner = body?.data;
+        const isFail = body?.status === "fail" || body?.status_code === 409;
+
+        if (isFail) {
+          setEmployeeNumberStatus("taken");
+          setEmployeeNumberMessage(body.message);
+          return;
+        }
+
+        if (inner?.is_available) {
+          setEmployeeNumberStatus("available");
+          setEmployeeNumberMessage("");
+        } else {
+          setEmployeeNumberStatus("taken");
+          setEmployeeNumberMessage(
+            body.message ?? "This Employee Number is already in use.",
+          );
+        }
+      } catch (err: any) {
+        const serverData = err?.response?.data;
+        const body = serverData?.message ?? serverData;
+
+        setEmployeeNumberStatus("taken");
+        setEmployeeNumberMessage(body?.message ?? "Something went wrong.");
+      }
+    }, 500);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.employee_number]);
 
   useEffect(() => {
     if (!isContractBased && formData.contractEndDate) {
@@ -60,7 +175,10 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.department, fetcher: getAllDepartments });
+      const label = await resolveLabel({
+        value: formData.department,
+        fetcher: getAllDepartments,
+      });
       handleInputChange("departmentLabel", label);
     };
     loadLabel();
@@ -68,7 +186,10 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.reports_to, fetcher: getEmployees });
+      const label = await resolveLabel({
+        value: formData.reports_to,
+        fetcher: getEmployees,
+      });
       handleInputChange("reportingToLabel", label);
     };
     loadLabel();
@@ -76,7 +197,10 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.branch, fetcher: getallbranches });
+      const label = await resolveLabel({
+        value: formData.branch,
+        fetcher: getallbranches,
+      });
       handleInputChange("branchLabel", label);
     };
     loadLabel();
@@ -91,7 +215,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-2 min-w-0">
-
       {/* Employment Details */}
       <div className="bg-card p-3 rounded-lg border border-theme">
         <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
@@ -126,12 +249,32 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
         </div>
 
         <div className="grid grid-cols-3 gap-2.5 mt-2.5">
-          <ModalInput
-            label="Employee Number"
-            name="employee_number"
-            value={formData.employee_number}
-            onChange={(e) => handleInputChange("employee_number", e.target.value)}
-          />
+          <div className="flex flex-col gap-1">
+            <ModalInput
+              label="Employee Number"
+              name="employee_number"
+              value={formData.employee_number}
+              onChange={(e) =>
+                handleInputChange("employee_number", e.target.value)
+              }
+            />
+            {employeeNumberStatus === "checking" && (
+              <span className="text-[10px] text-muted">
+                Checking availability…
+              </span>
+            )}
+            {employeeNumberStatus === "available" && (
+              <span className="text-[10px] text-green-600">Available</span>
+            )}
+            {(employeeNumberStatus === "taken" ||
+              employeeNumberStatus === "error") && (
+              <span className="text-[10px] text-red-600">
+                {typeof employeeNumberMessage === "string"
+                  ? employeeNumberMessage
+                  : "This Employee Number is already in use."}
+              </span>
+            )}
+          </div>
           <SearchSelect2
             label="Employee Type"
             value={formData.employment_type}
@@ -143,7 +286,9 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             label="Employment Status"
             name="employmentStatus"
             value={formData.employmentStatus}
-            onChange={(e) => handleInputChange("employmentStatus", e.target.value)}
+            onChange={(e) =>
+              handleInputChange("employmentStatus", e.target.value)
+            }
             options={EMPLOYMENT_STATUS_OPTIONS}
           />
         </div>
@@ -223,7 +368,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
           />
         </div>
       </div>
-
     </div>
   );
 };

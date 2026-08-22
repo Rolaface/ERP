@@ -12,6 +12,7 @@ import type {
   PayrollEmployeeDetail,
 } from "../../../../api/payroll/payrollEntryApi";
 import { InfoTile, DetailRow } from "../payrolldetail/Payrollsharedcomponents";
+import { getGLNameWithoutAbbreviation } from "../../../../api/utils/glAccountUtils";
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,7 @@ export const EmployeeOverviewTab: React.FC<Props> = ({ employee, entry }) => (
       <InfoTile
         icon={<Building2 className="w-4 h-4" />}
         label="Department"
-        value={employee.department}
+        value={getGLNameWithoutAbbreviation(employee.department)}
       />
       <InfoTile
         icon={<FileText className="w-4 h-4" />}
@@ -65,7 +66,7 @@ export const EmployeeOverviewTab: React.FC<Props> = ({ employee, entry }) => (
         <DetailRow
           icon={<Building2 className="w-3 h-3" />}
           label="Department"
-          value={employee.department}
+          value={getGLNameWithoutAbbreviation(employee.department)}
         />
         <DetailRow
           icon={<Building2 className="w-3 h-3" />}

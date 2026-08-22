@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Receipt, User, Mail, Phone } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { File, User, Mail, Phone } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import { showApiError, showSuccess } from "../../utils/alert";
 import {
@@ -7,7 +7,9 @@ import {
   REFRESH_KEYS,
 } from "../../store/dataRefreshStore";
 import { createSalesInvoice, editSalesInvoice } from "../../api/salesApi";
+import { selectPrincipals } from "../../api/customerApi";
 import CustomerSelect from "../selects/CustomerSelect";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import ModalFooter from "../common/ModalFooter";
 import { ModalInput, ToggleSwitch } from "../ui/modal/modalComponent";
@@ -15,14 +17,12 @@ import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
-import { getAllModeOfPayment } from "../../api/BankAccountApi";
 
-import { paymentMethodOptions } from "../../constants/invoice.constants";
-import PaymentInfoBlock from "./PaymentInfoBlock";
 import ItemTable from "../common/ItemTable";
 import type { ModalSubmitHandler } from "../../types/modal";
 import { useDefault } from "../../hooks/usedefaultdata";
 import ModeOfPaymentSelect from "../selects/defaults/Modeofpaymentselect";
+import { useCompanyStore } from "../../store/companyStore";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,21 +46,42 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   mode = "create",
   modalId,
 }) => {
-  const resolvedModalId =
-    modalId ||
-    (mode === "edit" && initialData?.invoiceNumber
-      ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
-      : `invoice-create-${Date.now()}`);
+  const resolvedModalId = useMemo(
+    () =>
+      modalId ||
+      (mode === "edit" && initialData?.invoiceNumber
+        ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
+        : `invoice-create-${Date.now()}`),
+    [modalId, mode, initialData?.invoiceNumber],
+  );
 
   const [submitting, setSubmitting] = useState(false);
-  const [invoiceType, setInvoiceType] = useState<"Product" | "Service">(
-    "Product",
-  );
+
+  const [principalOptions, setPrincipalOptions] = useState<any[]>([]);
+  const [principalsFetched, setPrincipalsFetched] = useState(false);
+
+  const [invoiceType, setInvoiceType] = useState<
+    "Product" | "Service" | "RVAT"
+  >("Product");
   const domain = useDefault("primary_business_domain");
-  console.log("Domain ", domain);
+  const isRvatAgent = useDefault("is_rvat_agent");
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+
+  // RVAT tab sirf tab dikhega jab dono conditions true ho
+  const showRvatOption = !!isZraEnabled && Number(isRvatAgent) === 1;
+
+  const invoiceTypeOptions = [
+    { label: "Product", value: "Product" },
+    { label: "Service", value: "Service" },
+    ...(showRvatOption ? [{ label: "RVAT", value: "RVAT" }] : []),
+  ];
 
   useEffect(() => {
     if (mode === "edit" && initialData?.items?.length > 0) {
+      if (initialData.invoiceType === "RVAT") {
+        setInvoiceType("RVAT");
+        return;
+      }
       // Check if the first item (or any item) is a service
       const isService = initialData.items[0]?.isServiceItem;
       setInvoiceType(isService ? "Service" : "Product");
@@ -70,7 +91,20 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     }
   }, [initialData, mode, isOpen, domain]);
 
-const {
+  useEffect(() => {
+    if (invoiceType === "RVAT" && !showRvatOption) {
+      setInvoiceType("Product");
+    }
+  }, [invoiceType, showRvatOption]);
+
+  useEffect(() => {
+    actions.handleInputChange({
+      target: { name: "invoiceType", value: invoiceType },
+    } as any);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceType]);
+
+  const {
     formData,
     customerDetails,
     customerNameDisplay,
@@ -101,16 +135,61 @@ const {
   ];
 
   useEffect(() => {
-    if (isOpen) ui.setActiveTab("details");
-  }, [isOpen]);
+    if (isOpen && mode === "create" && initialData?.customerName) {
+      actions.handleCustomerSelect({
+        name: initialData.customerName,
+        id: initialData.customerId,
+      });
+    }
+  }, [isOpen, mode, initialData]);
 
-  const showExchangeRate =
+ const showExchangeRate =
     !!ui.baseCurrency &&
     !!formData.currencyCode &&
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
 
+const mapPrincipalsToOptions = (list: any[], query: string) => {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? list.filter((p: any) =>
+          [p.principalNm, p.tpin, p.tin, p.principalEmail, p.accountNo]
+            .filter(Boolean)
+            .some((field: any) => String(field).toLowerCase().includes(q)),
+        )
+      : list;
+    return filtered.map((p: any) => ({
+      value: p.principalNm,
+      label: `${p.principalNm} (${p.tpin})`,
+    }));
+  };
 
+  const fetchPrincipalOptions = async (query: string) => {
+    try {
+      if (!principalsFetched) {
+        const res = await selectPrincipals();
+        const list =
+          res?.data?.taxpayerPrincipalList ??
+          res?.taxpayerPrincipalList ??
+          res?.message?.data?.taxpayerPrincipalList ??
+          [];
+        setPrincipalOptions(list);
+        setPrincipalsFetched(true);
+        return mapPrincipalsToOptions(list, query);
+      }
+      return mapPrincipalsToOptions(principalOptions, query);
+    } catch (error) {
+      showApiError(error);
+      return [];
+    }
+  };
+
+const handlePrincipalSelect = (value: string) => {
+    const selected = principalOptions.find(
+      (p: any) => p.principalNm === value,
+    );
+    if (selected) actions.setPrincipal(selected);
+  };
 
   const handleSubmitForm = async () => {
     if (submitting) return;
@@ -121,6 +200,8 @@ const {
       } as React.FormEvent);
 
       if (!payload) return;
+      payload.updateStock = true;
+      payload.invoiceType = invoiceType;
 
       if (mode === "edit") {
         const invoiceNumber =
@@ -197,8 +278,12 @@ const {
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={mode === "edit" ? "Edit Invoice" : "Add Invoice"}
-      subtitle="Add and manage invoice details"
-      icon={Receipt}
+      subtitle={
+        mode === "edit"
+          ? "Edit and manage invoice details"
+          : "Add and manage invoices"
+      }
+      icon={File}
       footer={footerContent}
       maxWidth="full"
       height="700px"
@@ -240,26 +325,13 @@ const {
             <div className="flex flex-col gap-4">
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
-                {/* Invoice Type  */}
-                {/* <div className="w-full sm:w-[130px]">
-                  <ModalSelect
-                    label="Invoice Type"
-                    name="invoiceType"
-                    value={invoiceType} // Use local state
-                    onChange={(e: any) => setInvoiceType(e.target.value)} // Update local state
-                    options={[
-                      { value: "Product", label: "Product" },
-                      { value: "Service", label: "Service" },
-                    ]}
-                    className="w-full border border-theme rounded text-[11px] text-main bg-card"
-                  />
-                </div> */}
-
                 {/* Customer — full width on mobile, fixed on sm+ */}
                 <div className="w-full sm:w-[280px]">
                   <CustomerSelect
                     value={customerNameDisplay}
+                    selectedId={formData.customerId}
                     onChange={actions.handleCustomerSelect}
+                    onClear={actions.handleCustomerClear}
                     className="w-full"
                   />
                 </div>
@@ -286,7 +358,7 @@ const {
                     name="dueDate"
                     value={formData.dueDate}
                     required
-                    disabled
+                    // disabled
                     onChange={(name, value) =>
                       actions.handleInputChange({
                         target: { name, value },
@@ -323,109 +395,54 @@ const {
                 <div className="w-full sm:w-[200px]">
                   <ModeOfPaymentSelect
                     value={formData.mode ?? ""}
-                    onChange={(val) =>
+                    onChange={(val) => {
                       actions.handleInputChange({
                         target: { name: "mode", value: val },
-                      } as any)
-                    }
+                      } as any);
+                    }}
                     required
                   />
                 </div>
 
-                {/* LPO Number — only when LPO tax category */}
-                {ui.isLocal && (
-                  <div className="w-full sm:w-[120px]">
-                    <ModalInput
-                      label="LPO Number"
-                      name="lpoNumber"
-                      value={formData.lpoNumber}
-                      onChange={actions.handleInputChange}
-                      inputMode="numeric"
-                      pattern="\d{10}"
-                      placeholder="Enter 10 digits"
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
-                  </div>
-                )}
-
-                {/* Invoice Type */}
-                {/* <div className="w-full sm:w-auto flex flex-col justify-end">
-                 <label className="text-[11px] text-muted mb-1">Invoice Type</label>
-                <div className="flex items-center gap-4 border border-theme rounded-md px-4 bg-card h-[27px]">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Product"
-                      checked={invoiceType === "Product"}
-                      onChange={(e: any) => {
-                        setInvoiceType(e.target.value);
-                        actions.handleInputChange({
-                          target: { name: "updateStock", type: "checkbox", checked: true }
-                        } as any);
-                      }}
-                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
-                    />
-                    <span className="text-[10px] text-main whitespace-nowrap">Product</span>
-                  </label>
-                  
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Service"
-                      checked={invoiceType === "Service"}
-                      onChange={(e: any) => {
-                        setInvoiceType(e.target.value);
-                        actions.handleInputChange({
-                          target: { name: "updateStock", type: "checkbox", checked: false }
-                        } as any);
-                      }}
-                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
-                    />
-                    <span className="text-[10px] text-main whitespace-nowrap">Service</span>
-                  </label>
+                {/* PO Number */}
+                <div className="w-full sm:w-[160px]">
+                  <ModalInput
+                    label="PO Number"
+                    name="lpoNumber"
+                    value={formData.lpoNumber}
+                    onChange={actions.handleInputChange}
+                    inputMode="numeric"
+                    pattern="\d{10}"
+                    placeholder="Enter Purchase Order No"
+                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                  />
                 </div>
-              </div> */}
-                {/* Invoice Type */}
+
+                {/* Invoice Type — Product / Service / RVAT */}
                 <ToggleSwitch
                   name="invoiceType"
                   label="Invoice Type"
                   checked={invoiceType === "Service"}
                   onLabel="Service"
                   offLabel="Product"
-                  onChange={(e) => {
-                    const isService = e.target.checked;
-                    setInvoiceType(isService ? "Service" : "Product");
-                    // Service select hote hi updateStock false karo
-                    actions.handleInputChange({
-                      target: {
-                        name: "updateStock",
-                        type: "checkbox",
-                        checked: !isService,
-                      },
-                    } as any);
-                  }}
+                  onChange={() => {}}
+                  options={invoiceTypeOptions}
+                  value={invoiceType}
+                  onValueChange={(val) =>
+                    setInvoiceType(val as "Product" | "Service" | "RVAT")
+                  }
                 />
 
-                {/* Update Stock */}
-                {invoiceType === "Product" && (
-                  <div className="w-full sm:w-auto flex flex-col justify-end">
-                    <label className="text-[11px] text-transparent select-none">
-                      ‎
-                    </label>
-                    <label className="flex items-center gap-2 h-[30px]">
-                      <input
-                        type="checkbox"
-                        name="updateStock"
-                        checked={formData.updateStock ?? true}
-                        onChange={actions.handleInputChange}
-                        className="w-3.5 h-3.5 accent-primary"
-                      />
-                      <span className="text-xs text-main whitespace-nowrap">
-                        Update Stock
-                      </span>
-                    </label>
+                {invoiceType === "RVAT" && (
+                  <div className="w-full sm:w-[240px]">
+                    <SearchSelect2
+                      label="Principal"
+                      value={formData.principal?.principalNm ?? ""}
+                      onChange={handlePrincipalSelect}
+                      fetchOptions={fetchPrincipalOptions}
+                      placeholder="Search principal..."
+                      required
+                    />
                   </div>
                 )}
               </div>
@@ -531,8 +548,8 @@ const {
                         </span>
                       </div>
 
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-muted">Discount</span>
+ <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Item Discount</span>
                         <span className="font-medium text-main tabular-nums">
                           {totals.totalDiscount.toFixed(2)}
                         </span>
@@ -552,10 +569,47 @@ const {
                         </span>
                       </div>
 
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Grand Total</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {(totals.subTotal + totals.totalTax).toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs gap-2">
+                        <span className="text-muted whitespace-nowrap">
+                          Discount %
+                        </span>
+                       <input
+                          type="number"
+                          value={formData.additionalDiscountPercentage ?? ""}
+                          onChange={(e) =>
+                            actions.handleDiscountPercentChange(e.target.value)
+                          }
+                          className="w-16 text-right text-xs bg-transparent border border-theme rounded px-1 py-0.5 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          placeholder="0"
+                        />
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs gap-2">
+                        <span className="text-muted whitespace-nowrap">
+                          Discount Amt
+                        </span>
+                        <input
+                          type="number"
+                          value={formData.discountAmount ?? ""}
+                          onChange={(e) =>
+                            actions.handleDiscountAmountChange(e.target.value)
+                          }
+                          className="w-20 text-right text-xs bg-transparent border border-theme rounded px-1 py-0.5 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          placeholder="0.00"
+                        />
+                      </div>
+
                       <div className="border-t border-theme mt-1 pt-2">
                         <div className="flex justify-between items-center bg-primary rounded-lg px-2 py-1.5">
                           <span className="text-xs font-semibold text-white">
-                            Grand Total
+                            Net Payable
                           </span>
                           <span className="text-xs font-bold text-white tabular-nums">
                             {totals.grandTotal.toFixed(2)}
@@ -572,14 +626,6 @@ const {
           {/* ──────────── ADDITIONAL DETAILS ──────────── */}
           {ui.activeTab === "address" && (
             <div className="space-y-6">
-              <PaymentInfoBlock
-                data={formData.paymentInformation}
-                onChange={(e) =>
-                  actions.handleInputChange(e, "paymentInformation")
-                }
-                paymentMethodOptions={paymentMethodOptions}
-                showPaymentMethod={false}
-              />
               <InvoiceAddressTab
                 customerId={formData.customerId}
                 formData={formData}

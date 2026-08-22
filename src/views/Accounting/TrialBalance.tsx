@@ -514,7 +514,7 @@ const TrialBalance: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 h-full min-h-0">
       <FilterBar
         filters={filters}
         setFilters={setFilters}
@@ -524,8 +524,8 @@ const TrialBalance: React.FC = () => {
         onToggleExpand={handleToggleExpand} 
       />
 
-      <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
-        <div className="overflow-x-auto overflow-y-auto relative max-h-[520px]">
+      <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0 relative custom-scrollbar">
           <table
             className="border-collapse"
             style={{

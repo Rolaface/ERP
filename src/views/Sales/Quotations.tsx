@@ -36,6 +36,7 @@ import {
   getAllQuotation,
   getProformaInvoiceById,
   updateProformaInvoiceStatus,
+  createSiFromQuotation,
 } from "../../api/proformaInvoiceApi";
 
 import { getPdf } from "../../api/PDF/pdfUtilApi";
@@ -44,7 +45,7 @@ import { ACTION_ICONS, getStatusActionIcon } from "../../components/UI_Utils/sta
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
-
+import { useDocumentConversion } from "../../hooks/useDocumentConversion";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 type OutletContextType = {
@@ -53,11 +54,11 @@ type OutletContextType = {
 };
 
 const SORT_FIELD_MAP: Record<string, string> = {
-  quotationNumber: "id",
-  customerName: "customerName",
-  transactionDate: "transactionDate",
-  validTill: "validTill",
-  grandTotal: "grandTotal",
+  quotationNumber: "name",
+  customerName: "customer_name",
+  transactionDate: "transaction_date",
+  validTill: "valid_till",
+  grandTotal: "grand_total",
 };
 
 interface QuotationTableProps {
@@ -88,6 +89,9 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
   const [isFetching] = useState(false);
   const [ ,setCompany] = useState<any>(null);
   const { can } = usePermission();
+const createInvoiceFromQuote = useDocumentConversion("quoteToSi");
+const createOrderFromQuote = useDocumentConversion("quoteToSo");
+const createProformaFromQuote = useDocumentConversion("quoteToProforma");
 
   // ── Pagination state (server)
   const [page, setPage] = useState(1);
@@ -310,8 +314,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
       showLoading("Loading proforma invoice...");
 
       const res = await getProformaInvoiceById(quotationId);
-      console.log("Proforma invoice details response:", res);
-      console.log("Proforma Id", quotationId);
       const statusCode = res?.message?.status_code || res?.status_code;
       const data = res?.message?.data || res?.data;
 
@@ -335,8 +337,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
 
     try {
       const blob = await getPdf(quotationId, "Quotation");
-      console.log("PDF blob response for drawer:", blob);
-      console.log("Proforma Id", quotationId);
       setDrawerPdfBlob(blob);
       const blobUrl = URL.createObjectURL(blob);
       setDrawerPdfUrl(blobUrl);
@@ -422,6 +422,19 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
     }
   };
 
+const handleCreateInvoice = (quotationNumber: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  return createInvoiceFromQuote(quotationNumber);
+};
+const handleCreateOrder = (quotationNumber: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  return createOrderFromQuote(quotationNumber);
+};
+const handleCreateProforma = (quotationNumber: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  return createProformaFromQuote(quotationNumber);
+};
+
   const fetchAllForExport = async (): Promise<QuotationSummary[]> => {
     let allData: QuotationSummary[] = [];
     let current = 1;
@@ -437,7 +450,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
       );
 
       if (res?.status_code === 200) {
-        const raw = res.data?.quotations || [];
+        const raw = res.data || [];
         allData = [
           ...allData,
           ...raw.map((q: any) => ({
@@ -449,7 +462,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
             currency: q.currency,
           })),
         ];
-        total = res.data?.pagination?.totalPages || 1;
+        total = res.data?.pagination?.total_Pages || 1;
       }
 
       current++;
@@ -505,8 +518,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
     setDetailData(null);
     try {
       const res = await getProformaInvoiceById(quotationId);
-      console.log("Proforma invoice details response for drawer view:", res);
-      console.log("Quotation Id ", quotationId);
 
       const statusCode = res?.message?.status_code || res?.status_code;
       const data = res?.message?.data || res?.data;
@@ -675,6 +686,33 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
       icon: ACTION_ICONS.PDF,
       onClick: () => handlePreviewQuotationPDF(q.quotationNumber),
     },
+    ...(q.status !== "Draft" && q.status !== "Cancelled"
+  ? [
+      {
+        label: "Create Sales Invoice",
+        icon: ACTION_ICONS.SALES_INVOICE ,
+        onClick: () => handleCreateInvoice(q.quotationNumber),
+      },
+    ]
+  : []),
+  ...(q.status !== "Draft" && q.status !== "Cancelled"
+  ? [
+      {
+        label: "Create Sales Order",
+        icon: ACTION_ICONS.SALES_ORDER,
+        onClick: () => handleCreateOrder(q.quotationNumber),
+      },
+    ]
+  : []),
+  ...(q.status !== "Draft" && q.status !== "Cancelled"
+  ? [
+      {
+        label: "Create Proforma Invoice",
+        icon: ACTION_ICONS.PROFORMA_INVOICE ,
+        onClick: () => handleCreateProforma(q.quotationNumber),
+      },
+    ]
+  : []),
    ...(STATUS_TRANSITIONS[q.status as keyof typeof STATUS_TRANSITIONS] ?? [])
       .filter((status) => status !== "Draft") 
       .map((status) => ({

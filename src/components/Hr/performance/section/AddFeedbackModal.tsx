@@ -74,7 +74,7 @@ export default function AddFeedbackModal({
         isViewMode
           ? "View employee feedback criteria"
           : selectedFeedback
-            ? "Update employee feedback criteria"
+            ? "Edit employee feedback criteria"
             : "Add employee feedback criteria"
       }
       icon={MessageCircle}

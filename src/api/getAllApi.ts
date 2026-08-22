@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
+import { getGLNameWithoutAbbreviation } from "./utils/glAccountUtils";
 
 const api = createAxiosInstance(ERP_BASE);
 export const getAllApi = API.Get.getAll;
@@ -32,7 +33,7 @@ async function searchErpLink(
   });
   return (resp.data?.message ?? []).map((item) => ({
     value: item.value,
-    label: item.value,
+    label: getGLNameWithoutAbbreviation(item.value),
   }));
 }
 

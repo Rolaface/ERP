@@ -16,6 +16,7 @@ import {
 import DatePickerInput from "../calendar/DatePickerInput";
 import CostCenterSelect from "../selects/CostCenterSelect";
 import ProjectSelect from "../selects/ProjectSelect";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
 interface PaymentDetailsTabProps {
   form: Record<string, any>;
@@ -34,6 +35,8 @@ interface PaymentDetailsTabProps {
 }
 
 const PARTY_FILLED_FIELDS = {
+    partyId: "",         
+
   partyName: "",
   glFrom: "",
   glTo: "",
@@ -317,6 +320,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   const handlePartyNameSelect = useCallback(
     async (_: string, option: PartyOption | null) => {
+       const requestId = ++requestRef.current;
 
       if (!option?.value) {
         onFormChange({
@@ -345,6 +349,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         fetchCompanyBanks(),
         fetchPartyBanks(partyType, option.value),
       ]);
+          if (requestId !== requestRef.current) return;  
+
 
       if (!details) return;
 
@@ -844,14 +850,14 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                   <ModalInput
                     label="Account (GL)"
                     name="glFrom"
-                    value={form.glFromDisplay ?? form.glFrom ?? ""}
+                    value={getGLNameWithoutAbbreviation(form.glFromDisplay ?? form.glFrom ?? "")}
                     onChange={() => { }}
                     disabled
                   />
                 ) : (
                   <SearchSelect2
                     label="Account (GL)"
-                    value={form.glFromDisplay ?? form.glFrom ?? ""}
+                    value={getGLNameWithoutAbbreviation(form.glFromDisplay ?? form.glFrom ?? "")}
                     onChange={handleGlFromChange}
                     fetchOptions={handleGlFromFetchOptions}
                   />
@@ -886,14 +892,14 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                   <ModalInput
                     label="Account (GL)"
                     name="glTo"
-                    value={form.glToDisplay ?? form.glTo ?? ""}
+                   value={getGLNameWithoutAbbreviation(form.glToDisplay ?? form.glTo ?? "")}
                     onChange={() => { }}
                     disabled
                   />
                 ) : (
                   <SearchSelect2
                     label="Account (GL)"
-                    value={form.glToDisplay ?? form.glTo ?? ""}
+                   value={getGLNameWithoutAbbreviation(form.glToDisplay ?? form.glTo ?? "")}
                     onChange={handleGlToChange}
                     fetchOptions={handleGlToFetchOptions}
                   />

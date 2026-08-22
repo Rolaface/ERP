@@ -4,6 +4,7 @@ import { getCompanyById } from "../api/companySetupApi";
 import type { TermSection } from "../types/termsAndCondition";
 import type { Invoice, InvoiceItem } from "../types/invoice";
 import { getRolaCountryList } from "../api/lookupApi";
+import { useCompanyStore } from "../store/companyStore";
 
 import { getExchangeRate } from "../api/currencyExchangeApi";
 import { getStockReport } from "../api/stockApi";
@@ -102,7 +103,7 @@ export function buildInvoicePayload(
     postingDate: formData.dateOfInvoice,
     dueDate: formData.dueDate,
     tax_category: formData.taxCategory,
-    updateStock: formData.updateStock ?? true,
+    updateStock: true,
     paymentMode: formData.mode,
     billingAddress: formData.billingAddress ?? "",
     shippingAddress: formData.shippingAddress ?? "",
@@ -119,9 +120,16 @@ export function buildInvoicePayload(
     subTotal: totals.subTotal,
     totalTax: totals.totalTax,
     grandTotal: totals.grandTotal,
+    additional_discount_percentage:
+      Number(formData.additionalDiscountPercentage) || 0,
+    discount_amount: Number(formData.discountAmount) || 0,
     addresses: formData.addresses,
     taxes: mappedTaxes,
     salesTaxTemplate: formData.salesTaxTemplate ?? "",
+    invoiceType: formData.invoiceType ?? "",
+    ...(formData.invoiceType === "RVAT" && formData.principal
+      ? { principal: formData.principal }
+      : {}),
   };
 }
 
@@ -134,6 +142,7 @@ export const useInvoiceForm = (
   mode?: "invoice" | "proforma" | "edit",
   initialData?: any,
 ) => {
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
   const [formData, setFormData] = useState<Invoice>({
     ...DEFAULT_INVOICE_FORM,
     terms: { ...EMPTY_TERMS },
@@ -141,6 +150,7 @@ export const useInvoiceForm = (
     addresses: {},
     taxes: [],
     salesTaxTemplate: "",
+    principal: null,
   });
 
   // Set today's date on open
@@ -200,11 +210,11 @@ export const useInvoiceForm = (
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
   const customerTaxCategoryRef = useRef<string>("");
-  // Frappe only deducts stock on submit (docstatus 1). A draft invoice's
-  // saved item quantities have never touched the stock ledger, so the
-  // quantity-cap math below needs to know which case it's in.
+
+  const customerSelectTokenRef = useRef(0);
+
   const invoiceDocstatusRef = useRef<number>(0);
-  const enableExchange = mode === "invoice";
+  const enableExchange = mode === "invoice" || mode === "edit";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
@@ -227,20 +237,12 @@ export const useInvoiceForm = (
     }
   }, [isOpen, initialData, mode]);
 
-  // Re-sync line items with LIVE stock right after loading an existing invoice
-  // for edit. Read taxCategory from initialData directly — not from formData —
-  // to avoid a stale-closure race where formData.taxCategory hasn't settled yet
-  // when this effect fires.
-  //
-  // FIX #2: use initialData?.tax_category instead of formData.taxCategory
   useEffect(() => {
     if (!isOpen || mode !== "edit" || !initialData?.id) return;
     if (!formData.items.length) return;
 
     let cancelled = false;
 
-    // Read taxCategory from the raw server payload, not from React state,
-    // to avoid a race where formData hasn't finished updating yet.
     const taxCategoryForFetch = initialData?.tax_category ?? "";
 
     (async () => {
@@ -298,8 +300,6 @@ export const useInvoiceForm = (
     return () => {
       cancelled = true;
     };
-    // Intentionally NOT depending on formData.items — fires once per edit-load.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, mode, initialData?.id]);
 
   useEffect(() => {
@@ -418,9 +418,6 @@ export const useInvoiceForm = (
     if (!meaningfulItems.length) {
       throw new Error("Please add at least one item");
     }
-    if (!formData.paymentInformation?.paymentMethod) {
-      throw new Error("Please select a payment method");
-    }
 
     formData.items.forEach((it, idx) => {
       if (isRowEmpty(it)) return; // never touched — nothing to validate
@@ -453,15 +450,6 @@ export const useInvoiceForm = (
     section?: NestedSection,
   ) => {
     const { name, value } = e.target;
-
-    if (name === "updateStock") {
-      setFormData((prev) => ({
-        ...prev,
-        updateStock: (e.target as HTMLInputElement).checked,
-      }));
-      markDirty();
-      return;
-    }
 
     if (section) {
       setFormData((prev) => ({
@@ -518,6 +506,26 @@ export const useInvoiceForm = (
     return "";
   };
 
+  const handleCustomerClear = () => {
+    customerSelectTokenRef.current += 1;
+    customerTaxCategoryRef.current = "";
+
+    setCustomerDetails(null);
+    setCustomerNameDisplay("");
+
+    setFormData((prev) => ({
+      ...prev,
+      customerId: "",
+      taxCategory: "",
+      destnCountryCd: "",
+      billingAddress: "",
+      shippingAddress: sameAsBilling ? "" : prev.shippingAddress,
+      paymentInformation: DEFAULT_INVOICE_FORM.paymentInformation,
+      terms: { selling: EMPTY_TERMS.selling },
+    }));
+    markDirty();
+  };
+
   const handleCustomerSelect = async ({
     name,
     id,
@@ -525,11 +533,15 @@ export const useInvoiceForm = (
     name: string;
     id: string;
   }) => {
+    if (!id) {
+      handleCustomerClear();
+      return;
+    }
+
+    const token = ++customerSelectTokenRef.current;
+
     setCustomerNameDisplay(name);
 
-    // FIX #4: was two separate setFormData calls (one redundant, one real).
-    // Merged into a single call to avoid the redundant render and stale-closure
-    // race between the two setState calls.
     setFormData((p) => ({
       ...p,
       customerId: id,
@@ -543,6 +555,9 @@ export const useInvoiceForm = (
         getCompanyById(COMPANY_ID),
       ]);
 
+      // A newer select (or a clear) happened while this was in flight — drop it.
+      if (token !== customerSelectTokenRef.current) return;
+
       if (!customerRes || customerRes?.message?.status_code !== 200) return;
       const data = customerRes?.message?.data;
       const company = companyRes?.data;
@@ -554,6 +569,8 @@ export const useInvoiceForm = (
       }));
 
       const countryLookupList = await getRolaCountryList();
+      if (token !== customerSelectTokenRef.current) return;
+
       const formattedCountries = countryLookupList.map((c: any) => ({
         code: c.code || c.name,
         name: c.country_name || c.name,
@@ -583,6 +600,8 @@ export const useInvoiceForm = (
         swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       };
 
+      if (token !== customerSelectTokenRef.current) return;
+
       setFormData((prev) => {
         const billingId = billingAddressObj?.id || "";
         const shippingId = sameAsBilling
@@ -607,6 +626,7 @@ export const useInvoiceForm = (
         };
       });
     } catch (err: any) {
+      if (token !== customerSelectTokenRef.current) return;
       showApiError("Failed to load customer details");
     }
   };
@@ -645,15 +665,8 @@ export const useInvoiceForm = (
           let maxAllowed: number;
 
           if (isSubmitted) {
-            // Frappe already deducted ALL rows on submit.
-            // liveStock = total remaining after every row was consumed.
-            // Add back only THIS row's original allocation — its personal ceiling.
-            // Other rows' originals are already baked into liveStock.
             maxAllowed = liveStock + thisRowOriginal;
           } else {
-            // Draft: stock ledger is untouched. liveStock is the full shared pool.
-            // Only subtract other rows when they share the SAME real batch.
-            // Non-batched rows each carry their own availableQty from the picker.
             const usedByOthers = hasBatch
               ? items
                   .filter(
@@ -775,6 +788,39 @@ export const useInvoiceForm = (
     });
     markDirty();
   };
+
+  const handleDiscountPercentChange = (value: string) => {
+    setFormData((prev) => {
+      const pct = value === "" ? null : Number(value);
+      const grandTotalBase = subTotal + totalTax;
+      const amount =
+        pct != null && Number.isFinite(pct) ? (grandTotalBase * pct) / 100 : 0;
+      return {
+        ...prev,
+        additionalDiscountPercentage: value,
+        discountAmount: amount ? amount.toFixed(2) : "",
+      };
+    });
+    markDirty();
+  };
+
+  const handleDiscountAmountChange = (value: string) => {
+    setFormData((prev) => {
+      const amt = value === "" ? null : Number(value);
+      const grandTotalBase = subTotal + totalTax;
+      const pct =
+        amt != null && Number.isFinite(amt) && grandTotalBase > 0
+          ? (amt / grandTotalBase) * 100
+          : 0;
+      return {
+        ...prev,
+        discountAmount: value,
+        additionalDiscountPercentage: pct ? pct.toFixed(2) : "",
+      };
+    });
+    markDirty();
+  };
+
   const getItemMax = (idx: number): number | undefined => {
     const item = formData.items[idx];
     if (!item || !item._stockLoaded || item.isServiceItem) return undefined;
@@ -917,9 +963,25 @@ export const useInvoiceForm = (
 
   // ─── Load invoice for edit ───────────────────────────────────────────────────
 
+  const parsePrincipal = (raw: any): any => {
+    if (!raw) return null;
+    if (typeof raw === "object") return raw;
+    try {
+      let parsed = JSON.parse(raw);
+      if (typeof parsed === "string") {
+        parsed = JSON.parse(parsed);
+      }
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
+
   const setFormDataFromInvoice = (invoice: any) => {
     isLoadingRef.current = true;
     invoiceDocstatusRef.current = Number(invoice.docstatus ?? 0);
+    // Loading a fresh invoice for edit supersedes any in-flight customer fetch.
+    customerSelectTokenRef.current += 1;
 
     // charges[] from GET response map to taxes[] in formData
     // (taxes[] in GET is always empty; actual applied charges are in charges[])
@@ -945,8 +1007,16 @@ export const useInvoiceForm = (
     setFormData((prev: any) => ({
       ...prev,
       invoiceNumber: invoice.id ?? invoice.invoiceNumber,
+      lpoNumber: invoice.lpoNumber ?? invoice.poNumber ?? prev.lpoNumber,
       customerId: invoice.customerId ?? prev.customerId,
       invoiceType: invoice.invoiceType ?? "",
+      principal: parsePrincipal(invoice.principal),
+      additionalDiscountPercentage:
+        invoice.additional_discount_percentage != null
+          ? String(invoice.additional_discount_percentage)
+          : "",
+      discountAmount:
+        invoice.discount_amount != null ? String(invoice.discount_amount) : "",
       taxCategory: invoice.tax_category ?? prev.taxCategory,
       mode: invoice.paymentMode ?? prev.mode ?? "",
       currencyCode: invoice.currency,
@@ -957,7 +1027,6 @@ export const useInvoiceForm = (
           : "1",
       dueDate: invoice.dueDate,
       destnCountryCd: invoice.destnCountryCd ?? "",
-      updateStock: invoice.updateStock ?? true,
       warehouse: invoice.warehouse ?? prev.warehouse ?? "",
       billingAddress:
         invoice.customerAddressId ??
@@ -1016,6 +1085,10 @@ export const useInvoiceForm = (
           .flatMap((tax: any) => tax.taxRates || [])
           .map((r: any) => r.tax_type)
           .filter((t: string) => t && t.trim() !== "");
+        const taxTitles = (it.taxInfo || [])
+          .map((tax: any) => tax.taxTitle)
+          .filter((t: string) => t && t.trim() !== "");
+
         return {
           itemCode: it.itemCode,
           itemName: it.itemName ?? "",
@@ -1026,6 +1099,8 @@ export const useInvoiceForm = (
           vatRate: it.taxInfo?.[0]?.totalTaxRate ?? taxRate,
           vatCode: it.itemTaxTemplate ?? it.vatCode ?? "",
           taxTypes,
+          taxTitles,
+          uom: it.uom ?? "",
           packingUnit: it.packingUnit ?? "",
           packingSize: it.packingSize ?? "",
           batchNo: it.batchNo ?? "",
@@ -1058,6 +1133,11 @@ export const useInvoiceForm = (
     markDirty();
   };
 
+  const setPrincipal = (principal: any) => {
+    setFormData((prev: any) => ({ ...prev, principal }));
+    markDirty();
+  };
+
   const handleSameAsBillingChange = (checked: boolean) => {
     setSameAsBilling(checked);
     if (!checked) shippingEditedRef.current = false;
@@ -1065,6 +1145,7 @@ export const useInvoiceForm = (
   };
 
   const handleReset = async () => {
+    customerSelectTokenRef.current += 1;
     if (initialData) {
       setFormDataFromInvoice(initialData);
     } else {
@@ -1079,11 +1160,13 @@ export const useInvoiceForm = (
           ...DEFAULT_INVOICE_FORM,
           invoiceCharges: [],
           salesTaxTemplate: "",
+          principal: null,
+          additionalDiscountPercentage: "",
+          discountAmount: "",
           dateOfInvoice: today,
           dueDate,
           exchangeRt: "1",
           warehouse: "",
-          updateStock: true,
           terms: { selling: company?.terms?.selling ?? EMPTY_TERMS.selling },
           paymentInformation: {
             ...DEFAULT_INVOICE_FORM.paymentInformation,
@@ -1157,7 +1240,15 @@ export const useInvoiceForm = (
       const lineGross = qty * price;
       const lineDiscount = lineGross * (discount / 100);
       const lineNet = lineGross - lineDiscount;
-      const lineTax = lineNet * (vatRate / 100);
+
+      let lineTax = lineNet * (vatRate / 100);
+      if (isZraEnabled && Number(item.is_mtv_item) === 1) {
+        const rrpRate = Number(item.rrp_rate || 0);
+        const inclusiveAmount = lineNet + lineTax;
+        if (rrpRate > 0 && inclusiveAmount < rrpRate * qty) {
+          lineTax = rrpRate * qty * (vatRate / 100);
+        }
+      }
 
       qty_sum += qty;
       gross += lineGross;
@@ -1166,15 +1257,17 @@ export const useInvoiceForm = (
       tax += lineTax;
     });
 
+    const additionalDiscount = Number(formData.discountAmount || 0);
+
     return {
       totalQuantity: qty_sum,
       totalAmount: gross,
       totalDiscount: disc_sum,
       subTotal: sub,
       totalTax: tax,
-      grandTotal: sub + tax,
+      grandTotal: sub + tax - additionalDiscount,
     };
-  }, [formData.items]);
+  }, [formData.items, isZraEnabled, formData.discountAmount]);
 
   const paginatedItems = formData.items.slice(
     page * ITEMS_PER_PAGE,
@@ -1232,12 +1325,14 @@ export const useInvoiceForm = (
       validateForm,
       handleInputChange,
       handleCustomerSelect,
+      handleCustomerClear,
       handleItemChange,
       updateItemDirectly,
       addItem,
       removeItem,
       duplicateItem,
       setTerms,
+      setPrincipal,
       handleSameAsBillingChange,
       handleReset,
       handleSubmit,
@@ -1248,6 +1343,8 @@ export const useInvoiceForm = (
       handleTemplateSelect,
       getItemMax,
       handleTaxChange,
+      handleDiscountPercentChange,
+      handleDiscountAmountChange,
     },
     markDirty,
     resetDirty,

@@ -21,6 +21,29 @@ export async function createNewBankAccount(payload: any) {
 
   return resp.data;
 }
+
+export async function updateBankAccount(id: string, payload: any) {
+  try {
+    const resp: AxiosResponse = await api.put(
+      `${Account.updateBankaccount}?id=${id}`,
+      payload
+    );
+
+    const data = resp?.data;
+
+    if (data?.status_code !== 200) {
+      throw new Error(data?.message || "Failed to update bank account");
+    }
+
+    return data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error.message ||
+      "Something went wrong"
+    );
+  }
+}
 export async function updateModeOfPayment(payload: {
   name: string;
   type: string;
@@ -477,10 +500,7 @@ export async function getBankAccountOptions(filters: {
   party?: string;
   search?: string;
 }): Promise<BankAccountOption[]> {
-  console.log("API PARAM:", {
-    party_type: filters.party_type,
-    party: filters.party,
-  });
+  
   try {
     const params = new URLSearchParams();
     if (filters.company) params.append("company", "true");
@@ -793,5 +813,42 @@ export async function getTaxAccounts(
     }));
   } catch {
     return [];
+  }
+}
+export async function cancelPaymentEntry(payload: {
+  payment_entry_name: string;
+}) {
+  try {
+    const resp: AxiosResponse = await api.post(
+      Account.cancelPaymentEntry,
+      payload
+    );
+
+    const data = resp?.data;
+    const result = data?.message;
+
+    const failedCount = result?.failed_count ?? result?.failed?.length ?? 0;
+    const successCount = result?.success_count ?? result?.success?.length ?? 0;
+
+    if (failedCount > 0 || successCount === 0) {
+      const failReason =
+        result?.failed?.[0]?.reason ||
+        result?.failed?.[0]?.error ||
+        "Failed to cancel payment entry";
+      throw new Error(failReason);
+    }
+
+    return data;
+  } catch (error: any) {
+    const rawMsg = error?.response?.data?.message;
+    const msg =
+      typeof rawMsg === "string"
+        ? rawMsg
+        : typeof rawMsg?.message === "string"
+        ? rawMsg.message
+        : typeof error?.message === "string"
+        ? error.message
+        : "Something went wrong";
+    throw new Error(msg);
   }
 }

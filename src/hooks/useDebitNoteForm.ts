@@ -1,6 +1,9 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useCompanyStore } from "../store/companyStore";
-import { getPurchaseInvoices, getPurchaseInvoiceById } from "../api/procurement/PurchaseInvoiceApi";
+import {
+  getPurchaseInvoices,
+  getPurchaseInvoiceById,
+} from "../api/procurement/PurchaseInvoiceApi";
 import { createDebitNote, updateDebitNote } from "../api/DebitNoteapi";
 import { showApiError, showSuccess } from "../utils/alert";
 import { useUnsavedChanges } from "./useUnsavedChanges";
@@ -18,8 +21,8 @@ export interface PurchaseInvoiceOption {
 export interface DebitNoteItem {
   item_code: string;
   item_name: string;
-qty: number | null;
-rate: number | null;
+  qty: number | null;
+  rate: number | null;
   batch_no: string;
   warehouse: string;
 }
@@ -32,17 +35,19 @@ export interface SupplierMeta {
 export interface DebitNoteFormState {
   return_against: string;
   supplier: SupplierMeta | null;
-  update_stock: boolean;
+
   items: DebitNoteItem[];
   exchange_rate: number;
+  currency: string;
 }
 
 const EMPTY_FORM: DebitNoteFormState = {
   return_against: "",
   supplier: null,
-  update_stock: true,
+
   items: [],
-  exchange_rate: 1, 
+  exchange_rate: 1,
+  currency: "",
 };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -58,61 +63,63 @@ export function useDebitNoteForm(
   const [form, setForm] = useState<DebitNoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const invoiceSelectTokenRef = useRef(0);
 
   // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
-// useEffect(() => {
-//     if (!initialData) return;
-//     setForm({
-//       return_against: initialData.return_against || "",
-//       supplier: {
-//         id: initialData.supplier || "",
-//         name: initialData.supplier || "",
-//       },
-//       update_stock: !!initialData.update_stock,
-//       items: (initialData.items || []).map((it: any) => ({
-//         item_code: it.item_code,
-//         item_name: it.item_name,
-//         qty: Number(it.qty),
-//         rate: Number(it.rate),
-//         batch_no: it.batch_no || "",
-//         warehouse: it.warehouse || "",
-//       })),
-//       exchange_rate: Number(initialData.exchange_rate) || 1,  
-//     });
-//   }, [initialData]);
-useEffect(() => {
+  // useEffect(() => {
+  //     if (!initialData) return;
+  //     setForm({
+  //       return_against: initialData.return_against || "",
+  //       supplier: {
+  //         id: initialData.supplier || "",
+  //         name: initialData.supplier || "",
+  //       },
+  //       update_stock: !!initialData.update_stock,
+  //       items: (initialData.items || []).map((it: any) => ({
+  //         item_code: it.item_code,
+  //         item_name: it.item_name,
+  //         qty: Number(it.qty),
+  //         rate: Number(it.rate),
+  //         batch_no: it.batch_no || "",
+  //         warehouse: it.warehouse || "",
+  //       })),
+  //       exchange_rate: Number(initialData.exchange_rate) || 1,
+  //     });
+  //   }, [initialData]);
+  useEffect(() => {
     if (!initialData) return;
-    
+
     setForm({
       // Maps piId or return_against
       return_against: initialData.return_against || initialData.piId || "",
-      
+
       // Maps supplierId/supplierName
       supplier: {
         id: initialData.supplierId || initialData.supplier || "",
-        name: initialData.supplierName || initialData.supplier_name || initialData.supplier || "",
+        name:
+          initialData.supplierName ||
+          initialData.supplier_name ||
+          initialData.supplier ||
+          "",
       },
-      
-      // Maps updateStock (handles 1/0 or true/false)
-      update_stock: initialData.updateStock !== undefined 
-        ? !!initialData.updateStock 
-        : !!initialData.update_stock,
-        
+
       // Maps item array with camelCase fallbacks
       items: (initialData.items || []).map((it: any) => ({
         item_code: it.itemCode || it.item_code || "",
         item_name: it.itemName || it.item_name || "",
         // Keeps the quantity negative if it comes as negative from the API
-        qty: Number(it.quantity ?? it.qty ?? 0), 
+        qty: Number(it.quantity ?? it.qty ?? 0),
         rate: Number(it.rate ?? 0),
         batch_no: it.batchNo || it.batch_no || "",
         warehouse: it.warehouse || "",
       })),
-      
+
       // Maps exchangeRate
-      exchange_rate: Number(initialData.exchangeRate ?? initialData.exchange_rate) || 1,  
+      exchange_rate:
+        Number(initialData.exchangeRate ?? initialData.exchange_rate) || 1,
+      currency: initialData.currency || initialData.currency_code || "",
     });
   }, [initialData]);
 
@@ -137,69 +144,101 @@ useEffect(() => {
 
   // ── Invoice select → fetch full details & populate form ─────────────────
 
-const handleInvoiceSelect = useCallback(async (opt: PurchaseInvoiceOption) => {
-    setForm((prev) => ({
-      ...prev,
-      return_against: opt.value,
-      supplier: { id: opt.supplierId, name: opt.supplierName },
-      items: [],
-      exchange_rate: 1,  
-    }));
-    markDirty();
-
-    setInvoiceLoading(true);
-    try {
-      const res = await getPurchaseInvoiceById(opt.value);
-      const data = res?.data ?? res?.message?.data;
-      if (!data) return;
-
-      const mappedItems: DebitNoteItem[] = (data.items ?? []).map(
-        (it: any): DebitNoteItem => ({
-          item_code: it.itemCode ?? "",
-          item_name: it.itemName ?? it.itemCode ?? "",
-          qty: -(Math.abs(Number(it.quantity) || 1)),
-          rate: Number(it.rate) || 0,
-          batch_no: it.batchNo ?? "",
-          warehouse: it.warehouse ?? "",
-        }),
-      );
+  const handleInvoiceSelect = useCallback(
+    async (opt: PurchaseInvoiceOption) => {
+      const requestToken = ++invoiceSelectTokenRef.current;
 
       setForm((prev) => ({
         ...prev,
-        supplier: {
-          id: data.supplierId ?? opt.supplierId,
-          name: data.supplierName ?? opt.supplierName,
-        },
-        items: mappedItems,
-        exchange_rate: Number(data.exchangeRate) || 1,  
+        return_against: opt.value,
+        supplier: { id: opt.supplierId, name: opt.supplierName },
+        items: [],
+        exchange_rate: 1,
       }));
-    } catch (err) {
-      console.error("Failed to load invoice details", err);
-      showApiError("Failed to load invoice details");
-    } finally {
-      setInvoiceLoading(false);
-    }
+      markDirty();
+
+      setInvoiceLoading(true);
+      try {
+        const res = await getPurchaseInvoiceById(opt.value);
+
+        if (requestToken !== invoiceSelectTokenRef.current) return;
+
+        const data = res?.data ?? res?.message?.data;
+        if (!data) return;
+
+        const mappedItems: DebitNoteItem[] = (data.items ?? []).map(
+          (it: any): DebitNoteItem => ({
+            item_code: it.itemCode ?? "",
+            item_name: it.itemName ?? it.itemCode ?? "",
+            qty: -Math.abs(Number(it.quantity) || 1),
+            rate: Number(it.rate) || 0,
+            batch_no: it.batchNo ?? "",
+            warehouse: it.warehouse ?? "",
+          }),
+        );
+
+        if (requestToken !== invoiceSelectTokenRef.current) return;
+
+        setForm((prev) => ({
+          ...prev,
+          supplier: {
+            id: data.supplierId ?? opt.supplierId,
+            name: data.supplierName ?? opt.supplierName,
+          },
+          items: mappedItems,
+          exchange_rate: Number(data.exchangeRate) || 1,
+          currency: data.currency,
+        }));
+      } catch (err) {
+        console.error("Failed to load invoice details", err);
+        showApiError("Failed to load invoice details");
+      } finally {
+        if (requestToken === invoiceSelectTokenRef.current) {
+          setInvoiceLoading(false);
+        }
+      }
+    },
+    [markDirty],
+  );
+
+  // ── Invoice clear ────────────────────────────────────────────────────────
+
+  const handleInvoiceClear = useCallback(() => {
+    // Invalidate any in-flight invoice-detail fetch so its response
+    // can't repopulate the form after this clear.
+    invoiceSelectTokenRef.current++;
+
+    setForm((prev) => ({
+      ...prev,
+      return_against: "",
+      supplier: null,
+      items: [],
+      exchange_rate: 1,
+      currency: "",
+    }));
+    setInvoiceLoading(false);
+    markDirty();
   }, [markDirty]);
 
   // ── Item mutations ───────────────────────────────────────────────────────
 
   const handleItemChange = useCallback(
     (
-  index: number,
-  field: keyof DebitNoteItem,
-  value: string | number | null,
-) => {
+      index: number,
+      field: keyof DebitNoteItem,
+      value: string | number | null,
+    ) => {
       setForm((prev) => {
         const items = [...prev.items];
         items[index] = {
-  ...items[index],
-  [field]:
-    value === null
-      ? null
-      : field === "qty" || field === "rate"
-       ? Number(value)
-        : value,
-};
+          ...items[index],
+          [field]:
+            value === null
+              ? null
+              : field === "qty" || field === "rate"
+                ? Number(value)
+                : value,
+        };
         return { ...prev, items };
       });
       markDirty();
@@ -220,22 +259,20 @@ const handleInvoiceSelect = useCallback(async (opt: PurchaseInvoiceOption) => {
     [],
   );
 
-  const removeItem = useCallback((index: number) => {
-    setForm((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
-    markDirty();
-  }, [markDirty]);
-
-  const toggleUpdateStock = useCallback(() => {
-    setForm((prev) => ({ ...prev, update_stock: !prev.update_stock }));
-    markDirty();
-  }, [markDirty]);
+  const removeItem = useCallback(
+    (index: number) => {
+      setForm((prev) => ({
+        ...prev,
+        items: prev.items.filter((_, i) => i !== index),
+      }));
+      markDirty();
+    },
+    [markDirty],
+  );
 
   // ── Reset ────────────────────────────────────────────────────────────────
 
-const reset = useCallback(() => {
+  const reset = useCallback(() => {
     setForm(EMPTY_FORM);
     resetDirty();
   }, [resetDirty]);
@@ -267,13 +304,14 @@ const reset = useCallback(() => {
         return;
       }
 
-const payload = {
+      const payload = {
         is_return: 1 as const,
         return_against: form.return_against,
         supplier: form.supplier!.id,
         company: companyName,
-        update_stock: form.update_stock ? (1 as const) : (0 as const),
-        conversion_rate: form.exchange_rate,  
+        update_stock: 1 as const,
+        conversion_rate: form.exchange_rate,
+        currency: form.currency,
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),
@@ -283,14 +321,15 @@ const payload = {
         })),
       };
 
-     setSaving(true);
+      setSaving(true);
       try {
         // Fallback through the possible ID keys (name, piId, or id)
         const docId = initialData?.name || initialData?.piId || initialData?.id;
 
-        const res = isEdit && docId
-          ? await updateDebitNote(docId, payload)
-          : await createDebitNote(payload);
+        const res =
+          isEdit && docId
+            ? await updateDebitNote(docId, payload)
+            : await createDebitNote(payload);
 
         if (!res || ![200, 201].includes(res.status_code)) {
           showApiError(res?.message ?? "Debit note operation failed");
@@ -303,7 +342,10 @@ const payload = {
             msgs.forEach((raw) => {
               try {
                 const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-                console.warn("[DebitNote server message]", parsed?.message ?? parsed);
+                console.warn(
+                  "[DebitNote server message]",
+                  parsed?.message ?? parsed,
+                );
               } catch {
                 console.warn("[DebitNote server message]", raw);
               }
@@ -314,10 +356,12 @@ const payload = {
         }
 
         showSuccess(res.message);
-        resetDirty(); 
+        resetDirty();
         onSuccess?.(res.data);
         onClose?.();
-        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.DEBIT_NOTE_LIST);
+        useDataRefreshStore
+          .getState()
+          .triggerRefresh(REFRESH_KEYS.DEBIT_NOTE_LIST);
       } catch (err: any) {
         console.error("Debit note operation failed", err);
         showApiError(err?.message ?? err);
@@ -325,15 +369,26 @@ const payload = {
         setSaving(false);
       }
     },
-    [saving, validate, form, companyName, onSuccess, onClose, isEdit, initialData, resetDirty],
+    [
+      saving,
+      validate,
+      form,
+      companyName,
+      onSuccess,
+      onClose,
+      isEdit,
+      initialData,
+      resetDirty,
+    ],
   );
 
   // ── Derived ──────────────────────────────────────────────────────────────
 
-  const grandTotal = form.items.reduce(
-    (sum, it) => sum + Math.abs(it.qty) * it.rate,
-    0,
-  );
+  const grandTotal = form.items.reduce((sum, it) => {
+    const qty = Math.abs(it.qty ?? 0);
+    const rate = it.rate ?? 0;
+    return sum + qty * rate;
+  }, 0);
 
   return {
     form,
@@ -342,10 +397,12 @@ const payload = {
     grandTotal,
     fetchInvoiceOptions,
     handleInvoiceSelect,
+    handleInvoiceClear,
+
     handleItemChange,
     handleWarehouseDefault,
     removeItem,
-    toggleUpdateStock,
+
     reset,
     handleSubmit,
     validate,

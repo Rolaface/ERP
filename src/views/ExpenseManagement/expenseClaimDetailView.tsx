@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ERP_BASE } from "../../config/api";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
 interface ExpenseItem {
   name: string;
@@ -529,7 +530,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                 }}
               >
                 <F label="Posting Date" value={fmtDate(claim.posting_date)} />
-                <F label="Created" value={fmtDate(claim.creation)} />
                 <F label="Currency" value={currency} />
               </div>
 
@@ -543,7 +543,7 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                 }}
               >
                 <F label="Approval" value={approvalLabel} />
-                <F label="Payment" value={claim.is_paid ? "Paid" : "Unpaid"} />
+                <F label="Payment" value={claim.status} />
                 <F
                   label="Approver"
                   value={claim.expense_approver || "Not Assigned"}
@@ -638,8 +638,8 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                       gap: 4,
                     }}
                   >
-                    <span>Item / Description</span>
-                    <span style={{ textAlign: "right" }}>Date</span>
+                    <span>EXpense</span>
+                    <span style={{ textAlign: "right" }}>Expense Date</span>
                     <span style={{ textAlign: "right" }}>Claimed</span>
                     <span style={{ textAlign: "right" }}>Sanctioned</span>
                   </div>
@@ -698,7 +698,7 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                               fontFamily: "monospace",
                             }}
                           >
-                            {item.default_account}
+                            {getGLNameWithoutAbbreviation(item.default_account)}
                           </span>
                         )}
                       </div>

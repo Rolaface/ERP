@@ -18,19 +18,21 @@ import InventorySection from "./InventorySection";
 import PricingSection from "./PricingSection";
 import TaxSection from "./TaxSection";
 import ItemSummaryBar from "./Itemsummarybar";
+import ItemAttributesPanel from "./ItemAttributesPanel";
 import type {
   ItemFormData,
   ItemModalTab,
   ItemTaxInfo,
   ItemTaxRow,
 } from "./itemModalTypes";
+import { useCompanyStore } from "../../store/companyStore";
 
 export interface ItemInitialData extends Partial<ItemFormData> {
   taxes?: ItemTaxRow[];
   taxInfo?: Partial<ItemTaxInfo> | Array<Partial<ItemTaxInfo>>;
 }
 
-interface ItemModalProps extends StandardModalProps<unknown, ItemInitialData> { }
+interface ItemModalProps extends StandardModalProps<unknown, ItemInitialData> {}
 
 interface TaxTemplateOption {
   label: string;
@@ -95,6 +97,8 @@ const ItemModal: React.FC<ItemModalProps> = ({
     [resolvedModalId],
   );
 
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     form,
@@ -110,15 +114,21 @@ const ItemModal: React.FC<ItemModalProps> = ({
     handleNext,
     getFirstValidationError,
     getValidationErrorForTab,
-    itemGroups,
-    loadingItemGroups,
-   
-  } = useItemForm({ isOpen, isEditMode, initialData, onSubmit, onClose });
+  } = useItemForm({
+    isOpen,
+    isEditMode,
+    initialData,
+    onSubmit,
+    onClose,
+    isZraEnabled,
+  });
 
   const [taxRows, setTaxRows] = useState<ItemTaxRow[]>([EMPTY_TAX_ROW]);
   const [taxPage, setTaxPage] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const templateTaxCacheRef = useRef<Map<string, TemplateTax[]>>(new Map());
+  const prevIsServiceRef = useRef(false);
+  const savedTrackInventoryRef = useRef(true);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -141,6 +151,25 @@ const ItemModal: React.FC<ItemModalProps> = ({
     }
   }, [form.trackInventory, activeTab, setActiveTab]);
 
+  useEffect(() => {
+    const isServiceCategory = ["service", "services"].includes(
+      (form.itemGroup ?? "").trim().toLowerCase(),
+    );
+
+    if (isServiceCategory && !prevIsServiceRef.current) {
+      // transitioning INTO Service — remember current value, then force off
+      savedTrackInventoryRef.current = form.trackInventory;
+      setForm((previous) => ({ ...previous, trackInventory: false }));
+    } else if (!isServiceCategory && prevIsServiceRef.current) {
+      // transitioning OUT of Service — restore what it was before
+      setForm((previous) => ({
+        ...previous,
+        trackInventory: savedTrackInventoryRef.current,
+      }));
+    }
+
+    prevIsServiceRef.current = isServiceCategory;
+  }, [form.itemGroup, setForm]);
 
   const fetchTaxTemplateOptions = useCallback(
     async (search: string): Promise<TaxTemplateOption[]> => {
@@ -151,7 +180,6 @@ const ItemModal: React.FC<ItemModalProps> = ({
           search || undefined,
         )) as TaxTemplateResponse;
         const templates = response.data?.templates ?? [];
-
 
         templates.forEach((template) => {
           if (template.taxes) {
@@ -198,10 +226,26 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   const handleTabChange = useCallback(
     (tab: ItemModalTab) => {
-      if (tab === "inventoryDetails" && (!form.trackInventory || isServiceItem)) return;
+      if (tab === "inventoryDetails" && (!form.trackInventory || isServiceItem))
+        return;
       setActiveTab(tab);
     },
     [isServiceItem, setActiveTab],
+  );
+
+  const handleMtvTaxSelect = useCallback(
+    (taxName: string, taxTitle: string) => {
+      setTaxRows((previous) => {
+        const next = [...previous];
+        next[0] = {
+          ...next[0],
+          taxTemplate: taxName,
+          taxTemplateDisplay: taxTitle,
+        };
+        return next;
+      });
+    },
+    [],
   );
 
   const handleTaxRowChange = useCallback(
@@ -351,19 +395,22 @@ const ItemModal: React.FC<ItemModalProps> = ({
     [handleForm],
   );
 
-  const showValidationError = useCallback((scope: "all" | "current") => {
-    const error =
-      scope === "all"
-        ? getFirstValidationError(taxRows)
-        : getValidationErrorForTab(activeTab, taxRows);
-    if (!error) {
-      setFieldErrors({});
-      return false;
-    }
+  const showValidationError = useCallback(
+    (scope: "all" | "current") => {
+      const error =
+        scope === "all"
+          ? getFirstValidationError(taxRows)
+          : getValidationErrorForTab(activeTab, taxRows);
+      if (!error) {
+        setFieldErrors({});
+        return false;
+      }
 
-    setFieldErrors({ [error.field ?? error.tab]: error.message });
-    return true;
-  }, [activeTab, getFirstValidationError, getValidationErrorForTab, taxRows]);
+      setFieldErrors({ [error.field ?? error.tab]: error.message });
+      return true;
+    },
+    [activeTab, getFirstValidationError, getValidationErrorForTab, taxRows],
+  );
 
   const handleSaveClick = useCallback(async () => {
     const hasError = showValidationError("all");
@@ -382,7 +429,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   if (!isOpen) return null;
 
- const shouldShowInventory = !isServiceItem && Boolean(form.trackInventory);
+  const shouldShowInventory = !isServiceItem && Boolean(form.trackInventory);
 
   const tabs: ItemModalTab[] = shouldShowInventory
     ? ["details", "taxDetails", "inventoryDetails"]
@@ -397,14 +444,13 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   const footer = (
     <>
-
       <ModalFooter
         onCancel={handleCloseRequest}
         onReset={handleReset}
         onSubmit={handleFormSubmit}
         onNext={
           activeTab === "inventoryDetails" ||
-            (activeTab === "taxDetails" && isServiceItem)
+          (activeTab === "taxDetails" && isServiceItem)
             ? undefined
             : handleNextClick
         }
@@ -421,14 +467,15 @@ const ItemModal: React.FC<ItemModalProps> = ({
       isOpen={isOpen}
       onClose={handleCloseRequest}
       title={isEditMode ? "Edit Item" : "Add Item"}
-      subtitle="Add and manage item details"
+      subtitle={
+        isEditMode ? "Edit and manage item details" : "Add and manage items"
+      }
       icon={Package}
       footer={footer}
-      customWidth="min(92vw, 1280px)"
-      height="75vh"
+      customWidth="70vw"
+      height="70vh"
       summaryBar={<ItemSummaryBar form={form} taxRows={taxRows} />}
     >
-
       <form
         id={itemFormId}
         onChange={markDirty}
@@ -465,7 +512,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
             >
               Tax Details
             </button>
-           {!isServiceItem && Boolean(form.trackInventory) && (
+            {!isServiceItem && Boolean(form.trackInventory) && (
               <button
                 type="button"
                 onClick={() => handleTabChange("inventoryDetails")}
@@ -485,33 +532,39 @@ const ItemModal: React.FC<ItemModalProps> = ({
         {/* Tab content */}
         <div className="px-2 py-5">
           {activeTab === "details" && (
-            <div className="space-y-4">
-              {/* Row 1: Item Type, Item Category, Item Name, Description, HSN Code */}
-              <BasicDetailsSection
-                form={form}
-                itemGroups={itemGroups}
-                loadingItemGroups={loadingItemGroups}
-                 isServiceItem={isServiceItem} 
-                onFormChange={handleFormChange}
-                setField={setField}
-                errors={fieldErrors}
-              />
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px]">
+              <div className="space-y-4">
+                <BasicDetailsSection
+                  form={form}
+                  isServiceItem={isServiceItem}
+                  isZraEnabled={isZraEnabled}
+                  onFormChange={handleFormChange}
+                  setField={setField}
+                  errors={fieldErrors}
+                  onMtvTaxSelect={handleMtvTaxSelect}
+                />
 
-              {/* Row 2: Packing Unit, UOM, SKU, Country, SVC Charge, Insurance, Taxable */}
-              <AdditionalDetailsSection
+                <AdditionalDetailsSection
+                  form={form}
+                  onFormChange={handleFormChange}
+                  setField={setField}
+                  errors={fieldErrors}
+                  isZraEnabled={isZraEnabled}
+                />
+
+                <PricingSection
+                  form={form}
+                  onFormChange={handleFormChange}
+                  isZraEnabled={isZraEnabled}
+                  errors={fieldErrors}
+                />
+              </div>
+
+              <ItemAttributesPanel
                 form={form}
-                onFormChange={handleFormChange}
                 onToggleChange={handleToggleChange}
                 setField={setField}
-                errors={fieldErrors}
-              />
-
-              {/* Row 3: Sales & Purchase */}
-              <PricingSection
-                form={form}
-               
-                
-                onFormChange={handleFormChange}
+                isZraEnabled={isZraEnabled}
               />
             </div>
           )}

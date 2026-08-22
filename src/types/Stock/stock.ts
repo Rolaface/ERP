@@ -2,13 +2,16 @@ export type SelectedStockItem = {
   itemCode: string;
   itemName?: string;
   description: string;
+  stockUom?: string;
   packingSize?: number;
   packingUnit?: number;
   batchNo?: string;
   mfgDate?: string;
   expiryDate?: string;
   qty?: number;
-  price?: number;     
+  price?: number; 
+  is_mtv_item?: number;
+  rrp_rate?: number;
   valuation_rate?: number;
   sellingPrice?: number;
   purchasePrice?: number;

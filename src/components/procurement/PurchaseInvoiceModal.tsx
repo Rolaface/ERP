@@ -1,5 +1,11 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { Building2, MapPin, FileText, Receipt ,ShoppingCart} from "lucide-react";
+import {
+  Building2,
+  MapPin,
+  FileText,
+  Receipt,
+  ShoppingCart,
+} from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { AttachmentsTab } from "../procurement/purchaseinvoice/AttachmentsTab";
 import { DetailsTab } from "../procurement/purchaseinvoice/DetailsTab";
@@ -39,8 +45,13 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     modalId ||
     (pId ? `purchase-invoice-edit-${pId}` : `purchase-invoice-create`);
 
-  const { markDirty, resetDirty, handleCloseWithConfirm, activate, deactivate } =
-    useUnsavedChanges();
+  const {
+    markDirty,
+    resetDirty,
+    handleCloseWithConfirm,
+    activate,
+    deactivate,
+  } = useUnsavedChanges();
 
   const [internalSaving, setInternalSaving] = useState(false);
 
@@ -62,6 +73,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     handleFormChange,
     handleSupplierChange,
     handleItemChange,
+    handleSupplierClear,
     addItem,
     removeItem,
     duplicateItem,
@@ -89,31 +101,44 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     setLoading,
     handleAddressSelect,
     handleAddressRemove,
-    handleRemoveAttachment
+    handleRemoveAttachment,
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
   // ── Wrapped handlers so select/dropdown changes also mark dirty ──
   const handleFormChangeWithDirty = useCallback(
-    (e: any) => { markDirty(); handleFormChange(e); },
+    (e: any) => {
+      markDirty();
+      handleFormChange(e);
+    },
     [markDirty, handleFormChange],
   );
 
   const handleSupplierChangeWithDirty = useCallback(
-    (val: any) => { markDirty(); handleSupplierChange(val); },
+    (val: any) => {
+      markDirty();
+      handleSupplierChange(val);
+    },
     [markDirty, handleSupplierChange],
   );
+  const handleSupplierClearWithDirty = useCallback(() => {
+    markDirty();
+    handleSupplierClear();
+  }, [markDirty, handleSupplierClear]);
 
   const handlePOSelectWithDirty = useCallback(
-    (val: any) => { markDirty(); handlePOSelect(val); },
+    (val: any) => {
+      markDirty();
+      handlePOSelect(val);
+    },
     [markDirty, handlePOSelect],
   );
-const handleItemChangeWithDirty = useCallback(
-  (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
-    markDirty();
-    handleItemChange(e, idx);
-  },
-  [markDirty, handleItemChange],
-);
+  const handleItemChangeWithDirty = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+      markDirty();
+      handleItemChange(e, idx);
+    },
+    [markDirty, handleItemChange],
+  );
   // ────────────────────────────────────────────────────────────────
 
   const handleSubmitForm = useCallback(async () => {
@@ -172,6 +197,7 @@ const handleItemChangeWithDirty = useCallback(
             items={form.items}
             onFormChange={handleFormChangeWithDirty}
             onSupplierChange={handleSupplierChangeWithDirty}
+            onSupplierClear={handleSupplierClearWithDirty}
             onItemChange={handleItemChangeWithDirty}
             onAddItem={addItem}
             onRemoveItem={removeItem}
@@ -187,12 +213,13 @@ const handleItemChangeWithDirty = useCallback(
             onBulkItemChange={handleBulkItemChange}
           />
         </div>
-        <div style={{ display: activeTab === "attachments" ? "block" : "none" }}>
+        <div
+          style={{ display: activeTab === "attachments" ? "block" : "none" }}
+        >
           <AttachmentsTab
             form={form}
             onFormChange={handleFormChangeWithDirty}
-                onRemoveAttachment={handleRemoveAttachment}   
-
+            onRemoveAttachment={handleRemoveAttachment}
           />
         </div>
         <div style={{ display: activeTab === "address" ? "block" : "none" }}>
@@ -224,9 +251,7 @@ const handleItemChangeWithDirty = useCallback(
         <div style={{ display: activeTab === "terms" ? "block" : "none" }}>
           <TermsAndCondition
             terms={form.terms?.buying ?? null}
-            setTerms={(buying) =>
-              setForm((p) => ({ ...p, terms: { buying } }))
-            }
+            setTerms={(buying) => setForm((p) => ({ ...p, terms: { buying } }))}
             type="buying"
             compact={true}
           />
@@ -238,6 +263,7 @@ const handleItemChangeWithDirty = useCallback(
       form,
       handleFormChangeWithDirty,
       handleSupplierChangeWithDirty,
+      handleSupplierClearWithDirty,
       handleItemChangeWithDirty,
       addItem,
       removeItem,
@@ -273,8 +299,12 @@ const handleItemChangeWithDirty = useCallback(
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={pId ? "Edit Purchase Invoice" : "Add Purchase Invoice"}
-      subtitle="Add and manage purchase invoice"
-      icon={ShoppingCart }
+      subtitle={
+        pId
+          ? "Edit and manage purchase invoice details"
+          : "Add and manage purchase invoices"
+      }
+      icon={ShoppingCart}
       maxWidth="full"
       height="95vh"
       footer={footer}
@@ -294,9 +324,9 @@ const handleItemChangeWithDirty = useCallback(
                 onClick={() => handleTabClick(key)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
                   activeTab === key
-                  ? "text-primary border-b-[3px] border-primary"
-                  : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                }`}
               >
                 {label}
               </button>
@@ -304,9 +334,7 @@ const handleItemChangeWithDirty = useCallback(
           </div>
         </div>
 
-        <section className="overflow-y-auto px-2 py-2">
-          {tabContent}
-        </section>
+        <section className="overflow-y-auto px-2 py-2">{tabContent}</section>
       </form>
     </MinimizableModal>
   );

@@ -35,16 +35,19 @@ export const REASON_MAP = Object.fromEntries(
 // CSV template definition
 export const CSV_HEADERS = [
   "item_code",
-  "correction_type",
-  "adjustment_qty",
-  "reason_code",
-  "notes",
-] as const;
+  "item_name",
+  "item_group",
+  "uom",
+  "warehouse",
+  "opening_qty",
+  "valuation_rate",
+  "description",
+  "brand",
+];
 
 export const CSV_SAMPLE_ROWS = [
-  "ITEM001,add,10,COUNT_ERROR,Found extra units in shelf B3",
-  "ITEM002,remove,5,DAMAGED,Water damage in storeroom",
-  "ITEM003,set,100,AUDIT,Physical count result",
+  "ITEM-001,Paracetamol 500mg,Products,Nos,Main Store - RC,100,2.5,,",
+  "ITEM-002,Amoxicillin 250mg,Products,Nos,Main Store - RC,50,5.75,,",
 ];
 
 export const VALID_CORRECTION_TYPES = ["add", "remove", "set"] as const;

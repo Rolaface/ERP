@@ -1,7 +1,5 @@
-
 import { useCallback, useEffect, useState } from "react";
 import { createItem, updateItemByItemCode } from "../api/itemApi";
-import { getItemGroupTree } from "../api/itemGroupApi";
 import {
   closeSwal,
   showApiError,
@@ -10,7 +8,6 @@ import {
 } from "../utils/alert";
 import type {
   ItemFormData,
-  ItemGroupOption,
   ItemModalTab,
   ItemTaxRow,
   SupplierOption,
@@ -19,8 +16,6 @@ import type { ModalSubmitHandler, ModalValidationError } from "../types/modal";
 import { getSupplierList } from "../api/lookupApi";
 import { showSuccess } from "../utils/alert";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
-import { all } from "axios";
-import { fi } from "date-fns/locale";
 
 interface ItemNestedInitialData extends Partial<ItemFormData> {
   vendorInfo?: Partial<
@@ -57,20 +52,7 @@ interface UseItemFormProps {
   initialData?: ItemNestedInitialData | null;
   onSubmit?: ModalSubmitHandler;
   onClose: () => void;
-}
-
-interface ItemGroupTreeNode {
-  name: string;
-  item_group_name: string;
-  children?: ItemGroupTreeNode[];
-}
-
-interface ItemGroupTreeResponse {
-  message?: {
-    data?: {
-      item_groups?: ItemGroupTreeNode[];
-    };
-  };
+  isZraEnabled?: boolean;
 }
 
 // interface SupplierApiItem {
@@ -140,6 +122,7 @@ export const emptyForm: ItemFormData = {
   sellingPrice: "",
   buyingPrice: "",
   unitOfMeasureCd: "",
+  packaging_uom: "",
   description: "",
   sku: "",
   taxPreference: "",
@@ -149,7 +132,7 @@ export const emptyForm: ItemFormData = {
   purchaseAccount: "",
   countryCode: "",
   dimensionUnit: "",
-  dimensionUOM: "", 
+  dimensionUOM: "",
   weight: "",
   weightUnit: "",
   dimensionLength: "",
@@ -173,6 +156,10 @@ export const emptyForm: ItemFormData = {
   batchNo: "",
   create_new_batch: false,
   has_expiry_date: false,
+  isMtvItem: false,
+  mtvItemCode: "",
+  mtvManufacturerTpin: "",
+  mtvRrp: "",
 };
 
 const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
@@ -191,6 +178,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   sellingPrice: Number(form.sellingPrice),
   buyingPrice: Number(form.buyingPrice),
   unitOfMeasureCd: form.unitOfMeasureCd,
+  packaging_uom: form.packaging_uom,
   description: form.description,
   sku: form.sku,
   weight: form.weight,
@@ -198,9 +186,13 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   dimensionLength: form.dimensionLength,
   dimensionWidth: form.dimensionWidth,
   dimensionHeight: form.dimensionHeight,
-  dimensionUOM: form.dimensionUnit, 
+  dimensionUOM: form.dimensionUnit,
   brand: form.brand,
   countryOfOrigin: form.originNationCode,
+  isMtvItem: form.isMtvItem,
+  manufacturerItemCd: form.mtvItemCode,
+  mtvManufacturerTpin: form.mtvManufacturerTpin,
+  mtvRrp: form.mtvRrp,
   is_stock_item: form.trackInventory,
   is_sales_item: form.allowSales,
   is_purchase_item: form.allowPurchase,
@@ -239,8 +231,6 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   }),
 });
 
-
-
 const mapApiToForm = (item: any) => {
   return {
     ...item,
@@ -251,15 +241,14 @@ const mapApiToForm = (item: any) => {
     itemClassCode: item.itemClassCode || "",
     description: item.description || "",
     unitOfMeasureCd: item.unitOfMeasureCd || "",
-
+    packaging_uom: item.packaging_uom || "",
     // PRICING
     buyingPrice: String(item.buyingPrice || ""),
     sellingPrice: String(item.sellingPrice || ""),
 
-    // PACKING 
+    // PACKING
     packingUnit: String(item.packingUnit || 1),
     packingSize: String(item.packingSize || 1),
-    
 
     // INVENTORY
     brand: item.brand || "",
@@ -272,11 +261,10 @@ const mapApiToForm = (item: any) => {
 
     // COUNTRY
     originNationCode: item.countryOfOrigin || "",
-dimensionUnit: item.dimensionUOM || "cm",
+    dimensionUnit: item.dimensionUOM || "cm",
     // VENDOR
     preferredVendor: item.vendorInfo?.preferredVendor || "",
     preferredVendorName: item.vendorInfo?.preferredVendorName || "",
-    
 
     // INVENTORY INFO
     valuationMethod: item.inventoryInfo?.valuationMethod || "",
@@ -293,19 +281,20 @@ dimensionUnit: item.dimensionUOM || "cm",
     has_expiry_date: item.batchInfo?.has_expiry_date || false,
     shelfLife: String(item.batchInfo?.shelfLife || ""),
 
+    // MTV
+    isMtvItem: Boolean(item.isMtvItem ?? false),
+    mtvItemCode: item.mtvItemCode || "",
+    mtvManufacturerTpin: item.mtvManufacturerTpin || "",
+    mtvRrp: item.mtvRrp || "",
+
     // TAX
-    taxRows: item.taxInfo?.map((t: any) => ({
-      taxCategory: t.taxCategory || "",
-      taxTemplate: t.taxName || "",
-    })) || [],
+    taxRows:
+      item.taxInfo?.map((t: any) => ({
+        taxCategory: t.taxCategory || "",
+        taxTemplate: t.taxName || "",
+      })) || [],
   };
 };
-
-const flattenItemGroups = (nodes: ItemGroupTreeNode[]): ItemGroupOption[] =>
-  nodes.flatMap((node) => [
-    { id: node.name, groupName: node.item_group_name },
-    ...flattenItemGroups(node.children ?? []),
-  ]);
 
 export const useItemForm = ({
   isOpen,
@@ -313,31 +302,16 @@ export const useItemForm = ({
   initialData,
   onSubmit,
   onClose,
+  isZraEnabled = false,
 }: UseItemFormProps) => {
   const [form, setForm] = useState<ItemFormData>(emptyForm);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<ItemModalTab>("details");
-  const [itemGroups, setItemGroups] = useState<ItemGroupOption[]>([]);
-  const [loadingItemGroups, setLoadingItemGroups] = useState(false);
   const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [taxRows, setTaxRows] = useState<ItemTaxRow[]>([]);
 
   const isServiceItem = Number(form.itemTypeCode) === 3;
-
-  const fetchItemGroups = useCallback(async () => {
-    try {
-      setLoadingItemGroups(true);
-
-      const response = (await getItemGroupTree()) as ItemGroupTreeResponse;
-      const treeData = response.message?.data?.item_groups;
-      setItemGroups(Array.isArray(treeData) ? flattenItemGroups(treeData) : []);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setLoadingItemGroups(false);
-    }
-  }, []);
 
   const fetchSuppliers = useCallback(async () => {
     try {
@@ -370,12 +344,6 @@ export const useItemForm = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    void fetchItemGroups();
-  }, [fetchItemGroups, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
     if (isEditMode && initialData) {
       const mapped = mapApiToForm(initialData);
       setForm({
@@ -388,8 +356,7 @@ export const useItemForm = ({
     }
 
     setActiveTab("details");
-   
-  }, [ initialData, isEditMode, isOpen]);
+  }, [initialData, isEditMode, isOpen]);
 
   const getDetailsValidationError = (): ItemValidationError | null => {
     for (const { field, label } of itemDetailFields) {
@@ -406,6 +373,26 @@ export const useItemForm = ({
           field,
           message: `${label} is required.`,
         };
+    }
+    if (isZraEnabled) {
+      const packagingEmpty =
+        !form.packaging_uom || String(form.packaging_uom).trim() === "";
+      if (packagingEmpty) {
+        return {
+          tab: "details",
+          field: "packaging_uom",
+          message: "Packaging Unit is required.",
+        };
+      }
+      const sellingPriceEmpty =
+        !form.sellingPrice || String(form.sellingPrice).trim() === "";
+      if (sellingPriceEmpty) {
+        return {
+          tab: "details",
+          field: "sellingPrice",
+          message: "Selling Price is required.",
+        };
+      }
     }
 
     return null;
@@ -488,68 +475,66 @@ export const useItemForm = ({
       if (canClose === false) return false;
       handleClose();
       return true;
-    }  catch (error) {
+    } catch (error) {
       closeSwal();
       showApiError(error);
       return false;
     } finally {
-    setLoading(false);
-  }
-};
+      setLoading(false);
+    }
+  };
 
-const handleNext = (taxRows: ItemTaxRow[]) => {
-  const error = getValidationErrorForTab(activeTab, taxRows);
-  if (!validateAndShow(error)) return;
+  const handleNext = (taxRows: ItemTaxRow[]) => {
+    const error = getValidationErrorForTab(activeTab, taxRows);
+    if (!validateAndShow(error)) return;
 
-  if (activeTab === "details") {
-    setActiveTab("taxDetails");
-    return;
-  }
+    if (activeTab === "details") {
+      setActiveTab("taxDetails");
+      return;
+    }
 
-  if (activeTab === "taxDetails" && !isServiceItem && form.trackInventory) {
-    setActiveTab("inventoryDetails");
-  }
-};
+    if (activeTab === "taxDetails" && !isServiceItem && form.trackInventory) {
+      setActiveTab("inventoryDetails");
+    }
+  };
 
-const handleSave = async (
-  event: React.FormEvent | undefined,
-  taxRows: ItemTaxRow[],
-) => {
-  event?.preventDefault();
+  const handleSave = async (
+    event: React.FormEvent | undefined,
+    taxRows: ItemTaxRow[],
+  ) => {
+    event?.preventDefault();
 
-  const error = getFirstValidationError(taxRows);
-  if (!validateAndShow(error)) return false;
+    const error = getFirstValidationError(taxRows);
+    if (!validateAndShow(error)) return false;
 
-  return saveItem(taxRows);
-};
+    return saveItem(taxRows);
+  };
 
-const handleSubmit = async (
-  event: React.FormEvent,
-  taxRows: ItemTaxRow[],
-) => {
-  await handleSave(event, taxRows);
-};
+  const handleSubmit = async (
+    event: React.FormEvent,
+    taxRows: ItemTaxRow[],
+  ) => {
+    await handleSave(event, taxRows);
+  };
 
-return {
-  form,
-  setForm,
-  loading,
-  activeTab,
-  setActiveTab,
-  isServiceItem,
-  handleForm,
-  reset,
-  handleClose,
-  handleSubmit,
-  handleSave,
-  handleNext,
-  getFirstValidationError,
-  getValidationErrorForTab,
-  taxRows,
-  setTaxRows,
-  itemGroups,
-  loadingItemGroups,
-  suppliers,
-  loadingSuppliers,
-};
+  return {
+    form,
+    setForm,
+    loading,
+    activeTab,
+    setActiveTab,
+    isServiceItem,
+    handleForm,
+    reset,
+    handleClose,
+    handleSubmit,
+    handleSave,
+    handleNext,
+    getFirstValidationError,
+    getValidationErrorForTab,
+    taxRows,
+    setTaxRows,
+    suppliers,
+    loadingSuppliers,
+  };
 };

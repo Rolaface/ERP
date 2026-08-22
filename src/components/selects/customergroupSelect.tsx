@@ -60,7 +60,6 @@ const fetchGroups = useCallback(async (query: string) => {
 
     const all = res?.data ?? [];
 
-    console.log("DATA:", all);
 
     if (!Array.isArray(all)) {
       setResults([]);

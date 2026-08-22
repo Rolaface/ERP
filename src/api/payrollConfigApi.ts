@@ -42,7 +42,10 @@ export interface SalaryComponent {
   create_separate_payment_entry_against_benefit_claim?: 0 | 1;
   // deduction-specific
   variable_based_on_taxable_salary?: 0 | 1;
+  statistical_component?: 0 | 1;
   is_income_tax_component?: 0 | 1;
+    do_not_include_in_total: 0| 1;
+  do_not_include_in_accounts: 0| 1;
 }
 
 export interface StructureComponentRow {
@@ -131,6 +134,8 @@ export async function getAllSalaryComponents(
   start: number,
   pageSize: number,
   search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<PaginatedResponse<SalaryComponent>> {
   try {
     const query = buildListParams({
@@ -149,13 +154,14 @@ export async function getAllSalaryComponents(
         "max_benefit_amount",
         "payout_method",
         " variable_based_on_taxable_salary",
-
         "is_income_tax_component",
       ],
       start,
       pageSize,
       search,
       searchFields: ["salary_component", "salary_component_abbr"],
+      sortBy,
+      sortOrder,
     });
 
     const resp = await api.get(`${Payroll.salaryComponent.getAll}?${query}`);
@@ -212,6 +218,44 @@ export async function deleteSalaryComponent(name: string): Promise<void> {
     throw error;
   }
 }
+// ──────────────────────validation for salary component abbrs────────────────────────────────────────────
+export interface SalaryComponentAbbrCheck {
+  name: string;
+  salary_component: string;
+  salary_component_abbr: string;
+  depends_on_payment_days: 0 | 1;
+    formula?: string | null;
+}
+
+export async function getSalaryComponentsByAbbrs(
+  abbrs: string[],
+): Promise<SalaryComponentAbbrCheck[]> {
+  if (!abbrs.length) return [];
+  try {
+    const params = new URLSearchParams();
+    params.append(
+      "filters",
+      JSON.stringify([["salary_component_abbr", "in", abbrs]]),
+    );
+    params.append(
+      "fields",
+      JSON.stringify([
+        "name",
+        "salary_component",
+        "salary_component_abbr",
+        "depends_on_payment_days","formula",
+      ]),
+    );
+    params.append("limit_page_length", "0");
+
+    const resp = await api.get(
+      `${Payroll.salaryComponent.getAll}?${params.toString()}`,
+    );
+    return resp.data?.data ?? [];
+  } catch (error) {
+    throw error;
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SALARY STRUCTURE
@@ -221,14 +265,18 @@ export async function getAllSalaryStructures(
   start: number,
   pageSize: number,
   search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<PaginatedResponse<SalaryStructure>> {
   try {
     const query = buildListParams({
-      fields: ["name", "is_active", "docstatus","currency"],
+      fields: ["name", "is_active", "docstatus", "currency"],
       start,
       pageSize,
       search,
       searchFields: ["name"],
+      sortBy,
+      sortOrder,
     });
 
     const resp: AxiosResponse<PaginatedResponse<SalaryStructure>> =
@@ -295,6 +343,8 @@ export async function getAllTaxConfigs(
   start: number,
   pageSize: number,
   search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<PaginatedResponse<TaxConfig>> {
   try {
     const query = buildListParams({
@@ -310,6 +360,8 @@ export async function getAllTaxConfigs(
       pageSize,
       search,
       searchFields: ["name"],
+      sortBy,
+      sortOrder,
     });
     const resp: AxiosResponse<PaginatedResponse<TaxConfig>> = await api.get(
       `${Payroll.incomeTaxSlab.getAll}?${query}`,
@@ -415,6 +467,8 @@ export async function getAllPayrollPeriods(
   start: number,
   pageSize: number,
   search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<PaginatedResponse<PayrollPeriod>> {
   try {
     const query = buildListParams({
@@ -423,6 +477,8 @@ export async function getAllPayrollPeriods(
       pageSize,
       search,
       searchFields: ["name"],
+      sortBy,
+      sortOrder,
     });
     const resp: AxiosResponse<PaginatedResponse<PayrollPeriod>> = await api.get(
       `${Payroll.payrollPeriod.getAll}?${query}`,
@@ -436,7 +492,6 @@ export async function getAllPayrollPeriods(
     );
   }
 }
-
 export async function getPayrollPeriod(name: string): Promise<PayrollPeriod> {
   try {
     const url = `${Payroll.payrollPeriod.getById}/${encodeURIComponent(name)}`;

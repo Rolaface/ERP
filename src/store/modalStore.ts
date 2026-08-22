@@ -1,972 +1,1018 @@
-import { create } from "zustand";
-import type { LucideIcon } from "lucide-react";
-import type { ModalCallback } from "../types/modal";
+// import { create } from "zustand";
+// import type { LucideIcon } from "lucide-react";
+// import type { ModalCallback } from "../types/modal";
 
-export type ModalType =
-  | "invoice"
-  | "proforma"
-  | "quotation"
-  | "customer"
-  | "supplier"
-  | "purchaseOrder"
-  | "purchaseInvoice"
-  | "item"
-  | "itemCategory"
-  | "warehouse"
-  | "taxTemplate"
-  | "salesTax"
-  | "taxCategory"
-  | "bankAccount"
-  | "modeOfPayment"
-  | "paymentEntry"
-  | "currencyExchange"
-  | "fixedAsset"
-  |"assetCategory"
-  | "assetMovement"
-  | "Rfq"
-  | "JournalEntries"
-  | "CreditNote"
-  | "DebitNote"
-  | "UserRole"
-  | "Bank"
-  | "employee"
-  | "payroll"
-  | "salaryComponent"
-  | "salaryStructure"
-  | "leaveApply"
-  | "taxConfig"
-  | "department"
-  | "designation"
-  | "grade"
-  | "User"
-  | "Payrollperiod"
-  | "employeeType"
-  | "employeeType"
-  | "leaveType"
-  | "leavePeriod"
-  | "leavePolicy"
-  | "leavePolicyAssignment"
-  | "holidayList"
-  | "expense"
-  | "expenseType"
-  | "emailTemplate"
-  | "shiftType"
-  | "scanPI"
-  | "KRA"
-  | "appraisalCycle"
-  | "feedback"
-  | "appraisal"
-  | "employeeFeedback"
-  |"employeeAdvance"
-  |"payrollPreview"
-  | "scheduler"
-  | "scheduler"
-  | "coaGLAccount"
-  | "sendEmail"
+// export type ModalType =
+//   | "invoice"
+//   | "proforma"
+//   | "quotation"
+//   | "salesOrder"
+//   | "customer"
+//   | "supplier"
+//   | "purchaseOrder"
+//   | "purchaseInvoice"
+//   | "item"
+//   | "itemCategory"
+//   | "warehouse"
+//   | "taxTemplate"
+//   | "salesTax"
+//   | "taxCategory"
+//   | "bankAccount"
+//   | "modeOfPayment"
+//   | "paymentEntry"
+//   | "currencyExchange"
+//   | "fixedAsset"
+//   |"assetCategory"
+//   | "assetMovement"
+//   | "Rfq"
+//   | "JournalEntries"
+//   | "CreditNote"
+//   | "SalesDebitNote"
+//   | "DebitNote"
+//   | "UserRole"
+//   | "Bank"
+//   | "employee"
+//   | "payroll"
+//   | "salaryComponent"
+//   |"compensationReview"
+//   | "salaryStructure"
+//   | "leaveApply"
+//   | "taxConfig"
+//   | "department"
+//   | "designation"
+//   | "grade"
+//   | "User"
+//   | "Payrollperiod"
+//   | "employeeType"
+//   | "employeeType"
+//   | "leaveType"
+//   | "leavePeriod"
+//   | "leavePolicy"
+//   | "leavePolicyAssignment"
+//   | "holidayList"
+//   | "expense"
+//   | "expenseType"
+//   | "emailTemplate"
+//   | "shiftType"
+//   | "scanPI"
+//   | "KRA"
+//   | "appraisalCycle"
+//   | "feedback"
+//   | "appraisal"
+//   | "employeeFeedback"
+//   |"employeeAdvance"
+//   |"payrollPreview"
+//   | "scheduler"
+//   | "scheduler"
+//   | "coaGLAccount"
+//   | "sendEmail"
+//   | "stockCorrection" 
+//   | "importInventory"  
   
   
-  
 
   
 
-export interface ModalContext {
-  source?: string;
-  fieldId?: string;
-  callback?: ModalCallback;
-  onSuccess?: ModalCallback;
-  onSubmit?: (data: unknown) => Promise<void> | void;
-  isViewMode?: boolean;
-  loading?: boolean;
-
-}
-
-export interface ModalMeta {
-  title: string;
-  subtitle?: string;
-  icon?: LucideIcon;
-  onRequestClose?: () => void;
-  isViewMode?: boolean;
-}
-
-export interface ModalInstance {
-  id: string;
-  type: ModalType;
-  initialData?: unknown;
-  isEdit: boolean;
-  context?: ModalContext;
-  meta?: ModalMeta;
-  minimized: boolean;
-  openedAt: number;
-  focusOrder: number;
-}
-
-export interface ModalLayerPosition {
-  backdrop: number;
-  panel: number;
-}
-export const openExpenseModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("expense", initialData, isEdit, context, meta);
-
-export const MODAL_LAYER = {
-  sidebar: 100,
-  appChrome: 120,
-  modalBackdropBase: 1000,
-  modalStep: 20,
-  modalPanelOffset: 10,
-  minimizedTaskbar: 1800,
-} as const;
-4;
-let modalIdCounter = 0;
-
-const createModalId = (type: ModalType) => {
-  modalIdCounter += 1;
-  const randomSuffix =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${modalIdCounter}`;
-
-  return `${type}-${randomSuffix}`;
-};
-
-interface ModalState {
-  modals: ModalInstance[];
-  activeModalId: string | null;
-  swalDepth: number;
-  focusCounter: number;
-
-  openModal: (
-    type: ModalType,
-    initialData?: unknown,
-    isEdit?: boolean,
-    context?: ModalContext,
-    meta?: ModalMeta,
-  ) => string;
-  closeModal: (id: string) => void;
-  closeAllModals: () => void;
-
-  registerModalMeta: (id: string, meta: ModalMeta) => void;
-  unregisterModalMeta: (id: string) => void;
-
-  minimizeModal: (id: string) => void;
-  restoreModal: (id: string) => void;
-  bringToFront: (id: string) => void;
-
-  isMinimized: (id: string) => boolean;
-  isFocused: (id: string) => boolean;
-  getTopModalId: () => string | null;
-  getModalLayer: (id: string) => ModalLayerPosition;
-  getModalById: (id: string) => ModalInstance | undefined;
-  getModalsByType: (type: ModalType) => ModalInstance[];
-
-  setModalContext: (id: string, context: ModalContext) => void;
-  clearModalContext: (id: string) => void;
-  getModalContext: (id: string) => ModalContext | undefined;
-
-  isModalOpen: (type: ModalType) => boolean;
-  isInteractionLocked: () => boolean;
-
-  incrementSwalDepth: () => void;
-  decrementSwalDepth: () => void;
-
-  getVisibleModals: () => ModalInstance[];
-  getMinimizedModals: () => ModalInstance[];
-}
-
-
-
-export const openSchedulerModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("scheduler", initialData, isEdit, context, meta);
-
-export const useModalStore = create<ModalState>((set, get) => ({
-  modals: [],
-  activeModalId: null,
-  swalDepth: 0,
-  focusCounter: 0,
-
-  openModal: (type, initialData, isEdit = false, context, meta) => {
-    const id = createModalId(type);
-
-    set((state) => {
-      const nextFocusOrder = state.focusCounter + 1;
-      const openedAt = Date.now();
-      const newModal: ModalInstance = {
-        id,
-        type,
-        initialData,
-        isEdit,
-        context,
-        meta,
-        minimized: false,
-        openedAt,
-        focusOrder: nextFocusOrder,
-      };
-
-      return {
-        modals: [...state.modals, newModal],
-        activeModalId: id,
-        focusCounter: nextFocusOrder,
-      };
-    });
-
-    return id;
-  },
-
-  closeModal: (id) => {
-    set((state) => {
-      const remaining = state.modals.filter((m) => m.id !== id);
-      const visibleModals = remaining.filter((m) => !m.minimized);
-      const newActiveId =
-        state.activeModalId === id
-          ? visibleModals.length > 0
-            ? visibleModals.sort((a, b) => b.focusOrder - a.focusOrder)[0].id
-            : null
-          : state.activeModalId;
-
-      return {
-        modals: remaining,
-        activeModalId: newActiveId,
-      };
-    });
-  },
-
-  closeAllModals: () => {
-    set({ modals: [], activeModalId: null });
-  },
-
-  registerModalMeta: (id, meta) => {
-    set((state) => ({
-      modals: state.modals.map((m) =>
-        m.id === id
-          ? {
-            ...m,
-            meta: {
-              title: meta.title,
-              subtitle: meta.subtitle,
-              icon: meta.icon,
-              onRequestClose: meta.onRequestClose,
-            },
-          }
-          : m,
-      ),
-    }));
-  },
-
-  unregisterModalMeta: (id) => {
-    set((state) => ({
-      modals: state.modals.map((m) =>
-        m.id === id ? { ...m, meta: undefined } : m,
-      ),
-    }));
-  },
-
-  minimizeModal: (id) => {
-    set((state) => ({
-      modals: state.modals.map((m) =>
-        m.id === id ? { ...m, minimized: true } : m,
-      ),
-    }));
-  },
-
-  restoreModal: (id) => {
-    set((state) => {
-      const newFocusOrder = state.focusCounter + 1;
-      return {
-        focusCounter: newFocusOrder,
-        activeModalId: id,
-        modals: state.modals.map((m) =>
-          m.id === id
-            ? { ...m, minimized: false, focusOrder: newFocusOrder }
-            : m,
-        ),
-      };
-    });
-  },
-
-  bringToFront: (id) => {
-    set((state) => {
-      const visible = state.modals.filter((m) => !m.minimized);
-      const topVisible = [...visible].sort(
-        (a, b) => b.focusOrder - a.focusOrder,
-      )[0];
-
-      if (!topVisible || topVisible.id === id) {
-        return state;
-      }
-
-      const newFocusOrder = state.focusCounter + 1;
-      return {
-        focusCounter: newFocusOrder,
-        modals: state.modals.map((m) =>
-          m.id === id
-            ? { ...m, minimized: false, focusOrder: newFocusOrder }
-            : m,
-        ),
-      };
-    });
-  },
-
-  isMinimized: (id) => {
-    const modal = get().modals.find((m) => m.id === id);
-    return modal?.minimized ?? false;
-  },
-
-  isFocused: (id) => {
-    const state = get();
-    const visible = state.modals.filter((m) => !m.minimized);
-    if (!visible.length) return false;
-    const top = [...visible].sort((a, b) => b.focusOrder - a.focusOrder)[0];
-    return top.id === id;
-  },
-
-  getTopModalId: () => {
-    const state = get();
-    const visible = state.modals.filter((m) => !m.minimized);
-    if (!visible.length) return null;
-    return [...visible].sort((a, b) => b.focusOrder - a.focusOrder)[0].id;
-  },
-
-  getModalLayer: (id) => {
-    const state = get();
-    const visible = state.modals
-      .filter((m) => !m.minimized)
-      .sort((a, b) => a.focusOrder - b.focusOrder);
-    const rank = Math.max(
-      visible.findIndex((m) => m.id === id),
-      0,
-    );
-    const backdrop =
-      MODAL_LAYER.modalBackdropBase + rank * MODAL_LAYER.modalStep;
-    return {
-      backdrop,
-      panel: backdrop + MODAL_LAYER.modalPanelOffset,
-    };
-  },
-
-  getModalById: (id) => {
-    return get().modals.find((m) => m.id === id);
-  },
-
-  getModalsByType: (type) => {
-    return get().modals.filter((m) => m.type === type);
-  },
-
-  setModalContext: (id, context) => {
-    set((state) => ({
-      modals: state.modals.map((m) => (m.id === id ? { ...m, context } : m)),
-    }));
-  },
-
-  clearModalContext: (id) => {
-    set((state) => ({
-      modals: state.modals.map((m) =>
-        m.id === id ? { ...m, context: undefined } : m,
-      ),
-    }));
-  },
-
-  getModalContext: (id) => {
-    return get().modals.find((m) => m.id === id)?.context;
-  },
-
-  isModalOpen: (type) => {
-    return get().modals.some((m) => m.type === type);
-  },
-
-  isInteractionLocked: () => {
-    return get().swalDepth > 0;
-  },
-
-  incrementSwalDepth: () => {
-    set((state) => ({ swalDepth: state.swalDepth + 1 }));
-  },
-
-  decrementSwalDepth: () => {
-    set((state) => ({ swalDepth: Math.max(state.swalDepth - 1, 0) }));
-  },
-
-  getVisibleModals: () => {
-    return get().modals.filter((m) => !m.minimized);
-  },
-
-  getMinimizedModals: () => {
-    return get().modals.filter((m) => m.minimized);
-  },
-}));
-
-export const useVisibleModals = () =>
-  useModalStore((state) => state.getVisibleModals());
-export const useMinimizedModals = () =>
-  useModalStore((state) => state.getMinimizedModals());
-
-export const useModalMeta = (id: string) =>
-  useModalStore((state) => state.getModalById(id)?.meta);
-
-export const openCustomerModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("customer", initialData, isEdit, context, meta);
-
-export const openSupplierModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("supplier", initialData, isEdit, context, meta);
-
-export const openInvoiceModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("invoice", initialData, isEdit, context, meta);
-
-export const openQuotationModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("quotation", initialData, isEdit, context, meta);
-
-export const openItemModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("item", initialData, isEdit, context, meta);
-
-export const openItemCategoryModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("itemCategory", initialData, isEdit, context, meta);
-
-export const openPurchaseOrderModal = (
-  poId?: string | number,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("purchaseOrder", { poId }, !!poId, context, meta);
-
-export const openPurchaseInvoiceModal = (
-  pId?: string | number,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("purchaseInvoice", { pId }, !!pId, context, meta);
-
-export const openProformaModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("proforma", initialData, isEdit, context, meta);
-
-export const openTaxTemplateModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("taxTemplate", initialData, isEdit, context, meta);
-
-export const openWarehouseModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("warehouse", initialData, isEdit, context, meta);
-
-export const openTaxCategoryModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("taxCategory", initialData, isEdit, context, meta);
-
-export const openSalesTaxTemplateModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("salesTax", initialData, isEdit, context, meta);
-
-export const openBankAccountModal = (
-  initialData?: unknown,
-
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("bankAccount", initialData, isEdit, context, meta);
-
-export const openModeOfPaymentModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("modeOfPayment", initialData, isEdit, context, meta);
-export const openPaymentEntryModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("paymentEntry", initialData, isEdit, context, meta);
-
-export const openCurrencyExchangeModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("currencyExchange", initialData, isEdit, context, meta);
-
-    export const openassetCategory = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("assetCategory", initialData, isEdit, context, meta);
-
-export const openFixedAssetModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("fixedAsset", initialData, isEdit, context, meta);
-
-export const openAssetMovementModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("assetMovement", initialData, isEdit, context, meta);
-
-export const openRfqModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore.getState().openModal("Rfq", initialData, isEdit, context, meta);
-
-export const JournalEntriesModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("JournalEntries", initialData, isEdit, context, meta);
-
-export const openCreditNoteModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("CreditNote", initialData, isEdit, context, meta);
-
-export const openDebitNoteModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("DebitNote", initialData, isEdit, context, meta);
-
-export const openUserRoleModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("UserRole", initialData, isEdit, context, meta);
-
-export const openBankModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("Bank", initialData, isEdit, context, meta);
-
-export const openEmployeeModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("employee", initialData, isEdit, context, meta);
-
-export const openUserModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("User", initialData, isEdit, context, meta);
-
-export const openPayrollModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("payroll", initialData, isEdit, context, meta);
-
-export const openSalaryComponentModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("salaryComponent", initialData, isEdit, context, meta);
-
-export const openSalaryStructureModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("salaryStructure", initialData, isEdit, context, meta);
-
-export const openLeaveApplyModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("leaveApply", initialData, isEdit, context, meta);
-
-export const openTaxConfigModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("taxConfig", initialData, isEdit, context, meta);
-
-export const openDepartmentModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("department", initialData, isEdit, context, meta);
-
-export const openDesignationModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("designation", initialData, isEdit, context, meta);
-
-export const openGradeModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("grade", initialData, isEdit, context, meta);
-
-export const openEmployeeTypeModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("employeeType", initialData, isEdit, context, meta);
-
-export const openPayrollPeriodModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("Payrollperiod", initialData, isEdit, context, meta);
-
-export const openLeaveTypeModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("leaveType", initialData, isEdit, context, meta);
-
-export const openLeavePeriodModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("leavePeriod", initialData, isEdit, context, meta);
-
-export const openLeavePolicyModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("leavePolicy", initialData, isEdit, context, meta);
-
-export const openLeavePolicyAssignmentModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("leavePolicyAssignment", initialData, isEdit, context, meta);
-
-export const openHolidayListModal = (
-  initialData?: unknown,
-  isEdit = false,
+// export interface ModalContext {
+//   source?: string;
+//   fieldId?: string;
+//   callback?: ModalCallback;
+//   onSuccess?: ModalCallback;
+//   onSubmit?: (data: unknown) => Promise<void> | void;
+//   isViewMode?: boolean;
+//   loading?: boolean;
+
+// }
+
+// export interface ModalMeta {
+//   title: string;
+//   subtitle?: string;
+//   icon?: LucideIcon;
+//   onRequestClose?: () => void;
+//   isViewMode?: boolean;
+// }
+
+// export interface ModalInstance {
+//   id: string;
+//   type: ModalType;
+//   initialData?: unknown;
+//   isEdit: boolean;
+//   context?: ModalContext;
+//   meta?: ModalMeta;
+//   minimized: boolean;
+//   openedAt: number;
+//   focusOrder: number;
+// }
+
+// export interface ModalLayerPosition {
+//   backdrop: number;
+//   panel: number;
+// }
+// export const openExpenseModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("expense", initialData, isEdit, context, meta);
+
+// export const MODAL_LAYER = {
+//   sidebar: 100,
+//   appChrome: 120,
+//   modalBackdropBase: 1000,
+//   modalStep: 20,
+//   modalPanelOffset: 10,
+//   minimizedTaskbar: 1800,
+// } as const;
+// 4;
+// let modalIdCounter = 0;
+
+// const createModalId = (type: ModalType) => {
+//   modalIdCounter += 1;
+//   const randomSuffix =
+//     typeof crypto !== "undefined" && "randomUUID" in crypto
+//       ? crypto.randomUUID()
+//       : `${Date.now()}-${modalIdCounter}`;
+
+//   return `${type}-${randomSuffix}`;
+// };
+
+// interface ModalState {
+//   modals: ModalInstance[];
+//   activeModalId: string | null;
+//   swalDepth: number;
+//   focusCounter: number;
+
+//   openModal: (
+//     type: ModalType,
+//     initialData?: unknown,
+//     isEdit?: boolean,
+//     context?: ModalContext,
+//     meta?: ModalMeta,
+//   ) => string;
+//   closeModal: (id: string) => void;
+//   closeAllModals: () => void;
+
+//   registerModalMeta: (id: string, meta: ModalMeta) => void;
+//   unregisterModalMeta: (id: string) => void;
+
+//   minimizeModal: (id: string) => void;
+//   restoreModal: (id: string) => void;
+//   bringToFront: (id: string) => void;
+
+//   isMinimized: (id: string) => boolean;
+//   isFocused: (id: string) => boolean;
+//   getTopModalId: () => string | null;
+//   getModalLayer: (id: string) => ModalLayerPosition;
+//   getModalById: (id: string) => ModalInstance | undefined;
+//   getModalsByType: (type: ModalType) => ModalInstance[];
+
+//   setModalContext: (id: string, context: ModalContext) => void;
+//   clearModalContext: (id: string) => void;
+//   getModalContext: (id: string) => ModalContext | undefined;
+
+//   isModalOpen: (type: ModalType) => boolean;
+//   isInteractionLocked: () => boolean;
+
+//   incrementSwalDepth: () => void;
+//   decrementSwalDepth: () => void;
+
+//   getVisibleModals: () => ModalInstance[];
+//   getMinimizedModals: () => ModalInstance[];
+// }
+
+
+
+// export const openSchedulerModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("scheduler", initialData, isEdit, context, meta);
+
+// export const useModalStore = create<ModalState>((set, get) => ({
+//   modals: [],
+//   activeModalId: null,
+//   swalDepth: 0,
+//   focusCounter: 0,
+
+//   openModal: (type, initialData, isEdit = false, context, meta) => {
+//     const id = createModalId(type);
+
+//     set((state) => {
+//       const nextFocusOrder = state.focusCounter + 1;
+//       const openedAt = Date.now();
+//       const newModal: ModalInstance = {
+//         id,
+//         type,
+//         initialData,
+//         isEdit,
+//         context,
+//         meta,
+//         minimized: false,
+//         openedAt,
+//         focusOrder: nextFocusOrder,
+//       };
+
+//       return {
+//         modals: [...state.modals, newModal],
+//         activeModalId: id,
+//         focusCounter: nextFocusOrder,
+//       };
+//     });
+
+//     return id;
+//   },
+
+//   closeModal: (id) => {
+//     set((state) => {
+//       const remaining = state.modals.filter((m) => m.id !== id);
+//       const visibleModals = remaining.filter((m) => !m.minimized);
+//       const newActiveId =
+//         state.activeModalId === id
+//           ? visibleModals.length > 0
+//             ? visibleModals.sort((a, b) => b.focusOrder - a.focusOrder)[0].id
+//             : null
+//           : state.activeModalId;
+
+//       return {
+//         modals: remaining,
+//         activeModalId: newActiveId,
+//       };
+//     });
+//   },
+
+//   closeAllModals: () => {
+//     set({ modals: [], activeModalId: null });
+//   },
+
+//   registerModalMeta: (id, meta) => {
+//     set((state) => ({
+//       modals: state.modals.map((m) =>
+//         m.id === id
+//           ? {
+//             ...m,
+//             meta: {
+//               title: meta.title,
+//               subtitle: meta.subtitle,
+//               icon: meta.icon,
+//               onRequestClose: meta.onRequestClose,
+//             },
+//           }
+//           : m,
+//       ),
+//     }));
+//   },
+
+//   unregisterModalMeta: (id) => {
+//     set((state) => ({
+//       modals: state.modals.map((m) =>
+//         m.id === id ? { ...m, meta: undefined } : m,
+//       ),
+//     }));
+//   },
+
+//   minimizeModal: (id) => {
+//     set((state) => ({
+//       modals: state.modals.map((m) =>
+//         m.id === id ? { ...m, minimized: true } : m,
+//       ),
+//     }));
+//   },
+
+//   restoreModal: (id) => {
+//     set((state) => {
+//       const newFocusOrder = state.focusCounter + 1;
+//       return {
+//         focusCounter: newFocusOrder,
+//         activeModalId: id,
+//         modals: state.modals.map((m) =>
+//           m.id === id
+//             ? { ...m, minimized: false, focusOrder: newFocusOrder }
+//             : m,
+//         ),
+//       };
+//     });
+//   },
+
+//   bringToFront: (id) => {
+//     set((state) => {
+//       const visible = state.modals.filter((m) => !m.minimized);
+//       const topVisible = [...visible].sort(
+//         (a, b) => b.focusOrder - a.focusOrder,
+//       )[0];
+
+//       if (!topVisible || topVisible.id === id) {
+//         return state;
+//       }
+
+//       const newFocusOrder = state.focusCounter + 1;
+//       return {
+//         focusCounter: newFocusOrder,
+//         modals: state.modals.map((m) =>
+//           m.id === id
+//             ? { ...m, minimized: false, focusOrder: newFocusOrder }
+//             : m,
+//         ),
+//       };
+//     });
+//   },
+
+//   isMinimized: (id) => {
+//     const modal = get().modals.find((m) => m.id === id);
+//     return modal?.minimized ?? false;
+//   },
+
+//   isFocused: (id) => {
+//     const state = get();
+//     const visible = state.modals.filter((m) => !m.minimized);
+//     if (!visible.length) return false;
+//     const top = [...visible].sort((a, b) => b.focusOrder - a.focusOrder)[0];
+//     return top.id === id;
+//   },
+
+//   getTopModalId: () => {
+//     const state = get();
+//     const visible = state.modals.filter((m) => !m.minimized);
+//     if (!visible.length) return null;
+//     return [...visible].sort((a, b) => b.focusOrder - a.focusOrder)[0].id;
+//   },
+
+//   getModalLayer: (id) => {
+//     const state = get();
+//     const visible = state.modals
+//       .filter((m) => !m.minimized)
+//       .sort((a, b) => a.focusOrder - b.focusOrder);
+//     const rank = Math.max(
+//       visible.findIndex((m) => m.id === id),
+//       0,
+//     );
+//     const backdrop =
+//       MODAL_LAYER.modalBackdropBase + rank * MODAL_LAYER.modalStep;
+//     return {
+//       backdrop,
+//       panel: backdrop + MODAL_LAYER.modalPanelOffset,
+//     };
+//   },
+
+//   getModalById: (id) => {
+//     return get().modals.find((m) => m.id === id);
+//   },
+
+//   getModalsByType: (type) => {
+//     return get().modals.filter((m) => m.type === type);
+//   },
+
+//   setModalContext: (id, context) => {
+//     set((state) => ({
+//       modals: state.modals.map((m) => (m.id === id ? { ...m, context } : m)),
+//     }));
+//   },
+
+//   clearModalContext: (id) => {
+//     set((state) => ({
+//       modals: state.modals.map((m) =>
+//         m.id === id ? { ...m, context: undefined } : m,
+//       ),
+//     }));
+//   },
+
+//   getModalContext: (id) => {
+//     return get().modals.find((m) => m.id === id)?.context;
+//   },
+
+//   isModalOpen: (type) => {
+//     return get().modals.some((m) => m.type === type);
+//   },
+
+//   isInteractionLocked: () => {
+//     return get().swalDepth > 0;
+//   },
+
+//   incrementSwalDepth: () => {
+//     set((state) => ({ swalDepth: state.swalDepth + 1 }));
+//   },
+
+//   decrementSwalDepth: () => {
+//     set((state) => ({ swalDepth: Math.max(state.swalDepth - 1, 0) }));
+//   },
+
+//   getVisibleModals: () => {
+//     return get().modals.filter((m) => !m.minimized);
+//   },
+
+//   getMinimizedModals: () => {
+//     return get().modals.filter((m) => m.minimized);
+//   },
+// }));
+
+// export const useVisibleModals = () =>
+//   useModalStore((state) => state.getVisibleModals());
+// export const useMinimizedModals = () =>
+//   useModalStore((state) => state.getMinimizedModals());
+
+// export const useModalMeta = (id: string) =>
+//   useModalStore((state) => state.getModalById(id)?.meta);
+
+// export const openCustomerModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("customer", initialData, isEdit, context, meta);
+
+// export const openSupplierModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("supplier", initialData, isEdit, context, meta);
+
+// export const openInvoiceModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("invoice", initialData, isEdit, context, meta);
+
+// export const openQuotationModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("quotation", initialData, isEdit, context, meta);
+
+//   export const openSalesOrderModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("salesOrder", initialData, isEdit, context, meta);
+
+// export const openItemModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("item", initialData, isEdit, context, meta);
+
+// export const openItemCategoryModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("itemCategory", initialData, isEdit, context, meta);
+
+// export const openPurchaseOrderModal = (
+//   poId?: string | number,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("purchaseOrder", { poId }, !!poId, context, meta);
+
+// export const openPurchaseInvoiceModal = (
+//   pId?: string | number,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("purchaseInvoice", { pId }, !!pId, context, meta);
+
+// export const openProformaModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("proforma", initialData, isEdit, context, meta);
+
+// export const openTaxTemplateModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("taxTemplate", initialData, isEdit, context, meta);
+
+// export const openWarehouseModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("warehouse", initialData, isEdit, context, meta);
+
+// export const openTaxCategoryModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("taxCategory", initialData, isEdit, context, meta);
+
+// export const openSalesTaxTemplateModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("salesTax", initialData, isEdit, context, meta);
+
+// export const openBankAccountModal = (
+//   initialData?: unknown,
+
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("bankAccount", initialData, isEdit, context, meta);
+
+// export const openModeOfPaymentModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("modeOfPayment", initialData, isEdit, context, meta);
+// export const openPaymentEntryModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("paymentEntry", initialData, isEdit, context, meta);
+
+// export const openCurrencyExchangeModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("currencyExchange", initialData, isEdit, context, meta);
+
+//     export const openassetCategory = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("assetCategory", initialData, isEdit, context, meta);
+
+// export const openFixedAssetModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("fixedAsset", initialData, isEdit, context, meta);
+
+// export const openAssetMovementModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("assetMovement", initialData, isEdit, context, meta);
+
+// export const openRfqModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore.getState().openModal("Rfq", initialData, isEdit, context, meta);
+
+// export const JournalEntriesModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("JournalEntries", initialData, isEdit, context, meta);
+
+// export const openCreditNoteModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("CreditNote", initialData, isEdit, context, meta);
+
+// export const openSalesDebitNoteModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("SalesDebitNote", initialData, isEdit, context, meta);
+
+// export const openDebitNoteModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("DebitNote", initialData, isEdit, context, meta);
+
+// export const openUserRoleModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("UserRole", initialData, isEdit, context, meta);
+
+// export const openBankModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("Bank", initialData, isEdit, context, meta);
+
+// export const openEmployeeModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("employee", initialData, isEdit, context, meta);
+
+// export const openUserModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("User", initialData, isEdit, context, meta);
+
+// export const openPayrollModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("payroll", initialData, isEdit, context, meta);
+
+// export const openSalaryComponentModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("salaryComponent", initialData, isEdit, context, meta);
+
+// export const openSalaryStructureModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("salaryStructure", initialData, isEdit, context, meta);
+
+// export const openLeaveApplyModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("leaveApply", initialData, isEdit, context, meta);
+
+// export const openTaxConfigModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("taxConfig", initialData, isEdit, context, meta);
+
+// export const openDepartmentModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("department", initialData, isEdit, context, meta);
+
+// export const openDesignationModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("designation", initialData, isEdit, context, meta);
+
+// export const openGradeModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("grade", initialData, isEdit, context, meta);
+
+// export const openEmployeeTypeModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("employeeType", initialData, isEdit, context, meta);
+
+// export const openPayrollPeriodModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("Payrollperiod", initialData, isEdit, context, meta);
+
+// export const openLeaveTypeModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("leaveType", initialData, isEdit, context, meta);
+
+// export const openLeavePeriodModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("leavePeriod", initialData, isEdit, context, meta);
+
+// export const openLeavePolicyModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("leavePolicy", initialData, isEdit, context, meta);
+
+// export const openLeavePolicyAssignmentModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("leavePolicyAssignment", initialData, isEdit, context, meta);
+
+// export const openHolidayListModal = (
+//   initialData?: unknown,
+//   isEdit = false,
   
-  context?: ModalContext,
-  meta?: ModalMeta,
-) => {
-  return useModalStore
-    .getState()
-    .openModal("holidayList", initialData, isEdit, context, meta);
-};
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) => {
+//   return useModalStore
+//     .getState()
+//     .openModal("holidayList", initialData, isEdit, context, meta);
+// };
 
-export const openShiftTypeModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) => {
-  return useModalStore
-    .getState()
-    .openModal("shiftType", initialData, isEdit, context, meta);
-};
+// export const openShiftTypeModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) => {
+//   return useModalStore
+//     .getState()
+//     .openModal("shiftType", initialData, isEdit, context, meta);
+// };
 
-export const openExpenseTypeModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("expenseType", initialData, isEdit, context, meta);
+// export const openExpenseTypeModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("expenseType", initialData, isEdit, context, meta);
 
-export const openEmployeeAdvanceModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("employeeAdvance", initialData, isEdit, context, meta);
-
-
-
-export const openEmailTemplateModal = (
-  templateId?: string,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("emailTemplate", { templateId }, !!templateId, context, meta);
+// export const openEmployeeAdvanceModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("employeeAdvance", initialData, isEdit, context, meta);
 
 
 
-
-export const openScanPIModal = (
-  pId?: string,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal(
-      "scanPI",
-      { pId },
-      !!pId,
-      context,
-      meta,
-    );
-export const openKRAModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("KRA", initialData, isEdit, context, meta);
+// export const openEmailTemplateModal = (
+//   templateId?: string,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("emailTemplate", { templateId }, !!templateId, context, meta);
 
 
-export const openAppraisalCycleModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("appraisalCycle", initialData, isEdit, context, meta);
 
-export const openAppraisalModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("appraisal", initialData, isEdit, context, meta);
 
-export const openFeedbackModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("feedback", initialData, isEdit, context, meta);
+// export const openScanPIModal = (
+//   pId?: string,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal(
+//       "scanPI",
+//       { pId },
+//       !!pId,
+//       context,
+//       meta,
+//     );
+// export const openKRAModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("KRA", initialData, isEdit, context, meta);
 
-export const openPayrollPreviewModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("payrollPreview", initialData, isEdit, context, meta);
 
-export const openCoaGLAccountModal = (
-  initialData?: unknown,
-  isEdit = false,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("coaGLAccount", initialData, isEdit, context, meta);
-export const openSendEmailModal = (
-  initialData?: unknown,
-  context?: ModalContext,
-  meta?: ModalMeta,
-) =>
-  useModalStore
-    .getState()
-    .openModal("sendEmail", initialData, false, context, meta);
+// export const openAppraisalCycleModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("appraisalCycle", initialData, isEdit, context, meta);
+
+// export const openAppraisalModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("appraisal", initialData, isEdit, context, meta);
+
+// export const openFeedbackModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("feedback", initialData, isEdit, context, meta);
+
+// export const openPayrollPreviewModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("payrollPreview", initialData, isEdit, context, meta);
+
+// export const openCoaGLAccountModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("coaGLAccount", initialData, isEdit, context, meta);
+// export const openSendEmailModal = (
+//   initialData?: unknown,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("sendEmail", initialData, false, context, meta);
+//     export const openStockCorrectionModal = (
+//   initialData?: unknown,
+//   isEdit = false,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("stockCorrection", initialData, isEdit, context, meta);
+
+// export const openImportInventoryModal = (
+//   initialData?: unknown,
+//   context?: ModalContext,
+//   meta?: ModalMeta,
+// ) =>
+//   useModalStore
+//     .getState()
+//     .openModal("importInventory", initialData, false, context, meta);
+    
+export * from "../types/modal_store_types/modalTypes";
+export * from "../store/modal/use_modal_hook";
+export * from "../store/modal/action";

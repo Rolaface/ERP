@@ -429,8 +429,13 @@ export default function AddTemplateModal({
             ? "Edit Appraisal Template"
             : "Create Appraisal Template"
       }
-      subtitle="Add Appraisal Template"
-      icon={LayoutTemplate}
+      subtitle={
+        isViewMode
+          ? "View appraisal template details"
+          : selectedTemplate
+            ? "Edit and manage appraisal template details"
+            : "Add and manage appraisal templates"
+      } icon={LayoutTemplate}
       maxWidth="4xl"
       height="82vh"
       footer={

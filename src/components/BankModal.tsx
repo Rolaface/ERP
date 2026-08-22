@@ -232,7 +232,6 @@ const BankModal: React.FC<BankModalProps> = ({
           }
           disabled={isViewMode}
           error={errors.swift_number}
-          maxLength={11}
         />
       </div>
     </MinimizableModal>

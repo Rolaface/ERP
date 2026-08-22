@@ -498,6 +498,17 @@ const handleAddPurchaseInvoice = useCallback(() => {
       tooltip: (i) => i.sellingPrice,
     },
     {
+      key: "rrp_rate",
+      header: "RRP",
+      align: "center",
+      render: (i) => (
+        <div className="py-1.5">
+          <span className="block">{i.rrp_rate}</span>
+        </div>
+      ),
+      tooltip: (i) => i.rrp_rate,
+    },
+    {
   key: "taxTitle",
   header: "Tax Title",
   align: "center",
@@ -602,7 +613,6 @@ const handleAddPurchaseInvoice = useCallback(() => {
           loadingPurchase={loadingPurchase}
           loadingStock={loadingStock}
           onStockSearch={(from, to) => {
-            console.log("Stock search:", from, "→", to);
           }}
         />
 

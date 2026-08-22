@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
+import {emitSessionExpired} from "../utils/sessionEvents";
 
 const SID_KEY  = "session_id";
 const USER_KEY = "auth_user";
@@ -21,9 +22,10 @@ export const createAxiosInstance = (baseURL: string): AxiosInstance => {
         localStorage.removeItem(SID_KEY);
         localStorage.removeItem(USER_KEY);
 
-        // Redirect only if not already on login page
+        // Show session-expired modal,
+        // only if user isn't already on the login page
         if (!window.location.pathname.includes("/login")) {
-          window.location.href = "/login";
+          emitSessionExpired();
         }
       }
       return Promise.reject(error);

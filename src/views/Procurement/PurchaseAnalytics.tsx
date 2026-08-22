@@ -398,6 +398,7 @@ const PurchaseAnalytics: React.FC = () => {
     return data.columns.map((col) => {
       const isNumeric =
         col.fieldtype === "Float" || col.fieldtype === "Currency";
+      const isTotal = col.fieldname === "total";
       return {
         accessorKey: col.fieldname,
         header: col.label,
@@ -426,7 +427,13 @@ const PurchaseAnalytics: React.FC = () => {
             const num = val as number;
             if (!num || num === 0) return <span className="text-xs text-muted tabular-nums">—</span>;
             return (
-              <span className="text-xs tabular-nums text-gray-600 font-medium">
+              <span
+                className={`text-xs tabular-nums ${
+                  isTotal
+                    ? "text-emerald-600 font-bold"
+                    : "text-gray-600 font-medium"
+                }`}
+              >
                 {nf(num, !isQuantity, !isQuantity ? sym : "")}
               </span>
             );
@@ -658,9 +665,12 @@ const PurchaseAnalytics: React.FC = () => {
 
       {/* ── Table ── */}
       <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
-        <div className="overflow-auto flex-1 relative">
-          <table className="text-left border-collapse w-full" style={{ tableLayout: "auto" }}>
-            <thead className="sticky top-0 z-10 border-b border-[var(--border)]">
+        <div className="overflow-auto flex-1 min-h-0 relative">
+          <table
+            className="text-left border-separate border-spacing-0 w-full"
+            style={{ tableLayout: "auto" }}
+          >
+            <thead className="border-b border-[var(--border)]">
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((header) => {
@@ -668,12 +678,19 @@ const PurchaseAnalytics: React.FC = () => {
                       (header.column.columnDef.meta as any)?.align === "right"
                         ? "text-right"
                         : "text-left";
+                    const isTotal = header.column.id === "total";
                     return (
-                      <th
-                        key={header.id}
-                        style={{ width: header.getSize() }}
-                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-row-hover border-b border-[var(--border)] ${align}`}
-                      >
+                   <th
+  key={header.id}
+  style={{
+    width: header.getSize(),
+    backgroundColor: "var(--card)", // fully opaque, no alpha
+  }}
+  className={`sticky top-0 z-10 px-3 py-2 text-[9px] font-black uppercase tracking-widest
+              text-muted whitespace-nowrap border-b border-[var(--border)] ${align} ${
+                isTotal ? "text-primary" : ""
+              }`}
+>
                         {flexRender(
                           header.column.columnDef.header,
                           header.getContext(),
@@ -718,10 +735,13 @@ const PurchaseAnalytics: React.FC = () => {
                           (cell.column.columnDef.meta as any)?.align === "right"
                             ? "text-right"
                             : "text-left";
+                        const isTotal = cell.column.id === "total";
                         return (
                           <td
                             key={cell.id}
-                            className={`px-3 py-1 whitespace-nowrap ${align}`}
+                            className={`px-3 py-1 whitespace-nowrap ${align} ${
+                              isTotal ? "bg-primary/5" : ""
+                            }`}
                           >
                             {flexRender(
                               cell.column.columnDef.cell,

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { uploadEmployeePhoto } from "../../../api/employeeapi";
-import {
-  FaUserFriends,
-} from "react-icons/fa";
+import { FaUserFriends } from "react-icons/fa";
 
 import ModalFooter from "../../common/ModalFooter";
 import IdentityVerificationModal from "./IdentityVerificationModal";
@@ -11,7 +9,7 @@ import ContactInfoTab from "./ContactInfoTabs";
 import EmploymentTab from "./EmploymentTab";
 import CompensationTab from "./CompensationTab";
 import { LeaveSetupTab } from "./LeaveSetupTab";
-import WorkScheduleTab from "./WorkScheduletab";
+
 import { EmployeeSummaryPanel } from "./EmployeeSummaryPanel";
 import { MinimizableModal } from "../../common/MinimizableModal";
 import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
@@ -34,7 +32,6 @@ import {
   createEmployee,
   updateEmployeeById,
 } from "../../../api/employeeapi";
-import { useCompanySelection } from "../../../hooks/useCompanySelection";
 import { getEmployeeFeatures } from "../../../config/employeeFeatures";
 import {
   showApiError,
@@ -94,8 +91,8 @@ const AddEmployeeModal: React.FC<Props> = ({
   modalId,
   mode = "add",
 }) => {
-  const { companyCode } = useCompanySelection();
-  const features = getEmployeeFeatures(companyCode);
+  // No company-specific branching — same features for everyone
+  const features = getEmployeeFeatures();
   const departments = features.departments;
   const levelsFromSettings = getLevelsFromHrSettings();
 
@@ -108,7 +105,9 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   // ── Form state ──────────────────────────────────────────────────────────
   const [formData, setFormData] = useState<Record<string, any>>(DEFAULT_FORM);
-  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>({});
+  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>(
+    {},
+  );
   const [isPreFilled, setIsPreFilled] = useState(false);
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
 
@@ -151,9 +150,8 @@ const AddEmployeeModal: React.FC<Props> = ({
 
     setCurrentTabIndex(0);
     setEmployeeFile(null);
-    // reset dirty state whenever modal opens fresh
     resetDirty();
-  }, [isOpen, editData, features.requireIdentityVerification]);
+  }, [isOpen, editData]);
 
   // ── Body scroll lock ────────────────────────────────────────────────────
   useEffect(() => {
@@ -190,7 +188,10 @@ const AddEmployeeModal: React.FC<Props> = ({
         const matchedEmployee = (res || []).find(
           (emp: any) => emp.value === formData.reports_to,
         );
-        if (matchedEmployee && matchedEmployee.label !== formData.reportingToLabel) {
+        if (
+          matchedEmployee &&
+          matchedEmployee.label !== formData.reportingToLabel
+        ) {
           setFormData((prev: any) => ({
             ...prev,
             reportingToLabel: matchedEmployee.label,
@@ -205,7 +206,10 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.department, fetcher: getAllDepartments });
+      const label = await resolveLabel({
+        value: formData.department,
+        fetcher: getAllDepartments,
+      });
       setFormData((prev: any) => ({ ...prev, departmentLabel: label }));
     };
     loadLabel();
@@ -213,7 +217,10 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.leavePolicy, fetcher: getAllLeavePolicies });
+      const label = await resolveLabel({
+        value: formData.leavePolicy,
+        fetcher: getAllLeavePolicies,
+      });
       setFormData((prev: any) => ({ ...prev, leavePolicyLabel: label }));
     };
     loadLabel();
@@ -221,7 +228,10 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.grade, fetcher: getAllGrades });
+      const label = await resolveLabel({
+        value: formData.grade,
+        fetcher: getAllGrades,
+      });
       setFormData((prev: any) => ({ ...prev, gradeLabel: label }));
     };
     loadLabel();
@@ -229,7 +239,10 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.designation, fetcher: getAllDesignations });
+      const label = await resolveLabel({
+        value: formData.designation,
+        fetcher: getAllDesignations,
+      });
       setFormData((prev: any) => ({ ...prev, designationLabel: label }));
     };
     loadLabel();
@@ -237,7 +250,10 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.shift, fetcher: getAllShiftTypes });
+      const label = await resolveLabel({
+        value: formData.shift,
+        fetcher: getAllShiftTypes,
+      });
       setFormData((prev: any) => ({ ...prev, shiftLabel: label }));
     };
     loadLabel();
@@ -245,7 +261,6 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   // ── Helpers ─────────────────────────────────────────────────────────────
 
-  // central handler — marks dirty so unsaved-changes guard fires on close
   const handleInputChange = (field: string, value: any) => {
     markDirty();
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -267,7 +282,6 @@ const AddEmployeeModal: React.FC<Props> = ({
     },
   };
 
-  // validate current tab before advancing
   const handleNext = () => {
     const validator = TAB_REQUIRED_FIELDS[activeTab];
     if (validator) {
@@ -282,7 +296,6 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   const handlePrevious = () => setCurrentTabIndex((p) => p - 1);
 
-  // route close through the unsaved-changes guard
   const handleCloseRequest = () => {
     if (saving) return;
     handleCloseWithConfirm(onClose, modalId);
@@ -303,10 +316,12 @@ const AddEmployeeModal: React.FC<Props> = ({
   };
 
   const handleSave = async () => {
-    const payload = buildEmployeePayload(formData, mode === "edit" || !!editData);
+    const payload = buildEmployeePayload(
+      formData,
+      mode === "edit" || !!editData,
+    );
     const isEdit = mode === "edit" || !!editData;
 
-    // ── EDIT MODE ────────────────────────────────────────────────────────────
     if (isEdit) {
       try {
         setSaving(true);
@@ -321,7 +336,9 @@ const AddEmployeeModal: React.FC<Props> = ({
 
         if (!id) throw new Error("Cannot determine employee ID for update");
         if (formData._salaryChanged && !formData.effectiveFrom) {
-          showValidationError("Effective date is required when salary details are changed.");
+          showValidationError(
+            "Effective date is required when salary details are changed.",
+          );
           return;
         }
 
@@ -354,7 +371,6 @@ const AddEmployeeModal: React.FC<Props> = ({
       return;
     }
 
-    // ── ADD MODE ─────────────────────────────────────────────────────────────
     showStepLoader(
       "Creating Employee…",
       `<span style="font-size:13px;color:#64748b">Setting up the employee record, please wait.</span>`,
@@ -371,8 +387,11 @@ const AddEmployeeModal: React.FC<Props> = ({
 
       employeeId = data?.employee || res?.data?.employee || "";
       backendMsg =
-        res?.message?.message || res?.data?.message || "Employee created successfully.";
-      welcomeMsg = typeof data?.messages === "string" ? data.messages.trim() : "";
+        res?.message?.message ||
+        res?.data?.message ||
+        "Employee created successfully.";
+      welcomeMsg =
+        typeof data?.messages === "string" ? data.messages.trim() : "";
 
       try {
         if (res?._server_messages) {
@@ -445,7 +464,7 @@ const AddEmployeeModal: React.FC<Props> = ({
   const handleVerified = (data: any) => {
     setFormData((prev) => ({
       ...prev,
-      nrcId: data.identityInfo?.nrc || "",
+      nrcId: data.identityInfo?.nationalId || "",
       firstName: data.personalInfo?.firstName || "",
       lastName: data.personalInfo?.lastName || "",
       gender: data.personalInfo?.gender || "",
@@ -468,6 +487,7 @@ const AddEmployeeModal: React.FC<Props> = ({
   if (step === "verification" && features.requireIdentityVerification) {
     return (
       <IdentityVerificationModal
+        modalId={`${modalId}-verification`}
         isOpen={isOpen}
         onVerified={handleVerified}
         onManualEntry={() => {
@@ -479,7 +499,6 @@ const AddEmployeeModal: React.FC<Props> = ({
       />
     );
   }
-
   const footer = (
     <ModalFooter
       onCancel={handleCloseRequest}
@@ -499,20 +518,21 @@ const AddEmployeeModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      icon={FaUserFriends}
+      icon={FaUserFriends as any}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       formContainerRef={containerRef}
       title={editData ? "Edit Employee" : "Add Employee"}
-      subtitle="Employee Management"
+      subtitle={
+        editData
+          ? "Edit and manage employee details"
+          : "Add and manage employees"
+      }
       customWidth="90vw"
       height="95vh"
       footer={footer}
     >
-      {/* Split layout */}
       <div className="flex h-full overflow-hidden">
-        {/* LEFT: Tab bar + content */}
         <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-          {/* Tab bar — clicking any tab jumps directly to it */}
           <div className="flex border-b border-theme bg-card px-1.5 overflow-x-auto flex-shrink-0">
             {TAB_ORDER.map((tab, i) => {
               const active = i === currentTabIndex;
@@ -532,8 +552,7 @@ const AddEmployeeModal: React.FC<Props> = ({
             })}
           </div>
 
-          {/* Tab content */}
-          <div className="flex-1 overflow-y-auto bg-app p-3">
+          <div className="flex-1 bg-app p-3 min-h-0 overflow-y-auto">
             {activeTab === "Personal" && (
               <PersonalInfoTab
                 formData={formData}
@@ -555,6 +574,14 @@ const AddEmployeeModal: React.FC<Props> = ({
                 Level={levelsFromSettings}
                 managers={reportingManagers}
                 hrManagers={hrManagers}
+                isEditMode={!!editData}
+                employeeId={
+                  editData?.employee ||
+                  editData?.data?.employee ||
+                  editData?.message?.data?.employee ||
+                  editData?.id ||
+                  editData?.name
+                }
               />
             )}
             {activeTab === "Attendance & Leaves" && (
@@ -570,25 +597,20 @@ const AddEmployeeModal: React.FC<Props> = ({
                 isEditMode={!!editData}
               />
             )}
-            {/* {activeTab === "Work Schedule" && (
-              <WorkScheduleTab
-                formData={formData}
-                handleInputChange={handleInputChange}
-              />
-            )} */}
             {activeTab === "Bank" && (
               <EmployeeBankTab
                 formData={formData}
                 setFormData={setFormData}
                 isEditMode={!!editData}
-                employeeId={editData?.employee || editData?.id || editData?.name}
+                employeeId={
+                  editData?.employee || editData?.id || editData?.name
+                }
               />
             )}
           </div>
         </div>
 
-        {/* RIGHT: Summary panel */}
-        <div className="w-[260px] flex-shrink-0 border-l border-theme bg-app">
+        <div className="w-[200px] flex-shrink-0 border-l border-theme bg-app">
           <div className="h-full">
             <EmployeeSummaryPanel
               formData={formData}

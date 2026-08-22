@@ -28,7 +28,10 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export const ModalSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, icon, options = [], children, className = "", error, ...props }, ref) => (
+  (
+    { label, icon, options = [], children, className = "", error, ...props },
+    ref,
+  ) => (
     <label className="flex flex-col text-sm group min-w-0">
       <span className="block text-[10px] font-medium text-main mb-1">
         {icon && (
@@ -73,7 +76,20 @@ ModalSelect.displayName = "ModalSelect";
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
-const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 function parseDate(value: string): Date | null {
   if (!value) return null;
@@ -114,6 +130,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   trailingIcon?: React.ReactNode;
 }
 
+const capitalizeFirstLetter = (value: string) => {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+};
+
 export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, icon, className = "", error, trailingIcon, ...props }, ref) => {
     const isNumber = props.type === "number";
@@ -148,22 +169,34 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
             <input
               type="text"
               readOnly
-              value={props.value ? formatDisplay(parseDate(props.value as string)!) : ""}
+              value={
+                props.value
+                  ? formatDisplay(parseDate(props.value as string)!)
+                  : ""
+              }
               placeholder="DD-MMM-YYYY"
               disabled={props.disabled}
-              className={inputClass + " cursor-pointer pr-7 w-full min-w-[140px] h-[28px] text-[11px]"}
+              className={
+                inputClass +
+                " cursor-pointer pr-7 w-full min-w-[140px] h-[28px] text-[11px]"
+              }
               onClick={() => {
                 if (!props.disabled) {
-                  (document.getElementById(
-                    `date-hidden-${props.name}-${props.id ?? props.name}`,
-                  ) as HTMLInputElement)?.showPicker?.();
+                  (
+                    document.getElementById(
+                      `date-hidden-${props.name}-${props.id ?? props.name}`,
+                    ) as HTMLInputElement
+                  )?.showPicker?.();
                 }
               }}
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
@@ -176,7 +209,9 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
               name={props.name}
               value={(props.value as string) ?? ""}
               disabled={props.disabled}
-              onChange={(e) => { if (e.target.value) props.onChange?.(e); }}
+              onChange={(e) => {
+                if (e.target.value) props.onChange?.(e);
+              }}
               className="absolute right-0 top-0 opacity-0 w-7 h-full cursor-pointer"
               tabIndex={-1}
             />
@@ -190,6 +225,13 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
               ref={ref}
               {...props}
               value={props.value ?? ""}
+              onChange={(e) => {
+                if (props.type === "text" || !props.type) {
+                  e.target.value = capitalizeFirstLetter(e.target.value);
+                }
+
+                props.onChange?.(e);
+              }}
               className={inputClass + " w-full"}
               onWheel={isNumber ? numberInputProps.onWheel : props.onWheel}
               onKeyDown={
@@ -223,6 +265,13 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             {...props}
             value={props.value ?? ""}
+            onChange={(e) => {
+              if (props.type === "text" || !props.type) {
+                e.target.value = capitalizeFirstLetter(e.target.value);
+              }
+
+              props.onChange?.(e);
+            }}
             className={inputClass}
             onWheel={isNumber ? numberInputProps.onWheel : props.onWheel}
             onKeyDown={
@@ -262,73 +311,75 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
   icon?: React.ReactNode;
 }
 
-export const ModalTextarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, icon, className = "", ...props }, ref) => (
-    <label className="flex flex-col text-sm w-full group">
-      <span className="block text-[10px] font-medium text-main mb-1">
-        {icon && (
-          <span className="text-muted group-focus-within:text-primary transition-colors">
-            {icon}
-          </span>
-        )}
-        {label}
-        {props.required && <span className="text-danger">*</span>}
-      </span>
+export const ModalTextarea = React.forwardRef<
+  HTMLTextAreaElement,
+  TextareaProps
+>(({ label, icon, className = "", ...props }, ref) => (
+  <label className="flex flex-col text-sm w-full group">
+    <span className="block text-[10px] font-medium text-main mb-1">
+      {icon && (
+        <span className="text-muted group-focus-within:text-primary transition-colors">
+          {icon}
+        </span>
+      )}
+      {label}
+      {props.required && <span className="text-danger">*</span>}
+    </span>
 
-      <textarea
-        ref={ref}
-        {...props}
-        value={props.value ?? ""}
-        className={[
-          "w-full h-[30px] py-1 px-2 border rounded text-[11px] resize-none text-main bg-card transition-all",
-          props.disabled
-            ? "bg-app cursor-not-allowed opacity-60 border-theme"
-            : "border-[var(--border)] hover:border-primary/40",
-          className,
-        ].join(" ")}
-        onFocus={(e) => {
-          e.currentTarget.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.16)";
-          props.onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.boxShadow = "";
-          props.onBlur?.(e);
-        }}
-      />
-    </label>
-  ),
-);
+    <textarea
+      ref={ref}
+      {...props}
+      value={props.value ?? ""}
+      className={[
+        "w-full h-[30px] py-1 px-2 border rounded text-[11px] resize-none text-main bg-card transition-all",
+        props.disabled
+          ? "bg-app cursor-not-allowed opacity-60 border-theme"
+          : "border-[var(--border)] hover:border-primary/40",
+        className,
+      ].join(" ")}
+      onFocus={(e) => {
+        e.currentTarget.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.16)";
+        props.onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        e.currentTarget.style.boxShadow = "";
+        props.onBlur?.(e);
+      }}
+    />
+  </label>
+));
 ModalTextarea.displayName = "ModalTextarea";
 
 // ─── FilterSelect ─────────────────────────────────────────────────────────────
 
 interface FilterSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options?: SelectOption[];
+  hideAllOption?: boolean;
 }
-
-export const FilterSelect = React.forwardRef<HTMLSelectElement, FilterSelectProps>(
-  ({ options = [], className = "", ...props }, ref) => (
-    <select
-      ref={ref}
-      {...props}
-      value={props.value ?? ""}
-      className={[
-        "h-8 min-w-[60px] px-2.5 py-1",
-        "bg-card border border-[var(--border)]",
-        "rounded-lg text-xs font-medium text-main",
-        "focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all",
-        className,
-      ].join(" ")}
-    >
-      <option value="">ALL</option>
-      {options.map((opt, idx) => (
-        <option key={`${opt.value}-${idx}`} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-  ),
-);
+export const FilterSelect = React.forwardRef<
+  HTMLSelectElement,
+  FilterSelectProps
+>(({ options = [], className = "", hideAllOption = false, ...props }, ref) => (
+  <select
+    ref={ref}
+    {...props}
+    value={props.value ?? ""}
+    className={[
+      "h-8 min-w-[60px] px-2.5 py-1",
+      "bg-card border border-[var(--border)]",
+      "rounded-lg text-xs font-medium text-main",
+      "focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all",
+      className,
+    ].join(" ")}
+  >
+    {!hideAllOption && <option value="">ALL</option>}
+    {options.map((opt, idx) => (
+      <option key={`${opt.value}-${idx}`} value={opt.value}>
+        {opt.label}
+      </option>
+    ))}
+  </select>
+));
 FilterSelect.displayName = "FilterSelect";
 
 // ─── YesNoCheckbox ────────────────────────────────────────────────────────────
@@ -343,7 +394,12 @@ interface YesNoCheckboxProps {
 }
 
 export const YesNoCheckbox: React.FC<YesNoCheckboxProps> = ({
-  name, label, value, required, disabled, onChange,
+  name,
+  label,
+  value,
+  required,
+  disabled,
+  onChange,
 }) => {
   const normalizedValue = value === "Y" ? "Y" : "N";
   const checked = normalizedValue === "Y";
@@ -366,8 +422,18 @@ export const YesNoCheckbox: React.FC<YesNoCheckboxProps> = ({
           ].join(" ")}
         >
           {checked && (
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            <svg
+              className="w-4 h-4 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={3}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           )}
         </div>
@@ -390,7 +456,12 @@ interface CreditDaysInputProps {
 }
 
 export const CreditDaysInput: React.FC<CreditDaysInputProps> = ({
-  value, name, onChange, required, error, className,
+  value,
+  name,
+  onChange,
+  required,
+  error,
+  className,
 }) => (
   <label className="flex flex-col text-sm group min-w-0">
     <span className="block text-[10px] font-medium text-main mb-1">
@@ -419,7 +490,9 @@ export const CreditDaysInput: React.FC<CreditDaysInputProps> = ({
             ? "0 0 0 3px rgba(239,68,68,0.18)"
             : "0 0 0 3px rgba(37,99,235,0.16)";
         }}
-        onBlur={(e) => { e.currentTarget.style.boxShadow = ""; }}
+        onBlur={(e) => {
+          e.currentTarget.style.boxShadow = "";
+        }}
       />
       <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-muted pointer-events-none">
         Days
@@ -445,7 +518,7 @@ export const NumericInput: React.FC<NumericInputProps> = ({
   value,
   onChange,
   placeholder = "0",
-  decimalScale = 4,
+  decimalScale = 6,
   allowNegative = false,
   disabled = false,
   className = "",
@@ -495,7 +568,11 @@ export const NumericInput: React.FC<NumericInputProps> = ({
 
 interface NumberInputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
-export const NumberInput: React.FC<NumberInputProps> = ({ value, className = "", ...props }) => (
+export const NumberInput: React.FC<NumberInputProps> = ({
+  value,
+  className = "",
+  ...props
+}) => (
   <input
     type="number"
     value={value ?? ""}
@@ -525,40 +602,107 @@ interface ToggleSwitchProps {
   onLabel?: string;
   offLabel?: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+
+  options?: { label: string; value: string }[];
+  value?: string;
+  onValueChange?: (value: string) => void;
 }
 
 export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
-  name, label, checked, disabled, required,
-  onLabel = "Yes", offLabel = "No", onChange,
-}) => (
-  <div className="flex flex-col min-w-0">
-    <span className="block text-[10px] font-medium text-main mb-1">
-      {label}
-      {required && <span className="text-danger">*</span>}
-    </span>
-    <div className={`flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
-      <label className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${!checked ? "bg-primary text-white shadow-sm" : "text-muted hover:text-main bg-transparent"}`}>
-        <input
-          type="radio"
-          name={name}
-          checked={!checked}
-          disabled={disabled}
-          onChange={() => onChange({ target: { name, type: "checkbox", checked: false } } as any)}
-          className="hidden"
-        />
-        {offLabel}
-      </label>
-      <label className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${checked ? "bg-primary text-white shadow-sm" : "text-muted hover:text-main bg-transparent"}`}>
-        <input
-          type="radio"
-          name={name}
-          checked={checked}
-          disabled={disabled}
-          onChange={() => onChange({ target: { name, type: "checkbox", checked: true } } as any)}
-          className="hidden"
-        />
-        {onLabel}
-      </label>
+  name,
+  label,
+  checked,
+  disabled,
+  required,
+  onLabel = "Yes",
+  offLabel = "No",
+  onChange,
+  options,
+  value,
+  onValueChange,
+}) => {
+  if (options && options.length > 0) {
+    return (
+      <div className="flex flex-col min-w-0">
+        <span className="block text-[10px] font-medium text-main mb-1">
+          {label}
+          {required && <span className="text-danger">*</span>}
+        </span>
+        <div
+          className={`flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max ${disabled ? "opacity-50 pointer-events-none" : ""}`}
+        >
+          {options.map((opt) => {
+            const isActive = value === opt.value;
+            return (
+              <label
+                key={opt.value}
+                className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${
+                  isActive
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-muted hover:text-main bg-transparent"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name={name}
+                  checked={isActive}
+                  disabled={disabled}
+                  onChange={() => onValueChange?.(opt.value)}
+                  className="hidden"
+                />
+                {opt.label}
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col min-w-0">
+      <span className="block text-[10px] font-medium text-main mb-1">
+        {label}
+        {required && <span className="text-danger">*</span>}
+      </span>
+      <div
+        className={`flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max ${disabled ? "opacity-50 pointer-events-none" : ""}`}
+      >
+        <label
+          className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${!checked ? "bg-primary text-white shadow-sm" : "text-muted hover:text-main bg-transparent"}`}
+        >
+          <input
+            type="radio"
+            name={name}
+            checked={!checked}
+            disabled={disabled}
+            onChange={() =>
+              onChange({
+                target: { name, type: "checkbox", checked: false },
+              } as any)
+            }
+            className="hidden"
+          />
+          {offLabel}
+        </label>
+        <label
+          className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${checked ? "bg-primary text-white shadow-sm" : "text-muted hover:text-main bg-transparent"}`}
+        >
+          <input
+            type="radio"
+            name={name}
+            checked={checked}
+            disabled={disabled}
+            onChange={() =>
+              onChange({
+                target: { name, type: "checkbox", checked: true },
+              } as any)
+            }
+            className="hidden"
+          />
+          {onLabel}
+        </label>
+      </div>
     </div>
-  </div>
-);
+  );
+};

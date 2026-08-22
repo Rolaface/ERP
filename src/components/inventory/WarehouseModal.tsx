@@ -7,6 +7,7 @@ import { Warehouse } from "lucide-react";
 import type { CreateWarehousePayload } from "../../api/WarehouseApi";
 import { getCompanyById } from "../../api/companySetupApi";
 import { createWarehouseNode, updateWarehouseById } from "../../api/WarehouseApi";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
 const emptyForm = {
   warehouse_name: "",
@@ -67,7 +68,7 @@ const WarehouseModal: React.FC<{
           warehouse_name: initialData.warehouse_name || "",
           is_group: initialData.is_group ? "1" : "0",
           company: initialData.company || prev.company,
-          parent: initialData.parent || initialData.parent_warehouse || "",
+          parent: getGLNameWithoutAbbreviation(initialData.parent || initialData.parent_warehouse || ""),
         }));
       } else {
         setForm((prev) => ({
@@ -183,8 +184,13 @@ const WarehouseModal: React.FC<{
         handleCloseWithConfirm(handleClose, resolvedModalId)
       }
       title={isViewMode ? "View Warehouse" : isEditMode ? "Edit Warehouse" : "Add Warehouse"}
-      subtitle={isViewMode ? "Read-only view of this warehouse" : "Manage your inventory locations"}
-      icon={Warehouse}
+      subtitle={
+        isViewMode
+          ? "View warehouse details"
+          : isEditMode
+            ? "Edit and manage warehouse details"
+            : "Add and manage warehouses"
+      } icon={Warehouse}
       customWidth="35vw"
       height="auto"
     >

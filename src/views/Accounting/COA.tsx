@@ -155,11 +155,10 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => (
               e.stopPropagation();
               action.onClick();
             }}
-            className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition ${
-              action.danger
+            className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition ${action.danger
                 ? "text-danger hover:bg-danger/10"
                 : "text-main hover:bg-row-hover"
-            }`}
+              }`}
           >
             <span className={action.danger ? "text-danger" : "text-muted"}>
               {action.icon}
@@ -450,6 +449,7 @@ const COATab: React.FC<COATabProps> = ({
         cell: ({ row }) => {
           const node = row.original;
           const canExpand = row.getCanExpand();
+          const isGroup = node.is_group === 1;
           return (
             <div
               className="flex items-center gap-1.5"
@@ -463,9 +463,8 @@ const COATab: React.FC<COATabProps> = ({
                 >
                   <ChevronRight
                     size={12}
-                    className={`transition-transform duration-150 ${
-                      row.getIsExpanded() ? "rotate-90" : ""
-                    }`}
+                    className={`transition-transform duration-150 ${row.getIsExpanded() ? "rotate-90" : ""
+                      }`}
                   />
                   {row.getIsExpanded() ? (
                     <FolderOpen size={13} />
@@ -473,6 +472,10 @@ const COATab: React.FC<COATabProps> = ({
                     <Folder size={13} />
                   )}
                 </button>
+              ) : isGroup ? (
+                <span className="shrink-0 text-muted pl-[15px]">
+                  <Folder size={13} />
+                </span>
               ) : (
                 <BookOpen
                   size={12}
@@ -480,11 +483,10 @@ const COATab: React.FC<COATabProps> = ({
                 />
               )}
               <span
-                className={`text-xs truncate ${
-                  node.is_group
+                className={`text-xs truncate ${node.is_group
                     ? "font-semibold text-main"
                     : "font-normal text-main"
-                }`}
+                  }`}
               >
                 {node.account_name}
               </span>
@@ -559,7 +561,8 @@ const COATab: React.FC<COATabProps> = ({
         id: "balance_base",
         // Balance converted to base currency (from API: base_currency = "GHS")
         // Header: "Balance (₵ GHS)" | Cell: "₵ 3,688,944,999.00"
-        header: `Balance (${getSymbol(coaData?.base_currency)} ${coaData?.base_currency ?? ""})`,
+        // header: `Balance (${getSymbol(coaData?.base_currency)} ${coaData?.base_currency ?? ""})`,
+        header: `Balance (${coaData?.base_currency ?? ""})`,
         size: 160,
         meta: { align: "right" },
         cell: ({ row }) => {
@@ -597,19 +600,19 @@ const COATab: React.FC<COATabProps> = ({
             },
             ...(node.is_group === 1
               ? [
-                  {
-                    label: "Add Child",
-                    icon: <GitBranch size={12} />,
-                    onClick: () => handleAddChild(node),
-                  },
-                ]
+                {
+                  label: "Add Child",
+                  icon: <GitBranch size={12} />,
+                  onClick: () => handleAddChild(node),
+                },
+              ]
               : [
-                  {
-                    label: "View Ledger",
-                    icon: <BookMarked size={12} />,
-                    onClick: () => onViewLedger?.(node.name),
-                  },
-                ]),
+                {
+                  label: "View Ledger",
+                  icon: <BookMarked size={12} />,
+                  onClick: () => onViewLedger?.(node.name),
+                },
+              ]),
             {
               label: "Delete",
               icon: <Trash2 size={12} />,

@@ -4,7 +4,9 @@ export function buildListParams({
   pageSize,
   search,
   searchFields,
-    status,
+  status,
+  sortBy,
+  sortOrder,
 }: {
   fields: string[];
   start?: number;
@@ -12,6 +14,8 @@ export function buildListParams({
   search?: string;
   searchFields?: string[];
   status?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }) {
   const params = new URLSearchParams();
 
@@ -25,8 +29,12 @@ export function buildListParams({
   if (typeof pageSize === "number") {
     params.append("limit_page_length", String(pageSize));
   }
-  params.append("order_by", "creation desc");
 
+  if (sortBy) {
+    params.append("order_by", `${sortBy} ${sortOrder || "asc"}`);
+  } else {
+    params.append("order_by", "creation desc");
+  }
 
   if (search && searchFields?.length) {
     const orFilters = searchFields.map((field) => [
@@ -37,7 +45,7 @@ export function buildListParams({
     params.append("or_filters", JSON.stringify(orFilters));
   }
   if (status) {
-  params.append("or_filters", JSON.stringify({ status }));
-}
+    params.append("or_filters", JSON.stringify({ status }));
+  }
   return params.toString();
 }

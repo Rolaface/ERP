@@ -1,338 +1,272 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import {
-  showApiError,
-  showSuccess,
-  showLoading,
-  closeSwal,
-} from "../../utils/alert";
-import BatchTable from "./BatchTable";
-import {
-  getStockReport,
-  getStockById,
-  deleteStockEntry,
-} from "../../api/stockApi";
-import { fireManagedSwal } from "../../utils/swalManager";
-import { ChevronRight, ChevronDown, Upload } from "lucide-react";
-import StockCorrectionModal from "../../components/inventory/stock/Stockcorrectionmodal";
-import BulkUploadModal from "../../components/inventory/stock/BulkUploadModal";
+import React, { useCallback, useState } from "react";
+import { flexRender } from "@tanstack/react-table";
+import Pagination from "../../components/Pagination";
+import { ChevronUp, ChevronDown, ChevronsUpDown, Package2 } from "lucide-react";
+
+import { openImportInventoryModal } from "../../store/modalStore";
 import ViewStockModal from "../../components/inventory/ViewStockModal";
-import Table from "../../components/ui/Table/Table";
-import type { Column } from "../../components/ui/Table/type";
+import BatchDetailsTable from "../../views/Inventory/BatchTable";
+import StockLedgerView from "../../views/Inventory/StockLedgerView";
 
+import ItemsTableFilters from "../../utils/stockitemtablefilter";
+import { useItemsStockTable } from "../../hooks/stock/Useitemsstocktable";
+import type { BatchRow } from "../../hooks/TablesHooks/Usebatchdetailstable";
 
-// ─── Component ────────────────────────────────────────────────────────────────
+const PAGE_SIZE_OPTIONS = [20, 50, 100, 200];
 
 const Items: React.FC = () => {
-  const mountedRef = useRef(true);
+  console.count("Items");
 
-  // ── Data state — split loading so page changes don't flash skeleton
-  const [items, setItems] = useState<any[]>([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
+  const {
+    table,
+    isInitialLoad,
+    isFetching,
+    isExporting,
+    visibleItems,
+    page,
+    pageSize,
+    totalPages,
+    totalItems,
+    setPage,
+    setPageSize,
+    searchTerm,
+    setSearchTerm,
+    expandedRows,
+    toggleRow,
+    showViewModal,
+    setShowViewModal,
+    viewStockData,
+    setViewStockData,
+    handleStockCorrection,
+    handleBatchDelete,
+    handleBulkSaved,
+    handleExportExcel,
+    openNewStockCorrection,
+  } = useItemsStockTable();
 
-  // ── Pagination
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+  const [ledgerBatch, setLedgerBatch] = useState<{
+    itemCode?: string;
+    itemName?: string;
+    batchNo?: string;
+    warehouse?: string; 
+  } | null>(null);
 
-  // ── Filters
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // ── Expanded rows
-  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
-
-  // ── Modals
-  const [showBulkModal, setShowBulkModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [viewStockData, setViewStockData] = useState<any>(null);
-  const [showStockCorrection, setShowStockCorrection] = useState(false);
-  const [selectedBatch, setSelectedBatch] = useState<any>(null);
-
-  // ── Fetch — memoized with useCallback
-  const fetchItems = useCallback(async () => {
-    if (!mountedRef.current) return;
-    setIsFetching(true);
-
-    try {
-      const res = await getStockReport(page, pageSize, searchTerm,undefined, 1);
-      if (!mountedRef.current) return;
-
-      const list = res?.message?.data || [];
-
-      const mapped = list.map((item: any) => ({
-        id: item.item_code || "",
-        itemCode: item.item_code || "",
-        itemName: item.item_name || "",
-        description: item.description ?? "-",
-        packingUnit: item.packingUnit || "-",
-        packingSize: item.packingSize || "-",
-        piecesPerBox: item.piecesPerBox || "-",
-        totalQty: item.total_bal_qty ?? 0,
-        totalBuyValue: Number(item.total_buy_value ?? 0),
-        totalSellValue: Number(item.total_sell_value ?? 0),
-        buyCurrency: item.buy_currency,
-        sellCurrency: item.sell_currency,
-        batches: item.batches || [],
-      }));
-
-      setItems(mapped);
-      setTotalItems(res?.message?.pagination?.total_records ?? 0);
-      setTotalPages(res?.message?.pagination?.total_pages ?? 1);
-    } catch (err) {
-      console.error(err);
-      showApiError("Failed to load stock entries");
-    } finally {
-      if (mountedRef.current) {
-        setIsFetching(false);
-        setIsInitialLoad(false);
-      }
-    }
-  }, [page, pageSize, searchTerm]);
-
-  // Initial fetch
-  useEffect(() => {
-    mountedRef.current = true;
-    fetchItems();
-    return () => { mountedRef.current = false; };
+  const handleViewStockLedger = useCallback((batch: BatchRow) => {
+    setLedgerBatch({
+      itemCode: batch.itemCode ?? "",
+      itemName: batch.itemName ?? "",
+      batchNo: batch.batch_no,
+      warehouse: batch.warehouse ?? "",
+    });
   }, []);
 
-  // Refetch on dependency change (skip initial)
-  useEffect(() => {
-    if (isInitialLoad) return;
-    fetchItems();
-  }, [page, pageSize, searchTerm]);
+  const handleLedgerBack = useCallback(() => {
+    setLedgerBatch(null);
+  }, []);
+  const handleViewStockLedgerGeneral = useCallback(() => {
+    setLedgerBatch({});
+  }, []);
 
-  // ── Handlers
-  const toggleRow = (id: string) =>
-    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+  const leafColumnCount = table.getAllLeafColumns().length;
 
-  const handleStockCorrection = (batch: any) => {
-    setSelectedBatch(batch);
-    setShowStockCorrection(true);
-  };
-
-  const handleBatchDelete = (batch: any) => {
-    handleDelete({ id: batch.batch_no, ...batch });
-  };
-
-  const handleBatchLedger = (batch: any) => {
-    console.log("Open ledger for batch:", batch.batch_no);
-  };
-
-  const handleDelete = async (item: { id: string; [key: string]: any }) => {
-    const confirm = await fireManagedSwal({
-      icon: "warning",
-      title: "Are you sure?",
-      text: `Delete Stock Entry ${item.id}?`,
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete",
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    try {
-      showLoading("Deleting Stock Entry...");
-      const res = await deleteStockEntry({ stock_entry_id: item.id });
-
-      if (res?.status_code !== 200 || res?.status !== "success") {
-        closeSwal();
-        showApiError(res?.message || "Delete failed");
-        return;
-      }
-
-      closeSwal();
-      showSuccess("Stock entry deleted successfully");
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
-    } catch (error: any) {
-      closeSwal();
-      showApiError(error);
-    }
-  };
-
-  const handleBulkSaved = async () => {
-    setShowBulkModal(false);
-    try {
-      await fetchItems();
-      closeSwal();
-      showSuccess("Bulk stock corrections applied");
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
-
-  // ── Columns — styled to match CustomerManagement
-  const columns: Column<any>[] = [
-    {
-      key: "expand",
-      header: "",
-      align: "center",
-      render: (row) => (
-        <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
-          {expandedRows[row.id]
-            ? <ChevronDown size={16} strokeWidth={2.5} className="text-primary" />
-            : <ChevronRight size={16} strokeWidth={2.5} />}
-        </span>
-      ),
-    },
-    {
-      key: "itemCode",
-      header: "Item Code",
-      render: (row) => (
-        <span className="font-medium whitespace-nowrap">{row.itemCode ?? "—"}</span>
-      ),
-    },
-    {
-      key: "itemName",
-      header: "Item Name",
-      render: (row) => (
-        <span className="font-medium block">{row.itemName ?? "—"}</span>
-      ),
-    },
-    {
-      key: "description",
-      header: "Description",
-      render: (row) => (
-        <span className="font-medium">{row.description ?? "—"}</span>
-      ),
-    },
-    {
-      key: "packingUnit",
-      header: "Packing Unit",
-       align: "center",
-      render: (row) => (
-        <span className="whitespace-nowrap">
-          {`${row.packingUnit ?? "—"} × ${row.packingSize ?? "—"}`}
-        </span>
-      ),
-    },
-     {
-      key: "piecesPerBox",
-      header: "Pieces/Box",
-       align: "center",
-      render: (row) => (
-        <span className="whitespace-nowrap">
-          {row.piecesPerBox ?? "—"}
-        </span>
-      ),
-    },
-    {
-      key: "totalQty",
-      header: "Qty",
-      align: "center",
-      render: (row) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.totalQty}
-        </code>
-      ),
-    },
-    {
-      key: "totalBuyValue",
-      header: "Total Buy Value",
-      align: "right",
-      render: (row) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.buyCurrency} {row.totalBuyValue.toLocaleString("en-IN")}
-        </code>
-      ),
-    },
-    {
-      key: "totalSellValue",
-      header: "Total Sell Value",
-      align: "right",
-      render: (row) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.sellCurrency} {row.totalSellValue.toLocaleString("en-IN")}
-        </code>
-      ),
-    },
-  ];
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  return (
-    <div className="h-full min-h-0">
-      <Table
-        columns={columns}
-        data={items}
-        tableId="inventory-stocks"
-        rowKey={(r) => r.id}
-        loading={isInitialLoad}
-        isFetching={isFetching}
-        onRowClick={(row) => toggleRow(row.id)}
-        expandedRowRender={(row) =>
-          expandedRows[row.id] ? (
-            <BatchTable
-              batches={row.batches || []}
-              itemCode={row.itemCode}
-              itemName={row.itemName}
-              onEdit={handleStockCorrection}
-              onDelete={handleBatchDelete}
-              onLedger={handleBatchLedger}
-            />
-          ) : null
-        }
-        enableColumnSelector
-        showToolbar
-        searchValue={searchTerm}
-        onSearch={(value) => {
-          setSearchTerm(value);
-          setPage(1);
-        }}
-        extraFilters={
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowBulkModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
-              style={{ border: "1.5px solid var(--primary,#c97d2e)", color: "var(--primary,#c97d2e)", background: "transparent" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,125,46,0.06)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-            >
-              <Upload size={12} /> Bulk Upload
-            </button>
-
-            <button
-              onClick={() => { setSelectedBatch(null); setShowStockCorrection(true); }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
-              style={{  border: "1.5px solid var(--primary,#c97d2e)", color: "var(--primary,#c97d2e)", boxShadow: "transparent" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.9"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
-            >
-              Stock Correction
-            </button>
-          </div>
-        }
-        currentPage={page}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        totalItems={totalItems}
-         pageSizeOptions={[20, 50, 100,200]}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
-        onPageChange={setPage}
+  if (ledgerBatch) {
+    return (
+      <StockLedgerView
+        itemCode={ledgerBatch.itemCode}
+        itemName={ledgerBatch.itemName}
+        batchNo={ledgerBatch.batchNo}
+        warehouse={ledgerBatch.warehouse}  
+        onBack={handleLedgerBack}
       />
+    );
+  }
+
+  return (
+    <div className="h-full min-h-0 flex flex-col gap-2.5">
+      <ItemsTableFilters
+        searchTerm={searchTerm}
+        onSearchChange={(v) => setSearchTerm(v)}
+        onBulkUpload={() =>
+          openImportInventoryModal(undefined, {
+            onSuccess: async () => {
+              await handleBulkSaved();
+            },
+          })
+        }
+        onStockCorrection={openNewStockCorrection}
+        onViewStockLedger={handleViewStockLedgerGeneral}
+        onExport={handleExportExcel}
+        isExporting={isExporting}
+        exportDisabled={visibleItems.length === 0}
+      />
+
+      <div
+        className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col"
+        style={{ height: "calc(95.5vh - 190px)" }}
+      >
+        <div className="overflow-y-auto flex-1 min-h-0 relative custom-scrollbar">
+          <table className="w-full text-left border-collapse text-sm">
+            <thead className="sticky top-0 z-10 bg-card border-b border-[var(--border)]">
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id}>
+                  {hg.headers.map((header) => {
+                    const align = (header.column.columnDef.meta as any)?.align;
+                    const alignCls =
+                      align === "right"
+                        ? "text-right"
+                        : align === "center"
+                          ? "text-center"
+                          : "text-left";
+                    const sortable = header.column.getCanSort();
+                    const sortDir = header.column.getIsSorted();
+                    return (
+                      <th
+                        key={header.id}
+                        onClick={
+                          sortable
+                            ? header.column.getToggleSortingHandler()
+                            : undefined
+                        }
+                        className={`px-3.5 py-3 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${alignCls} ${
+                          sortable
+                            ? "cursor-pointer select-none hover:text-main"
+                            : ""
+                        }`}
+                      >
+                        <span
+                          className={`inline-flex items-center gap-1 ${
+                            align === "right" ? "flex-row-reverse" : ""
+                          }`}
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                          {sortable &&
+                            (sortDir === "asc" ? (
+                              <ChevronUp size={11} />
+                            ) : sortDir === "desc" ? (
+                              <ChevronDown size={11} />
+                            ) : (
+                              <ChevronsUpDown
+                                size={11}
+                                className="opacity-30"
+                              />
+                            ))}
+                        </span>
+                      </th>
+                    );
+                  })}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {isInitialLoad ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="border-b border-[var(--border)]">
+                    {table.getAllLeafColumns().map((col) => (
+                      <td key={col.id} className="px-3.5 py-3.5">
+                        <div className="h-3 w-full max-w-[110px] bg-[var(--border)] rounded animate-pulse" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : visibleItems.length === 0 ? (
+                <tr>
+                  <td colSpan={leafColumnCount} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-2 text-muted">
+                      <Package2 size={22} className="opacity-30" />
+                      <span className="text-xs">No stock entries found.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                table.getRowModel().rows.map((row) => {
+                  const item = row.original;
+                  const isExpanded = !!expandedRows[item.id];
+                  return (
+                    <React.Fragment key={row.id}>
+                      <tr
+                        onClick={() => toggleRow(item.id)}
+                        className="hover:bg-row-hover transition-colors cursor-pointer"
+                        style={{
+                          borderBottom: "1px solid rgba(128,128,128,0.1)",
+                        }}
+                      >
+                        {row.getVisibleCells().map((cell) => {
+                          const align = (cell.column.columnDef.meta as any)
+                            ?.align;
+                          const alignCls =
+                            align === "right"
+                              ? "text-right"
+                              : align === "center"
+                                ? "text-center"
+                                : "text-left";
+                          return (
+                            <td
+                              key={cell.id}
+                              className={`px-3.5 py-3 align-top ${alignCls}`}
+                            >
+                              <div className="max-w-[280px] leading-5">
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext(),
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={leafColumnCount} className="p-0">
+                            <BatchDetailsTable
+                              batches={item.batches}
+                              itemCode={item.itemCode}
+                              itemName={item.itemName}
+                              onEdit={handleStockCorrection}
+                              onDelete={handleBatchDelete}
+                              onLedger={handleViewStockLedger}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+          {isFetching && !isInitialLoad && (
+            <div className="absolute inset-0 bg-card/60 backdrop-blur-[1px] flex items-center justify-center z-20">
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-[var(--border)] bg-card px-3 py-2">
+          <Pagination
+            currentPage={page}
+            totalPages={Math.max(totalPages, 1)}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+          />
+        </div>
+      </div>
 
       <ViewStockModal
         isOpen={showViewModal}
-        onClose={() => { setShowViewModal(false); setViewStockData(null); }}
+        onClose={() => {
+          setShowViewModal(false);
+          setViewStockData(null);
+        }}
         stockData={viewStockData}
-      />
-
-      <StockCorrectionModal
-        isOpen={showStockCorrection}
-        onClose={() => { setShowStockCorrection(false); setSelectedBatch(null); }}
-        onSuccess={() => { setShowStockCorrection(false); setSelectedBatch(null); fetchItems(); }}
-        batch={selectedBatch}
-      />
-
-      <BulkUploadModal
-        isOpen={showBulkModal}
-        onClose={() => setShowBulkModal(false)}
-        onSubmit={handleBulkSaved}
       />
     </div>
   );

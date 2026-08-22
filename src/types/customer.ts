@@ -7,7 +7,7 @@ export interface CustomerContact {
   salutation?: string;
   gender?: string;
   companyName?: string;
-  status?: string;           
+  status?: string;
   email: string;
   mobile: string;
   phone?: string;
@@ -24,7 +24,7 @@ export interface CustomerAddress {
   line1: string;
   line2?: string;
   city?: string;
-  county?: string ;   
+  county?: string;
   state?: string;
   postalCode?: string;
   country?: string;
@@ -61,10 +61,10 @@ export interface SellingTerms {
 
 export interface CustomerSummary {
   id: string;
-  name: string;                    
+  name: string;
   tpin?: string;
-  customerTaxCategory?: string;    
-  displayName?: string;           
+  customerTaxCategory?: string;
+  displayName?: string;
   type?: "" | "Company" | "Individual";
   customerGroup?: string;
   accountNumber?: string;
@@ -72,7 +72,7 @@ export interface CustomerSummary {
   onboardingBalance?: number;
   registration_no?: string;
   status?: "Active" | "Inactive" | string;
-  createdAt?: string;             
+  createdAt?: string;
   contactPerson?: string;
   mobileCode?: string;
   mobile?: string;
@@ -86,9 +86,14 @@ export interface CustomerDetail extends CustomerSummary {
   contacts?: CustomerContact[];
   addresses?: CustomerAddress[];
   terms?: {
-    Selling?: SellingTerms;  
-    selling?: SellingTerms;  
+    Selling?: SellingTerms;
+    selling?: SellingTerms;
   };
+  credit_limits?: {
+    credit_limit: number;
+    bypass_credit_limit_check: number;
+    strict_credit_limit?: number;
+  }[];
   billingAddressLine1?: string;
   billingAddressLine2?: string;
   billingPostalCode?: string;

@@ -56,7 +56,6 @@ export default function LeaveApplyModal({
   onSuccess,
 }: LeaveApplyModalProps) {
   const isView = Boolean((initialData as any)?._isView);
-  console.log( "editLeaveId:", editLeaveId, "isView:", isView);
   const { user } = useAuth();
   const targetEmployeeId = (initialData as any)?.employee || user?.employeeId;
 

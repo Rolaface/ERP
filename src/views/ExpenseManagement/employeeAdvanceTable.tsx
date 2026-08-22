@@ -55,7 +55,7 @@ const EmployeeAdvanceTable: React.FC = () => {
   const [detailDateRange, setDetailDateRange] = useState<{ from_date?: string; to_date?: string }>({});
   const [currentAdvanceId, setCurrentAdvanceId] = useState<string | null>(null);
   const [claimsPage, setClaimsPage] = useState(1);
-  const [claimsPageSize, setClaimsPageSize] = useState(7);
+  const [claimsPageSize, setClaimsPageSize] = useState(10);
 
 
   const handleViewClick = async (ea: EmployeeAdvance, e?: React.MouseEvent<HTMLButtonElement>) => {
@@ -64,11 +64,11 @@ const EmployeeAdvanceTable: React.FC = () => {
     setDetailLoading(true);
     setDetailDateRange({});
     setClaimsPage(1);
-    setClaimsPageSize(20);
+    setClaimsPageSize(10);
     setViewMode("detail");
     setCurrentAdvanceId(ea.id);
     try {
-      const advance = await getAdvanceByIdForView(ea.id, 1, 7);
+      const advance = await getAdvanceByIdForView(ea.id, 1, 10);
       setDetailData(advance);
     } catch (err) {
       showApiError(err);
@@ -137,7 +137,7 @@ const EmployeeAdvanceTable: React.FC = () => {
     setDetailDateRange({});
     setCurrentAdvanceId(null);
     setClaimsPage(1);
-    setClaimsPageSize(7);
+    setClaimsPageSize(10);
   };
 
   const [employeeAdvances, setEmployeeAdvances] = useState<EmployeeAdvance[]>([]);

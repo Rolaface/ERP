@@ -10,6 +10,7 @@ import {
   openCustomerModal,
   openInvoiceModal,
   openQuotationModal,
+  openSalesOrderModal,
   openSupplierModal,
   openItemModal,
   openItemCategoryModal,
@@ -208,6 +209,9 @@ const AppLayout: React.FC = () => {
   const openQuotationCreate = () => openQuotationModal();
   const openQuotationEdit = (quotationId: string, data: any) =>
     openQuotationModal({ ...data, quotationId }, true);
+    const openSalesOrderCreate = () => openSalesOrderModal();
+  const openSalesOrderEdit = (salesOrderId: string, data: any) =>
+    openSalesOrderModal({ ...data, salesOrderId }, true);
 
   // CRM handlers
   const openCustomerCreate = () => openCustomerModal();
@@ -260,6 +264,8 @@ const AppLayout: React.FC = () => {
     openProformaEdit,
     openQuotationCreate,
     openQuotationEdit,
+    openSalesOrderCreate,
+    openSalesOrderEdit,
     openCustomerCreate,
     openCustomerEdit,
     openSupplierCreate,
@@ -295,7 +301,7 @@ const AppLayout: React.FC = () => {
         sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}
       >
         <AppMain sidebarOpen={sidebarOpen}>
-          {/* ← wrapper div hataya — flex chain unbroken rehti hai ab */}
+          
           <Suspense fallback={<PageLoader />}>
             <Outlet context={sharedProps} />
           </Suspense>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   Building2,
   IdCard,
@@ -42,6 +42,7 @@ import type {
 import { getCompanyById } from "../../api/companySetupApi";
 import type { Terms } from "../../types/termsAndCondition";
 import { showConfirm } from "../../utils/alert";
+import { useBlocker } from "react-router-dom";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID as string;
 const BASE = "/companySetup";
@@ -75,6 +76,57 @@ const CompanySetup: React.FC = () => {
   const isBasicTab = activeTab === DEFAULT_TAB;
   // const [isDirty, setIsDirty] = useState(false);
   const [unsavedFields, setUnsavedFields] = useState<string[]>([]);
+  // Add a ref to lock the modal and prevent double-firing
+  const isConfirming = useRef(false);
+
+   useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (unsavedFields.length > 0) {
+        e.preventDefault();
+        e.returnValue = ""; 
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [unsavedFields]);
+
+   const blocker = useBlocker(
+    ({ nextLocation }) =>
+      unsavedFields.length > 0 && !nextLocation.pathname.startsWith(BASE)
+  );
+
+  useEffect(() => {
+     if (blocker.state === "blocked" && !isConfirming.current) {
+      isConfirming.current = true; // Lock the modal
+
+      const handleBlockedNavigation = async () => {
+        const fieldNames = unsavedFields.join(", ");
+        const isConfirmed = await showConfirm(
+          `You have unsaved changes on: ${fieldNames}. Do you want to discard them and leave?`,
+           {
+            title: "Discard Unsaved Changes",
+            confirmButtonText: "Discard",
+            confirmButtonColor: "#ef4444",
+            cancelButtonText: "Keep Editing",
+          }
+        );
+
+        if (isConfirmed) { 
+          blocker.proceed();  
+        } else {
+          blocker.reset();  
+        }
+
+         setTimeout(() => {
+          isConfirming.current = false;
+        }, 100);
+      };
+
+      handleBlockedNavigation();
+    }
+  }, [blocker.state, unsavedFields, blocker]);
+
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [financialConfig, setFinancialConfig] = useState<FinancialConfig>();
 
@@ -96,6 +148,7 @@ const CompanySetup: React.FC = () => {
       industryType: "",
       domain: "",
       defaultModeOfPayment: "",
+      sdc_id: "",
     },
     contact: {
       companyEmail: "",
@@ -146,12 +199,12 @@ const CompanySetup: React.FC = () => {
       
       const isConfirmed = await showConfirm(
         `You have unsaved changes on: ${fieldNames}. Do you want to discard them and switch tabs?`,
-        {
-          title: "Warning",
-          confirmButtonText: "Discard & Leave",
-          confirmButtonColor: "#ef4444",
-          cancelButtonText: "Stay",
-        }
+       {
+            title: "Discard Unsaved Changes",
+            confirmButtonText: "Discard",
+            confirmButtonColor: "#ef4444",
+            cancelButtonText: "Keep Editing",
+          }
       );
       
       if (!isConfirmed) return; 
@@ -177,6 +230,7 @@ const CompanySetup: React.FC = () => {
         industryType: response.data.industryType ?? "",
         domain: response.data.primaryBusinessDomain ?? "",
         defaultModeOfPayment: response.data.defaultPaymentMode ?? "",
+        sdc_id: response.data.sdc_id ?? "",
       };
 
       setAccountingSetup(

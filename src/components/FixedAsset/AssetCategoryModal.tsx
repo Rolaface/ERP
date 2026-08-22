@@ -12,6 +12,7 @@ import {
   type AccountRow,
 } from "../../hooks/useFALogic";
 
+import { cleanGLNameList, getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface AssetCategoryModalProps {
@@ -382,8 +383,8 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
 
                     <td className="border-b border-theme">
                       <CellSearch
-                        value={row.fixedAssetAccount}
-                        fetchOptions={fetchFixedAssetAccounts}
+                        value={getGLNameWithoutAbbreviation(row.fixedAssetAccount)}
+                        fetchOptions={async (q) => cleanGLNameList(await fetchFixedAssetAccounts(q), "label")}
                         onChange={(v) =>
                           handleChangeAccountRow(row.id, "fixedAssetAccount", v)
                         }
@@ -394,8 +395,8 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
 
                     <td className="border-b border-theme">
                       <CellSearch
-                        value={row.accumulatedDepreciationAccount}
-                        fetchOptions={fetchAccumulatedDepAccounts}
+                       value={getGLNameWithoutAbbreviation(row.accumulatedDepreciationAccount)}
+                       fetchOptions={async (q) => cleanGLNameList(await fetchAccumulatedDepAccounts(q), "label")}
                         onChange={(v) =>
                           handleChangeAccountRow(
                             row.id,
@@ -410,8 +411,10 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
 
                     <td className="border-b border-theme">
                       <CellSearch
-                        value={row.depreciationExpenseAccount}
-                        fetchOptions={fetchDepExpenseAccounts}
+                        value={getGLNameWithoutAbbreviation(row.depreciationExpenseAccount)}
+                         fetchOptions={async (q) => cleanGLNameList(await fetchDepExpenseAccounts(q), "label")}
+
+
                         onChange={(v) =>
                           handleChangeAccountRow(
                             row.id,
@@ -426,8 +429,8 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
 
                     <td className="border-b border-theme">
                       <CellSearch
-                        value={row.capitalWorkInProgressAccount}
-                        fetchOptions={fetchCWIPAccounts}
+                        value={getGLNameWithoutAbbreviation(row.capitalWorkInProgressAccount)}
+                        fetchOptions={async (q) => cleanGLNameList(await fetchCWIPAccounts(q), "label")}
                         onChange={(v) =>
                           handleChangeAccountRow(
                             row.id,
@@ -490,7 +493,7 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
           : handleCloseWithConfirm(handleClose, modalId)
       }
       title={isEdit ? "Edit Asset Category" : "Add Asset Category"}
-      subtitle="Add and manage asset categories"
+      subtitle={isEdit ? "Edit asset category details" : "Add and manage asset categories"}
       icon={Layers}
       customWidth="60vw"
       height="80vh"

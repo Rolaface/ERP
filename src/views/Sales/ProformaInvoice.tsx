@@ -5,6 +5,7 @@ import {
   updateProformaInvoiceStatus,
   getProformaInvoiceById,
   deleteProformaInvoiceById,
+  createSiFromQuotation
 } from "../../api/proformaInvoiceApi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -48,6 +49,7 @@ import { openSendEmailModal } from "../../store/modalStore";
 
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+import { useDocumentConversion } from "../../hooks/useDocumentConversion";
 
 type OutletContextType = {
   openProformaCreate: () => void;
@@ -75,11 +77,11 @@ const STATUS_TRANSITIONS: Record<
 const CRITICAL_STATUSES: ProformaInvoiceStatus[] = ["Paid"];
 
 const SORT_FIELD_MAP: Record<string, string> = {
-  proformaId: "proformaId",
-  customerName: "customerName",
-  createdAt: "createdAt",
-  dueDate: "dueDate",
-  totalAmount: "totalAmount",
+  proformaId: "name",
+  customerName: "customer_name",
+  createdAt: "transaction_date",
+  dueDate: "valid_till",
+  totalAmount: "grand_total",
   status: "status",
 };
 
@@ -127,7 +129,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
   const [previewPdfBlob, setPreviewPdfBlob] = useState<Blob | null>(null);
   const [previewPdfId, setPreviewPdfId] = useState<string | null>(null);
-
+const createInvoiceFromProforma = useDocumentConversion("proformaToSi");
 
   // ── Currency symbols + per-currency number formatting for the currencies
   // present in the currently loaded page of invoices.
@@ -210,8 +212,6 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
       showLoading("Loading proforma invoice...");
 
       const res = await getProformaInvoiceById(proformaId);
-      console.log("Proforma invoice details response:", res);
-      console.log("Proforma Id", proformaId);
       const statusCode = res?.message?.status_code || res?.status_code;
       const data = res?.message?.data || res?.data;
 
@@ -254,8 +254,6 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
     try {
       // const blob = await getPdf(proformId, "Proforma Invoice");
       const blob = await getPdf(proformId, "Quotation");
-      console.log("PDF blob response for drawer:", blob);
-      console.log("Proforma Id", proformId);
       setDrawerPdfBlob(blob);
       const blobUrl = URL.createObjectURL(blob);
       setDrawerPdfUrl(blobUrl);
@@ -298,12 +296,16 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
     sortBy: string;
     sortOrder: "asc" | "desc";
   }) => {
-    setSortBy(colKey); // ← store "proformaId", not "proformaId" (same here, but correct pattern)
+    setSortBy(colKey); 
     setSortOrder(order);
     setPage(1);
   };
 
-  // ── Export all pages ──────────────────────────────────────────────────────
+const handleCreateInvoice = (proformaId: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  return createInvoiceFromProforma(proformaId);
+};
+
   const fetchAllInvoicesForExport = async (): Promise<
     ProformaInvoiceSummary[]
   > => {
@@ -316,7 +318,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
         const res = await getAllProformaInvoices(
           current,
           100,
-          SORT_FIELD_MAP[sortBy] || sortBy, // ← same mapping for export
+          SORT_FIELD_MAP[sortBy] || sortBy, 
           sortOrder,
           searchTerm,
         );
@@ -326,12 +328,12 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
             proformaId: inv.name || inv.proformaId || inv.id,
             customerName: inv.customerName,
             currency: inv.currency,
-            exchangeRate: inv.exchangeRate,
-            dueDate: inv.dueDate,
-            totalAmount: Number(inv.totalAmount),
+            exchangeRate: inv.exchangeRate || 1,
+            validTill: inv.validTill,
+            totalAmount: Number(inv.total || 0),
             status: inv.status as ProformaInvoiceStatus,
-            proformaInvoiceStatus: inv.status as ProformaInvoiceStatus, // <-- Added here too
-            createdAt: new Date(inv.createdAt.replace(" ", "T")),
+            proformaInvoiceStatus: inv.status as ProformaInvoiceStatus,
+            createdAt: inv.postingDate ? new Date(inv.postingDate) : new Date(),
           }));
           allData = [...allData, ...mapped];
           total = res.pagination?.total_pages || 1;
@@ -587,7 +589,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
 
   const columns: Column<ProformaInvoiceSummary>[] = [
     {
-      key: "id",
+      key: "proformaId",
       header: "Proforma No",
       align: "left",
       sortable: true,
@@ -729,6 +731,15 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
                 icon: ACTION_ICONS.PDF,
                 onClick: () => handlePreviewPDF(inv),
               },
+                ...(inv.status !== "Draft" && inv.status !== "Cancelled"
+                ? [
+                    {
+                      label: "Create Sales Invoice",
+                      icon: ACTION_ICONS.SALES_INVOICE ,
+                      onClick: () => handleCreateInvoice(inv.proformaId),
+                    },
+                  ]
+                : []),
               ...(
                 STATUS_TRANSITIONS[
                   inv.status as keyof typeof STATUS_TRANSITIONS

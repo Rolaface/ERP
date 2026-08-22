@@ -158,27 +158,6 @@ export const useProformaInvoiceForm = (
     }));
   }, [isOpen]);
 
-  // useEffect(() => {
-  //   const terms =
-  //     formData.terms?.selling?.payment?.dueDates ||
-  //     formData.paymentInformation?.paymentTerms;
-
-  //   if (!terms || !formData.dateOfInvoice) return;
-
-  //   const due = calculateDueDate(
-  //     formData.dateOfInvoice,
-  //     terms,
-  //   );
-
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     dueDate: due,
-  //   }));
-  // }, [
-  //   formData.dateOfInvoice,
-  //   formData.terms?.selling?.payment?.dueDates,
-  //   formData.paymentInformation?.paymentTerms,
-  // ]);
   // Auto-calculate validTill date from payment terms
   useEffect(() => {
     if (!formData.dateOfInvoice) return;
@@ -226,6 +205,11 @@ export const useProformaInvoiceForm = (
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
   const customerTaxCategoryRef = useRef<string>("");
+  // Guards the async handleCustomerSelect() fetch chain against a stale
+  // response landing AFTER the user has since cleared the customer, selected
+  // a different one, reset the form, or loaded a different invoice for edit.
+  // Bumped on every select, clear, reset, and edit-load.
+  const customerSelectTokenRef = useRef(0);
   const enableExchange = mode === "proforma";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
@@ -241,13 +225,6 @@ export const useProformaInvoiceForm = (
       return "";
     }
   };
-
-  //   useEffect(() => {
-  //     if (!isOpen) return;
-  //     if (mode === "edit" && initialData?.id) {
-  //       setFormDataFromInvoice(initialData);
-  //     }
-  //   }, [isOpen, initialData, mode]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -308,8 +285,6 @@ export const useProformaInvoiceForm = (
     if (!isOpen) return;
 
     const base = getBaseCurrencyFromStorage();
-
-    console.log("Base Currency:", base);
 
     setBaseCurrency(base);
     lastCurrencyRef.current = base;
@@ -412,6 +387,9 @@ export const useProformaInvoiceForm = (
     if (!formData.validTill) {
       throw new Error("Please select due date");
     }
+    if (!formData.payment_mode) {
+      throw new Error("Please select mode of payment");
+    }
     if (!formData.items.length) {
       throw new Error("Please add at least one item");
     }
@@ -511,6 +489,33 @@ export const useProformaInvoiceForm = (
     return "";
   };
 
+  // ─── Customer clear ──────────────────────────────────────────────────────────
+  // Dedicated reset path — NOT routed through handleCustomerSelect. Clearing
+  // must never call getCustomerByCustomerCode('') and must never leave
+  // customerDetails / taxCategory / addresses / payment info pointing at the
+  // previously selected customer. Bumps customerSelectTokenRef so any
+  // in-flight handleCustomerSelect() fetch chain from the previous customer
+  // gets discarded instead of landing late and resurrecting stale data.
+  const handleCustomerClear = () => {
+    customerSelectTokenRef.current += 1;
+    customerTaxCategoryRef.current = "";
+
+    setCustomerDetails(null);
+    setCustomerNameDisplay("");
+
+    setFormData((prev) => ({
+      ...prev,
+      customerId: "",
+      taxCategory: "",
+      destnCountryCd: "",
+      billingAddress: "",
+      shippingAddress: sameAsBilling ? "" : prev.shippingAddress,
+      paymentInformation: DEFAULT_INVOICE_FORM.paymentInformation,
+      terms: { selling: EMPTY_TERMS.selling },
+    }));
+    markDirty();
+  };
+
   const handleCustomerSelect = async ({
     name,
     id,
@@ -518,6 +523,15 @@ export const useProformaInvoiceForm = (
     name: string;
     id: string;
   }) => {
+    // A falsy id means the caller wants a clear, not a selection — never fire
+    // getCustomerByCustomerCode('').
+    if (!id) {
+      handleCustomerClear();
+      return;
+    }
+
+    const token = ++customerSelectTokenRef.current;
+
     setCustomerNameDisplay(name);
     setFormData((p) => ({ ...p, customerId: id }));
     markDirty();
@@ -527,6 +541,9 @@ export const useProformaInvoiceForm = (
         getCustomerByCustomerCode(id),
         getCompanyById(COMPANY_ID),
       ]);
+
+      // A newer select (or a clear) happened while this was in flight — drop it.
+      if (token !== customerSelectTokenRef.current) return;
 
       if (!customerRes || customerRes?.message?.status_code !== 200) return;
       const data = customerRes?.message?.data;
@@ -539,6 +556,8 @@ export const useProformaInvoiceForm = (
       }));
 
       const countryLookupList = await getRolaCountryList();
+      if (token !== customerSelectTokenRef.current) return;
+
       const formattedCountries = countryLookupList.map((c: any) => ({
         code: c.code || c.name,
         name: c.country_name || c.name,
@@ -568,6 +587,8 @@ export const useProformaInvoiceForm = (
         swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       };
 
+      if (token !== customerSelectTokenRef.current) return;
+
       setFormData((prev) => {
         const billingId = billingAddressObj?.id || "";
         const shippingId = sameAsBilling
@@ -592,6 +613,7 @@ export const useProformaInvoiceForm = (
         };
       });
     } catch (err: any) {
+      if (token !== customerSelectTokenRef.current) return;
       console.error("Failed to load customer data", err);
       showApiError("Failed to load customer details");
     }
@@ -619,7 +641,7 @@ export const useProformaInvoiceForm = (
       }
       if (name === "quantity" && nextValue !== null) {
         const item = items[idx];
-        if (!item._skipCap) {
+       if (!item._skipCap && item.itemCode) {
           if (!item.isServiceItem) {
             const stockAvailable = item.availableQty ?? item.qty ?? 0;
             const thisRowOriginal = Number(item.originalQty ?? 0);
@@ -705,44 +727,7 @@ export const useProformaInvoiceForm = (
     });
       markDirty();
   };
-  //charge temeplete--------------------
-  // const handleTemplateSelect = (templateName: string, taxes: any[] = []) => {
-  //   setFormData((prev) => {
-  //     // calculate subtotal first
-  //     const subTotal = prev.items.reduce((sum, item) => {
-  //       const qty = Number(item.quantity || 0);
-  //       const price = Number(item.price || 0);
-  //       const discount = Number(item.discount || 0);
-  //       const net = qty * price * (1 - discount / 100);
-  //       return sum + net;
-  //     }, 0);
 
-  //     const mappedTaxes = taxes.map((t: any) => {
-  //       const rate = Number(t.rate) || 0;
-
-  //       const amount =
-  //         t.charge_type === "Actual"
-  //           ? Number(t.tax_amount) || 0
-  //           : (subTotal * rate) / 100;
-  //       const isActual = t.charge_type === "Actual";
-
-  //       return {
-  //         chargeType: t.charge_type,
-  //         accountHead: t.account_head,
-  //         description: t.description || "",
-  //         ...(isActual
-  //           ? { amount: Number(t.tax_amount) || 0 }
-  //           : { rate: Number(t.rate) || 0 }),
-  //       };
-  //     });
-
-  //     return {
-  //       ...prev,
-  //       taxes: mappedTaxes,
-  //       salesTaxTemplate: templateName,
-  //     };
-  //   });
-  // };
   const handleTemplateSelect = (templateName: string, taxes: any[] = []) => {
     setFormData((prev) => {
       // calculate subtotal first
@@ -897,6 +882,9 @@ export const useProformaInvoiceForm = (
 
   const setFormDataFromInvoice = (invoice: any) => {
     isLoadingRef.current = true;
+    // Loading a fresh invoice for edit supersedes any in-flight customer fetch.
+    customerSelectTokenRef.current += 1;
+
     // charges[] from GET response map to taxes[] in formData
     // (taxes[] in GET is always empty; actual applied charges are in charges[])
     const mappedTaxesFromCharges =
@@ -1007,6 +995,7 @@ export const useProformaInvoiceForm = (
           itemCode: it.itemCode,
           itemName: it.itemName ?? "",
           description: it.description ?? "",
+          isServiceItem: it.isServiceItem ?? false, 
           quantity,
           price,
           discount,
@@ -1047,6 +1036,7 @@ export const useProformaInvoiceForm = (
   };
 
   const handleReset = async () => {
+    customerSelectTokenRef.current += 1;
     if (initialData) {
       setFormDataFromInvoice(initialData);
     } else {
@@ -1217,6 +1207,7 @@ export const useProformaInvoiceForm = (
       validateForm,
       handleInputChange,
       handleCustomerSelect,
+      handleCustomerClear,
 
       handleItemChange,
       updateItemDirectly,

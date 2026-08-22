@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
+import { Warehouse as WarehouseIcon } from "lucide-react";
 import { ModalSelect } from "../ui/modal/modalComponent";
 import { getAllWarehouses } from "../../api/WarehouseApi";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
+import SelectShell from "../../components/ui/select/SelectShell";
 
 interface WarehouseSelectProps {
   value: string;
@@ -12,6 +15,33 @@ interface WarehouseSelectProps {
   className?: string;
   compact?: boolean;
   onDefaultLoad?: (firstWarehouse: string) => void;
+  readOnlyField?: boolean;
+}
+
+type WarehouseOption = { value: string; label: string };
+
+
+let warehouseCache: WarehouseOption[] | null = null;
+let warehouseFetchPromise: Promise<WarehouseOption[]> | null = null;
+
+function loadWarehousesShared(): Promise<WarehouseOption[]> {
+  if (warehouseCache) return Promise.resolve(warehouseCache);
+  if (warehouseFetchPromise) return warehouseFetchPromise;
+
+  warehouseFetchPromise = getAllWarehouses({ is_disabled: 0 })
+    .then((data: string[]) => {
+      const options = data.map((wh: string) => ({
+        value: wh,
+        label: getGLNameWithoutAbbreviation(wh),
+      }));
+      warehouseCache = options;
+      return options;
+    })
+    .finally(() => {
+      warehouseFetchPromise = null;
+    });
+
+  return warehouseFetchPromise;
 }
 
 const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
@@ -24,57 +54,87 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
   className = "",
   compact = false,
   onDefaultLoad,
+  readOnlyField = false,
 }) => {
-  const [warehouses, setWarehouses] = useState<{ value: string; label: string }[]>([]);
+  const [warehouses, setWarehouses] = useState<WarehouseOption[]>(
+    warehouseCache ?? [],
+  );
 
-  useEffect(() => {
-    if (warehouses.length) return;
-    const loadWarehouses = async () => {
-      try {
-        const data = await getAllWarehouses({ is_disabled: 0 });
-        const options = data.map((wh: string) => ({ value: wh, label: wh }));
+  const [loading, setLoading] = useState(false);
+
+  const hasTriggeredRef = useRef(false);
+
+  const ensureLoaded = useCallback(() => {
+    if (hasTriggeredRef.current) return;
+    if (warehouseCache) {
+   
+      setWarehouses(warehouseCache);
+      return;
+    }
+    hasTriggeredRef.current = true;
+    setLoading(true);
+
+    loadWarehousesShared()
+      .then((options) => {
         setWarehouses(options);
         if (onDefaultLoad && !value && options.length > 0) {
           onDefaultLoad(options[0].value);
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         console.error("Failed to load warehouses", err);
-      }
-    };
-    loadWarehouses();
-  }, []);
+        hasTriggeredRef.current = false; 
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [onDefaultLoad, value]);
 
   if (compact) {
+    const hasValue = Boolean(value);
     return (
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
+      <SelectShell
+        icon={!hasValue ? <WarehouseIcon /> : undefined}
+        showChevron={!readOnlyField}
         disabled={disabled}
-        required={required}
-        // ✅ w-full so it fills whatever column width the table gives it
-        className={`w-full py-1 pl-1 pr-4 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary ${className}`}
+        className={className}
       >
-        <option value="">Select</option>
-        {warehouses.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+        <select
+          name={name}
+          value={value}
+          onChange={onChange}
+          onFocus={ensureLoaded}
+          onMouseDown={ensureLoaded}
+          disabled={disabled}
+          required={required}
+          className="appearance-none cursor-pointer"
+        >
+          <option value="">{loading ? "Loading..." : "Select"}</option>
+          {warehouses.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </SelectShell>
     );
   }
 
   return (
-    <ModalSelect
-      label={label}
-      name={name}
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-      options={warehouses}
+    <div
+      onFocus={ensureLoaded}
+      onMouseDown={ensureLoaded}
       className={className}
-    />
+    >
+      <ModalSelect
+        label={loading ? "Loading..." : label}
+        name={name}
+        value={value}
+        onChange={onChange}
+        disabled={disabled || loading}
+        options={warehouses}
+      />
+    </div>
   );
 };
 

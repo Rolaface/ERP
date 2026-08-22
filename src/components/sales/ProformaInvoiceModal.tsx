@@ -55,6 +55,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   //   (mode === "edit" && initialData?.proformaId
   //     ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
   //     : `proforma-create-${Date.now()}`);
+ 
   const [resolvedModalId] = useState(
     () =>
       modalId ||
@@ -68,8 +69,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   );
 
   const domain = useDefault("primary_business_domain");
-  console.log("Domain ", domain);
-
   useEffect(() => {
     if (mode === "edit" && initialData?.items?.length > 0) {
       // Check if the first item (or any item) is a service
@@ -115,6 +114,14 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       ui.setActiveTab("details");
     }
   }, [isOpen]);
+   useEffect(() => {
+  if (isOpen && mode === "create" && initialData?.customerName) {
+   actions.handleCustomerSelect({
+      name: initialData.customerName,
+      id: initialData.customerId,
+    });
+ }
+}, [isOpen, mode, initialData?.customerName, initialData?.customerId]);
 
   const validateDetailsOrFocus = () => {
     try {
@@ -134,10 +141,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     }
   };
 
-
-
   const handleSave = async () => {
     if (!validateDetailsOrFocus()) return;
+   
     if (submitting) return;
 
     try {
@@ -157,7 +163,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       if (mode === "edit") {
         const invoiceNumber =
           formData.invoiceNumber ?? initialData?.id ?? initialData?.proformaId;
-        console.log("Editing Proforma Invoice with number:", invoiceNumber);
 
         if (!invoiceNumber) {
           showValidationError("Invalid invoice reference");
@@ -244,8 +249,11 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       icon={FileClock}
       onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
       title={mode === "edit" ? "Edit Proforma Invoice" : "Add Proforma Invoice"}
-      subtitle="Add and manage proforma invoice details"
-      footer={
+      subtitle={
+        mode === "edit"
+          ? "Edit and manage proforma invoice details"
+          : "Add and manage proforma invoices"
+      } footer={
         <ModalFooter
           // onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
           onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
@@ -303,7 +311,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                 <div className="w-full sm:w-[280px]">
                   <CustomerSelect
                     value={customerNameDisplay}
+                    selectedId={formData.customerId}
                     onChange={actions.handleCustomerSelect}
+                    onClear={actions.handleCustomerClear}
                     className="w-full"
                   />
                 </div>
@@ -361,14 +371,24 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   </div>
                 )}
                 <div className="w-full sm:w-[200px]">
-                  <ModeOfPaymentSelect
+                  {/* <ModeOfPaymentSelect
                     value={formData.payment_mode ?? ""}
                     onChange={(val) =>
                       actions.handleInputChange({
                         target: { name: "payment_mode", value: val },
                       } as any)
                     }
-                  />
+                  /> */}
+                  <ModeOfPaymentSelect
+  value={formData.payment_mode ?? ""}
+  required
+  onChange={(val) => {
+    actions.handleInputChange({
+      target: { name: "payment_mode", value: val },
+    } as any);
+    
+  }}
+/>
                 </div>
 
                 {/* Invoice Type */}
@@ -593,14 +613,14 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
           {ui.activeTab === "address" && (
             <div className="space-y-6 overflow-hidden">
               {/* Payment Info */}
-              <PaymentInfoBlock
+              {/* <PaymentInfoBlock
                 data={formData.paymentInformation}
                 onChange={(e) =>
                   actions.handleInputChange(e, "paymentInformation")
                 }
                 paymentMethodOptions={paymentMethodOptions}
                 showPaymentMethod={false}
-              />
+              /> */}
 
               {/* Address boxes — incoterm/shipping stripped */}
               <InvoiceAddressTab

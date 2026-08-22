@@ -12,6 +12,7 @@ import {
 } from "../../api/expenseClaimApi";
 import { showApiError } from "../../utils/alert";
 import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
+import { cleanGLNameList , getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 const getCompanyFromStorage = (): string => {
   try {
     const raw = localStorage.getItem("company-info");
@@ -56,6 +57,7 @@ export const ExpenseTypeModal: React.FC<ExpenseTypeModalProps> = ({
   const [form, setForm] = useState<ExpenseTypeFormData>(defaultForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [accountDisplay, setAccountDisplay] = useState(""); 
   const isEditMode = modal?.isEdit ?? false;
   const { markDirty, resetDirty, handleCloseWithConfirm } =
     useUnsavedChangesGuard();
@@ -65,12 +67,14 @@ export const ExpenseTypeModal: React.FC<ExpenseTypeModalProps> = ({
       const data = modal?.initialData as ExpenseTypeFormData | undefined;
       setForm(data ?? defaultForm);
       setErrors({});
+      setAccountDisplay(getGLNameWithoutAbbreviation(data?.account ?? "")); 
     }
   }, [isOpen]);
 
   const reset = () => {
     setForm(defaultForm);
     setErrors({});
+    setAccountDisplay("");
     resetDirty();
   };
 
@@ -85,7 +89,7 @@ export const ExpenseTypeModal: React.FC<ExpenseTypeModalProps> = ({
 
   const fetchGLAccounts = useCallback(async (search: string) => {
     const results = await getExpenseGLAccounts(getCompanyFromStorage(), search);
-    return results;
+    return cleanGLNameList(results, "label");
   }, []);
 
   const validate = () => {
@@ -143,8 +147,11 @@ export const ExpenseTypeModal: React.FC<ExpenseTypeModalProps> = ({
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEditMode ? "Edit Expense Type" : "Add Expense Type"}
-      subtitle={isEditMode ? "Update expense type" : "Add a new expense type"}
-      icon={FileText}
+      subtitle={
+        isEditMode
+          ? "Edit and manage expense type details"
+          : "Add and manage expense types"
+      } icon={FileText}
       footer={footer}
       customWidth="38vw"
       height="auto"
@@ -167,9 +174,10 @@ export const ExpenseTypeModal: React.FC<ExpenseTypeModalProps> = ({
           <SearchSelect2
             label="GL Account"
             required
-            value={form.account}
-            onChange={(val) => {
+            value={accountDisplay}
+            onChange={(val, option) => {
               setForm((prev) => ({ ...prev, account: val || "" }));
+              setAccountDisplay(getGLNameWithoutAbbreviation(option?.label || val || ""));
               if (errors.account)
                 setErrors((prev) => ({ ...prev, account: "" }));
               markDirty();

@@ -169,8 +169,13 @@ const ItemsCategoryModal: React.FC<{
             : handleCloseWithConfirm(handleClose, resolvedModalId)
         }
         title={isViewMode ? "View Item Group" : isEditMode ? "Edit Item Group" : "Add Item Group"}
-        subtitle={isViewMode ? "Read-only view of this item group" : "Add a new item group"}
-        icon={Layers}
+        subtitle={
+          isViewMode
+            ? "View item group details"
+            : isEditMode
+              ? "Edit and manage item group details"
+              : "Add and manage item groups"
+        } icon={Layers}
         customWidth="35vw"
         height="auto"
       >

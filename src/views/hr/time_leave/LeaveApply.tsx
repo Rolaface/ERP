@@ -194,7 +194,8 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
       key: "to_date",
       header: "To Date",
       align:  "left",
-      render: (e) => (e.half_day === 1 ? "Half Day" : formatDate(e.to_date) || "—"),
+      // render: (e) => (e.half_day === 1 ? "Half Day" : formatDate(e.to_date) || "—"),
+      render: (e) => (e.half_day === 1 ? formatDate(e.from_date) : formatDate(e.to_date) || "-"),
     },
     {
       key: "total_leave_days",
@@ -250,11 +251,10 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
         }
         if (isApproved) {
           const today = new Date();
-          console.log("Today", today);
+
           today.setHours(0, 0, 0, 0);
 
           const fromDate = new Date(row.from_date);
-          console.log("From Date", fromDate);
           fromDate.setHours(0, 0, 0, 0);
 
           if (today < fromDate) {

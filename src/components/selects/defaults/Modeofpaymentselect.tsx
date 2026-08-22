@@ -5,7 +5,7 @@ import { useDefault } from "../../../hooks/usedefaultdata";
 
 interface ModeOfPaymentSelectProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, hasDefaultAccount: boolean) => void;
   label?: string;
   placeholder?: string;
   required?: boolean;
@@ -27,7 +27,7 @@ const ModeOfPaymentSelect: React.FC<ModeOfPaymentSelectProps> = ({
   // Pre-fill from store only on mount if value is empty
   useEffect(() => {
     if (!value && defaultPaymentMode) {
-      onChange(defaultPaymentMode);
+      onChange(defaultPaymentMode, true);
     }
   }, [defaultPaymentMode]);
 
@@ -40,8 +40,17 @@ const ModeOfPaymentSelect: React.FC<ModeOfPaymentSelectProps> = ({
     }));
   };
 
-  const handleChange = (_: string, option: any) => {
-    onChange(option?.value || "");
+  const handleChange = async (_: string, option: any) => {
+    const selectedDefaultAccount =
+      option?.meta?.defaultAccount ??
+      option?.meta?.default_account ??
+      option?.meta?.defaultBankAccount ??
+      option?.meta?.default_bank_account;
+
+    const hasDefault = !!selectedDefaultAccount;
+
+    // No error, no block — just pass the info along.
+    onChange(option?.value || "", hasDefault);
   };
 
   return (

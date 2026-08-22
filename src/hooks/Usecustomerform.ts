@@ -60,12 +60,16 @@ export interface CustomerFormState {
   accountNumber: string;
   status: "Active" | "Inactive";
   customerTaxCategory: string;
+  creditLimit?: number | string;
+  bypassCreditLimit?: boolean;
+  strictCreditLimit?: boolean;
   contacts: ContactEntry[];
   addresses: AddressEntry[];
   sameAsBilling: boolean;
   terms: {
     selling: TermSection;
   };
+  principalId?: string;
 }
 
 export interface CustomerFormErrors {
@@ -76,6 +80,7 @@ export interface CustomerFormErrors {
   displayName?: string;
   customerTaxCategory?: string;
   accountNumber?: string;
+  creditLimit?: string;
   contactEmail?: string;
   contactMobile?: string;
   contactFirstName?: string;
@@ -154,10 +159,14 @@ export const emptyForm: CustomerFormState = {
   accountNumber: "",
   status: "Active",
   customerTaxCategory: "",
+  creditLimit: "",
+ bypassCreditLimit: false,
+ strictCreditLimit: false,
   contacts: [{ ...defaultContact }],
   addresses: [{ ...defaultBillingAddress }, { ...defaultShippingAddress }],
   sameAsBilling: true,
   terms: { selling: defaultSellingTerms },
+  principalId: "",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -204,6 +213,7 @@ export function mapApiResponseToFormState(
         phone: c.phone ?? "",
         isPrimary: c.isPrimary ?? false,
         isBilling: c.isBilling ?? false,
+        principalId: (data as any).principalId ?? "",
       };
     });
   } else {
@@ -291,12 +301,16 @@ export function mapApiResponseToFormState(
     accountNumber: data.accountNumber ?? "",
     status: (data.status as CustomerFormState["status"]) ?? "Active",
     customerTaxCategory: data.customerTaxCategory ?? "",
+    creditLimit: data.credit_limits?.[0]?.credit_limit ?? "",
+    bypassCreditLimit: !!data.credit_limits?.[0]?.bypass_credit_limit_check,
+     strictCreditLimit: !!data.credit_limits?.[0]?.strict_credit_limit,
     contacts,
     addresses,
     sameAsBilling,
     terms: data.terms ?? {
       selling: companySellingTerms ?? defaultSellingTerms,
     },
+    principalId: (data as any).principalId ?? "",
   };
 }
 
@@ -304,7 +318,7 @@ export function mapApiResponseToFormState(
  * Same payload shape for both POST (create) and PATCH (update).
  */
 export function buildPayload(form: CustomerFormState): Record<string, any> {
-  const { sameAsBilling, id, ...rest } = form;
+   const { sameAsBilling, id, creditLimit, bypassCreditLimit, strictCreditLimit, ...rest } = form;
   const contacts = form.contacts.map(
     ({ mobileCode, mobileNumber, id, ...contact }) => ({
       ...(id ? { id } : {}),
@@ -343,8 +357,27 @@ export function buildPayload(form: CustomerFormState): Record<string, any> {
     );
   }
 
-  return { ...rest, contacts, addresses };
+   const credit_limits = [
+  ];
+ const hasCreditLimitInput =
+  creditLimit !== "" && creditLimit !== undefined && creditLimit !== null;
+
+ if (hasCreditLimitInput) {
+   credit_limits.push({
+    credit_limit: Number(creditLimit) || 0,
+    bypass_credit_limit_check: bypassCreditLimit ? 1 : 0,
+    strict_credit_limit: strictCreditLimit ? 1 : 0,
+   });
+ }
+
+ return {
+   ...rest,
+   contacts,
+   addresses,
+   ...(hasCreditLimitInput ? { credit_limits } : {}),
+ };
 }
+
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -562,6 +595,7 @@ export function useCustomerForm({
     if (!form.type) newErrors.type = "Type is required";
     if (!form.name?.trim()) newErrors.name = "Customer name is required";
     if (!form.currency) newErrors.currency = "Currency is required";
+    if (!form.customerTaxCategory) newErrors.customerTaxCategory = "Tax category is required";
     if (!pc?.firstName?.trim())
       newErrors.contactFirstName = "First name is required";
     if (!pc?.mobileCode || !pc?.mobileNumber)
@@ -830,6 +864,9 @@ export function useCustomerForm({
         customerTaxCategory: base.customerTaxCategory,
         contacts: base.contacts,
         registration_no: base.registration_no ?? "",
+         creditLimit: base.creditLimit ?? "",
+     bypassCreditLimit: base.bypassCreditLimit ?? false,
+     strictCreditLimit: base.strictCreditLimit ?? false,
       }));
       return;
     }

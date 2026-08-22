@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
 import { getAllPayments } from "../../api/CustomerPayment";
 import { showApiError } from "../../utils/alert";
+import { openPaymentEntryModal } from "../../store/modalStore";
 
 interface Payment {
   id: string;
@@ -13,9 +14,10 @@ interface Payment {
 
 interface Props {
   customerName: string;
+  customerId?: string;
 }
 
-const CustomerdetailviewPayment = ({ customerName }: Props) => {
+const CustomerdetailviewPayment = ({ customerName, customerId }: Props) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -24,46 +26,59 @@ const CustomerdetailviewPayment = ({ customerName }: Props) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  useEffect(() => {
-    if (!customerName) return;
+  const loadPayments = useCallback(async () => {
+   if (!customerName) return;
+   setLoading(true);
+   try {
+     const res = await getAllPayments(
+       "Customer",
+       page,
+       pageSize,
+       undefined,
+       customerName,
+     );
 
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await getAllPayments(
-          "Customer",
-          page,
-          pageSize,
-          undefined,
-          customerName,
-        );
+     const all = res?.data?.payments ?? [];
 
-        const all = res?.data?.payments ?? [];
+     const mapped: Payment[] = all.map((p: any) => ({
+       id: p.paymentId ?? "",
+       paymentDate: p.paymentDate ?? "",
+       modeOfPayment: p.paymentMode ?? "",
+       amount: Number(p.amount ?? 0),
+       status: p.status ?? "—",
+     }));
 
-        const mapped: Payment[] = all.map((p: any) => ({
-          id: p.paymentId ?? "",
-          paymentDate: p.paymentDate ?? "",
-          modeOfPayment: p.paymentMode ?? "",
-          amount: Number(p.amount ?? 0),
-          status: p.status ?? "—",
-        }));
+     setPayments(mapped);
+     setTotalPages(res?.data?.pagination?.totalPages ?? 1);
+     setTotalItems(res?.data?.pagination?.total ?? mapped.length);
+   } catch (err) {
+     showApiError(err);
+   } finally {
+     setLoading(false);
+   }
+ }, [customerName, page, pageSize]);
 
-        setPayments(mapped);
-        setTotalPages(res?.data?.pagination?.totalPages ?? 1);
-        setTotalItems(res?.data?.pagination?.total ?? mapped.length);
-      } catch (err) {
-        showApiError(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, [customerName, page, pageSize]);
+ useEffect(() => {
+   loadPayments();
+ }, [loadPayments]);
+     
 
   useEffect(() => {
     setPage(1);
   }, [customerName]);
+  const handleAddPayment = () => {
+  openPaymentEntryModal(
+     {
+       paymentType: "Receive",
+       partyType: "Customer",
+       partyName: customerName,
+       partyId: customerId,
+     },
+     false,
+     { onSuccess: () => loadPayments() },
+   );
+ };
+
 
   const columns = [
     {
@@ -129,7 +144,11 @@ const CustomerdetailviewPayment = ({ customerName }: Props) => {
           columns={columns}
           data={payments}
           loading={loading}
-          showToolbar={false}
+          showToolbar={true}
+           enableAdd={true}
+         addLabel="Receive Payment"
+        onAdd={handleAddPayment}
+          
           currentPage={page}
           totalPages={totalPages}
           totalItems={totalItems}

@@ -127,5 +127,5 @@ export async function toggleSchedulerEnable(
     `${SCHEDULER_URL}/${name}`,
     { enabled: enabled ? 1 : 0 },
   );
-  console.log("Toggle response:", resp?.data); 
+ 
 }

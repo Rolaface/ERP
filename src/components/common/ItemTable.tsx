@@ -12,7 +12,8 @@ import { getItemDetailsByBarcodeId } from "../../api/procurement/PurchaseInvoice
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 import { useBarcodeScanner } from "../../api/utils/BarCodeScanner";
 import { getStockReport } from "../../api/stockApi";
-import POItemSelect from "../selects/procurement/POItemSelect";
+import { useSpreadsheetNavigation } from "../../hooks/common/useSpreadsheetNavigation";
+import { useCompanyStore } from "../../store/companyStore";
 
 export interface ItemTableActions {
   handleItemChange: (
@@ -44,7 +45,7 @@ interface ItemTableProps {
   symbol: string;
   ITEMS_PER_PAGE: number;
   taxCategory?: string;
-  invoiceType?: "Product" | "Service";
+  invoiceType?: "Product" | "Service" | "RVAT";
   isSalesInvoice?: boolean;
   title?: string;
   isQuotation?: boolean;
@@ -94,7 +95,7 @@ interface ItemTableProps {
 interface InvoiceHeadersProps {
   isSalesInvoice: boolean;
   isQuotation: boolean;
-  invoiceType?: "Product" | "Service"; // Ensure this is here
+  invoiceType?: "Product" | "Service" | "RVAT";
 }
 
 const ProductInvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
@@ -107,8 +108,8 @@ const ProductInvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
     {/* Pkg (U×S)  */} <col style={{ width: "5%" }} />
     {/* Box        */} {!isQuotation && <col style={{ width: "6%" }} />}
     {/* Batch No   */} {isSalesInvoice && <col style={{ width: "9%" }} />}
-    {/* UOM        */} {isQuotation && <col style={{ width: "10%" }} />}
-    {/* Qty        */} <col style={{ width: "5%" }} />
+    {/* Qty        */} <col style={{ width: "7%" }} />
+    {/* UOM */} <col style={{ width: "8%" }} />
     {/* Mfg Date   */} {!isQuotation && <col style={{ width: "10%" }} />}
     {/* Expiry     */} {!isQuotation && <col style={{ width: "10%" }} />}
     {/* Warehouse  */} {!isQuotation && <col style={{ width: "12%" }} />}
@@ -124,21 +125,23 @@ const ProductInvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
 const ServiceInvoiceColGroup: React.FC = () => (
   <colgroup>
     <col style={{ width: "28px" }} /> {/* # */}
-    <col style={{ width: "22%" }} /> {/* Item */}
-    <col style={{ width: "10%" }} /> {/* Qty */}
-    <col style={{ width: "15%" }} /> {/* Price */}
-    <col style={{ width: "10%" }} /> {/* Tax% */}
-    <col style={{ width: "15%" }} /> {/* Tax Name */}
-    <col style={{ width: "15%" }} /> {/* Amount */}
-    <col style={{ width: "8%" }} /> {/* Amount */}
+    <col style={{ width: "20%" }} /> {/* Item */}
+    <col style={{ width: "18%" }} /> {/* Description */}
+    <col style={{ width: "7%" }} /> {/* Qty */}
+    <col style={{ width: "8%" }} /> {/* UOM */}
+    <col style={{ width: "6%" }} /> {/* Price */}
+    <col style={{ width: "5%" }} /> {/* Discount */}
+    <col style={{ width: "5%" }} /> {/* Tax% */}
+    <col style={{ width: "12%" }} /> {/* Tax Name */}
+    <col style={{ width: "10%" }} /> {/* Amount */}
     <col style={{ width: "44px" }} /> {/* Actions */}
   </colgroup>
 );
 
-// 3. Main ColGroup Component that switches between them
 const InvoiceColGroup: React.FC<InvoiceHeadersProps> = (props) => {
   // const isService = props.isSalesInvoice && props.invoiceType === "Service";
-  const isService = props.invoiceType === "Service";
+  const isService =
+    props.invoiceType === "Service" || props.invoiceType === "RVAT";
 
   if (isService) {
     return <ServiceInvoiceColGroup />;
@@ -153,7 +156,7 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
   invoiceType = "Product",
 }) => {
   // const isService = isSalesInvoice && invoiceType === "Service";
-  const isService = invoiceType === "Service";
+  const isService = invoiceType === "Service" || invoiceType === "RVAT";
   return (
     <tr className="border-b border-theme">
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
@@ -162,6 +165,11 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
         Item
       </th>
+      {isService && (
+        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+          Description
+        </th>
+      )}
 
       {/* Hide Labels if Service */}
       {!isService && (
@@ -180,13 +188,12 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
         </th>
       )}
 
-      {isQuotation && (
-        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-          UOM
-        </th>
-      )}
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
         Qty
+      </th>
+
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+        UOM
       </th>
 
       {/* Hide Labels if Service */}
@@ -288,6 +295,10 @@ const ItemTable: React.FC<ItemTableProps> = ({
   isSalesInvoice = false,
   isQuotation = false,
 }) => {
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+  const onGridKeyDown = useSpreadsheetNavigation(tableWrapperRef);
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+
   useBarcodeScanner(async (barcode) => {
     try {
       const response = await getItemDetailsByBarcodeId(barcode);
@@ -298,6 +309,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
       let matchedPackingSize = "";
       let matchedPackingUnit = "";
       let matchedTaxName = "";
+      let resolvedPrice = itemData.rate || 0;
       try {
         const stockRes = await getStockReport(1, 1000, itemData.item_code, "");
         const stockItems = stockRes?.message?.data || [];
@@ -310,6 +322,12 @@ const ItemTable: React.FC<ItemTableProps> = ({
         }
         if (stockItem.taxInfo && stockItem.taxInfo.length > 0) {
           matchedTaxName = stockItem.taxInfo[0].taxName || "";
+        }
+
+        const useRrpPrice =
+          isZraEnabled && Number(stockItem?.is_mtv_item) === 1;
+        if (useRrpPrice) {
+          resolvedPrice = Number(stockItem?.rrp_rate ?? 0);
         }
         if (stockItem && stockItem.batches) {
           const matchingBatch = stockItem.batches.find(
@@ -354,7 +372,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
       actions.updateItemDirectly?.(targetIndex, {
         itemCode: itemData.item_code,
         itemName: itemData.item_name,
-        price: itemData.rate || 0,
+        price: resolvedPrice,
         batchNo: itemData.batch_no || "",
         quantity: 1,
         availableQty: Number(itemData.quantity || 0),
@@ -379,7 +397,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
   });
 
   // const isService = isSalesInvoice && invoiceType === "Service";
-  const isService = invoiceType === "Service";
+  const isService = invoiceType === "Service" || invoiceType === "RVAT";
 
   const handleCopyRow = (absoluteIndex: number) => {
     actions.duplicateItem(absoluteIndex);
@@ -395,17 +413,23 @@ const ItemTable: React.FC<ItemTableProps> = ({
     const discountAmount =
       it.quantity * it.price * (Number(it.discount || 0) / 100);
     const amount = it.quantity * it.price - discountAmount;
+    let col = 0;
+    const c = () => col++;
 
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
         {/* # */}
-        <td className="px-2 py-1 text-center text-[10px] text-muted">
+        <td
+          data-row={i}
+          data-col={c()}
+          className="px-2 py-1 text-center text-[10px] text-muted"
+        >
           {i + 1}
         </td>
 
         {/* Item */}
         {!isQuotation && (
-          <td className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <StockItemSelect
               value={it.itemCode}
               batchNo={it.batchNo}
@@ -418,15 +442,19 @@ const ItemTable: React.FC<ItemTableProps> = ({
                   itemCode: item.itemCode,
                   itemName: item.itemName,
                   description: item.description,
+                  uom: item.stockUom,
                   packingSize: item.packingSize,
                   packingUnit: item.packingUnit,
                   piecesPerBox: item.piecesPerBox,
                   batchNo: item.batchNo,
                   mfgDate: item.mfgDate,
+
                   expDate: item.expiryDate,
                   availableQty: item.qty,
                   quantity: 0,
                   price: item.price ?? 0,
+                  is_mtv_item: item.is_mtv_item,
+                 rrp_rate: item.rrp_rate,
                   warehouse: item.warehouse,
                   isServiceItem: item.isServiceItem,
                   vatRate: item.vatRate,
@@ -436,7 +464,12 @@ const ItemTable: React.FC<ItemTableProps> = ({
                     .flatMap((tax: any) => tax.taxRates || [])
                     .map((r: any) => r.tax_type)
                     .filter((t: string) => t && t.trim() !== ""),
-                });
+
+                    taxTitles: (item.taxInfo || [])
+      .map((tax: any) => tax.taxTitle)
+      .filter((t: string) => t && t.trim() !== ""),
+  });
+              
               }}
               onClear={() =>
                 actions.updateItemDirectly?.(i, {
@@ -456,10 +489,23 @@ const ItemTable: React.FC<ItemTableProps> = ({
             />
           </td>
         )}
+        {/* Description — Service only */}
+        {isService && (
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
+            <input
+              type="text"
+              name="description"
+              value={it.description || ""}
+              placeholder="Enter description"
+              onChange={(e) => actions.handleItemChange(i, e)}
+              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </td>
+        )}
 
         {/* Pkg (U×S) */}
         {!isService && (
-          <td className="px-1 py-1">
+          <td data-row={i} data-col={c()} className="px-1 py-1">
             <Tooltip
               content={
                 it.packingUnit && it.packingSize
@@ -484,7 +530,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Box */}
         {!isService && (
-          <td className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <div className="flex items-center gap-0.5">
               <input
                 name="boxStart"
@@ -507,7 +553,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Batch No */}
         {isSalesInvoice && !isService && (
-          <td className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <Tooltip content={`Batch No: ${it.batchNo || "—"}`}>
               <input
                 type="text"
@@ -520,23 +566,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
           </td>
         )}
 
-        {/* UOM — quotation only */}
-        {isQuotation && (
-          <td className="px-2 py-1">
-            <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
-              <input
-                type="text"
-                name="uom"
-                value={it.uom || ""}
-                className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                disabled
-              />
-            </Tooltip>
-          </td>
-        )}
-
         {/* Qty */}
-        <td className="px-0.5 py-1">
+        <td data-row={i} data-col={c()} className="px-0.5 py-1">
           <NumericInput
             name="quantity"
             value={it.quantity ?? ""}
@@ -551,9 +582,21 @@ const ItemTable: React.FC<ItemTableProps> = ({
           />
         </td>
 
+        <td data-row={i} data-col={c()} className="px-2 py-1">
+          <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
+            <input
+              type="text"
+              name="uom"
+              value={it.uom || ""}
+              disabled
+              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
+            />
+          </Tooltip>
+        </td>
+
         {/* Mfg Date — full date visible, no truncation */}
         {!isService && (
-          <td className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <Tooltip content={it.mfgDate || "No Mfg Date"}>
               <DatePickerInput
                 label=""
@@ -572,7 +615,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Expiry Date — full date visible, no truncation */}
         {!isService && (
-          <td className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <Tooltip content={it.expDate || "No Expiry Date"}>
               <DatePickerInput
                 label=""
@@ -591,7 +634,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Warehouse */}
         {!isService && (
-          <td className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <Tooltip content={it.warehouse || "No warehouse selected"}>
               <WarehouseSelect
                 compact
@@ -607,7 +650,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         )}
 
         {/* Unit Price */}
-        <td className="px-0.5 py-1">
+        <td data-row={i} data-col={c()} className="px-0.5 py-1">
           <NumericInput
             name="price"
             value={it.price ?? ""}
@@ -624,7 +667,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Dis(%) */}
         {!isQuotation && (
-          <td className="px-1 py-1">
+          <td data-row={i} data-col={c()} className="px-1 py-1">
             <NumericInput
               name="discount"
               value={it.discount ?? ""}
@@ -640,7 +683,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         )}
 
         {/* Tax(%) */}
-        <td className="px-1 py-1">
+        <td data-row={i} data-col={c()} className="px-1 py-1">
           <NumericInput
             name="vatRate"
             value={it.vatRate ?? ""}
@@ -655,25 +698,25 @@ const ItemTable: React.FC<ItemTableProps> = ({
           />
         </td>
 
-        {/* Tax Name */}
-        <td className="px-1 py-1">
-          <Tooltip
-            content={
-              it.taxTypes?.length
-                ? `Tax Types: ${it.taxTypes.join(", ")}`
-                : "No Tax Types"
-            }
-          >
-            <input
-              type="text"
-              name="vatCode"
-              value={it.taxTypes || "" || it.taxTypes}
-              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-              disabled
-              onChange={(e) => actions.handleItemChange(i, e)}
-            />
-          </Tooltip>
-        </td>
+  
+       {/* Tax Name */}
+<td data-row={i} data-col={c()} className="px-1 py-1">
+  <Tooltip
+    content={
+      it.taxTitles?.length
+        ? `Tax Types: ${it.taxTitles.join(", ")}`
+        : "No Tax Types"
+    }
+  >
+    <input
+      type="text"
+      name="taxTitles"
+      value={it.taxTitles || ""}
+      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+      disabled
+    />
+  </Tooltip>
+</td>
 
         {/* Amount */}
         <td className="px-1 py-1">
@@ -724,7 +767,11 @@ const ItemTable: React.FC<ItemTableProps> = ({
         <h3 className="text-sm font-semibold text-main mb-2">{title}</h3>
       )}
 
-      <div className="w-full overflow-x-auto scrollbar-thin">
+      <div
+        ref={tableWrapperRef}
+        onKeyDown={onGridKeyDown}
+        className="w-full overflow-x-auto scrollbar-thin"
+      >
         <table
           className="w-full border-collapse text-[10px] leading-tight"
           style={{

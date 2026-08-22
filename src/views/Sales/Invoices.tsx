@@ -6,18 +6,20 @@ import React, {
   useMemo,
 } from "react";
 import { useOutletContext } from "react-router-dom";
-import { FilterSelect } from "../../components/ui/modal/modalComponent";
+
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
-import { openPaymentEntryModal, openSendEmailModal } from "../../store/modalStore";
+import {
+  openPaymentEntryModal,
+  openSendEmailModal,
+} from "../../store/modalStore";
 import {
   getAllSalesInvoices,
   updateInvoiceStatus,
   getSalesInvoiceById,
   deleteSalesInvoiceById,
-  editSalesInvoice,
 } from "../../api/salesApi";
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
-import { generateInvoicePDF } from "../../components/template/invoice/invoiceTemplatRolaface";
+
 import PdfPreviewModal from "./PdfPreviewModal";
 import InvoiceDetailModal, { type InvoiceDetail } from "./InvoiceDetailsModal";
 import {
@@ -46,6 +48,7 @@ import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
+import { generateShipperLabelsPDF } from "../../components/template/invoice/shipperLabelPdf";
 import {
   ACTION_ICONS,
   getStatusActionIcon,
@@ -53,6 +56,7 @@ import {
 
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+import { useDocumentConversion } from "../../hooks/useDocumentConversion";
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -61,11 +65,14 @@ type OutletContextType = {
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   Draft: ["Approved"],
-  Paid: [],
+  Failed: ["Approved"],
+  Pending: ["Approved"],
+  Paid: ["Cancelled"],
   Cancelled: [],
   Approved: ["Paid", "Cancelled"],
   Unpaid: ["Cancelled"],
   Overdue: ["Cancelled"],
+  "Partly Paid": ["Cancelled"],
 };
 // const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 //   Draft: ["Rejected", "Approved"],
@@ -77,12 +84,23 @@ const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid", "Cancelled"];
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  customerName: "customer_name",
+  invoiceNumber: "name",
+  dueDate: "due_date",
+  total: "grand_total",
+  outstandingAmount: "outstanding_amount",
+};
+
+const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? field;
+
 const statusOptions = [
   { label: "Draft", value: "Draft" },
   { label: "Paid", value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
   { label: "Unpaid", value: "Unpaid" },
   { label: "Overdue", value: "Overdue" },
+  { label: "Partly Paid", value: "Partly Paid" },
   { label: "Returned", value: "Return" },
 ];
 
@@ -90,7 +108,6 @@ interface InvoiceTableProps {
   onAddInvoice?: () => void;
   onExportInvoice?: () => void;
 }
-
 const SALES_MODULE = "Sales Invoice";
 const PAYMENT_MODULE = "Payment Entry";
 
@@ -109,8 +126,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfInvoiceNumber, setPdfInvoiceNumber] = useState<string | null>(null);
-
-
+  const createCreditNoteFromSalesInvoice =
+    useDocumentConversion("siToCreditNote");
 
   const { can } = usePermission();
   // ── Drawer (same pattern as ProformaInvoicesTable)
@@ -121,7 +138,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
   const [filters, setFilters] = useState<{
-    status?: string;
+    status?: string[];
     from_date?: string;
     to_date?: string;
   }>({});
@@ -135,7 +152,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   // ── Search (server)
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [sortBy, setSortBy] = useState("invoiceNumber");
+  const [sortBy, setSortBy] = useState("creation");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // ── Currency symbols + per-currency number formatting for the currencies
@@ -174,12 +191,14 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       const res = await getAllSalesInvoices(
         page,
         pageSize,
-        sortBy,
+        mapSortField(sortBy),
         sortOrder,
         searchTerm,
         undefined,
         undefined,
-        filters.status,
+        filters.status && filters.status.length > 0
+          ? filters.status.join(",")
+          : undefined,
         filters.from_date,
         filters.to_date,
       );
@@ -293,6 +312,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     );
   };
 
+  const handleCreateCreditNote = (siId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    return createCreditNoteFromSalesInvoice(siId);
+  };
+
   const fetchAllInvoicesForExport = async (): Promise<InvoiceSummary[]> => {
     try {
       let allData: InvoiceSummary[] = [];
@@ -303,25 +327,26 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         const res = await getAllSalesInvoices(
           current,
           100,
-          sortBy,
+          mapSortField(sortBy),
           sortOrder,
           searchTerm,
         );
 
         if (res?.status_code === 200) {
           const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
-            invoiceNumber: inv.invoiceNumber,
+            invoiceNumber: inv.id,
             customerName: inv.customerName,
             receiptNumber: inv.receiptNumber,
             currency: inv.currency,
             exchangeRate: inv.exchangeRate,
             dueDate: inv.dueDate,
-            dateOfInvoice: new Date(inv.dateOfInvoice),
-            total: Number(inv.totalAmount),
+            dateOfInvoice: new Date(inv.invoiceDate),
+            total: Number(inv.total),
+            outstanding_amount: Number(inv.outstanding_amount),
             totalTax: inv.totalTax,
-            invoiceStatus: inv.invoiceStatus,
-            invoiceTypeParent: inv.invoiceTypeParent,
-            invoiceType: inv.invoiceType,
+            invoiceStatus: inv.status,
+            // invoiceTypeParent: inv.invoiceTypeParent,
+            // invoiceType: inv.invoiceType,
           }));
 
           allData = [...allData, ...mapped];
@@ -382,11 +407,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           "Due Date": inv.dueDate
             ? new Date(inv.dueDate).toLocaleDateString()
             : "",
-          // Raw numeric values — kept as real numbers in Excel (not
-          // pre-formatted strings) so the cells stay sortable/summable.
+          Currency: inv.currency,
           Amount: inv.total,
           OutStanding: inv.outstanding_amount,
-          Currency: inv.currency,
           Status: inv.invoiceStatus,
         })),
       );
@@ -440,6 +463,27 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       setDrawerPdfLoading(false);
     }
   };
+  
+  const handleShipperLabels = async (
+  inv: InvoiceSummary,
+  e?: React.MouseEvent,
+) => {
+  e?.stopPropagation();
+  try {
+    showLoading("Generating shipper labels...");
+    const res = await getSalesInvoiceById(inv.invoiceNumber);
+    if (!res?.message || res.message.status_code !== 200) {
+      closeSwal();
+      showApiError(res?.message?.message || "Failed to load invoice");
+      return;
+    }
+    generateShipperLabelsPDF(res.message.data, company, "save");
+    closeSwal();
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   // ── PDF preview modal (table row action — kept, do not remove)
   const handlePreviewPDF = async (
@@ -720,10 +764,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                 type="edit"
                 onClick={(e) => handleEdit(inv.invoiceNumber, e)}
                 iconOnly
-                disabled={inv.invoiceStatus !== "Draft"}
+                disabled={inv.invoiceStatus !== "Draft" && inv.invoiceStatus !== "Failed"}
                 title={
                   inv.invoiceStatus !== "Draft"
-                    ? "Only Draft invoices can be edited"
+                    ? "Only Draft and Failed invoices can be edited"
                     : "Edit Invoice"
                 }
               />
@@ -731,10 +775,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             {(() => {
               const isCancelled = inv.invoiceStatus === "Cancelled";
               const hasDelete =
-                can(SALES_MODULE, "delete") && inv.invoiceStatus === "Draft";
+                can(SALES_MODULE, "delete") && (inv.invoiceStatus === "Draft" || inv.invoiceStatus === "Failed");
 
               const customActions = [
                 ...(inv.invoiceStatus !== "Draft" &&
+                  inv.invoiceStatus !== "Failed" &&
+                  inv.invoiceStatus !== "Pending" &&
                 inv.invoiceStatus !== "Cancelled" &&
                 inv.outstanding_amount > 0 &&
                 can(PAYMENT_MODULE, "create")
@@ -747,32 +793,44 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                     ]
                   : []),
 
-    ...(inv.invoiceStatus !== "Draft" && !isCancelled
-      ? [{
-          label: "Compose Email",
-          icon: ACTION_ICONS.EMAIL,
-          onClick: async () => {
-            let contactEmail: string | null = null;
-            let invoiceAttachments: { name: string; file_name: string }[] = [];
-            try {
-              const res = await getSalesInvoiceById(inv.invoiceNumber);
-              if (res?.message?.status_code === 200) {
-                contactEmail = res.message.data?.contact_email ?? null;
-                invoiceAttachments = res.message.data?.attachments ?? [];
-              }
-            } catch {}
-            openSendEmailModal({
-              docType: "Sales Invoice",
-              invoiceNumber: inv.invoiceNumber,
-              customerName: inv.customerName,
-              contactEmail,
-              invoiceAttachments,
-            });
-          },
-        }]
-      : []),
+                ...(inv.invoiceStatus !== "Draft" && 
+                     inv.invoiceStatus!== "Failed" &&
+                     inv.invoiceStatus !== "Pending" &&
+                     !isCancelled
+                  ? [
+                      {
+                        label: "Compose Email",
+                        icon: ACTION_ICONS.EMAIL,
+                        onClick: async () => {
+                          let contactEmail: string | null = null;
+                          let invoiceAttachments: {
+                            name: string;
+                            file_name: string;
+                          }[] = [];
+                          try {
+                            const res = await getSalesInvoiceById(
+                              inv.invoiceNumber,
+                            );
+                            if (res?.message?.status_code === 200) {
+                              contactEmail =
+                                res.message.data?.contact_email ?? null;
+                              invoiceAttachments =
+                                res.message.data?.attachments ?? [];
+                            }
+                          } catch {}
+                          openSendEmailModal({
+                            docType: "Sales Invoice",
+                            invoiceNumber: inv.invoiceNumber,
+                            customerName: inv.customerName,
+                            contactEmail,
+                            invoiceAttachments,
+                          });
+                        },
+                      },
+                    ]
+                  : []),
 
-                ...(!isCancelled
+                                ...(!isCancelled && inv.invoiceStatus !== "Pending"
                   ? [
                       {
                         label: "View PDF",
@@ -782,6 +840,30 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                     ]
                   : []),
 
+                ...(inv.invoiceStatus !== "Draft" &&
+                  inv.invoiceStatus !== "Failed" &&
+                  inv.invoiceStatus !== "Pending" 
+                  ? [
+                      {
+                        label: "Shipper Labels",
+                        icon: ACTION_ICONS.PDF,
+                        onClick: () => handleShipperLabels(inv),
+                      },
+                    ]
+                  : []),
+                ...(inv.invoiceStatus !== "Draft" &&
+                  inv.invoiceStatus !== "Failed" &&
+                  inv.invoiceStatus !== "Pending" &&
+                inv.invoiceStatus !== "Cancelled"
+                  ? [
+                      {
+                        label: "Create Credit Note",
+                        icon: ACTION_ICONS.CREDIT_NOTE,
+                        onClick: () =>
+                          handleCreateCreditNote(inv.invoiceNumber),
+                      },
+                    ]
+                  : []),
                 ...(can(SALES_MODULE, "write")
                   ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
                       (status) => ({
@@ -863,28 +945,30 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
         onRowDoubleClick={(inv) => handleView(inv.invoiceNumber)}
+        multiSelectFilters={[
+          {
+            key: "status",
+            label: "Status",
+            options: statusOptions,
+            values: filters.status ?? [],
+            onChange: (vals) => {
+              setFilters((prev) => ({
+                ...prev,
+                status: vals.length > 0 ? vals : undefined,
+              }));
+              setPage(1);
+            },
+          },
+        ]}
         extraFilters={
-          <>
-            <FilterSelect
-              value={filters.status ?? ""}
-              options={statusOptions}
-              onChange={(e) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  status: e.target.value || undefined,
-                }));
-                setPage(1);
-              }}
-            />
-            <DateRangeFilter
-              from={filters.from_date}
-              to={filters.to_date}
-              onChange={(range) => {
-                setFilters((prev) => ({ ...prev, ...range }));
-                setPage(1);
-              }}
-            />
-          </>
+          <DateRangeFilter
+            from={filters.from_date}
+            to={filters.to_date}
+            onChange={(range) => {
+              setFilters((prev) => ({ ...prev, ...range }));
+              setPage(1);
+            }}
+          />
         }
       />
 

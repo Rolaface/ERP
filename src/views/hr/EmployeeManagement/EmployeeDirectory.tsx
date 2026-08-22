@@ -49,6 +49,15 @@ interface EmployeeDirectoryProps {
 const unwrapEmployee = (res: any): any =>
   res?.message?.data ?? res?.data ?? res;
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  employeeId: "name",
+  name: "employee_name",
+  jobTitle: "designation",
+  department: "department",
+  branch: "branch",
+  status: "status",
+};
+
 // ── Component ────────────────────────────────────────────────────
 
 const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
@@ -71,6 +80,8 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   const [totalItems, setTotalItems] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<string>("");
+const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
@@ -89,7 +100,8 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
 
     try {
       const searchParam = isEmployeeView ? user?.employeeId : searchTerm || undefined;
-      const res = await getAllEmployees(page, pageSize, undefined, searchParam);
+      const SortField = sortBy ? (SORT_FIELD_MAP[sortBy] || sortBy) : undefined;
+const res = await getAllEmployees(page, pageSize, undefined, searchParam, SortField, sortOrder);
       if (!mountedRef.current) return;
 
       // FIX: fetch lookup data once, then return cached result via fetcher
@@ -128,7 +140,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, searchTerm, isEmployeeView, user?.employeeId]);
+  }, [page, pageSize, searchTerm, isEmployeeView, user?.employeeId, sortBy, sortOrder]);
 
   // Keep a stable ref so subscriptions always call the latest version
   const fetchEmployeesRef = useRef(fetchEmployees);
@@ -146,10 +158,10 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   }, []);
 
   // Refetch on pagination / search change
-  useEffect(() => {
-    if (isInitialLoad) return;
-    fetchEmployees();
-  }, [page, pageSize, searchTerm]);
+useEffect(() => {
+  if (isInitialLoad) return;
+  fetchEmployees();
+}, [page, pageSize, searchTerm, sortBy, sortOrder]);
 
   // Subscribe once to refresh store
   useEffect(() => {
@@ -281,6 +293,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       key: "employeeId",
       header: "Employee ID",
       align: "left",
+      sortable: true,
       render: (e) => (
         <span className="font-medium text-xs whitespace-nowrap">
           {e.id ?? "—"}
@@ -291,6 +304,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       key: "name",
       header: "Name",
       align: "left",
+      sortable: true,
       render: (e) => (
         <EmployeeNameCell name={e.name} employeeId={e.id} image={e.image} />
       ),
@@ -299,6 +313,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       key: "jobTitle",
       header: "Job Title",
       align: "left",
+      sortable: true,
       render: (e) => (
         <span className="text-xs text-muted whitespace-nowrap">
           {e.jobTitle ?? "—"}
@@ -309,6 +324,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       key: "department",
       header: "Department",
       align: "left",
+      sortable: true,
       render: (e) => (
         <span className="text-xs whitespace-nowrap">{e.department}</span>
       ),
@@ -316,6 +332,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     {
       key: "branch",
       header: "Branch",
+      sortable: true,
       align: "left",
       render: (e) => (
         <span className="text-xs whitespace-nowrap">{e.branch ?? "—"}</span>
@@ -325,6 +342,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       key: "status",
       header: "Status",
       align: "center",
+      sortable: true,
       render: (e) => (
         <span
           className={`inline-flex items-center text-[11px] px-2 py-px rounded-full font-medium whitespace-nowrap ${
@@ -393,6 +411,14 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
             setSearchTerm(q);
             setPage(1);
           }}
+
+           sortBy={sortBy}                               
+  sortOrder={sortOrder}                          
+  onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {   {/* ADD */}
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setPage(1);
+  }}
           enableAdd={!isEmployeeView && can(EMP_MODULE, "create")}
           addLabel="Add Employee"
           onAdd={handleAdd}

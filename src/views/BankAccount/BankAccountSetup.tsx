@@ -118,6 +118,16 @@ const BankAccountSetup: React.FC = () => {
     },
     [fetchAccounts],
   );
+
+  const handleEdit = useCallback(
+    (row: BankAccount) => {
+      openBankAccountModal(row, true, {
+        onSuccess: () => fetchAccounts(),
+      });
+    },
+    [fetchAccounts],
+  );
+
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 
@@ -283,6 +293,13 @@ const BankAccountSetup: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
+          <PermissionGate module={BANK_ACCOUNT_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={() => handleEdit(row)}
+              iconOnly
+            />
+          </PermissionGate>
           <PermissionGate module={BANK_ACCOUNT_MODULE} action="write">
             <ActionButton
               type="view"

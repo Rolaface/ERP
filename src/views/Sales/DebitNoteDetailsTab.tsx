@@ -15,6 +15,7 @@ interface InvoiceSearchSelectProps {
   value: string;
   fetchOptions: (q: string) => Promise<PurchaseInvoiceOption[]>;
   onChange: (opt: PurchaseInvoiceOption) => void;
+  onClear?: () => void;
   detailsLoading: boolean;
 }
 
@@ -22,6 +23,7 @@ const InvoiceSearchSelect: React.FC<InvoiceSearchSelectProps> = ({
   value,
   fetchOptions,
   onChange,
+  onClear,
   detailsLoading,
 }) => {
   const [query, setQuery] = useState("");
@@ -60,11 +62,14 @@ const InvoiceSearchSelect: React.FC<InvoiceSearchSelectProps> = ({
         !containerRef.current.contains(e.target as Node)
       ) {
         setOpen(false);
+        if (!query.trim() && value) {
+          onClear?.();
+        }
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [query, value, onClear]);
 
   const handleOpen = () => {
     setOpen(true);
@@ -93,8 +98,12 @@ const InvoiceSearchSelect: React.FC<InvoiceSearchSelectProps> = ({
           placeholder={value || "Search invoice…"}
           value={open ? query : value}
           onChange={(e) => {
-            setQuery(e.target.value);
+            const nextValue = e.target.value;
+            setQuery(nextValue);
             setOpen(true);
+            if (!nextValue.trim() && value) {
+              onClear?.();
+            }
           }}
           onFocus={handleOpen}
         />
@@ -146,6 +155,8 @@ export interface DebitNoteDetailsTabProps {
   grandTotal: number;
   fetchInvoiceOptions: (q: string) => Promise<PurchaseInvoiceOption[]>;
   onInvoiceSelect: (opt: PurchaseInvoiceOption) => Promise<void>;
+  onInvoiceClear?: () => void;
+
   onItemChange: (
     index: number,
     field: keyof DebitNoteItem,
@@ -153,18 +164,17 @@ export interface DebitNoteDetailsTabProps {
   ) => void;
   onWarehouseDefault: (index: number, warehouse: string) => void;
   onRemoveItem: (index: number) => void;
-  onToggleUpdateStock: () => void;
 }
 const DebitNoteColGroup: React.FC = () => (
   <colgroup>
-    <col style={{ width: "24px" }} />   {/* # */}
-    <col style={{ width: "22%" }} />    {/* Item */}
-    <col style={{ width: "7%" }} />     {/* Qty */}
-    <col style={{ width: "8%" }} />     {/* Rate */}
-    <col style={{ width: "12%" }} />    {/* Batch No */}
-    <col style={{ width: "18%" }} />    {/* Warehouse */}
-    <col style={{ width: "8%" }} />     {/* Amount */}
-    <col style={{ width: "36px" }} />   {/* Actions */}
+    <col style={{ width: "24px" }} /> {/* # */}
+    <col style={{ width: "22%" }} /> {/* Item */}
+    <col style={{ width: "7%" }} /> {/* Qty */}
+    <col style={{ width: "8%" }} /> {/* Rate */}
+    <col style={{ width: "12%" }} /> {/* Batch No */}
+    <col style={{ width: "18%" }} /> {/* Warehouse */}
+    <col style={{ width: "8%" }} /> {/* Amount */}
+    <col style={{ width: "36px" }} /> {/* Actions */}
   </colgroup>
 );
 
@@ -216,10 +226,11 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
   grandTotal,
   fetchInvoiceOptions,
   onInvoiceSelect,
+  onInvoiceClear,
+
   onItemChange,
   onWarehouseDefault,
   onRemoveItem,
-  onToggleUpdateStock,
 }) => {
   const [page, setPage] = useState(0);
 
@@ -411,10 +422,11 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
           value={form.return_against}
           fetchOptions={fetchInvoiceOptions}
           onChange={onInvoiceSelect}
+          onClear={onInvoiceClear}
           detailsLoading={invoiceLoading}
         />
 
-        <label className="flex items-center gap-2 pb-1">
+        {/* <label className="flex items-center gap-2 pb-1">
           <input
             type="checkbox"
             name="updateStock"
@@ -425,7 +437,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
           <span className="text-xs text-main whitespace-nowrap">
             Update Stock
           </span>
-        </label>
+        </label> */}
       </div>
 
       {/* ── Main grid: ItemTable + sidebar ── */}
@@ -439,7 +451,6 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
           symbol=""
           ITEMS_PER_PAGE={ITEMS_PER_PAGE}
           colGroup={<DebitNoteColGroup />}
-
           columnHeaders={<DebitNoteHeaders />}
           renderRow={renderRow}
         />

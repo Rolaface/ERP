@@ -42,6 +42,7 @@ export interface MinimizableModalProps {
   height?: string;
   customWidth?: string;
   formContainerRef?: React.RefObject<HTMLElement | null>;
+  hideMinimize?: boolean;
 }
 
 export const MinimizableModal: React.FC<MinimizableModalProps> = ({
@@ -58,6 +59,7 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
   customWidth,
   summaryBar,
   formContainerRef,
+  hideMinimize = false,
 }) => {
   const modalMeta = useModalStore((state) =>
     state.modals.find((m) => m.id === modalId)
@@ -118,6 +120,7 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
             onMinimize={() => minimizeModal(modalId)}
             summaryBar={summaryBar}
             formContainerRef={formContainerRef}
+            hideMinimize={hideMinimize}
           >
             {children}
           </ModalShell>
@@ -142,6 +145,7 @@ interface ModalShellProps {
   onMinimize: () => void;
   summaryBar?: React.ReactNode;
   formContainerRef?: React.RefObject<HTMLElement | null>;
+  hideMinimize?: boolean;
 }
 
 const ModalShell: React.FC<ModalShellProps> = ({
@@ -159,6 +163,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
   onMinimize,
   summaryBar,
   formContainerRef,
+  hideMinimize = false,
 }) => {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -188,6 +193,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
           justifyContent: "center",
           padding: "8px",
           pointerEvents: "none",
+          overflow: "auto",
         }}
       >
         <motion.div
@@ -206,6 +212,9 @@ const ModalShell: React.FC<ModalShellProps> = ({
             pointerEvents: "auto",
             height,
             width: customWidth || undefined,
+            minWidth: customWidth
+              ? "min(960px, calc(100vw - 16px))"
+              : undefined,
             maxWidth: customWidth ? "calc(100vw - 16px)" : undefined,
             maxHeight: "calc(100dvh - 16px)",
             boxShadow:
@@ -231,17 +240,19 @@ const ModalShell: React.FC<ModalShellProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  aria-label="Minimize"
-                  className="group rounded-lg p-1.5 transition-all hover:bg-white/10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMinimize();
-                  }}
-                >
-                  <Minus className="h-4 w-4 text-white transition-transform group-hover:scale-110" />
-                </button>
+                {!hideMinimize && (
+                  <button
+                    type="button"
+                    aria-label="Minimize"
+                    className="group rounded-lg p-1.5 transition-all hover:bg-white/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMinimize();
+                    }}
+                  >
+                    <Minus className="h-4 w-4 text-white transition-transform group-hover:scale-110" />
+                  </button>
+                )}
                 <button
                   type="button"
                   aria-label="Close"

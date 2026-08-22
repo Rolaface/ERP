@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { FileSignature } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import { useQuotationForm } from "../../hooks/useQuotationForm";
-import { ModalSelect } from "../ui/modal/modalComponent";
+
 import CustomerSelect from "../selects/CustomerSelect";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { User, Mail, Phone } from "lucide-react";
-import PaymentInfoBlock from "./PaymentInfoBlock";
+
 import DatePickerInput from "../calendar/DatePickerInput";
 import {
-  paymentMethodOptions,
+  
   ITEMS_PER_PAGE,
 } from "../../constants/invoice.constants";
 import ModalFooter from "../common/ModalFooter";
@@ -32,6 +32,8 @@ import {
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 import QuotationItemTable from "../common/QuotationItemTable";
 import { useDefault } from "../../hooks/usedefaultdata";
+import ModeOfPaymentSelect from "../selects/defaults/Modeofpaymentselect";
+import { ModalInput } from "../ui/modal/modalComponent";
 
 interface QuotationModalProps {
   isOpen: boolean;
@@ -61,18 +63,16 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
  
   const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
   const domain = useDefault("primary_business_domain");
-    console.log("Domain ", domain);
   
-  useEffect(() => {
-      if (mode === "edit" && initialData?.items?.length > 0) {
-        // Check if the first item (or any item) is a service
-        const isService = initialData.items[0]?.isServiceItem;
-        setInvoiceType(isService ? "Service" : "Product");
-      } else if (mode === "create") {
-        // Default to company domain for new invoices (fallback to Product)
-        setInvoiceType(domain === "Service" ? "Service" : "Product");
-      }
-    }, [initialData, mode, isOpen, domain]);
+ useEffect(() => {
+  if (mode === "edit" && initialData?.items?.length > 0) {
+      const isService = initialData.items[0]?.is_stock_item === 0;
+    
+    setInvoiceType(isService ? "Service" : "Product");
+  } else if (mode === "create") {
+     setInvoiceType(domain === "Service" ? "Service" : "Product");
+  }
+}, [initialData, mode, isOpen, domain]);
 
   const {
     formData,
@@ -107,6 +107,15 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   useEffect(() => {
     if (isOpen) ui.setActiveTab("details");
   }, [isOpen]);
+
+  useEffect(() => {
+   if (isOpen && mode === "create" && initialData?.customerName) {
+    actions.handleCustomerSelect({
+      name: initialData.customerName,
+     id: initialData.customerId,
+   });
+  }
+}, [isOpen, mode, initialData?.customerName, initialData?.customerId]);
 
   const handleNext = () => {
     const currentIndex = tabs.indexOf(ui.activeTab as any);
@@ -180,7 +189,12 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     e.preventDefault();
     await handleSave();
   };
-
+  
+ const showExchangeRate =
+    !!ui.baseCurrency &&
+    !!formData.currencyCode &&
+    formData.currencyCode.trim().toUpperCase() !==
+      ui.baseCurrency.trim().toUpperCase();
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -189,7 +203,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={mode === "edit" ? "Edit Quotation" : "Add Quotation"}
-      subtitle="Add and manage quotation details"
+      subtitle={mode =="edit" ? "Edit and manage quotation details" : "Add and manage quotation details"}
       icon={FileSignature}
       footer={
         <ModalFooter
@@ -251,7 +265,10 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
             <div className="w-full sm:w-[280px]">
                   <CustomerSelect
                     value={customerNameDisplay}
+                     selectedId={formData.customerId}
                     onChange={actions.handleCustomerSelect}
+                      onClear={actions.handleCustomerClear}
+
                     className="w-full"
                     required
                   />
@@ -286,6 +303,41 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                     }
                   />
                 </div>
+                 {showExchangeRate && (
+                                  <div className="w-full sm:w-[110px] relative">
+                                    <ModalInput
+                                      label="Exchange Rate"
+                                      name="exchangeRt"
+                                      value={
+                                        ui.exchangeRateLoading ? "" : formData.exchangeRt || "1"
+                                      }
+                                      placeholder={ui.exchangeRateLoading ? "Loading..." : ""}
+                                      onChange={actions.handleInputChange}
+                                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                                      disabled
+                                    />
+                                    {!!ui.exchangeRateError && (
+                                      <div
+                                        className="absolute left-0 top-full mt-0.5 text-[9px] text-danger whitespace-nowrap z-10"
+                                        title={ui.exchangeRateError}
+                                      >
+                                        Rate not found
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                 <div className="w-full sm:w-[200px]">
+                 <ModeOfPaymentSelect
+  value={formData.payment_mode ?? ""}
+  required
+  onChange={(val) => {
+    actions.handleInputChange({
+      target: { name: "payment_mode", value: val },
+    } as any);
+    
+  }}
+/>
+</div>
 
                   {/* Invoice Type */}
               {/* <div className="w-full sm:w-auto flex flex-col justify-end">
@@ -503,14 +555,14 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
           {/* ──────────── ADDITIONAL DETAILS ──────────── */}
           {ui.activeTab === "address" && (
             <div className="space-y-6">
-              <PaymentInfoBlock
+              {/* <PaymentInfoBlock
                 data={formData.paymentInformation}
                 onChange={(e) =>
                   actions.handleInputChange(e, "paymentInformation")
                 }
                 paymentMethodOptions={paymentMethodOptions}
                 showPaymentMethod={false}
-              />
+              /> */}
               <InvoiceAddressTab
                 customerId={formData.customerId}
                 formData={formData}

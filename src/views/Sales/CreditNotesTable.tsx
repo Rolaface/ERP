@@ -31,8 +31,57 @@ import PermissionGate from "../PermissionGate";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+import {
+  REFRESH_KEYS,
+  useDataRefreshStore,
+} from "../../store/dataRefreshStore";
 
 const CREDIT_NOTE_MODULE = "Sales Invoice";
+
+// Maps UI column keys to ERPNext fieldnames expected by the sort API.
+const SORT_FIELD_MAP: Record<string, string> = {
+  noteNo: "name",
+  invoiceNo: "return_against",
+  customer: "customer_name",
+  amount: "grand_total",
+  date: "posting_date",
+  status: "status",
+};
+
+const resolveSortField = (key: string) => SORT_FIELD_MAP[key] ?? key;
+
+const formatDate = (date: string | Date) => {
+  if (!date) return "";
+  const months = [
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+  ];
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
+
+const mapCreditNote = (item: any, fallbackStatus = "-"): CreditNote => ({
+  noteNo: item.name,
+  invoiceNo: item.return_against || "-",
+  customer: item.customer_name,
+  date: item.posting_date,
+  amount: Math.abs(item.grand_total),
+  status: item.status ?? fallbackStatus,
+  currency: item.currency,
+});
 
 const CreditNotesTable: React.FC = () => {
   const [data, setData] = useState<CreditNote[]>([]);
@@ -46,7 +95,6 @@ const CreditNotesTable: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
-
   const [sortBy, setSortBy] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -57,8 +105,6 @@ const CreditNotesTable: React.FC = () => {
   const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
-  // ── Currency symbols + per-currency number formatting for the currencies
-  // present in the currently loaded page of credit notes.
   const currencyCodes = useMemo(() => extractCurrencyCodesFlat(data), [data]);
   const { formatAmount } = useCurrencySymbols(currencyCodes);
 
@@ -66,20 +112,26 @@ const CreditNotesTable: React.FC = () => {
     setPage(1);
   }, [searchTerm]);
 
+  useEffect(() => {
+    const unsubscribe = useDataRefreshStore
+      .getState()
+      .subscribeToRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST, () => {
+        fetchCreditNotes();
+      });
+    return unsubscribe;
+  }, []);
+
   const fetchCreditNotes = async () => {
     try {
       setLoading(true);
-      const resp = await getAllCreditNotes(page, pageSize, searchTerm);
-      const mappedData: CreditNote[] = resp.data.map((item: any) => ({
-        noteNo: item.name,
-        invoiceNo: item.return_against || "-",
-        customer: item.customer_name,
-        date: item.posting_date,
-        amount: Math.abs(item.grand_total),
-        status: item.status ?? "-",
-        currency: item.currency,
-      }));
-      setData(mappedData);
+      const resp = await getAllCreditNotes(
+        page,
+        pageSize,
+        searchTerm,
+        resolveSortField(sortBy),
+        sortOrder,
+      );
+      setData(resp.data.map((item: any) => mapCreditNote(item)));
       setTotalPages(resp.pagination.total_pages);
       setTotalItems(resp.pagination.total);
     } catch (error: any) {
@@ -163,17 +215,17 @@ const CreditNotesTable: React.FC = () => {
       let total = 1;
 
       do {
-        const resp = await getAllCreditNotes(current, 100, searchTerm);
-        const mappedData: CreditNote[] = resp.data.map((item: any) => ({
-          noteNo: item.name,
-          invoiceNo: item.return_against || "-",
-          customer: item.customer_name,
-          date: item.posting_date,
-          amount: Math.abs(item.grand_total),
-          status: item.status ?? "Draft",
-          currency: item.currency,
-        }));
-        allData = [...allData, ...mappedData];
+        const resp = await getAllCreditNotes(
+          current,
+          100,
+          searchTerm,
+          resolveSortField(sortBy),
+          sortOrder,
+        );
+        allData = [
+          ...allData,
+          ...resp.data.map((item: any) => mapCreditNote(item, "Draft")),
+        ];
         total = resp.pagination.total_pages;
         current++;
       } while (current <= total);
@@ -196,7 +248,6 @@ const CreditNotesTable: React.FC = () => {
       confirmButtonText: "Yes, delete",
       reverseButtons: true,
     });
-
     if (!result.isConfirmed) return;
 
     try {
@@ -204,6 +255,9 @@ const CreditNotesTable: React.FC = () => {
       await deleteCreditNote(noteNo);
       closeSwal();
       setData((prev) => prev.filter((item) => item.noteNo !== noteNo));
+      useDataRefreshStore
+        .getState()
+        .triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
       showSuccess("Credit note deleted successfully");
     } catch (error) {
       closeSwal();
@@ -215,7 +269,7 @@ const CreditNotesTable: React.FC = () => {
     e?.stopPropagation();
     try {
       showLoading("Loading Credit Note...");
-      const res = await getSalesInvoiceById(note.noteNo);
+      const res = await getSalesInvoiceById(note.noteNo, true, false);
       if (!res.message || res.message.status_code !== 200) {
         closeSwal();
         showApiError("Credit Note data could not be loaded");
@@ -252,8 +306,7 @@ const CreditNotesTable: React.FC = () => {
     try {
       const blob = await getSalesInvoicePdf(noteNo);
       setDrawerPdfBlob(blob);
-      const blobUrl = URL.createObjectURL(blob);
-      setDrawerPdfUrl(blobUrl);
+      setDrawerPdfUrl(URL.createObjectURL(blob));
     } catch (err) {
       showApiError(err);
     } finally {
@@ -288,8 +341,6 @@ const CreditNotesTable: React.FC = () => {
           "Receipt No": r.invoiceNo,
           Customer: r.customer,
           Date: r.date,
-          // Raw numeric value — kept as a real number in Excel (not a
-          // pre-formatted string) so the cell stays sortable/summable.
           Amount: r.amount,
           Status: r.status,
           Currency: r.currency,
@@ -311,34 +362,12 @@ const CreditNotesTable: React.FC = () => {
     }
   };
 
-  const formatDate = (date: string | Date) => {
-    if (!date) return "";
-    const months = [
-      "JAN",
-      "FEB",
-      "MAR",
-      "APR",
-      "MAY",
-      "JUN",
-      "JUL",
-      "AUG",
-      "SEP",
-      "OCT",
-      "NOV",
-      "DEC",
-    ];
-    if (typeof date === "string") {
-      const [year, month, day] = date.split("T")[0].split("-").map(Number);
-      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
-    }
-    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-  };
-
   const columns: Column<CreditNote>[] = useMemo(
     () => [
       {
         key: "noteNo",
         header: "Credit Invoice No",
+        sortable: true,
         render: (o) => (
           <div className="py-1.5">
             <span className="block">{o.noteNo || "—"}</span>
@@ -348,6 +377,7 @@ const CreditNotesTable: React.FC = () => {
       {
         key: "invoiceNo",
         header: "Receipt No",
+        sortable: true,
         render: (o) => (
           <div className="py-1.5">
             <span className="block">{o.invoiceNo || "—"}</span>
@@ -358,6 +388,7 @@ const CreditNotesTable: React.FC = () => {
         key: "customer",
         header: "Customer",
         align: "center",
+        sortable: true,
         render: (o) => (
           <div className="py-1.5">
             <span className="block">{o.customer || "—"}</span>
@@ -368,6 +399,7 @@ const CreditNotesTable: React.FC = () => {
         key: "amount",
         header: "Amount",
         align: "right",
+        sortable: true,
         render: (r) => (
           <div className="py-1.5">
             <code className="block whitespace-nowrap">
@@ -381,6 +413,7 @@ const CreditNotesTable: React.FC = () => {
       {
         key: "date",
         header: "Date",
+        sortable: true,
         render: (o) => (
           <div className="py-1.5">
             <span className="block">{formatDate(o.date) || "—"}</span>
@@ -390,6 +423,7 @@ const CreditNotesTable: React.FC = () => {
       {
         key: "status",
         header: "Status",
+        sortable: true,
         render: (r) => (
           <div className="py-1.5">
             <StatusBadge status={r.status} />
@@ -421,7 +455,8 @@ const CreditNotesTable: React.FC = () => {
               />
             </PermissionGate>
             <ActionMenu
-              {...(can(CREDIT_NOTE_MODULE, "delete")
+              {...((r.status === "Cancelled" || r.status === "Draft") &&
+              can(CREDIT_NOTE_MODULE, "delete")
                 ? {
                     onDelete: (e) => {
                       e?.stopPropagation();
@@ -439,8 +474,7 @@ const CreditNotesTable: React.FC = () => {
                       },
                     ]
                   : []),
-                ...(!["Draft", "Cancelled"].includes(r.status) &&
-                can(CREDIT_NOTE_MODULE, "write")
+                ...(r.status === "Return" && can(CREDIT_NOTE_MODULE, "write")
                   ? [
                       {
                         label: "Cancel",
@@ -456,7 +490,15 @@ const CreditNotesTable: React.FC = () => {
         ),
       },
     ],
-    [can, formatAmount, handleView, handleEdit, handleDelete, handleSubmit, handleCancel],
+    [
+      can,
+      formatAmount,
+      handleView,
+      handleEdit,
+      handleDelete,
+      handleSubmit,
+      handleCancel,
+    ],
   );
 
   return (

@@ -410,7 +410,7 @@ const DebitNotesTable: React.FC = () => {
             />
           </PermissionGate>
 
-          <ActionMenu
+          {/* <ActionMenu
             {...(can(DEBIT_NOTE_MODULE, "delete")
               ? { onDelete: (e) => { e?.stopPropagation(); handleDelete(r.noteNo); } }
               : {})}
@@ -422,7 +422,38 @@ const DebitNotesTable: React.FC = () => {
                 ? [{ label: "Cancel", icon: ACTION_ICONS.CANCEL, onClick: () => handleCancel(r.noteNo), danger: true }]
                 : []),
             ]}
-          />
+          /> */}
+            <ActionMenu
+                        {...((r.status === "Cancelled" || r.status === "Draft") && can(DEBIT_NOTE_MODULE, "delete")
+                          ? {
+                              onDelete: (e) => {
+                                e?.stopPropagation();
+                                handleDelete(r.noteNo);
+                              },
+                            }
+                          : {})}
+                        customActions={[
+                          ...(r.status === "Draft" && can(DEBIT_NOTE_MODULE, "write")
+                            ? [
+                                {
+                                  label: "Approve",
+                                  icon: ACTION_ICONS.APPROVE,
+                                  onClick: () => handleSubmit(r.noteNo),
+                                },
+                              ]
+                            : []),
+                          ...(r.status === "Return" && can(DEBIT_NOTE_MODULE, "write")
+                            ? [
+                                {
+                                  label: "Cancel",
+                                  icon: ACTION_ICONS.CANCEL,
+                                  onClick: () => handleCancel(r.noteNo),
+                                  danger: true,
+                                },
+                              ]
+                            : []),
+                        ]}
+                      />
         </ActionGroup>
       ),
     },

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { CreditCard, FileText, Receipt, X, Loader2 } from "lucide-react";
+import { CreditCard, FileText, Banknote , X, Loader2 } from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
@@ -47,7 +47,7 @@ interface Props {
     partyId?: string;
     amount?: number;
     referenceName?: string;
-    referenceType?: "Purchase Order" | "Purchase Invoice" | "Sales Invoice";
+    referenceType?: "Purchase Order" | "Purchase Invoice" | "Sales Invoice"|"Sales Order";
     date?: string;
     glTo?: string;
     glToDisplay?: string;
@@ -85,6 +85,7 @@ function buildPayload(
     if (form?.referenceType === "Sales Invoice") return "Sales Invoice";
     if (form?.referenceType === "Expense Claim") return "Expense Claim";
     if (form?.referenceType === "Employee Advance") return "Employee Advance";
+    if (form?.referenceType === "Sales Order") return "Sales Order";
 
     switch (partyType) {
       case "Supplier":
@@ -692,7 +693,7 @@ const PaymentEntryModal: React.FC<Props> = ({
           ? `Advance payment against PO: ${defaultValues?.referenceName}`
           : "Pay or receive payment from Customer / Supplier / Employee / Shareholder"
       }
-      icon={Receipt}
+      icon={Banknote }
       footer={footer}
       customWidth="62vw"
       height="95vh"

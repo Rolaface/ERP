@@ -10,6 +10,7 @@ export interface RegistrationDetails {
   industryType: string;
   defaultModeOfPayment: string;
   domain: string;
+  sdc_id: string;
 }
 
 export interface ContactInfo {

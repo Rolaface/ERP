@@ -131,7 +131,6 @@ const buildPayload = (form: any) => {
         location: resolvedLocation ?? form.location,
       });
 
-      console.log("FINAL PAYLOAD ", payload);
 
       return await createAsset(payload);
     } catch (err) {

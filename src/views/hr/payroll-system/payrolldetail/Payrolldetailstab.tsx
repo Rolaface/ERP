@@ -2,6 +2,7 @@ import React from "react";
 import { FileText, AlertCircle } from "lucide-react";
 import type { PayrollEntryDetail } from "../../../../api/payroll/payrollEntryApi";
 import { InfoTile, DetailRow } from "../payrolldetail/Payrollsharedcomponents";
+import { getGLNameWithoutAbbreviation } from "../../../../api/utils/glAccountUtils";
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
 
@@ -25,8 +26,8 @@ export const PayrollDetailsTab: React.FC<Props> = ({ entry }) => (
           { label: "Entry ID", value: entry.name },
           { label: "Company", value: entry.company },
           { label: "Posting Date", value: entry.posting_date },
-          { label: "Cost Center", value: entry.cost_center },
-          { label: "Payable Account", value: entry.payroll_payable_account },
+          { label: "Cost Center", value: getGLNameWithoutAbbreviation(entry.cost_center) },
+          { label: "Payable Account", value: getGLNameWithoutAbbreviation(entry.payroll_payable_account) },
           { label: "Slips Created", value: String(entry.salary_slips_created) },
           { label: "Slips Submitted", value: String(entry.salary_slips_submitted) },
           {

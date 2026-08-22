@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useDataRefreshStore, REFRESH_KEYS } from "../../../../../store/dataRefreshStore";
+import {
+  useDataRefreshStore,
+  REFRESH_KEYS,
+} from "../../../../../store/dataRefreshStore";
 import ModalTable from "../../../../../components/ui/Table/ModalTableInside";
 import ActionButton, {
   ActionGroup,
@@ -20,6 +23,8 @@ export function GradeSetup() {
   const [rows, setRows] = useState<EmployeeGrade[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
@@ -27,13 +32,21 @@ export function GradeSetup() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
-  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh,
+  );
 
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
       const start = (page - 1) * pageSize;
-      const response = await getAllEmployeeGrades(start, pageSize, search);
+      const response = await getAllEmployeeGrades(
+        start,
+        pageSize,
+        search,
+        sortBy,
+        sortOrder,
+      );
       setRows(response.data);
       setTotalItems(response.pagination.total);
       setTotalPages(response.pagination.total_pages);
@@ -42,16 +55,19 @@ export function GradeSetup() {
     } finally {
       setLoading(false);
     }
-  }, [search, page, pageSize]);
+  }, [search, page, pageSize, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
 
   useEffect(() => {
-    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.EMPLOYEE_GRADE_LIST, () => {
-      fetchAll();
-    });
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.EMPLOYEE_GRADE_LIST,
+      () => {
+        fetchAll();
+      },
+    );
     return unsubscribe;
   }, [subscribeToRefresh, fetchAll]);
 
@@ -103,9 +119,11 @@ export function GradeSetup() {
       {
         key: "name",
         header: "Code",
+        sortable: true,
         render: (row) => {
           const separatorIdx = row.name.indexOf(" | ");
-          const code = separatorIdx !== -1 ? row.name.slice(0, separatorIdx) : row.name;
+          const code =
+            separatorIdx !== -1 ? row.name.slice(0, separatorIdx) : row.name;
           return <span className="font-medium text-main">{code || "-"}</span>;
         },
         tooltip: (row) => row.name,
@@ -113,9 +131,11 @@ export function GradeSetup() {
       {
         key: "name" as any,
         header: "Description",
+        sortable: true,
         render: (row) => {
           const separatorIdx = row.name.indexOf(" | ");
-          const desc = separatorIdx !== -1 ? row.name.slice(separatorIdx + 3) : "";
+          const desc =
+            separatorIdx !== -1 ? row.name.slice(separatorIdx + 3) : "";
           return (
             <span className="text-sm text-muted break-words whitespace-normal">
               {desc || "-"}
@@ -126,6 +146,7 @@ export function GradeSetup() {
       {
         key: "default_salary_structure",
         header: "Default Salary Structure",
+        sortable: true,
         render: (row) => (
           <span className="text-sm text-main">
             {row.default_salary_structure || "-"}
@@ -145,9 +166,7 @@ export function GradeSetup() {
               onClick={() => handleEdit(row)}
               disabled={actionLoadingId === row.name}
             />
-           <ActionMenu
-  onDelete={() => handleDelete(row)}
-/>
+            <ActionMenu onDelete={() => handleDelete(row)} />
           </ActionGroup>
         ),
       },
@@ -156,46 +175,52 @@ export function GradeSetup() {
   );
 
   return (
-     <div className="h-[calc(100vh-220px)]"> 
-    <ModalTable
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(row) => row.name}
-      showToolbar
-      searchValue={search}
-      onSearch={(v) => {
-        setSearch(v);
-        setPage(1);
-      }}
-      enableAdd
-      addLabel="Add Grade"
-      onAdd={() =>
-        openGradeModal(
-          null,
-          false,
-          {
-            onSuccess: () => {
-              triggerRefresh(REFRESH_KEYS.EMPLOYEE_GRADE_LIST);
+    <div className="h-[calc(100vh-220px)]">
+      <ModalTable
+        columns={columns}
+        data={rows}
+        loading={loading}
+        rowKey={(row) => row.name}
+        showToolbar
+        searchValue={search}
+        onSearch={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {
+          setSortBy(newSortBy);
+          setSortOrder(newSortOrder);
+          setPage(1);
+        }}
+        enableAdd
+        addLabel="Add Grade"
+        onAdd={() =>
+          openGradeModal(
+            null,
+            false,
+            {
+              onSuccess: () => {
+                triggerRefresh(REFRESH_KEYS.EMPLOYEE_GRADE_LIST);
+              },
             },
-          },
-          { title: "New Grade" },
-        )
-      }
-      currentPage={page}
-      totalPages={totalPages}
-      totalItems={totalItems}
-      pageSize={pageSize}
-      pageSizeOptions={[20, 50, 100,200]}
-
-      onPageChange={setPage}
-      onPageSizeChange={(s) => {
-        setPageSize(s);
-        setPage(1);
-      }}
-      enableColumnSelector
-      tableId="employee-grades"
-    />
+            { title: "New Grade" },
+          )
+        }
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        pageSizeOptions={[20, 50, 100, 200]}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => {
+          setPageSize(s);
+          setPage(1);
+        }}
+        enableColumnSelector
+        tableId="employee-grades"
+      />
     </div>
   );
 }

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { MoreHorizontal, CheckCircle, XCircle } from "lucide-react";
+import {  CheckCircle, XCircle } from "lucide-react";
 
 import {
   getAllLeaveApplications,
   updateLeaveApplication,
 } from "../../../api/leaveApplicationApi";
 import { showApiError, showSuccess, showConfirm } from "../../../utils/alert";
-import { PortalDropdown } from "../../../components/ui/Table/ExpandableTreeTable";
+
 import Table from "../../../components/ui/Table/Table";
 import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import type { Column } from "../../../components/ui/Table/type";
@@ -29,7 +29,7 @@ interface MenuAction {
 export default function LeaveApproval() {
   const { can } = usePermission();
   const { user } = useAuth();
-  console.log("Current User:", user);
+  
 
   // Permission flag — Approve / Reject require write on Leave Application
   const canApproveReject = can("Leave Application", "write");
@@ -37,7 +37,7 @@ export default function LeaveApproval() {
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory] = useState(false);
   // const [filters, setFilters] = useState({ from_date: "", to_date: "" });
   const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "Open" });
   const [page, setPage] = useState(1);
@@ -88,7 +88,7 @@ export default function LeaveApproval() {
 
       // Pass the pagination params to your API call
       const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length, searchTerm);
-      console.log("API Response:", response);
+    
       setData(response || []);
     } catch (err) {
       showApiError(parseFrappeError(err) || "Failed to fetch leave applications.");
@@ -171,7 +171,7 @@ export default function LeaveApproval() {
       key: "to_date",
       header: "To Date",
       align: "left",
-      render: (e) => (e.half_day === 1 ? "Half Day" : formatDate(e.to_date) || "-"),
+      render: (e) => (e.half_day === 1 ? formatDate(e.from_date) : formatDate(e.to_date) || "-"),
     },
     {
       key: "total_leave_days",

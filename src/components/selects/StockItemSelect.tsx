@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { getStockReport } from "../../api/stockApi";
+import { useCompanyStore } from "../../store/companyStore";
 import {
   Search,
   Package,
@@ -123,7 +124,8 @@ export default function StockItemSelect({
   invoiceType = "Product",
   taxCategory,
   disabled = false,
-  isQuotation = false,
+  isQuotation = false,  formatDisplayName,
+
 }: any) {
   const [flatRows, setFlatRows] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -131,7 +133,14 @@ export default function StockItemSelect({
   const [selected, setSelected] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [dropRect, setDropRect] = useState<DOMRect | null>(null);
-  const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  // Defaults to hiding zero-stock items on open.
+  const [stockFilter, setStockFilter] = useState<StockFilter>("instock");
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+
+  const showStockFilter = invoiceType !== "Service" && invoiceType !== "RVAT";
+
+  // Tracks which row in the open list is currently keyboard-highlighted.
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
 
   const triggerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -145,8 +154,10 @@ export default function StockItemSelect({
       const rows: any[] = [];
       raw.forEach((item: any) => {
         const isService = item.is_service_item === 1;
-        if (invoiceType === "Service" && !isService) return;
-        if (invoiceType === "Product" && isService) return;
+        const wantsServiceItems =
+          invoiceType === "Service" || invoiceType === "RVAT";
+        if (wantsServiceItems && !isService) return;
+        if (!wantsServiceItems && isService) return;
         const base = {
           itemCode: item.item_code,
           itemName: item.item_name,
@@ -154,9 +165,12 @@ export default function StockItemSelect({
           description: item.description,
           packingSize: item.packingSize,
           packingUnit: item.packingUnit,
+          stockUom: item.stock_uom,
           piecesPerBox: item.piecesPerBox,
           taxInfo: item.taxInfo || [],
           isServiceItem: item.is_service_item,
+          is_mtv_item: item.is_mtv_item,
+          rrp_rate: item.rrp_rate,
         };
         if (item.batches?.length) {
           item.batches.forEach((b: any) => {
@@ -201,6 +215,11 @@ export default function StockItemSelect({
     setSearch("");
     const selectedTax = row.taxInfo?.[0] || {};
     const totalTaxRate = Number(selectedTax.totalTaxRate || 0);
+    const useRrpPrice = isZraEnabled && Number(row?.is_mtv_item) === 1;
+    const resolvedPrice = useRrpPrice
+      ? Number(row?.rrp_rate ?? 0)
+      : (row.price_list ?? 0);
+
     onChange({
       itemCode: row.itemCode,
       itemName: row.itemName,
@@ -210,9 +229,12 @@ export default function StockItemSelect({
       mfgDate: row.mfgDate,
       qty: row.qty,
       price_list: row.price_list,
-      price: row.price_list ?? 0,
+      price: resolvedPrice,
+       is_mtv_item: row.is_mtv_item,
+     rrp_rate: row.rrp_rate,
       packingSize: row.packingSize,
       packingUnit: row.packingUnit,
+      stockUom: row.stockUom,
       piecesPerBox: row.piecesPerBox,
       valuation_rate: row.valuation_rate,
       sellingPrice: row.sellingPrice,
@@ -258,6 +280,8 @@ export default function StockItemSelect({
           `${r.itemName ?? ""} ${r.itemCode ?? ""} ${r.batchNo ?? ""}`.toLowerCase();
         if (tokens.length && !tokens.every((t) => hay.includes(t)))
           return false;
+        // Stock filter never applies to service items/invoices.
+        if (!showStockFilter) return true;
         if (stockFilter === "instock")
           return r.isServiceItem || Number(r.qty ?? 0) > 0;
         if (stockFilter === "expired")
@@ -265,7 +289,13 @@ export default function StockItemSelect({
         return true;
       })
       .sort((a, b) => Number(b.qty ?? 0) - Number(a.qty ?? 0));
-  }, [flatRows, search, stockFilter]);
+  }, [flatRows, search, stockFilter, showStockFilter]);
+
+  // Whenever the visible list changes (typing, filter pill, opening), jump
+  // the keyboard highlight back to the top row.
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [filtered]);
 
   const dropStyle = useMemo((): React.CSSProperties => {
     if (!dropRect) return {};
@@ -296,10 +326,24 @@ export default function StockItemSelect({
     if (!flatRows.length) await load();
   };
 
-  const displayName = selected?.itemName || itemName;
+  // Selects whichever row is currently keyboard-highlighted, if it's usable.
+  const selectHighlighted = () => {
+    const row = filtered[highlightedIndex];
+    if (!row) return;
+    const isDisabled =
+      !isQuotation && Number(row.qty ?? 0) <= 0 && !row.isServiceItem;
+    if (isDisabled || loading) return;
+    handleSelect(row);
+  };
+
+ const displayName = selected
+    ? (formatDisplayName ? formatDisplayName(selected) : selected.itemName)
+    : itemName;
 
   return (
-    <div className="w-full min-w-0">
+    // data-nav-ignore stops the parent spreadsheet grid's arrow-key handler
+    // from hijacking keys while this dropdown is open.
+    <div className="w-full min-w-0" data-nav-ignore={open ? "true" : undefined}>
       {/* TRIGGER — text wraps so full item name is always visible */}
       <div
         ref={triggerRef}
@@ -308,7 +352,11 @@ export default function StockItemSelect({
         aria-haspopup="listbox"
         tabIndex={disabled ? -1 : 0}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") handleOpen();
+          // ArrowDown also opens the dropdown, like a native <select>.
+          if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+            e.preventDefault();
+            handleOpen();
+          }
         }}
         onClick={handleOpen}
         className={[
@@ -316,13 +364,13 @@ export default function StockItemSelect({
           "bg-card text-main text-[11px] cursor-pointer select-none transition-colors duration-150 w-full",
           disabled
             ? "opacity-50 pointer-events-none"
-            : "hover:border-primary focus:outline-none focus:border-primary",
+            : "hover:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary",
         ].join(" ")}
       >
         {!displayName && (
           <Package className="w-3.5 h-3.5 text-muted shrink-0" />
         )}
-        {/* ── KEY FIX: break-words + no truncate so full name always shows ── */}
+        {/* break-words + no truncate so the full item name always shows */}
         <span
           className={`flex-1 min-w-0 break-words leading-snug ${displayName ? "text-main" : "text-muted"}`}
         >
@@ -342,24 +390,33 @@ export default function StockItemSelect({
         createPortal(
           <div
             ref={dropdownRef}
+            // Portal content renders outside this DOM subtree, so it needs
+            // its own nav-ignore flag too.
+            data-nav-ignore="true"
             role="listbox"
             className="bg-card border border-theme rounded-lg shadow-xl flex flex-col overflow-hidden"
             style={dropStyle}
           >
             <div className="flex items-center gap-2 px-3 py-2 border-b border-theme bg-app">
-              <div className="flex items-center gap-1 shrink-0">
-                {(["all", "instock", "expired"] as StockFilter[]).map((f) => (
-                  <FilterPill
-                    key={f}
-                    value={f}
-                    active={stockFilter === f}
-                    onClick={() => setStockFilter(f)}
-                  />
-                ))}
-              </div>
-              <div className="w-px h-4 bg-theme shrink-0" />
+              {showStockFilter && (
+                <>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {(["all", "instock", "expired"] as StockFilter[]).map(
+                      (f) => (
+                        <FilterPill
+                          key={f}
+                          value={f}
+                          active={stockFilter === f}
+                          onClick={() => setStockFilter(f)}
+                        />
+                      ),
+                    )}
+                  </div>
+                  <div className="w-px h-4 bg-theme shrink-0" />
+                </>
+              )}
               <Search className="w-3.5 h-3.5 text-muted shrink-0" />
-              {stockFilter !== "all" && (
+              {showStockFilter && stockFilter !== "all" && (
                 <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium shrink-0">
                   {stockFilter === "instock" ? "In Stock" : "Expired"}
                   <button
@@ -375,9 +432,33 @@ export default function StockItemSelect({
                 ref={inputRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === "Escape" && (setOpen(false), setSearch(""))
-                }
+                // Full keyboard navigation inside the open list.
+                onKeyDown={(e) => {
+                  switch (e.key) {
+                    case "ArrowDown":
+                      e.preventDefault();
+                      setHighlightedIndex((i) =>
+                        Math.min(i + 1, filtered.length - 1),
+                      );
+                      break;
+                    case "ArrowUp":
+                      e.preventDefault();
+                      setHighlightedIndex((i) => Math.max(i - 1, 0));
+                      break;
+                    case "Enter":
+                      e.preventDefault();
+                      selectHighlighted();
+                      break;
+                    case "Escape":
+                      e.preventDefault();
+                      setOpen(false);
+                      setSearch("");
+                      break;
+                    case "Tab":
+                      setOpen(false);
+                      break;
+                  }
+                }}
                 placeholder="Search by name, code or batch…"
                 className="flex-1 min-w-0 bg-transparent text-main text-[11px] outline-none placeholder:text-muted"
               />
@@ -433,11 +514,12 @@ export default function StockItemSelect({
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((row) => {
+                    {filtered.map((row, index) => {
                       const qty = Number(row.qty ?? 0);
                       const isDisabled =
                         !isQuotation && qty <= 0 && !row.isServiceItem;
                       const exStatus = getExpiryStatus(row.expiryDate);
+                      const isHighlighted = index === highlightedIndex;
                       const accentCls =
                         exStatus === "expired"
                           ? "border-l-2 border-l-danger"
@@ -448,16 +530,24 @@ export default function StockItemSelect({
                         <tr
                           key={`${row.itemCode}-${row.batchNo || "no-batch"}`}
                           role="option"
-                          aria-selected={false}
+                          aria-selected={isHighlighted}
+                          // Keep the keyboard-highlighted row scrolled into view.
+                          ref={(el) => {
+                            if (isHighlighted) {
+                              el?.scrollIntoView({ block: "nearest" });
+                            }
+                          }}
+                          // Hovering syncs the mouse and keyboard highlight.
+                          onMouseEnter={() => setHighlightedIndex(index)}
                           onClick={() => {
                             if (!isDisabled && !loading) handleSelect(row);
                           }}
                           className={[
-                            "border-b border-theme last:border-none transition-colors duration-100",
+                            "border-b border-theme last:border-none",
+                            "row-interactive",
                             accentCls,
-                            isDisabled
-                              ? "opacity-40 cursor-not-allowed"
-                              : "cursor-pointer hover:bg-primary/5 active:bg-primary/10",
+                            isHighlighted ? "row-highlighted" : "",
+                            isDisabled ? "row-disabled" : "",
                           ].join(" ")}
                         >
                           <td className="px-3 py-2.5 align-middle">
@@ -502,7 +592,7 @@ export default function StockItemSelect({
                 {flatRows.length !== filtered.length &&
                   ` of ${flatRows.length}`}
               </span>
-              {(stockFilter !== "all" || search) && (
+              {((showStockFilter && stockFilter !== "all") || search) && (
                 <button
                   type="button"
                   className="text-primary hover:underline font-medium"

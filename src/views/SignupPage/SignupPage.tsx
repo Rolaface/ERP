@@ -40,17 +40,15 @@ export default function SignupPage() {
     country: "",
     timezone: "",
     currency: "",
-    fyStartMonth: 0, // ✅ Step 1 applied
+    fyStartMonth: 0, 
     chartOfAccounts: "Standard",
   });
 
   // ---------------- UPDATE ----------------
   const update = (key: string, value: any) => {
-    console.log("UPDATE CALLED:", key, value);
 
     setForm((prev) => {
       const next = { ...prev, [key]: value };
-      console.log("NEW STATE:", next);
       return next;
     });
   };

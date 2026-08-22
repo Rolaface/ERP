@@ -73,6 +73,7 @@ export const REFRESH_KEYS = {
   INVOICE_LIST: "invoice_list",
   QUOTATION_LIST: "quotation_list",
   PROFORMA_LIST: "proforma_list",
+  SALES_ORDER_LIST: "sales_order_list",
 
   // Inventory
   ITEM_LIST: "item_list",
@@ -109,6 +110,7 @@ export const REFRESH_KEYS = {
   FEEDBACK_LIST:  "feedback_list",
   NAMING_SERIES: "naming_series",
   COMPANY_DEFAULTS: "company_defaults",
+  SALES_DEBIT_NOTE_LIST:"sales_debit_note_list"
 
 } as const;
 
