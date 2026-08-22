@@ -830,15 +830,22 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                     ]
                   : []),
 
-                ...(!isCancelled && inv.invoiceStatus !== "Pending"
+                                ...(!isCancelled && inv.invoiceStatus !== "Pending"
                   ? [
                       {
                         label: "View PDF",
                         icon: ACTION_ICONS.PDF,
                         onClick: () => handlePreviewPDF(inv),
                       },
+                    ]
+                  : []),
+
+                ...(inv.invoiceStatus !== "Draft" &&
+                  inv.invoiceStatus !== "Failed" &&
+                  inv.invoiceStatus !== "Pending" 
+                  ? [
                       {
-                      label: "Shipper Labels",
+                        label: "Shipper Labels",
                         icon: ACTION_ICONS.PDF,
                         onClick: () => handleShipperLabels(inv),
                       },
