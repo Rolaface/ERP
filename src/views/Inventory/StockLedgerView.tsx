@@ -111,7 +111,7 @@ const StockLedgerView: React.FC<StockLedgerViewProps> = ({
         onBack={onBack}
         loading={loading}
         onExportExcel={exportToExcel}  
-      />leafColumns
+      />
 
       {error && (
         <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-500">
