@@ -17,7 +17,7 @@ export interface Batch {
   batch_no?: string;
   manufacturing_date?: string;
   expiry_date?: string;
-    warehouse?: string;   
+  warehouse?: string;
 
   bal_qty?: number;
   in_qty?: number;
@@ -26,8 +26,9 @@ export interface Batch {
   sell_value?: number;
   buy_currency?: string;
   sell_currency?: string;
+  buy_price_latest?: number;
+  sell_price_latest?: number;
 }
-
 export type BatchStatus =
   | "Available"
   | "Low Stock"
@@ -223,6 +224,8 @@ export const exportBatchesToExcel = (
   const headers = [
     ...(showItemColumns ? ["ITEM CODE", "ITEM NAME"] : []),
     "BATCH NO",
+    "WAREHOUSE",
+
     "MFG DATE",
     "EXPIRY DATE",
     "STATUS",
@@ -231,6 +234,8 @@ export const exportBatchesToExcel = (
     "OUT QTY",
     "BUY VALUE",
     "SELL VALUE",
+    "BUY PRICE (LATEST)",
+    "SELL PRICE (LATEST)",
   ];
 
   const aoa: any[][] = [headers];
@@ -250,6 +255,7 @@ export const exportBatchesToExcel = (
     aoa.push([
       ...base,
       b.batch_no || "-",
+      b.warehouse || "-",
       b.manufacturing_date ? new Date(b.manufacturing_date) : "",
       b.expiry_date ? new Date(b.expiry_date) : "",
       b.status,
@@ -258,17 +264,23 @@ export const exportBatchesToExcel = (
       Number(b.out_qty || 0),
       Number(b.buy_value || 0),
       Number(b.sell_value || 0),
+      Number(b.buy_price_latest || 0),
+      Number(b.sell_price_latest || 0),
     ]);
 
     let c = 0;
     if (showItemColumns) {
       setStyle(rowIdx, c++, baseStyle);
       setStyle(rowIdx, c++, baseStyle);
+      setStyle(rowIdx, c++, baseStyle);
     }
     setStyle(rowIdx, c++, baseStyle);
+
     setStyle(rowIdx, c++, numStyle("left"));
     setStyle(rowIdx, c++, numStyle("left"));
     setStyle(rowIdx, c++, statusStyle(b.status));
+    setStyle(rowIdx, c++, numStyle());
+    setStyle(rowIdx, c++, numStyle());
     setStyle(rowIdx, c++, numStyle());
     setStyle(rowIdx, c++, numStyle());
     setStyle(rowIdx, c++, numStyle());
@@ -279,20 +291,29 @@ export const exportBatchesToExcel = (
     const buyCcy = b.buy_currency || "—";
     const sellCcy = b.sell_currency || "—";
     buyTotals[buyCcy] = (buyTotals[buyCcy] || 0) + Number(b.buy_value || 0);
-    sellTotals[sellCcy] = (sellTotals[sellCcy] || 0) + Number(b.sell_value || 0);
+    sellTotals[sellCcy] =
+      (sellTotals[sellCcy] || 0) + Number(b.sell_value || 0);
     rowIdx++;
   });
 
   const qtyColIdx = headers.indexOf("BAL QTY");
   aoa.push(
-    headers.map((_, i) => (i === 0 ? "GRAND TOTAL" : i === qtyColIdx ? grandQty : "")),
+    headers.map((_, i) =>
+      i === 0 ? "GRAND TOTAL" : i === qtyColIdx ? grandQty : "",
+    ),
   );
   headers.forEach((_, c) => setStyle(rowIdx, c, totalRowStyle));
   rowIdx++;
 
   Object.entries(buyTotals).forEach(([ccy, total]) => {
     aoa.push(
-      headers.map((h) => (h === "BUY VALUE" ? total : h === "BATCH NO" ? `Total Buy (${ccy})` : "")),
+      headers.map((h) =>
+        h === "BUY VALUE"
+          ? total
+          : h === "BATCH NO"
+            ? `Total Buy (${ccy})`
+            : "",
+      ),
     );
     headers.forEach((_, c) => setStyle(rowIdx, c, totalRowStyle));
     rowIdx++;
@@ -300,14 +321,23 @@ export const exportBatchesToExcel = (
 
   Object.entries(sellTotals).forEach(([ccy, total]) => {
     aoa.push(
-      headers.map((h) => (h === "SELL VALUE" ? total : h === "BATCH NO" ? `Total Sell (${ccy})` : "")),
+      headers.map((h) =>
+        h === "SELL VALUE"
+          ? total
+          : h === "BATCH NO"
+            ? `Total Sell (${ccy})`
+            : "",
+      ),
     );
     headers.forEach((_, c) => setStyle(rowIdx, c, totalRowStyle));
     rowIdx++;
   });
 
   const worksheet = XLSX.utils.aoa_to_sheet(aoa);
-  const dateCols = [headers.indexOf("MFG DATE"), headers.indexOf("EXPIRY DATE")];
+  const dateCols = [
+    headers.indexOf("MFG DATE"),
+    headers.indexOf("EXPIRY DATE"),
+  ];
   const range = XLSX.utils.decode_range(worksheet["!ref"]!);
   for (let row = 1; row <= range.e.r; row++) {
     dateCols.forEach((col) => {
@@ -321,7 +351,11 @@ export const exportBatchesToExcel = (
   }
 
   worksheet["!cols"] = headers.map((h) =>
-    h === "ITEM NAME" ? { wch: 32 } : h.includes("VALUE") ? { wch: 16 } : { wch: 16 },
+    h === "ITEM NAME"
+      ? { wch: 32 }
+      : h.includes("VALUE")
+        ? { wch: 16 }
+        : { wch: 16 },
   );
   worksheet["!rows"] = aoa.map((_, i) => ({ hpx: i === 0 ? 24 : 20 }));
 
@@ -399,8 +433,10 @@ export function useBatchDetailsTable({
       result.totalQty += Number(b.bal_qty || 0);
       const buyCcy = b.buy_currency || "—";
       const sellCcy = b.sell_currency || "—";
-      result.buyTotals[buyCcy] = (result.buyTotals[buyCcy] || 0) + Number(b.buy_value || 0);
-      result.sellTotals[sellCcy] = (result.sellTotals[sellCcy] || 0) + Number(b.sell_value || 0);
+      result.buyTotals[buyCcy] =
+        (result.buyTotals[buyCcy] || 0) + Number(b.buy_value || 0);
+      result.sellTotals[sellCcy] =
+        (result.sellTotals[sellCcy] || 0) + Number(b.sell_value || 0);
       if (b.status === "Expired") result.expiredCount++;
       if (b.status === "Near Expiry") result.nearExpiryCount++;
       if (b.status === "Low Stock") result.lowStockCount++;
@@ -449,6 +485,13 @@ export function useBatchDetailsTable({
         header: "Batch No",
         cell: (info) => info.getValue() || "—",
       }),
+      columnHelper.accessor("warehouse", {
+        header: "Warehouse",
+        cell: (info) => (
+          <span className="text-xs">{info.getValue() || "—"}</span>
+        ),
+      }),
+
       columnHelper.accessor("manufacturing_date", {
         header: "Mfg Date",
         cell: (info) => formatDate(info.getValue()),
@@ -493,14 +536,29 @@ export function useBatchDetailsTable({
         cell: (info) => formatNumber(info.getValue(), 4),
         meta: { align: "right" },
       }),
+      columnHelper.accessor("buy_price_latest", {
+        header: "Buy Price (Latest)",
+        cell: (info) =>
+          formatCurrencyValue(info.row.original.buy_currency, info.getValue()),
+        meta: { align: "right" },
+      }),
       columnHelper.accessor("buy_value", {
         header: "Buy Value",
-        cell: (info) => formatCurrencyValue(info.row.original.buy_currency, info.getValue()),
+        cell: (info) =>
+          formatCurrencyValue(info.row.original.buy_currency, info.getValue()),
+        meta: { align: "right" },
+      }),
+
+      columnHelper.accessor("sell_price_latest", {
+        header: "Sell Price (Latest)",
+        cell: (info) =>
+          formatCurrencyValue(info.row.original.sell_currency, info.getValue()),
         meta: { align: "right" },
       }),
       columnHelper.accessor("sell_value", {
         header: "Sell Value",
-        cell: (info) => formatCurrencyValue(info.row.original.sell_currency, info.getValue()),
+        cell: (info) =>
+          formatCurrencyValue(info.row.original.sell_currency, info.getValue()),
         meta: { align: "right" },
       }),
       columnHelper.display({
@@ -555,7 +613,11 @@ export function useBatchDetailsTable({
     if (!filteredData.length) return;
     try {
       setIsExporting(true);
-      exportBatchesToExcel(filteredData, showItemColumns, itemCode || itemName || "Report");
+      exportBatchesToExcel(
+        filteredData,
+        showItemColumns,
+        itemCode || itemName || "Report",
+      );
     } finally {
       setIsExporting(false);
     }
