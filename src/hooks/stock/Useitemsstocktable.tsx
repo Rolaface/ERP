@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -38,25 +44,33 @@ export interface StockItemRow {
   totalQty: number;
   totalBuyValue: number;
   totalSellValue: number;
+  buyPriceLatest: number;
+  buyPriceAvg: number;
+  sellPriceLatest: number;
+  sellPriceAvg: number;
   buyCurrency?: string;
   sellCurrency?: string;
   isServiceItem?: boolean;
   batches: Batch[];
 }
-
 // ─── Excel export (batch-wise, across all items) ───────────────────────────
 
 const LOW_STOCK_THRESHOLD = 500;
 const NEAR_EXPIRY_DAYS = 90;
 
-type ExportBatchStatus = "Available" | "Low Stock" | "Near Expiry" | "Out of Stock";
+type ExportBatchStatus =
+  | "Available"
+  | "Low Stock"
+  | "Near Expiry"
+  | "Out of Stock";
 
 const getExportBatchStatus = (batch: any): ExportBatchStatus => {
   const balQty = Number(batch?.bal_qty ?? 0);
   if (balQty <= 0) return "Out of Stock";
   if (batch?.expiry_date) {
     const daysToExpiry =
-      (new Date(batch.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+      (new Date(batch.expiry_date).getTime() - Date.now()) /
+      (1000 * 60 * 60 * 24);
     if (daysToExpiry <= NEAR_EXPIRY_DAYS) return "Near Expiry";
   }
   if (balQty < LOW_STOCK_THRESHOLD) return "Low Stock";
@@ -74,15 +88,21 @@ const EXPORT_HEADERS = [
   "VALUE",
 ];
 
-const STATUS_STYLE: Record<ExportBatchStatus, { fill: string; font: string }> = {
-  Available: { fill: "D1E7DD", font: "0F5132" },
-  "Low Stock": { fill: "FFF3CD", font: "856404" },
-  "Near Expiry": { fill: "F8D7DA", font: "842029" },
-  "Out of Stock": { fill: "E2E3E5", font: "41464B" },
-};
+const STATUS_STYLE: Record<ExportBatchStatus, { fill: string; font: string }> =
+  {
+    Available: { fill: "D1E7DD", font: "0F5132" },
+    "Low Stock": { fill: "FFF3CD", font: "856404" },
+    "Near Expiry": { fill: "F8D7DA", font: "842029" },
+    "Out of Stock": { fill: "E2E3E5", font: "41464B" },
+  };
 
 const thinBorder = { style: "thin", color: { rgb: "D9D9D9" } };
-const cellBorder = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+const cellBorder = {
+  top: thinBorder,
+  bottom: thinBorder,
+  left: thinBorder,
+  right: thinBorder,
+};
 
 const headerCellStyle = {
   font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
@@ -143,7 +163,12 @@ const buildBatchWiseWorkbook = (rawItems: any[], hideZeroStock: boolean) => {
   const currencyTotals: Record<string, number> = {};
 
   rawItems.forEach((item) => {
-    if (item.is_service_item === 1 || !item.batches || item.batches.length === 0) return;
+    if (
+      item.is_service_item === 1 ||
+      !item.batches ||
+      item.batches.length === 0
+    )
+      return;
 
     item.batches.forEach((batch: any) => {
       const balQty = Number(batch?.bal_qty ?? 0);
@@ -170,7 +195,10 @@ const buildBatchWiseWorkbook = (rawItems: any[], hideZeroStock: boolean) => {
       setStyle(rowIdx, 3, numCellStyle("left"));
       setStyle(rowIdx, 4, statusCellStyle(status));
       setStyle(rowIdx, 5, numCellStyle());
-      setStyle(rowIdx, 6, { ...baseCellStyle, alignment: { horizontal: "center", vertical: "center" } });
+      setStyle(rowIdx, 6, {
+        ...baseCellStyle,
+        alignment: { horizontal: "center", vertical: "center" },
+      });
       setStyle(rowIdx, 7, numCellStyle());
 
       grandQty += balQty;
@@ -181,11 +209,21 @@ const buildBatchWiseWorkbook = (rawItems: any[], hideZeroStock: boolean) => {
 
   aoa.push(["GRAND TOTAL QTY", "", "", "", "", grandQty, "", ""]);
   merges.push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 3 } });
-  for (let c = 0; c <= 7; c++) setStyle(rowIdx, c, c === 5 ? grandTotalQtyStyle : grandTotalLabelStyle);
+  for (let c = 0; c <= 7; c++)
+    setStyle(rowIdx, c, c === 5 ? grandTotalQtyStyle : grandTotalLabelStyle);
   rowIdx++;
 
   Object.entries(currencyTotals).forEach(([currency, total]) => {
-    aoa.push([`GRAND TOTAL VALUE (${currency})`, "", "", "", "", "", "", total]);
+    aoa.push([
+      `GRAND TOTAL VALUE (${currency})`,
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      total,
+    ]);
     merges.push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 6 } });
     for (let c = 0; c <= 6; c++) setStyle(rowIdx, c, grandTotalLabelStyle);
     setStyle(rowIdx, 7, grandTotalValueStyle);
@@ -204,8 +242,14 @@ const buildBatchWiseWorkbook = (rawItems: any[], hideZeroStock: boolean) => {
   }
   worksheet["!merges"] = merges;
   worksheet["!cols"] = [
-    { wch: 20 }, { wch: 35 }, { wch: 18 }, { wch: 16 },
-    { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 18 },
+    { wch: 20 },
+    { wch: 35 },
+    { wch: 18 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 14 },
+    { wch: 12 },
+    { wch: 18 },
   ];
   worksheet["!rows"] = aoa.map((_, i) => ({ hpx: i === 0 ? 24 : 20 }));
   Object.entries(cellStyles).forEach(([addr, style]) => {
@@ -310,6 +354,10 @@ export function useItemsStockTable() {
         totalQty: item.total_bal_qty ?? 0,
         totalBuyValue: Number(item.total_buy_value ?? 0),
         totalSellValue: Number(item.total_sell_value ?? 0),
+        buyPriceLatest: Number(item.buy_price_latest ?? 0),
+        buyPriceAvg: Number(item.buy_price_avg ?? 0),
+        sellPriceLatest: Number(item.sell_price_latest ?? 0),
+        sellPriceAvg: Number(item.sell_price_avg ?? 0),
         buyCurrency: item.buy_currency,
         sellCurrency: item.sell_currency,
         isServiceItem: item.is_service_item === 1,
@@ -368,34 +416,37 @@ export function useItemsStockTable() {
     [fetchItems],
   );
 
-  const handleDelete = useCallback(async (item: { id: string; [key: string]: any }) => {
-    const confirm = await fireManagedSwal({
-      icon: "warning",
-      title: "Are you sure?",
-      text: `Delete Stock Entry ${item.id}?`,
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete",
-    });
-    if (!confirm.isConfirmed) return;
+  const handleDelete = useCallback(
+    async (item: { id: string; [key: string]: any }) => {
+      const confirm = await fireManagedSwal({
+        icon: "warning",
+        title: "Are you sure?",
+        text: `Delete Stock Entry ${item.id}?`,
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, delete",
+      });
+      if (!confirm.isConfirmed) return;
 
-    try {
-      showLoading("Deleting Stock Entry...");
-      const res = await deleteStockEntry({ stock_entry_id: item.id });
-      if (res?.status_code !== 200 || res?.status !== "success") {
+      try {
+        showLoading("Deleting Stock Entry...");
+        const res = await deleteStockEntry({ stock_entry_id: item.id });
+        if (res?.status_code !== 200 || res?.status !== "success") {
+          closeSwal();
+          showApiError(res?.message || "Delete failed");
+          return;
+        }
         closeSwal();
-        showApiError(res?.message || "Delete failed");
-        return;
+        showSuccess("Stock entry deleted successfully");
+        setItems((prev) => prev.filter((i) => i.id !== item.id));
+      } catch (error: any) {
+        closeSwal();
+        showApiError(error);
       }
-      closeSwal();
-      showSuccess("Stock entry deleted successfully");
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
-    } catch (error: any) {
-      closeSwal();
-      showApiError(error);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const handleBatchDelete = useCallback(
     (batch: BatchRow) => handleDelete({ ...batch, id: batch.batch_no || "" }),
@@ -441,7 +492,13 @@ export function useItemsStockTable() {
     let all: any[] = [];
     let pagesTotal = 1;
     do {
-      const res = await getStockReport(currentPage, exportPageSize, debouncedSearchTerm, undefined, 1);
+      const res = await getStockReport(
+        currentPage,
+        exportPageSize,
+        debouncedSearchTerm,
+        undefined,
+        1,
+      );
       const list = res?.message?.data || [];
       all = all.concat(list);
       pagesTotal = res?.message?.pagination?.total_pages ?? 1;
@@ -467,7 +524,9 @@ export function useItemsStockTable() {
       XLSX.writeFile(workbook, fileName);
 
       closeSwal();
-      showSuccess(`Batch-wise stock report exported (${rawItems.length} items)`);
+      showSuccess(
+        `Batch-wise stock report exported (${rawItems.length} items)`,
+      );
     } catch (err) {
       console.error(err);
       closeSwal();
@@ -487,7 +546,11 @@ export function useItemsStockTable() {
         cell: ({ row }) => (
           <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
             {expandedRows[row.original.id] ? (
-              <ChevronDown size={16} strokeWidth={2.5} className="text-primary" />
+              <ChevronDown
+                size={16}
+                strokeWidth={2.5}
+                className="text-primary"
+              />
             ) : (
               <ChevronRight size={16} strokeWidth={2.5} />
             )}
@@ -500,17 +563,23 @@ export function useItemsStockTable() {
       columnHelper.accessor("itemCode", {
         header: "Item Code",
         cell: (info) => (
-          <span className="font-medium whitespace-nowrap">{info.getValue() ?? "—"}</span>
+          <span className="font-medium whitespace-nowrap">
+            {info.getValue() ?? "—"}
+          </span>
         ),
       }),
       columnHelper.accessor("itemName", {
         header: "Item Name",
-        cell: (info) => <span className="font-medium block">{info.getValue() ?? "—"}</span>,
+        cell: (info) => (
+          <span className="font-medium block">{info.getValue() ?? "—"}</span>
+        ),
       }),
       columnHelper.accessor("description", {
         header: "Description",
         enableSorting: false,
-        cell: (info) => <span className="font-medium">{info.getValue() ?? "—"}</span>,
+        cell: (info) => (
+          <span className="font-medium">{info.getValue() ?? "—"}</span>
+        ),
       }),
       columnHelper.display({
         id: "packing",
@@ -554,13 +623,50 @@ export function useItemsStockTable() {
         header: "Total Buy Value",
         cell: (info) => (
           <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+            {info.row.original.buyCurrency}{" "}
+            {info.getValue().toLocaleString("en-IN")}
+          </code>
+        ),
+        meta: { align: "right" },
+      }),
+   columnHelper.accessor("totalSellValue", {
+        header: "Total Sell Value",
+        cell: (info) => (
+          <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+            {info.row.original.sellCurrency} {info.getValue().toLocaleString("en-IN")}
+          </code>
+        ),
+        meta: { align: "right" },
+      }),
+      columnHelper.accessor("buyPriceLatest", {
+        header: "Buy Price (Latest)",
+        cell: (info) => (
+          <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
             {info.row.original.buyCurrency} {info.getValue().toLocaleString("en-IN")}
           </code>
         ),
         meta: { align: "right" },
       }),
-      columnHelper.accessor("totalSellValue", {
-        header: "Total Sell Value",
+      columnHelper.accessor("buyPriceAvg", {
+        header: "Buy Price (Avg)",
+        cell: (info) => (
+          <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+            {info.row.original.buyCurrency} {info.getValue().toLocaleString("en-IN")}
+          </code>
+        ),
+        meta: { align: "right" },
+      }),
+      columnHelper.accessor("sellPriceLatest", {
+        header: "Sell Price (Latest)",
+        cell: (info) => (
+          <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+            {info.row.original.sellCurrency} {info.getValue().toLocaleString("en-IN")}
+          </code>
+        ),
+        meta: { align: "right" },
+      }),
+      columnHelper.accessor("sellPriceAvg", {
+        header: "Sell Price (Avg)",
         cell: (info) => (
           <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
             {info.row.original.sellCurrency} {info.getValue().toLocaleString("en-IN")}
