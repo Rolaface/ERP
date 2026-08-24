@@ -310,8 +310,7 @@ addressBoxes.forEach((box, index) => {
         "EXP",
         "Packing",
         "Qty",
-         "Unit of Measure"
-,
+         "Unit of Measure",
         "Rate",
         "Tax",
         `Amount(${cur})`,
@@ -335,9 +334,9 @@ addressBoxes.forEach((box, index) => {
   packing,  
   Number(item.quantity ?? 0),
   item.uom ?? "-",
-  fmt2(item.priceListRate),
+  fmt2(item.rate),
   `${tax?.taxName ?? ""} (${tax?.totalTaxRate ?? 0}%)`,
-  fmt2((item.quantity ?? 0) * (item.priceListRate ?? 0)),
+  fmt2((item.quantity ?? 0) * (item.rate ?? 0)),
 ];
     }),
     styles: {
