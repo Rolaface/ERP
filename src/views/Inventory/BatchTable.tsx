@@ -328,6 +328,13 @@ const BatchDetailModal: React.FC<{
               )}
             />
             <Row
+              label="Buy Price (Avg)"
+              value={formatCurrencyValue(
+                batch.buy_currency,
+                batch.buy_price_avg,
+              )}
+            />
+            <Row
               label="Buy Value"
               value={formatCurrencyValue(batch.buy_currency, batch.buy_value)}
             />
@@ -337,6 +344,13 @@ const BatchDetailModal: React.FC<{
               value={formatCurrencyValue(
                 batch.sell_currency,
                 batch.sell_price_latest,
+              )}
+            />
+            <Row
+              label="Sell Price (Avg)"
+              value={formatCurrencyValue(
+                batch.sell_currency,
+                batch.sell_price_avg,
               )}
             />
             <Row
