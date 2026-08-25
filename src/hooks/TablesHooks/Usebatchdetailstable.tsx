@@ -27,6 +27,7 @@ export interface Batch {
   buy_currency?: string;
   sell_currency?: string;
   buy_price_latest?: number;
+  buy_price_valuation?: number;
   buy_price_avg?: number;
   sell_price_latest?: number;
   sell_price_avg?: number;
@@ -538,21 +539,27 @@ export function useBatchDetailsTable({
         cell: (info) => formatNumber(info.getValue(), 4),
         meta: { align: "right" },
       }),
-      columnHelper.accessor("buy_price_latest", {
-        header: "Buy Price (Latest)",
+      //       columnHelper.accessor("buy_price_latest", {
+      //         header: "Buy Price (Latest)",
+      //         cell: (info) =>
+      //           formatCurrencyValue(info.row.original.buy_currency, info.getValue()),
+      //         meta: { align: "right" },
+      //       }),
+      //       columnHelper.accessor("buy_price_avg", {
+      //   header: "Buy Price (Avg)",
+      //   cell: (info) =>
+      //     formatCurrencyValue(
+      //       info.row.original.buy_currency,
+      //       info.getValue()
+      //     ),
+      //   meta: { align: "right" },
+      // }),
+      columnHelper.accessor("buy_price_valuation", {
+        header: "Buy Price (Actual)",
         cell: (info) =>
           formatCurrencyValue(info.row.original.buy_currency, info.getValue()),
         meta: { align: "right" },
       }),
-      columnHelper.accessor("buy_price_avg", {
-  header: "Buy Price (Avg)",
-  cell: (info) =>
-    formatCurrencyValue(
-      info.row.original.buy_currency,
-      info.getValue()
-    ),
-  meta: { align: "right" },
-}),
       columnHelper.accessor("buy_value", {
         header: "Buy Value",
         cell: (info) =>
@@ -560,21 +567,21 @@ export function useBatchDetailsTable({
         meta: { align: "right" },
       }),
 
-      columnHelper.accessor("sell_price_latest", {
-        header: "Sell Price (Latest)",
-        cell: (info) =>
-          formatCurrencyValue(info.row.original.sell_currency, info.getValue()),
-        meta: { align: "right" },
-      }),
-      columnHelper.accessor("sell_price_avg", {
-  header: "Sell Price (Avg)",
-  cell: (info) =>
-    formatCurrencyValue(
-      info.row.original.sell_currency,
-      info.getValue()
-    ),
-  meta: { align: "right" },
-}),
+      // columnHelper.accessor("sell_price_latest", {
+      //   header: "Sell Price (Latest)",
+      //   cell: (info) =>
+      //     formatCurrencyValue(info.row.original.sell_currency, info.getValue()),
+      //   meta: { align: "right" },
+      // }),
+      //       columnHelper.accessor("sell_price_avg", {
+      //   header: "Sell Price (Avg)",
+      //   cell: (info) =>
+      //     formatCurrencyValue(
+      //       info.row.original.sell_currency,
+      //       info.getValue()
+      //     ),
+      //   meta: { align: "right" },
+      // }),
       columnHelper.accessor("sell_value", {
         header: "Sell Value",
         cell: (info) =>
