@@ -51,6 +51,7 @@ export interface StockItemRow {
   buyCurrency?: string;
   sellCurrency?: string;
   isServiceItem?: boolean;
+  buyPriceValuation: number;
   batches: Batch[];
 }
 // ─── Excel export (batch-wise, across all items) ───────────────────────────
@@ -362,6 +363,7 @@ export function useItemsStockTable() {
         sellCurrency: item.sell_currency,
         isServiceItem: item.is_service_item === 1,
         batches: item.batches || [],
+        buyPriceValuation: Number(item.buy_price_valuation ?? 0),
       }));
 
       setItems(mapped);
@@ -619,6 +621,16 @@ export function useItemsStockTable() {
         ),
         meta: { align: "center" },
       }),
+            columnHelper.accessor("buyPriceValuation", {
+  header: "Buy Price (Actual)",
+  cell: (info) => (
+    <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+      {info.row.original.buyCurrency}{" "}
+      {info.getValue().toLocaleString("en-IN")}
+    </code>
+  ),
+  meta: { align: "right" },
+}),
       columnHelper.accessor("totalBuyValue", {
         header: "Total Buy Value",
         cell: (info) => (
@@ -629,6 +641,7 @@ export function useItemsStockTable() {
         ),
         meta: { align: "right" },
       }),
+
    columnHelper.accessor("totalSellValue", {
         header: "Total Sell Value",
         cell: (info) => (
@@ -638,42 +651,42 @@ export function useItemsStockTable() {
         ),
         meta: { align: "right" },
       }),
-      columnHelper.accessor("buyPriceLatest", {
-        header: "Buy Price (Latest)",
-        cell: (info) => (
-          <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-            {info.row.original.buyCurrency} {info.getValue().toLocaleString("en-IN")}
-          </code>
-        ),
-        meta: { align: "right" },
-      }),
-      columnHelper.accessor("buyPriceAvg", {
-        header: "Buy Price (Avg)",
-        cell: (info) => (
-          <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-            {info.row.original.buyCurrency} {info.getValue().toLocaleString("en-IN")}
-          </code>
-        ),
-        meta: { align: "right" },
-      }),
-      columnHelper.accessor("sellPriceLatest", {
-        header: "Sell Price (Latest)",
-        cell: (info) => (
-          <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-            {info.row.original.sellCurrency} {info.getValue().toLocaleString("en-IN")}
-          </code>
-        ),
-        meta: { align: "right" },
-      }),
-      columnHelper.accessor("sellPriceAvg", {
-        header: "Sell Price (Avg)",
-        cell: (info) => (
-          <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-            {info.row.original.sellCurrency} {info.getValue().toLocaleString("en-IN")}
-          </code>
-        ),
-        meta: { align: "right" },
-      }),
+      // columnHelper.accessor("buyPriceLatest", {
+      //   header: "Buy Price (Latest)",
+      //   cell: (info) => (
+      //     <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+      //       {info.row.original.buyCurrency} {info.getValue().toLocaleString("en-IN")}
+      //     </code>
+      //   ),
+      //   meta: { align: "right" },
+      // }),
+      // columnHelper.accessor("buyPriceAvg", {
+      //   header: "Buy Price (Avg)",
+      //   cell: (info) => (
+      //     <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+      //       {info.row.original.buyCurrency} {info.getValue().toLocaleString("en-IN")}
+      //     </code>
+      //   ),
+      //   meta: { align: "right" },
+      // }),
+      // columnHelper.accessor("sellPriceLatest", {
+      //   header: "Sell Price (Latest)",
+      //   cell: (info) => (
+      //     <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+      //       {info.row.original.sellCurrency} {info.getValue().toLocaleString("en-IN")}
+      //     </code>
+      //   ),
+      //   meta: { align: "right" },
+      // }),
+      // columnHelper.accessor("sellPriceAvg", {
+      //   header: "Sell Price (Avg)",
+      //   cell: (info) => (
+      //     <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+      //       {info.row.original.sellCurrency} {info.getValue().toLocaleString("en-IN")}
+      //     </code>
+      //   ),
+      //   meta: { align: "right" },
+      // }),
     ],
     [expandedRows],
   );
