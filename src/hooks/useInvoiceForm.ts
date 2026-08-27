@@ -1237,19 +1237,21 @@ export const useInvoiceForm = (
       const discount = Number(item.discount || 0);
       const vatRate = Number(item.vatRate || 0);
 
-      const lineGross = qty * price;
-      const lineDiscount = lineGross * (discount / 100);
-      const lineNet = lineGross - lineDiscount;
+const lineGross = qty * price;
+let lineDiscount = lineGross * (discount / 100);
+let lineNet = lineGross - lineDiscount;
 
-      let lineTax = lineNet * (vatRate / 100);
-      if (isZraEnabled && Number(item.is_mtv_item) === 1) {
-        const rrpRate = Number(item.rrp_rate || 0);
-        const inclusiveAmount = lineNet + lineTax;
-        if (rrpRate > 0 && inclusiveAmount < rrpRate * qty) {
-          lineTax = rrpRate * qty * (vatRate / 100);
-        }
-      }
-
+let lineTax = lineNet * (vatRate / 100);
+if (isZraEnabled && Number(item.is_mtv_item) === 1 && price > 0) {
+  const rrpRate = Number(item.rrp_rate || 0);
+  const inclusiveAmount = lineNet + lineTax;
+  if (rrpRate > 0 && inclusiveAmount < rrpRate * qty) {
+    const rrpGross = rrpRate * qty;
+    lineDiscount = rrpGross * (discount / 100);
+    lineNet = lineGross - lineDiscount; // actual gross, RRP-based discount only
+    lineTax = rrpGross * (vatRate / (100 + vatRate));
+  }
+}
       qty_sum += qty;
       gross += lineGross;
       disc_sum += lineDiscount;

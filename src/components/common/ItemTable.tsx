@@ -409,13 +409,30 @@ const ItemTable: React.FC<ItemTableProps> = ({
     actions.removeItem(absoluteIndex);
   };
 
+
   const renderInvoiceRow = (it: any, i: number) => {
-    const discountAmount =
-      it.quantity * it.price * (Number(it.discount || 0) / 100);
-    const amount = it.quantity * it.price - discountAmount;
+    const qty = Number(it.quantity || 0);
+    const price = Number(it.price || 0);
+    const discountPct = Number(it.discount || 0);
+    const vatRate = Number(it.vatRate || 0);
+
+    const lineGross = qty * price;
+    let discountAmount = lineGross * (discountPct / 100);
+    let amount = lineGross - discountAmount;
+
+    if (isZraEnabled && Number(it.is_mtv_item) === 1) {
+      const rrpRate = Number(it.rrp_rate || 0);
+      const lineTax = amount * (vatRate / 100);
+      const inclusiveAmount = amount + lineTax;
+      if (rrpRate > 0 && inclusiveAmount < rrpRate * qty) {
+        const rrpGross = rrpRate * qty;
+        discountAmount = rrpGross * (discountPct / 100);
+        amount = lineGross - discountAmount; // actual gross, RRP-based discount only
+      }
+    }
+
     let col = 0;
     const c = () => col++;
-
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
         {/* # */}
