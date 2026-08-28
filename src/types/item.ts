@@ -53,6 +53,8 @@ packingSize: number | null;
   // Legacy flat fields (kept for backward compat, may be undefined)
   sku?: string;
   svcCharge?: string;
+  useYn?: boolean;
+  rentalYn?: boolean;
   ins?: string;
   taxPreference?: string;
   originNationCode?: string;
