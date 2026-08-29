@@ -45,7 +45,7 @@ interface ItemTableProps {
   symbol: string;
   ITEMS_PER_PAGE: number;
   taxCategory?: string;
-  invoiceType?: "Product" | "Service" | "RVAT";
+  invoiceType?: "Product" | "Service" | "RVAT" | "LPO";
   isSalesInvoice?: boolean;
   title?: string;
   isQuotation?: boolean;

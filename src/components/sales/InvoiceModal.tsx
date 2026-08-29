@@ -61,7 +61,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const [principalsFetched, setPrincipalsFetched] = useState(false);
 
   const [invoiceType, setInvoiceType] = useState<
-    "Product" | "Service" | "RVAT"
+    "Product" | "Service" | "RVAT" | "LPO"
   >("Product");
   const domain = useDefault("primary_business_domain");
   const isRvatAgent = useDefault("is_rvat_agent");
@@ -69,17 +69,23 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   // RVAT tab sirf tab dikhega jab dono conditions true ho
   const showRvatOption = !!isZraEnabled && Number(isRvatAgent) === 1;
+  const showLPOOption = !!isZraEnabled;
 
   const invoiceTypeOptions = [
     { label: "Product", value: "Product" },
     { label: "Service", value: "Service" },
     ...(showRvatOption ? [{ label: "RVAT", value: "RVAT" }] : []),
+    ...(showLPOOption ? [{ label: "LPO", value: "LPO" }] : []),
   ];
 
   useEffect(() => {
     if (mode === "edit" && initialData?.items?.length > 0) {
       if (initialData.invoiceType === "RVAT") {
         setInvoiceType("RVAT");
+        return;
+      }
+      if (initialData.invoiceType === "LPO") {
+        setInvoiceType("LPO");
         return;
       }
       // Check if the first item (or any item) is a service
@@ -405,18 +411,20 @@ const handlePrincipalSelect = (value: string) => {
                 </div>
 
                 {/* PO Number */}
-                <div className="w-full sm:w-[160px]">
-                  <ModalInput
-                    label="PO Number"
-                    name="lpoNumber"
-                    value={formData.lpoNumber}
-                    onChange={actions.handleInputChange}
-                    inputMode="numeric"
-                    pattern="\d{10}"
-                    placeholder="Enter Purchase Order No"
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                  />
-                </div>
+                {/* Purchase Order Number — only for LPO */}
+                {invoiceType === "LPO" && (
+                  <div className="w-full sm:w-[160px]">
+                    <ModalInput
+                      label="Purchase Order No"
+                      name="lpoNumber"
+                      value={formData.lpoNumber}
+                      onChange={actions.handleInputChange}
+                      placeholder="Enter Purchase Order No"
+                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                      required
+                    />
+                  </div>
+                )}
 
                 {/* Invoice Type — Product / Service / RVAT */}
                 <ToggleSwitch
@@ -429,7 +437,7 @@ const handlePrincipalSelect = (value: string) => {
                   options={invoiceTypeOptions}
                   value={invoiceType}
                   onValueChange={(val) =>
-                    setInvoiceType(val as "Product" | "Service" | "RVAT")
+                    setInvoiceType(val as "Product" | "Service" | "RVAT" | "LPO")
                   }
                 />
 
@@ -463,6 +471,7 @@ const handlePrincipalSelect = (value: string) => {
                     symbol=""
                     ITEMS_PER_PAGE={ITEMS_PER_PAGE}
                     invoiceType={invoiceType}
+                    // invoiceType={invoiceType === "LPO" ? "Service" : invoiceType}
                     isSalesInvoice={true}
                     taxCategory={
                       formData.taxCategory ||
