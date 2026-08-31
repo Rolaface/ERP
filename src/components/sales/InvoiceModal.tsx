@@ -61,7 +61,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const [principalsFetched, setPrincipalsFetched] = useState(false);
 
   const [invoiceType, setInvoiceType] = useState<
-    "Product" | "Service" | "RVAT" | "LPO"
+    "Product" | "Service" | "RVAT" | "LPO" | "TOT" | "ITX"
   >("Product");
   const domain = useDefault("primary_business_domain");
   const isRvatAgent = useDefault("is_rvat_agent");
@@ -74,6 +74,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const invoiceTypeOptions = [
     { label: "Product", value: "Product" },
     { label: "Service", value: "Service" },
+    { label: "TOT", value: "TOT" },
+    { label: "ITX", value: "ITX" },
     ...(showRvatOption ? [{ label: "RVAT", value: "RVAT" }] : []),
     ...(showLPOOption ? [{ label: "LPO", value: "LPO" }] : []),
   ];
@@ -86,6 +88,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       }
       if (initialData.invoiceType === "LPO") {
         setInvoiceType("LPO");
+        return;
+      }
+      if (initialData.invoiceType === "TOT") {
+        setInvoiceType("TOT");
+        return;
+      }
+      if (initialData.invoiceType === "ITX") {
+        setInvoiceType("ITX");
         return;
       }
       // Check if the first item (or any item) is a service
@@ -398,7 +408,7 @@ const handlePrincipalSelect = (value: string) => {
                   </div>
                 )}
                 {/* Mode of Payment */}
-                <div className="w-full sm:w-[200px]">
+                <div className="w-full sm:w-[150px]">
                   <ModeOfPaymentSelect
                     value={formData.mode ?? ""}
                     onChange={(val) => {
@@ -409,22 +419,6 @@ const handlePrincipalSelect = (value: string) => {
                     required
                   />
                 </div>
-
-                {/* PO Number */}
-                {/* Purchase Order Number — only for LPO */}
-                {invoiceType === "LPO" && (
-                  <div className="w-full sm:w-[160px]">
-                    <ModalInput
-                      label="Purchase Order No"
-                      name="lpoNumber"
-                      value={formData.lpoNumber}
-                      onChange={actions.handleInputChange}
-                      placeholder="Enter Purchase Order No"
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                      required
-                    />
-                  </div>
-                )}
 
                 {/* Invoice Type — Product / Service / RVAT */}
                 <ToggleSwitch
@@ -437,7 +431,7 @@ const handlePrincipalSelect = (value: string) => {
                   options={invoiceTypeOptions}
                   value={invoiceType}
                   onValueChange={(val) =>
-                    setInvoiceType(val as "Product" | "Service" | "RVAT" | "LPO")
+                    setInvoiceType(val as "Product" | "Service" | "RVAT" | "LPO" | "TOT" | "ITX")
                   }
                 />
 
@@ -449,6 +443,22 @@ const handlePrincipalSelect = (value: string) => {
                       onChange={handlePrincipalSelect}
                       fetchOptions={fetchPrincipalOptions}
                       placeholder="Search principal..."
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* PO Number */}
+                {/* Purchase Order Number — only for LPO */}
+                {invoiceType === "LPO" && (
+                  <div className="w-full sm:w-[100px]">
+                    <ModalInput
+                      label="Purchase Order No"
+                      name="lpoNumber"
+                      value={formData.lpoNumber}
+                      onChange={actions.handleInputChange}
+                      placeholder="Enter Purchase Order No"
+                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                       required
                     />
                   </div>
