@@ -9,6 +9,7 @@ import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
+import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
 import { getPurchaseInvoices } from "../../api/procurement/PurchaseInvoiceApi";
 import { updatePurchaseinvoiceStatus } from "../../api/procurement/PurchaseInvoiceApi";
 import { deletePi } from "../../api/procurement/PurchaseInvoiceApi";
@@ -252,6 +253,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
     setDrawerLoading(true);
     setDrawerData(null);
      handleCloseAttachment(); 
+     
     try {
       const res = await getPurchaseInvoiceById(pId);
       if (res?.status === "success")
@@ -266,20 +268,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
 
   const handleDrawerPdf = async (pId: string) => {
     setDrawerPdfLoading(true);
-    setDrawerPdfUrl(null);
+    
     try {
-      if (!company) {
-        showApiError("Company data not loaded");
-        return;
-      }
-      const res = await getPurchaseInvoiceById(pId);
-      if (!res || res.status !== "success") {
-        showApiError(res);
-        return;
-      }
-      setDrawerPdfUrl(
-        await generatePurchaseInvoicePDF(res.data, company, "bloburl"),
-      );
+       if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl);
+    const blob = await getSalesInvoicePdf(pId, "Purchase Invoice");
+     setDrawerPdfUrl(URL.createObjectURL(blob));
+      
     } catch (err) {
       showApiError(err);
     } finally {
@@ -321,24 +315,11 @@ const handleViewAttachment = (file: any) => {
     e?.stopPropagation();
     try {
       showLoading("Generating PDF...");
-      if (!company) {
-        closeSwal();
-        showApiError("Company data not loaded");
-        return;
-      }
-      const res = await getPurchaseInvoiceById(invoice.pId);
-      if (!res || res.status !== "success") {
-        closeSwal();
-        showApiError(res?.message || "Failed to load invoice");
-        return;
-      }
-      const blobUrl = await generatePurchaseInvoicePDF(
-        res.data,
-        company,
-        "bloburl",
-      );
+      const blob = await getSalesInvoicePdf(invoice.pId, "Purchase Invoice");
+     if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
+     const blobUrl = URL.createObjectURL(blob);
       closeSwal();
-      setSelectedInvoice(res.data);
+       setSelectedInvoice(invoice);
       setPdfUrl(blobUrl);
       setPdfOpen(true);
     } catch (error) {
@@ -789,9 +770,15 @@ const handleViewAttachment = (file: any) => {
         pdfLoading={drawerPdfLoading}
         onViewPdf={() => drawerData && handleDrawerPdf(drawerData.piId)}
         onDownload={() =>
-          drawerData &&
-          company &&
-          generatePurchaseInvoicePDF(drawerData, company, "save")
+         {
+      if (!drawerPdfUrl || !drawerData) return;
+       const a = document.createElement("a");
+       a.href = drawerPdfUrl;
+       a.download = `${drawerData.piId || "purchase-invoice"}.pdf`;
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+     }
         }
         onClosePdf={() => {
           if (drawerPdfUrl?.startsWith("blob:"))
@@ -815,8 +802,14 @@ const handleViewAttachment = (file: any) => {
           setPdfOpen(false);
         }}
         onDownload={() => {
-          if (selectedInvoice && company)
-            generatePurchaseInvoicePDF(selectedInvoice, company, "save");
+    if (!pdfUrl || !selectedInvoice) return;
+     const a = document.createElement("a");
+     a.href = pdfUrl;
+     a.download = `${selectedInvoice.pId || "purchase-invoice"}.pdf`;
+     document.body.appendChild(a);
+     a.click();
+     document.body.removeChild(a);
+     
         }}
       />
 
