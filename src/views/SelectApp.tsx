@@ -6,7 +6,13 @@ import { getCurrencyList } from "../api/lookupApi";
 import { useCompanyStore } from "../store/companyStore";
 import { useAuth } from "../context/AuthContext";
 
-const LMS_URL = import.meta.env.VITE_LMS_URL as string;
+import { ERP_BASE, ERP_FRONTEND, LMS_FRONTEND } from '../config/resolverUrls';
+// const LMS_URL = import.meta.env.VITE_LMS_URL as string;
+
+console.log("🚀 ~ LMS_FRONTEND:", LMS_FRONTEND)
+console.log("🚀 ~ ERP_FRONTEND:", ERP_FRONTEND)
+console.log("🚀 ~ ERP_BASE:", ERP_BASE)
+
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID as string;
 
 const SelectApp = () => {
@@ -43,7 +49,7 @@ const SelectApp = () => {
     const handleLmsClick = () => {
         setLoadingTile("lms");
         const sid = user?.sid || localStorage.getItem("session_id");   // ← fallback
-        window.location.href = `${LMS_URL}?sid=${encodeURIComponent(sid ?? "")}`;
+        window.location.href = `${LMS_FRONTEND}?sid=${encodeURIComponent(sid ?? "")}`;
     };
 
   return (
