@@ -1,7 +1,17 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { Search, Tag } from "lucide-react";
 import { Popover } from "../common/Popover";
-import { PopoverHeader, PopoverSearchInput, PopoverFooterHint } from "../common/Popoverparts";
+import {
+  PopoverHeader,
+  PopoverSearchInput,
+  PopoverFooterHint,
+} from "../common/Popoverparts";
 import { getItemClassificationByCode } from "../../api/itemClassificationCodeApi";
 
 import {
@@ -9,10 +19,10 @@ import {
   HSNLeaf,
   getChildrenAtPath,
   getBreadcrumbNames,
-  buildCodeExpansionMap,
+  buildSearchIndex,
+  searchLeaves,
 } from "./HsnSearchPopover/hsnTreeUtils";
 import { useHsnTree } from "./HsnSearchPopover/useHsnTree";
-import { useHsnSearch } from "./HsnSearchPopover/useHsnSearch";
 import HsnBreadcrumb from "./HsnSearchPopover/HsnBreadcrumb";
 import HsnResultRow from "./HsnSearchPopover/HsnResultRow";
 export type { HSNNode, HSNLeaf } from "./HsnSearchPopover/hsnTreeUtils";
@@ -27,10 +37,6 @@ interface HsnSearchPopoverProps {
   value?: string;
 }
 
-/** Cap on leaves expanded from a single matched category, to avoid an
- *  overwhelming list when a broad category matches the search term. */
-const MAX_EXPANDED_PER_MATCH = 25;
-
 const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
   triggerRef,
   open,
@@ -44,58 +50,51 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
 
   const [path, setPath] = useState<string[]>([]);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [query]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastValueRef = useRef<string | undefined>(undefined);
   const listRef = useRef<HTMLDivElement>(null);
   const isKeyboardNavRef = useRef(false);
 
-  const mode = query.trim() ? "search" : "browse";
-  const { searchResults, isSearching, searchError, setSearchResults } = useHsnSearch(query);
+  const mode = debouncedQuery.trim() ? "search" : "browse";
 
-  const browseList = useMemo(() => getChildrenAtPath(activeTree, path), [activeTree, path]);
+  const browseList = useMemo(
+    () => getChildrenAtPath(activeTree, path),
+    [activeTree, path],
+  );
 
-  // Maps every code (leaf or category) found in the tree to its resolved
-  // list of selectable leaves. Backend search may match an intermediate
-  // category instead of a leaf; this expands that match into real,
-  // selectable HSN codes with their full hierarchy trail attached.
-  const codeExpansionMap = useMemo(() => buildCodeExpansionMap(activeTree), [activeTree]);
+  // Built once per tree load; matches both leaf names/codes and category
+  // names, so searching a folder's name expands to its contents.
+  const searchIndex = useMemo(() => buildSearchIndex(activeTree), [activeTree]);
 
-  const filteredSearchResults = useMemo(() => {
-    // Tree not loaded yet — skip expansion, show raw results.
-    if (codeExpansionMap.size === 0) return searchResults;
-
-    const seen = new Set<string>();
-    const resolved: HSNLeaf[] = [];
-
-    for (const result of searchResults) {
-      const leaves = codeExpansionMap.get(result.code);
-      if (!leaves) continue;
-
-      for (const leaf of leaves.slice(0, MAX_EXPANDED_PER_MATCH)) {
-        if (seen.has(leaf.code)) continue;
-        seen.add(leaf.code);
-        resolved.push(leaf);
-      }
-    }
-
-    return resolved;
-  }, [searchResults, codeExpansionMap]);
+  const filteredSearchResults = useMemo(
+    () => searchLeaves(searchIndex, debouncedQuery).slice(0, 100),
+    [searchIndex, debouncedQuery],
+  );
 
   const list = mode === "search" ? filteredSearchResults : browseList;
-  const breadcrumb = useMemo(() => getBreadcrumbNames(activeTree, path), [activeTree, path]);
+  console.log("list length:", list.length, "mode:", mode);
+  const breadcrumb = useMemo(
+    () => getBreadcrumbNames(activeTree, path),
+    [activeTree, path],
+  );
 
   useEffect(() => {
     setSelectedIndex(0);
-  }, [path, query]);
+  }, [path, debouncedQuery]);
 
-  // Reset navigation on open; pre-resolve the current code's name so the
-  // search box shows it immediately, pre-selected.
   useEffect(() => {
     if (!open) return;
 
     setPath([]);
-    setSearchResults([]);
     if (lastValueRef.current === value) return;
     lastValueRef.current = value;
 
@@ -117,12 +116,13 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [open, value, setSearchResults]);
+  }, [open, value]);
 
-  // Keep the keyboard-selected row scrolled into view.
   useEffect(() => {
     if (!isKeyboardNavRef.current) return;
-    const el = listRef.current?.querySelector<HTMLElement>(`[data-index="${selectedIndex}"]`);
+    const el = listRef.current?.querySelector<HTMLElement>(
+      `[data-index="${selectedIndex}"]`,
+    );
     el?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
@@ -135,7 +135,7 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
         onClose();
       }
     },
-    [mode, onSelect, onClose]
+    [mode, onSelect, onClose],
   );
 
   const handleInputKeyDown = useCallback(
@@ -156,11 +156,11 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
         setPath((p) => p.slice(0, -1));
       }
     },
-    [list, selectedIndex, query, path.length, handleRowActivate]
+    [list, selectedIndex, query, path.length, handleRowActivate],
   );
 
-  const isLoading = mode === "search" ? isSearching : isTreeLoading;
-  const loadError = mode === "search" ? searchError : treeError;
+  const isLoading = isTreeLoading;
+  const loadError = treeError;
 
   return (
     <Popover
@@ -202,21 +202,23 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
       >
         {isLoading && (
           <div className="px-3 py-8 text-center text-[12px] text-muted">
-            {mode === "search" ? "Searching..." : "Loading HSN codes..."}
+            Loading HSN codes...
           </div>
         )}
 
         {loadError && !isLoading && (
-          <div className="px-3 py-8 text-center text-[12px] text-red-500">{loadError}</div>
-        )}
-
-        {!isLoading && !loadError && list.length === 0 && query.trim() && (
-          <div className="px-3 py-8 text-center text-[12px] text-muted">
-            No matches for &ldquo;{query}&rdquo;
+          <div className="px-3 py-8 text-center text-[12px] text-red-500">
+            {loadError}
           </div>
         )}
 
-        {!isLoading && !loadError && list.length === 0 && !query.trim() && (
+     {!isLoading && !loadError && list.length === 0 && debouncedQuery.trim() && (
+  <div className="px-3 py-8 text-center text-[12px] text-muted">
+    No matches for &ldquo;{query}&rdquo;
+  </div>
+)}
+
+        {!isLoading && !loadError && list.length === 0 && !debouncedQuery.trim()&& (
           <div className="px-3 py-6 text-center text-[12px] text-muted">
             Select a category to browse
           </div>
@@ -243,7 +245,9 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
           ))}
       </div>
 
-      <PopoverFooterHint>↑↓ navigate &nbsp; ↵ select &nbsp; esc close</PopoverFooterHint>
+      <PopoverFooterHint>
+        ↑↓ navigate &nbsp; ↵ select &nbsp; esc close
+      </PopoverFooterHint>
     </Popover>
   );
 };

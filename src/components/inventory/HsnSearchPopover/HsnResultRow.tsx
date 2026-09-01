@@ -1,6 +1,6 @@
 import React from "react";
 import { Folder, Tag, Check, ChevronRight } from "lucide-react";
-import { HSNNode, HSNLeaf } from "./hsnTreeUtils";
+import { HSNNode, HSNLeaf, TrailEntry } from "./hsnTreeUtils";
 
 interface HsnResultRowProps {
   item: HSNNode | HSNLeaf;
@@ -22,6 +22,12 @@ const HsnResultRow: React.FC<HsnResultRowProps> = ({
   onActivate,
 }) => {
   const isLeaf = mode === "search" || !!(item as HSNNode).code;
+
+  const itemLevel: number | undefined =
+    mode === "search" ? (item as HSNLeaf).level : (item as HSNNode).level;
+
+  const trail: TrailEntry[] | undefined =
+    mode === "search" ? (item as HSNLeaf).trail : (item as HSNNode).ancestorTrail;
 
   return (
     <div
@@ -46,11 +52,14 @@ const HsnResultRow: React.FC<HsnResultRowProps> = ({
       )}
       <div className="min-w-0 flex-1">
         <div className={`truncate text-[12px] ${isActive ? "font-medium text-primary" : "text-main"}`}>
+          {itemLevel != null && (
+            <span className="mr-1 font-mono text-[10px] text-muted">(L{itemLevel})</span>
+          )}
           {item.name}
         </div>
-        {mode === "search" && (item as HSNLeaf).trail.length > 0 && (
+        {trail && trail.length > 0 && (
           <div className="truncate text-[10px] text-muted">
-            {(item as HSNLeaf).trail.join(" › ")}
+            {trail.map((t) => `(L${t.level}) ${t.name}`).join(" › ")}
           </div>
         )}
       </div>
