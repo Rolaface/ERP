@@ -382,22 +382,7 @@ const handleSubmitEntry = async (id: string) => {
     //     );
     //   },
     // },
-    {
-      key: "docstatus",
-      header: "Status",
-      align: "left",
-      render: (row: JournalEntry) => {
-        let label = "Draft";
 
-        if (row.docstatus === 1) {
-          label = "Approved";
-        } else if (row.docstatus === 2) {
-          label = "Cancelled";
-        }
-
-        return <StatusBadge status={label} />;
-      },
-    },
     {
       key: "total_debit",
       header: "Total Debit",
@@ -427,6 +412,22 @@ const handleSubmitEntry = async (id: string) => {
           {row.user_remark || "—"}
         </span>
       ),
+    },
+        {
+      key: "docstatus",
+      header: "Status",
+      align: "left",
+      render: (row: JournalEntry) => {
+        let label = "Draft";
+
+        if (row.docstatus === 1) {
+          label = "Approved";
+        } else if (row.docstatus === 2) {
+          label = "Cancelled";
+        }
+
+        return <StatusBadge status={label} />;
+      },
     },
     {
       key: "actions",
