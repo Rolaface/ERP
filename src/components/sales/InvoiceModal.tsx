@@ -67,17 +67,18 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const isRvatAgent = useDefault("is_rvat_agent");
   const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
-  // RVAT tab sirf tab dikhega jab dono conditions true ho
   const showRvatOption = !!isZraEnabled && Number(isRvatAgent) === 1;
   const showLPOOption = !!isZraEnabled;
+  const showITXOption = !!isZraEnabled;
+  const showTOTOption = !!isZraEnabled;
 
   const invoiceTypeOptions = [
     { label: "Product", value: "Product" },
     { label: "Service", value: "Service" },
-    { label: "TOT", value: "TOT" },
-    { label: "ITX", value: "ITX" },
     ...(showRvatOption ? [{ label: "RVAT", value: "RVAT" }] : []),
     ...(showLPOOption ? [{ label: "LPO", value: "LPO" }] : []),
+    ...(showITXOption ? [{ label: "ITX", value: "ITX" }] : []),
+    ...(showTOTOption ? [{ label: "TOT", value: "TOT" }] : []),
   ];
 
   useEffect(() => {
@@ -451,7 +452,7 @@ const handlePrincipalSelect = (value: string) => {
                 {/* PO Number */}
                 {/* Purchase Order Number — only for LPO */}
                 {invoiceType === "LPO" && (
-                  <div className="w-full sm:w-[100px]">
+                  <div className="w-full sm:w-[165px]">
                     <ModalInput
                       label="Purchase Order No"
                       name="lpoNumber"
