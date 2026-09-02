@@ -22,7 +22,6 @@ import {
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { getPurchaseInvoiceById } from "../../api/procurement/PurchaseInvoiceApi";
-import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import { PurchaseInvoiceFilters } from "../../api/procurement/PurchaseInvoiceApi";
 import { generatePurchaseInvoicePDF } from "../../components/template/purchaseinvoicetemplete";
@@ -115,6 +114,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [company, setCompany] = useState<any | null>(null);
   const { can } = usePermission();
 
@@ -731,19 +731,25 @@ const handleViewAttachment = (file: any) => {
         onPageChange={setPage}
         onPageSizeChange={(size) => setPageSize(size)}
          pageSizeOptions={[20, 50, 100,200]}
+                multiSelectFilters={[
+         {
+           key: "status",
+           label: "Status",
+           options: invoiceStatusOptions,
+           values: statusFilter,
+           onChange: (vals) => {
+             setStatusFilter(vals);
+             setFilters((prev) => ({
+               ...prev,
+               status: vals.length > 0 ? vals.join(",") : undefined,
+             }));
+             setPage(1);
+           },
+         },
+       ]}
         extraFilters={
           <>
-            <FilterSelect
-              value={filters.status}
-              options={invoiceStatusOptions}
-              onChange={(e) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  status: e.target.value || undefined,
-                }));
-                setPage(1);
-              }}
-            />
+           
             <DateRangeFilter
               from={filters.from_date}
               to={filters.to_date}

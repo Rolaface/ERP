@@ -67,7 +67,7 @@ const ALL_PROCUREMENT_TABS = [
   },
   {
     id: "supplier",
-    label: "Supplier Management",
+    label: "Supplier",
     icon: <Users {...iconProps} />,
     module: "Supplier",
     action: "read" as const,
