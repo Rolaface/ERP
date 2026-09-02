@@ -362,6 +362,8 @@ const ItemModal: React.FC<ItemModalProps> = ({
         packingSize: 1,
         svcCharge: "",
         ins: "",
+        useYn: false,
+        rentalYn: false,
         sellingPrice: "",
         buyingPrice: "",
         unitOfMeasureCd: "",

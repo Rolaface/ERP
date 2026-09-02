@@ -5,6 +5,7 @@ import React, {
   useMemo,
 } from "react";
 import { useOutletContext } from "react-router-dom";
+import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import {
   showApiError,
   showSuccess,
@@ -78,6 +79,13 @@ const STATUS_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
   Cancelled: ["Draft"],
   Approved: ["Cancelled"],
 };
+ const statusOptions = [
+   { label: "Draft", value: "Draft" },
+   { label: "Approved", value: "Open" },
+   { label: "Paid", value: "Paid" },
+   { label: "Cancelled", value: "Cancelled" },
+    { label: "Expired", value: "Expired" },
+ ];
 
 const QuotationsTable: React.FC<QuotationTableProps> = ({
   onAddQuotation,
@@ -104,11 +112,20 @@ const createProformaFromQuote = useDocumentConversion("quoteToProforma");
 
   const [sortBy, setSortBy] = useState("quotationNumber");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+   const [filters, setFilters] = useState<{
+  status?: string[];
+   from_date?: string;
+   to_date?: string;
+ }>({});
 
   // ── Reset page when search changes
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
+
+   useEffect(() => {
+  setPage(1);
+ }, [filters]);
   //_____quotation details modal state _____
   const [ ,setSelectedQuotation] = useState<any>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -153,9 +170,18 @@ const createProformaFromQuote = useDocumentConversion("quoteToProforma");
       const res = await getAllQuotation(
         page,
         pageSize,
-        SORT_FIELD_MAP[sortBy] || sortBy,
-        sortOrder,
-        searchTerm,
+           SORT_FIELD_MAP[sortBy] || sortBy,
+       sortOrder,
+       searchTerm,
+       {
+        status:
+           filters.status && filters.status.length > 0
+             ? filters.status.join(",")
+             : undefined,
+         fromDate: filters.from_date,
+         toDate: filters.to_date,
+       },
+    
       );
 
       if (!res || res.status_code !== 200) return;
@@ -182,7 +208,7 @@ const createProformaFromQuote = useDocumentConversion("quoteToProforma");
 
   useEffect(() => {
     fetchQuotations();
-  }, [page, pageSize, refreshKey, sortBy, sortOrder, searchTerm]);
+}, [page, pageSize, refreshKey, sortBy, sortOrder, searchTerm, filters]);
 
   // Auto-refresh when a quotation is created or edited
   useEffect(() => {
@@ -444,9 +470,17 @@ const handleCreateProforma = (quotationNumber: string, e?: React.MouseEvent) => 
       const res = await getAllQuotation(
         current,
         100,
-        SORT_FIELD_MAP[sortBy] || sortBy, // ← same mapping for export
-        sortOrder,
-        searchTerm,
+     SORT_FIELD_MAP[sortBy] || sortBy,
+       sortOrder,
+       searchTerm,
+     {
+        status:
+           filters.status && filters.status.length > 0
+             ? filters.status.join(",")
+             : undefined,
+         fromDate: filters.from_date,
+         toDate: filters.to_date,
+       },
       );
 
       if (res?.status_code === 200) {
@@ -764,6 +798,31 @@ const handleCreateProforma = (quotationNumber: string, e?: React.MouseEvent) => 
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
         onRowDoubleClick={(q) => handleView(q.quotationNumber)}
+        multiSelectFilters={[
+         {
+           key: "status",
+           label: "Status",
+           options: statusOptions,
+           values: filters.status ?? [],
+           onChange: (vals) => {
+             setFilters((prev) => ({
+               ...prev,
+               status: vals.length > 0 ? vals : undefined,
+             }));
+             setPage(1);
+           },
+         },
+       ]}
+       extraFilters={
+         <DateRangeFilter
+           from={filters.from_date}
+           to={filters.to_date}
+           onChange={(range) => {
+             setFilters((prev) => ({ ...prev, ...range }));
+             setPage(1);
+           }}
+         />
+       }
       />
 
       <PdfPreviewModal

@@ -40,6 +40,8 @@ export interface ItemFormData {
 packingUnit: number | null;
 packingSize: number | null;
   svcCharge: string;
+  useYn: boolean;
+  rentalYn: boolean;
   ins: string;
   sellingPrice: string | number;
   buyingPrice: string | number;

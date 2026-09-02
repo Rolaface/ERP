@@ -12,7 +12,7 @@ import {
   ACTION_ICONS,
   getStatusActionIcon,
 } from "../../components/UI_Utils/statusActionIcons";
-import { FilterSelect } from "../../components/ui/modal/modalComponent";
+
 import type { Column } from "../../components/ui/Table/type";
 import type { PurchaseOrderDetail } from "../../types/Supply/purchaseOrder";
 import { createPurchaseInvoiceFromPO } from "../../api/procurement/PurchaseOrderApi";
@@ -104,6 +104,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
   const [selectedOrder, setSelectedOrder] =
     useState<PurchaseOrderDetail | null>(null);
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [company, setCompany] = useState<any | null>(null);
 
   //email
@@ -771,19 +772,25 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
         onPageChange={setPage}
         onPageSizeChange={(size) => setPageSize(size)}
          pageSizeOptions={[20, 50, 100,200]}
+            multiSelectFilters={[
+        {
+           key: "status",
+           label: "Status",
+           options: statusOptions,
+           values: statusFilter,
+           onChange: (vals) => {
+             setStatusFilter(vals);
+             setFilters((prev) => ({
+               ...prev,
+               status: vals.length > 0 ? vals.join(",") : undefined,
+             }));
+             setPage(1);
+           },
+         },
+       ]}
         extraFilters={
           <>
-            <FilterSelect
-              value={filters.status}
-              options={statusOptions}
-              onChange={(e) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  status: e.target.value || undefined,
-                }));
-                setPage(1);
-              }}
-            />
+          
             <DateRangeFilter
               from={filters.from_date}
               to={filters.to_date}

@@ -47,7 +47,7 @@ const ALL_TABS = [
   },
   {
     id: "customer-managment",
-    label: "Customer Management",
+    label: "Customer",
     icon: <Users {...iconProps} />,
     module: "Customer",
     action: "read" as const,

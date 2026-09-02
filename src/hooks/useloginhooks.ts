@@ -7,6 +7,12 @@ import { resetPasswordApi } from "../api/authService";
 import { getCurrencyList }
   from "../api/lookupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+// const LMS_URL = import.meta.env.VITE_LMS_URL as string;
+
+import { ERP_BASE, ERP_FRONTEND, LMS_FRONTEND } from '../config/resolverUrls';
+console.log("🚀 ~ LMS_FRONTEND:", LMS_FRONTEND)
+console.log("🚀 ~ ERP_FRONTEND:", ERP_FRONTEND)
+console.log("🚀 ~ ERP_BASE:", ERP_BASE)
 
 export const useLogin = () => {
   const { login } = useAuth();
@@ -65,14 +71,13 @@ export const useLogin = () => {
     // 1. login
     const basicUser = await login(email, password);
     const products = basicUser.subscribedProducts ?? ["erp"];
-    const LMS_URL = import.meta.env.VITE_LMS_URL as string;
 
     // ── only lms forward sid ─────────────
     if (products.length === 1 && products[0] === "lms") {
       const sid = basicUser.sid;
       localStorage.removeItem("session_id");
       localStorage.removeItem("auth_user");
-      window.location.href = `${LMS_URL}?sid=${encodeURIComponent(sid ?? "")}`;
+      window.location.href = `${LMS_FRONTEND}?sid=${encodeURIComponent(sid ?? "")}`;
       return;
     }
 

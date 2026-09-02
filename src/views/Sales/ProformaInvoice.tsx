@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
+import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import {
   getAllProformaInvoices,
   updateProformaInvoiceStatus,
@@ -75,6 +76,12 @@ const STATUS_TRANSITIONS: Record<
 };
 
 const CRITICAL_STATUSES: ProformaInvoiceStatus[] = ["Paid"];
+const statusOptions = [
+   { label: "Draft", value: "Draft" },
+   { label: "Approved", value: "Open" },
+   { label: "Cancelled", value: "Cancelled" },
+   { label: "Expired", value: "Expired" },
+ ];
 
 const SORT_FIELD_MAP: Record<string, string> = {
   proformaId: "name",
@@ -120,6 +127,12 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [sortBy, setSortBy] = useState("proformaId");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+   const [filters, setFilters] = useState<{
+  status?: string[];
+   from_date?: string;
+   to_date?: string;
+ }>({});
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<ProformaDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
@@ -143,6 +156,9 @@ const createInvoiceFromProforma = useDocumentConversion("proformaToSi");
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
+  useEffect(() => {
+  setPage(1);
+ }, [filters]);
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
@@ -166,6 +182,14 @@ const createInvoiceFromProforma = useDocumentConversion("proformaToSi");
         SORT_FIELD_MAP[sortBy] || sortBy, // ← map column key → backend field here
         sortOrder,
         searchTerm, // ← search sent to backend
+        {
+        status:
+           filters.status && filters.status.length > 0
+             ? filters.status.join(",")
+             : undefined,
+         fromDate: filters.from_date,
+         toDate: filters.to_date,
+       },
       );
 
       if (!res || res.status_code !== 200) return;
@@ -192,7 +216,8 @@ const createInvoiceFromProforma = useDocumentConversion("proformaToSi");
 
   useEffect(() => {
     fetchInvoices();
-  }, [page, pageSize, refreshKey, sortBy, sortOrder, searchTerm]);
+ }, [page, pageSize, refreshKey, sortBy, sortOrder, searchTerm, filters]);
+  
 
   useEffect(() => {
     const unsubscribe = useDataRefreshStore
@@ -321,6 +346,14 @@ const handleCreateInvoice = (proformaId: string, e?: React.MouseEvent) => {
           SORT_FIELD_MAP[sortBy] || sortBy, 
           sortOrder,
           searchTerm,
+              {
+          status:
+             filters.status && filters.status.length > 0
+               ? filters.status.join(",")
+               : undefined,
+           fromDate: filters.from_date,
+           toDate: filters.to_date,
+         },
         );
 
         if (res?.status_code === 200) {
@@ -801,6 +834,31 @@ const handleCreateInvoice = (proformaId: string, e?: React.MouseEvent) => {
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
         onRowDoubleClick={(inv) => handleView(inv.proformaId)}
+        multiSelectFilters={[
+         {
+           key: "status",
+           label: "Status",
+           options: statusOptions,
+           values: filters.status ?? [],
+           onChange: (vals) => {
+             setFilters((prev) => ({
+               ...prev,
+               status: vals.length > 0 ? vals : undefined,
+             }));
+             setPage(1);
+           },
+         },
+       ]}
+       extraFilters={
+         <DateRangeFilter
+           from={filters.from_date}
+           to={filters.to_date}
+           onChange={(range) => {
+             setFilters((prev) => ({ ...prev, ...range }));
+             setPage(1);
+           }}
+         />
+       }
       />
 
       <ProformaDetailModal

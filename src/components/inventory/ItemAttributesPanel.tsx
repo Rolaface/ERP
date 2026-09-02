@@ -109,6 +109,16 @@ const ItemAttributesPanel: React.FC<ItemAttributesPanelProps> = React.memo(
                   onToggleChange("taxPreference", v ? "Taxable" : "Non-Taxable")
                 }
               />
+              <AttributeCheckbox
+                label="UseYn"
+                checked={!!form.useYn}
+                onChange={(v) =>  setField("useYn", v)}
+              />
+              <AttributeCheckbox
+                label="RentalYn"
+                checked={!!form.rentalYn}
+                onChange={(v) =>  setField("rentalYn", v)}
+              />
             </>
           )}
 
