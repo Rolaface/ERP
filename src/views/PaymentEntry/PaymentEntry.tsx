@@ -7,6 +7,7 @@ import type { Column } from "../../components/ui/Table/type";
 //   AppPageBody,
 // } from "../../components/ui/app-shell";
 import { getAllPayments } from "../../api/CustomerPayment";
+import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import { showApiError } from "../../utils/alert";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openPaymentEntryModal,openSendEmailModal } from "../../store/modalStore";
@@ -47,6 +48,11 @@ type PaymentRow = {
 };
 
 const PAYMENT_ENTRY_MODULE = "Payment Entry";
+const statusOptions = [
+   { label: "Draft", value: "Draft" },
+   { label: "Approved", value: "Submitted" },
+   { label: "Cancelled", value: "Cancelled" },
+ ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -96,6 +102,11 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   // ── Sorting
   const [sortBy, setSortBy] = useState("paymentDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+   const [filters, setFilters] = useState<{
+  status?: string[];
+   from_date?: string;
+   to_date?: string;
+ }>({});
 
   // ── Currency symbols + per-currency number formatting for the currencies
   // present in the currently loaded page of payments (same pattern as
@@ -105,6 +116,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
 
   // ── Reset page on search change
   useEffect(() => { setPage(1); }, [searchTerm]);
+  useEffect(() => { setPage(1); }, [filters]);
 
   // ── Fetch
   const fetchPayments = useCallback(async () => {
@@ -117,6 +129,12 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         page,
         pageSize,
         searchTerm,
+          undefined, 
+      filters.status && filters.status.length > 0
+         ? filters.status.join(",")
+         : undefined,
+       filters.from_date,
+       filters.to_date,
       );
 
       if (!mountedRef.current) return;
@@ -148,7 +166,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, searchTerm, defaultPartyType]);
+ }, [page, pageSize, searchTerm, defaultPartyType, filters]);
 
   // Initial fetch
   useEffect(() => {
@@ -161,7 +179,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   useEffect(() => {
     if (isInitialLoad) return;
     fetchPayments();
-  }, [page, pageSize, searchTerm, sortBy, sortOrder]);
+  }, [page, pageSize, searchTerm, sortBy, sortOrder, filters]);
 
   const handleSortChange = ({
     sortBy: colKey,
@@ -217,7 +235,11 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
       {
         key: "status",
         header: "Status",
-        render: (row: PaymentRow) => <StatusBadge status={row.status} />,
+              render: (row: PaymentRow) => (
+         <StatusBadge
+           status={row.status === "Submitted" ? "Approved" : row.status}
+         />
+       ),
       },
       {
         key: "actions",
@@ -366,6 +388,31 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
               setDrawerLoading(false);
             }
           }}
+           multiSelectFilters={[
+           {
+             key: "status",
+             label: "Status",
+             options: statusOptions,
+             values: filters.status ?? [],
+             onChange: (vals) => {
+               setFilters((prev) => ({
+                 ...prev,
+                 status: vals.length > 0 ? vals : undefined,
+               }));
+               setPage(1);
+             },
+           },
+         ]}
+         extraFilters={
+           <DateRangeFilter
+             from={filters.from_date}
+             to={filters.to_date}
+             onChange={(range) => {
+               setFilters((prev) => ({ ...prev, ...range }));
+               setPage(1);
+             }}
+           />
+         }
         />
       </div>
       <PaymentEntryDetailModal

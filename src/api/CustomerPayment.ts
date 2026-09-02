@@ -39,6 +39,9 @@ export const getAllPayments = async (
   pageSize?: number,
   search?: string,
   partyName?: string,
+   status?: string,
+fromDate?: string,
+ toDate?: string,
 ): Promise<any> => {
   const resp: AxiosResponse = await api.get(
     CustomerPaymentAPI.getAllpayements,
@@ -49,6 +52,9 @@ export const getAllPayments = async (
         ...(pageSize && { pageSize }),
         ...(search && { search }),
         ...(partyName && { partyName }),
+              ...(status && { status }),
+       ...(fromDate && { fromDate }),
+       ...(toDate && { toDate }),
       },
     },
   );
