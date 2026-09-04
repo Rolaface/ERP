@@ -199,7 +199,7 @@ export const useInvoiceForm = (
   >("details");
 
   const [isShippingOpen, setIsShippingOpen] = useState(false);
-  const [sameAsBilling, setSameAsBilling] = useState(true);
+  const [sameAsBilling, setSameAsBilling] = useState(false);
   const [exchangeRateLoading, setExchangeRateLoading] = useState(false);
   const [exchangeRateError, setExchangeRateError] = useState<string | null>(
     null,
