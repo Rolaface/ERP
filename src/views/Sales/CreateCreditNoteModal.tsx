@@ -61,6 +61,8 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
 
   const handleClose = () => handleCloseWithConfirm(onClose, resolvedModalId);
 
+  const isNoItems = Boolean(form.return_against) && !invoiceLoading && form.items.length === 0;
+
   const footer = useMemo(
     () => (
       <>
@@ -75,14 +77,14 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
             variant="primary"
             type="submit"
             form={FORM_ID}
-            disabled={saving}
+            disabled={saving || isNoItems}
           >
             {saving ? "Saving..." : isEdit ? "Update" : "Submit"}
           </Button>
         </div>
       </>
     ),
-    [saving, isEdit],
+    [saving, isEdit, isNoItems],
   );
 
   const tabContent = useMemo(

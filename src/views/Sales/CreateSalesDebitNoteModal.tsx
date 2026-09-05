@@ -59,6 +59,8 @@ const CreateSalesDebitNoteModal: React.FC<CreateSalesDebitNoteModalProps> = ({
 
   const handleClose = () => handleCloseWithConfirm(onClose, resolvedModalId);
 
+  const isNoItems = Boolean(form.return_against) && !invoiceLoading && form.items.length === 0;
+
   const footer = useMemo(
     () => (
       <>
@@ -73,14 +75,14 @@ const CreateSalesDebitNoteModal: React.FC<CreateSalesDebitNoteModalProps> = ({
             variant="primary"
             type="submit"
             form={FORM_ID}
-            disabled={saving}
+            disabled={saving || isNoItems}
           >
             {saving ? "Saving..." : isEdit ? "Update" : "Submit"}
           </Button>
         </div>
       </>
     ),
-    [saving, isEdit, handleClose, reset],
+    [saving, isEdit, handleClose, reset, isNoItems],
   );
 
   const tabContent = useMemo(

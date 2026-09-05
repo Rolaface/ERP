@@ -2,12 +2,13 @@ import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
 import { buildListParams } from "../api/utils/queryBuilder";
+import { getSalesInvoiceById } from "./salesApi";
 
 const api = createAxiosInstance(ERP_BASE);
 export const CreditNoteAPI = API.CreditNote;
 
 export interface CreditNotePayload {
-  is_return: 1;
+  doc_type: "Credit Note";
   return_against: string;
   customer: string;
   company: string;
@@ -66,21 +67,13 @@ export function parseErpNextError(errorBody: any): string {
 export async function createCreditNote(
   payload: CreditNotePayload,
 ): Promise<CreditNoteResponse> {
-  const resp: AxiosResponse = await api.post(CreditNoteAPI.Credit_note, payload);
- 
-  const body = resp.data ?? {};
- 
-  const doc: Record<string, any> | null = body.data ?? null;
-
-  const docName: string = doc?.name ?? "";
-  const message = docName
-    ? `Credit Note created: ${docName}`
-    : "Credit Note created successfully";
- 
+  const resp: AxiosResponse = await api.post(CreditNoteAPI.create, payload);
+  const body = resp.data?.message ?? resp.data ?? {};
+  
   return {
-    status_code: resp.status,          
-    data: doc,
-    message,
+    status_code: body.status_code || resp.status,          
+    data: body.data ?? null,
+    message: body.message || "Credit Note created successfully",
     _server_messages: body._server_messages ?? undefined,
   };
 }
@@ -93,40 +86,29 @@ export async function getAllCreditNotes(
   sortBy: string = "",
   sortOrder: "asc" | "desc" = "asc",
 ): Promise<any> {
-  const limit_start = (page - 1) * page_size;
-
-  const query = buildListParams({
-    fields: ["name", "customer_name", "return_against", "grand_total", "status", "posting_date", "currency"],
-    start: limit_start,
-    pageSize: page_size,
-    search,
-    searchFields: ["name", "customer_name", "return_against", "grand_total", "status", "posting_date", "currency"],
-    sortBy,
-    sortOrder,
-  });
-
-  const resp: AxiosResponse = await api.get(
-    `${CreditNoteAPI.Credit_note}?${query}&filters=${encodeURIComponent(
-      JSON.stringify([["is_return", "=", 1]]),
-    )}`,
-  );
-
-  const raw = resp.data;
-  const items = Array.isArray(raw?.data) ? raw.data
-              : Array.isArray(raw)        ? raw
-              : [];
-
-  const pagination = raw?.pagination ?? {};
-  const total = pagination.total ?? items.length;
-
-  return {
-    data: items,
-    pagination: {
-      total,
-      total_pages: (pagination.total_pages ?? Math.ceil(total / page_size)) || 1,
+  const resp: AxiosResponse = await api.get(CreditNoteAPI.getAll, {
+    params: {
       page,
       page_size,
-    },
+      search,
+      sort_by: sortBy || "creation",
+      sort_order: sortOrder || "desc",
+      doc_type: "Credit Note"
+    }
+  });
+
+  const body = resp.data ?? resp.data ?? {};
+  const data = body.data ?? [];
+  const pagination = body?.pagination ?? {
+    total: data.length,
+    total_pages: 1,
+    page,
+    page_size
+  };
+
+  return {
+    data,
+    pagination,
   };
 }
 export async function updateCreditNote(
@@ -134,15 +116,15 @@ export async function updateCreditNote(
   payload: CreditNotePayload,
 ): Promise<CreditNoteResponse> {
   try {
-    const resp: AxiosResponse = await api.put(
-      `${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`,
-      payload,
-    );
-    const body = resp.data ?? {};
+    const resp: AxiosResponse = await api.put(CreditNoteAPI.update, {
+      id: invoiceId,
+      ...payload
+    });
+    const body = resp.data?.message ?? resp.data ?? {};
     return {
-      status_code: resp.status,          
+      status_code: body.status_code || resp.status,          
       data: body.data ?? null,
-      message: "Credit Note updated successfully",
+      message: body.message || "Credit Note updated successfully",
       _server_messages: body._server_messages ?? undefined,
     };
   } catch (err: any) {
@@ -154,15 +136,15 @@ export async function updateCreditNote(
 
 export async function submitCreditNote(noteNo: string): Promise<CreditNoteResponse> {
   try {
-    const resp: AxiosResponse = await api.put(
-      `${CreditNoteAPI.Credit_note}/${encodeURIComponent(noteNo)}`,
-      { docstatus: 1 },
-    );
-    const body = resp.data ?? {};
+    const resp: AxiosResponse = await api.put(CreditNoteAPI.updateStatus, {
+      id: noteNo,
+      action: 'approved'
+    });
+    const body = resp.data?.message ?? resp.data ?? {};
     return {
-      status_code: resp.status,
+      status_code: body.status_code || resp.status,
       data: body.data ?? null,
-      message: `Credit Note ${noteNo} submitted successfully`,
+      message: body.message || `Credit Note ${noteNo} submitted successfully`,
       _server_messages: body._server_messages ?? undefined,
     };
   } catch (err: any) {
@@ -174,15 +156,15 @@ export async function submitCreditNote(noteNo: string): Promise<CreditNoteRespon
 
 export async function cancelCreditNote(noteNo: string): Promise<CreditNoteResponse> {
   try {
-    const resp: AxiosResponse = await api.put(
-      `${CreditNoteAPI.Credit_note}/${encodeURIComponent(noteNo)}`,
-      { docstatus: 2 },
-    );
-    const body = resp.data ?? {};
+    const resp: AxiosResponse = await api.put(CreditNoteAPI.updateStatus, {
+      id: noteNo,
+      action: 'cancelled'
+    });
+    const body = resp.data?.message ?? resp.data ?? {};
     return {
-      status_code: resp.status,
+      status_code: body.status_code || resp.status,
       data: body.data ?? null,
-      message: `Credit Note ${noteNo} cancelled successfully`,
+      message: body.message || `Credit Note ${noteNo} cancelled successfully`,
       _server_messages: body._server_messages ?? undefined,
     };
   } catch (err: any) {
@@ -192,39 +174,61 @@ export async function cancelCreditNote(noteNo: string): Promise<CreditNoteRespon
 }
 
 export async function deleteCreditNote(invoiceId: string): Promise<any> {
-  const resp: AxiosResponse = await api.delete(`${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`);
+  const resp: AxiosResponse = await api.delete(CreditNoteAPI.delete, {
+    params: { id: invoiceId }
+  });
   return resp.data;
 }
 
 export async function getCreditNoteById(invoiceId: string): Promise<any> {
-  const resp: AxiosResponse = await api.get(
-    `${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`
-  );
+  const resp: AxiosResponse = await api.get(CreditNoteAPI.getById, {
+    params: { id: invoiceId }
+  });
   return resp.data;
 }
 
+export const DEFAULT_CREDIT_NOTE_REASONS: CreditNoteReasonOption[] = [
+  { code: "01", reason: "Goods returned" },
+  { code: "02", reason: "Wrong invoice amount" },
+  { code: "03", reason: "Defective goods" },
+  { code: "04", reason: "Cancellation of invoice" },
+  { code: "05", reason: "Order cancelled" },
+  { code: "07", reason: "Other" },
+];
+
 export async function getCreditNoteReasons(search: string = ""): Promise<CreditNoteReasonOption[]> {
-  const query = buildListParams({
-    fields: ["*"],
-    search,
-    searchFields: ["reason", "name"],
-  });
+  try {
+    const query = buildListParams({
+      fields: ["*"],
+      search,
+      searchFields: ["reason", "name"],
+    });
 
-  const resp: AxiosResponse = await api.get(
-    `/api/resource/Custom Sales Invoice Credit Note Reason?${query}`,
-  );
-  const json = resp.data ?? {};
-  const list = (json.data || []).map((d: any) => ({
-    code: d.code ?? d.name,
-    reason: d.reason ?? d.credit_note_reason ?? d.name,
-  }));
+    const resp: AxiosResponse = await api.get(
+      `/api/resource/Custom Sales Invoice Credit Note Reason?${query}`,
+    );
+    const json = resp.data ?? {};
+    const list = (json.data || []).map((d: any) => ({
+      code: d.code ?? d.name,
+      reason: d.reason ?? d.credit_note_reason ?? d.name,
+    }));
 
-  // Keep "Other" at the end of the list, rest alphabetically sorted
-  return list.sort((a: CreditNoteReasonOption, b: CreditNoteReasonOption) => {
-    const aIsOther = a.reason.startsWith("Other");
-    const bIsOther = b.reason.startsWith("Other");
-    if (aIsOther && !bIsOther) return 1;
-    if (!aIsOther && bIsOther) return -1;
-    return a.reason.localeCompare(b.reason);
-  });
+    if (list.length > 0) {
+      return list.sort((a: CreditNoteReasonOption, b: CreditNoteReasonOption) => {
+        const aIsOther = a.reason.startsWith("Other");
+        const bIsOther = b.reason.startsWith("Other");
+        if (aIsOther && !bIsOther) return 1;
+        if (!aIsOther && bIsOther) return -1;
+        return a.reason.localeCompare(b.reason);
+      });
+    }
+  } catch (err) {
+    console.warn("Failed to fetch credit note reasons from API, using default reasons", err);
+  }
+
+  return search
+    ? DEFAULT_CREDIT_NOTE_REASONS.filter((r) =>
+        r.reason.toLowerCase().includes(search.toLowerCase()) || r.code.includes(search),
+      )
+    : DEFAULT_CREDIT_NOTE_REASONS;
 }

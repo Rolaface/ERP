@@ -444,13 +444,23 @@ getImportedPurchaseInvoices:`${ERP_BASE}/api/method/zra_smart_inv.......`,
   },
 
   CreditNote: {
-    Credit_note: `${ERP_BASE}/api/resource/Sales Invoice`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.get_sales_returns`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.get_sales_return_by_id`,
+    create: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.create_sales_return`,
+    update: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.update_sales_return`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.update_sales_return_status`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.delete_sales_return`,
   },
   DebitNote: {
     Debit_note: `${ERP_BASE}/api/resource/Purchase Invoice`,
   },
   SalesDebitNote: {
-    Sales_Debit_Note: `${ERP_BASE}/api/resource/Sales Invoice`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.get_sales_returns`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.get_sales_return_by_id`,
+    create: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.create_sales_return`,
+    update: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.update_sales_return`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.update_sales_return_status`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.sales_return.api.delete_sales_return`,
   },
 
   Bank: {

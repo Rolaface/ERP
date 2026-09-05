@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useCompanyStore } from "../store/companyStore";
 import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
-import { createSalesDebitNote, getSalesDebitNoteReasons, updateSalesDebitNote } from "../api/SalesDebitNoteApi";
+import { createSalesDebitNote, getSalesDebitNoteReasons, updateSalesDebitNote, DEFAULT_SALES_DEBIT_NOTE_REASONS } from "../api/SalesDebitNoteApi";
 import { showApiError, showSuccess } from "../utils/alert";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 import { useUnsavedChanges } from "./useUnsavedChanges";
@@ -20,10 +20,13 @@ export interface SalesDebitNoteItem {
   item_name: string;
   qty: number;
   rate: number;
+  original_rate?: number;
   batch_no: string;
   warehouse: string;
   conversion_factor: number;
   max_qty?: number;
+  original_qty?: number;
+  original_amount?: number;
 }
 
 export interface CustomerMeta {
@@ -41,6 +44,7 @@ export interface SalesDebitNoteFormState {
   items: SalesDebitNoteItem[];
   exchange_rate: number;
   currency: string;
+  original_invoice_total?: number;
 }
 
 const EMPTY_FORM: SalesDebitNoteFormState = {
@@ -69,7 +73,7 @@ export function useSalesDebitNoteForm(
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const invoiceSelectTokenRef = useRef(0);
-  const [reasonOptions, setReasonOptions] = useState<{ code: string; reason: string }[]>([]); 
+  const [reasonOptions, setReasonOptions] = useState<{ code: string; reason: string }[]>(DEFAULT_SALES_DEBIT_NOTE_REASONS); 
   const [reasonsLoading, setReasonsLoading] = useState(false);
 
   // ── Fetch debit note reasons ────────────────────────────────────────────
@@ -216,17 +220,30 @@ const handleInvoiceSelect = useCallback(
 
       if (!data) return;
 
+      const originalTotal = Number(data.grand_total ?? data.grandTotal ?? data.total ?? 0);
+
       const mappedItems: SalesDebitNoteItem[] = (data.items ?? []).map(
-        (it: any): SalesDebitNoteItem => ({
-          item_code: it.itemCode ?? "",
-          item_name: it.itemName ?? it.itemCode ?? "",
-          qty: Math.abs(Number(it.quantity)) || 1,
-          rate: Number(it.rate) || 0,
-          batch_no: it.batchNo ?? "",
-          warehouse: it.warehouse ?? "",
-          conversion_factor: Number(it.conversion_factor) || 1,
-          max_qty: Math.abs(Number(it.quantity)) || 1,
-        }),
+        (it: any): SalesDebitNoteItem => {
+          const availQty = it.quantity != null ? Math.abs(Number(it.quantity)) : 0;
+          const originalQty = it.original_qty != null
+            ? Math.abs(Number(it.original_qty))
+            : (it.invoiced_qty != null ? Math.abs(Number(it.invoiced_qty)) : availQty);
+          const rate = Number(it.rate) || 0;
+          const warehouse = it.warehouse || data.warehouse || "";
+          return {
+            item_code: it.itemCode ?? "",
+            item_name: it.itemName ?? it.itemCode ?? "",
+            qty: availQty,
+            rate,
+            original_rate: rate,
+            batch_no: it.batchNo ?? "",
+            warehouse,
+            conversion_factor: Number(it.conversion_factor) || 1,
+            max_qty: availQty,
+            original_qty: originalQty,
+            original_amount: originalQty * rate,
+          };
+        },
       );
 
       if (token !== invoiceSelectTokenRef.current) return;
@@ -241,6 +258,7 @@ const handleInvoiceSelect = useCallback(
           Number(data.exchangeRate ?? data.conversionRate) || 1,
         items: mappedItems,
         currency: data.currency ?? "",
+        original_invoice_total: originalTotal,
       }));
     } catch (err) {
       if (token !== invoiceSelectTokenRef.current) return;
@@ -300,15 +318,21 @@ const handleInvoiceSelect = useCallback(
     markDirty();
   }, [markDirty]);
 
-  const setReason = useCallback((reason: string, code: string) => {
+  const setReason = useCallback((reason: string, code?: string) => {
+    const resolvedCode =
+      code ||
+      reasonOptions.find(
+        (r) => r.reason.toLowerCase() === (reason || "").toLowerCase(),
+      )?.code ||
+      "";
     setForm((prev) => ({
       ...prev,
       reason,
-      code,
-      description: code === "07" ? prev.description : "",
+      code: resolvedCode,
+      description: resolvedCode === "07" ? prev.description : "",
     }));
     markDirty();
-  }, [markDirty]);
+  }, [reasonOptions, markDirty]);
 
   const setDescription = useCallback((description: string) => {
     setForm((prev) => ({ ...prev, description }));
@@ -327,10 +351,10 @@ const reset = useCallback(() => {
   // ── Validation ───────────────────────────────────────────────────────────
 
   const validate = useCallback((): string | null => {
-    if (!form.reason) return "Please select a debit note reason";
+    if (!form.reason || !form.reason.trim()) return "Please select a debit note reason";
     if (
       form.code === "07" &&
-      !form.description.trim()
+      !form.description?.trim()
     ) {
       return "Please provide a brief description for the reason";
     }
@@ -338,6 +362,25 @@ const reset = useCallback(() => {
     if (!form.customer?.id)
       return "Customer could not be resolved from the selected invoice";
     if (form.items.length === 0) return "At least one item is required";
+
+    for (let i = 0; i < form.items.length; i++) {
+      const it = form.items[i];
+      const itemLabel = it.item_name || it.item_code || `Row ${i + 1}`;
+      const qty = Math.abs(Number(it.qty) || 0);
+
+      if (qty <= 0) {
+        return `Row ${i + 1} (${itemLabel}): Quantity must be greater than zero.`;
+      }
+
+      if (it.max_qty !== undefined && it.max_qty <= 0) {
+        return `Row ${i + 1} (${itemLabel}): This item has already been fully adjusted/returned against invoice ${form.return_against} (0 remaining). Please remove this item.`;
+      }
+
+      if (it.max_qty !== undefined && qty > it.max_qty) {
+        return `Row ${i + 1} (${itemLabel}): Quantity (${qty}) cannot exceed the remaining returnable quantity (${it.max_qty}) for invoice ${form.return_against}.`;
+      }
+    }
+
     return null;
   }, [form]);
 
@@ -355,7 +398,7 @@ const reset = useCallback(() => {
       }
 
       const payload = {
-        is_debit_note: 1 as const,
+        doc_type: "Debit Note",
         return_against: form.return_against,
         customer: form.customer!.id,
         company: companyName,
@@ -371,9 +414,8 @@ const reset = useCallback(() => {
         currency: form.currency,  
         items: form.items.map((it) => ({
           item_code: it.item_code,
-          qty: Number(it.qty),
-          // rate: Number(it.rate),
-          price_list_rate: Number(it.rate),
+          qty: Math.abs(Number(it.qty)),
+          rate: Number(it.rate),
           ...(it.batch_no ? { batch_no: it.batch_no } : {}),
           warehouse: it.warehouse,
           conversion_factor: it.conversion_factor, 

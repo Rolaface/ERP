@@ -683,7 +683,7 @@ const hasAddresses = data?.billingAddress || data?.shippingAddress;
                   }}
                 >
                   <F
-                    label="Credit Note Reason"
+                    label="Reason"
                     value={displayReason}
                   />
                   {displayDescription && (

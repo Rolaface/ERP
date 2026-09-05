@@ -8,6 +8,7 @@ import {
   deleteCreditNote,
   submitCreditNote,
   cancelCreditNote,
+  getCreditNoteById,
 } from "../../api/CreditNoteapi";
 import { getSalesInvoiceById } from "../../api/salesApi";
 import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
@@ -74,7 +75,7 @@ const formatDate = (date: string | Date) => {
 };
 
 const mapCreditNote = (item: any, fallbackStatus = "-"): CreditNote => ({
-  noteNo: item.name,
+  noteNo: item.id || item.name,
   invoiceNo: item.return_against || "-",
   customer: item.customer_name,
   date: item.posting_date,
@@ -269,7 +270,7 @@ const CreditNotesTable: React.FC = () => {
     e?.stopPropagation();
     try {
       showLoading("Loading Credit Note...");
-      const res = await getSalesInvoiceById(note.noteNo, true, false);
+      const res = await getCreditNoteById(note.noteNo);
       if (!res.message || res.message.status_code !== 200) {
         closeSwal();
         showApiError("Credit Note data could not be loaded");
@@ -289,7 +290,7 @@ const CreditNotesTable: React.FC = () => {
     setDrawerLoading(true);
     setDrawerData(null);
     try {
-      const res = await getSalesInvoiceById(noteNo);
+      const res = await getCreditNoteById(noteNo);
       if (res?.message?.status_code === 200) {
         setDrawerData(res.message.data as InvoiceDetail);
       }

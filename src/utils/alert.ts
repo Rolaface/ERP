@@ -1,41 +1,62 @@
 import Swal from "sweetalert2";
 import { closeManagedSwal, fireManagedSwal } from "./swalManager";
 
+const formatUserFriendlyMessage = (rawMsg: string): string => {
+  if (!rawMsg || typeof rawMsg !== "string") return rawMsg;
+
+  // Handle "Row X: qty cannot exceed the remaining quantity 0."
+  const matchZero = rawMsg.match(
+    /Row\s+(\d+)(?:\s*\(([^)]+)\))?:\s*qty\s+cannot\s+exceed\s+the\s+remaining\s+quantity\s+0(?:\.0+)?/i
+  );
+  if (matchZero) {
+    const rowNum = matchZero[1];
+    const itemCode = matchZero[2] ? ` (${matchZero[2]})` : "";
+    return `Row ${rowNum}${itemCode}: This item has already been fully returned or adjusted (0 remaining). Please remove this item.`;
+  }
+
+  // Handle "Row X: qty cannot exceed the remaining quantity Y."
+  const matchQty = rawMsg.match(
+    /Row\s+(\d+)(?:\s*\(([^)]+)\))?:\s*qty\s+cannot\s+exceed\s+the\s+remaining\s+quantity\s+([\d.]+)/i
+  );
+  if (matchQty) {
+    const rowNum = matchQty[1];
+    const itemCode = matchQty[2] ? ` (${matchQty[2]})` : "";
+    const remaining = matchQty[3];
+    return `Row ${rowNum}${itemCode}: Entered quantity exceeds the remaining returnable quantity (${remaining}). Please reduce the quantity.`;
+  }
+
+  return rawMsg;
+};
+
 const extractErrorMessage = (error: any): string => {
-  if (typeof error === "string") return error;
+  let resolved: string | null = null;
 
-  const msg = error?.response?.data?.message;
+  if (typeof error === "string") {
+    resolved = error;
+  } else {
+    const msg = error?.response?.data?.message;
 
-  if (
-    typeof msg === "string" &&
-    msg.trim()
-  ) {
-    return msg.trim();
-  }
-
-  if (
-    typeof msg === "object" &&
-    msg?.message
-  ) {
-    return String(msg.message).trim();
-  }
-
-  if (error?.response?.data?._server_messages) {
-    try {
-      const serverMsgs = JSON.parse(error.response.data._server_messages);
-      const parsed = JSON.parse(serverMsgs[0]);
-      return String(parsed.message);
-    } catch {
-      return String(error.response.data._server_messages);
+    if (typeof msg === "string" && msg.trim()) {
+      resolved = msg.trim();
+    } else if (typeof msg === "object" && msg?.message) {
+      resolved = String(msg.message).trim();
+    } else if (error?.response?.data?._server_messages) {
+      try {
+        const serverMsgs = JSON.parse(error.response.data._server_messages);
+        const parsed = JSON.parse(serverMsgs[0]);
+        resolved = String(parsed.message);
+      } catch {
+        resolved = String(error.response.data._server_messages);
+      }
+    } else if (error?.status === "error" && error?.message) {
+      resolved = String(error.message);
+    } else if (error?.message) {
+      resolved = String(error.message);
     }
   }
 
-  if (error?.status === "error" && error?.message) {
-    return String(error.message);
-  }
-
-  if (error?.message) {
-    return String(error.message);
+  if (resolved) {
+    return formatUserFriendlyMessage(resolved);
   }
 
   return "Something went wrong. Please try again.";

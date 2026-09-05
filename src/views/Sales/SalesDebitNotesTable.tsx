@@ -8,6 +8,7 @@ import {
   deleteSalesDebitNote,
   submitSalesDebitNote,
   cancelSalesDebitNote,
+  getSalesDebitNoteById,
 } from "../../api/SalesDebitNoteApi";
 import { getSalesInvoiceById } from "../../api/salesApi";
 import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
@@ -63,7 +64,7 @@ const formatDate = (date: string | Date) => {
 };
 
 const mapSalesDebitNote = (item: any, fallbackStatus = "-"): SalesDebitNote => ({
-  noteNo: item.name,
+  noteNo: item.id || item.name,
   invoiceNo: item.return_against || "-",
   customer: item.customer_name,
   date: item.posting_date,
@@ -258,7 +259,7 @@ const SalesDebitNotesTable: React.FC = () => {
     e?.stopPropagation();
     try {
       showLoading("Loading Sales Debit Note...");
-      const res = await getSalesInvoiceById(note.noteNo, false, true);
+      const res = await getSalesDebitNoteById(note.noteNo);
       if (!res.message || res.message.status_code !== 200) {
         closeSwal();
         showApiError("Sales Debit Note data could not be loaded");
@@ -278,7 +279,7 @@ const SalesDebitNotesTable: React.FC = () => {
     setDrawerLoading(true);
     setDrawerData(null);
     try {
-      const res = await getSalesInvoiceById(noteNo);
+      const res = await getSalesDebitNoteById(noteNo);
       if (res?.message?.status_code === 200) {
         setDrawerData(res.message.data as InvoiceDetail);
       }
