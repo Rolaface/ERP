@@ -229,6 +229,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         invoiceStatus: inv.status,
         invoiceTypeParent: inv.invoiceTypeParent,
         invoiceType: inv.taxCategory,
+        tags: inv.tags ?? null,
       }));
 
       setInvoices(mapped);
@@ -745,16 +746,23 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         tooltip: (inv) =>
           `Outstanding Amount: ${formatAmount(inv.currency, inv.outstanding_amount ?? 0, { withSymbol: true })}`,
       },
-      {
-        key: "invoiceStatus",
-        header: "Status",
-        align: "center",
-        render: (inv) => (
-          <div className="py-1.5">
-            <StatusBadge status={inv.invoiceStatus} />
-          </div>
-        ),
-      },
+{
+  key: "invoiceStatus",
+  header: "Status",
+  align: "center",
+  render: (inv) => (
+    <div className="py-1.5 flex items-center justify-center">
+      <div className="relative inline-flex items-center">
+        <StatusBadge status={inv.invoiceStatus} />
+        {inv.tags && (
+          <span className="absolute left-full ml-1 inline-flex items-center shrink-0 whitespace-nowrap rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+            {inv.tags}
+          </span>
+        )}
+      </div>
+    </div>
+  ),
+},
       {
         key: "actions",
         header: "Actions",

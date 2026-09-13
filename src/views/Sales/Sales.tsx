@@ -31,6 +31,7 @@ const ProformaInvoicesTable = lazy(() => import("./ProformaInvoice"));
 const CreditNotesTable = lazy(() => import("./CreditNotesTable"));
 const SalesDebitNotesTable = lazy(() => import("./SalesDebitNotesTable"));
 const SalesAnalytics = lazy(() => import("./SalesAnalytics"));
+const PDCTable = lazy(() => import("./PDC"));
 
 type OutletContextType = {
   openSalesOrderCreate: () => void;
@@ -112,6 +113,13 @@ const ALL_SALES_TAB = [
     module: "Sales Invoice",
     action: "report" as const,
   },
+  {
+    id: "pdc",
+    label: "PDC",
+    icon: <FileClock size={16} strokeWidth={1.75} />,
+    module: "Sales Invoice",
+    action: "read" as const,
+  },
 ];
 
 const DEFAULT_TAB = "salesdashboard";
@@ -148,7 +156,7 @@ const SalesModule: React.FC = () => {
             availableTabIds={salesTabs.map((t) => t.id)}
           />
         );
-      
+
       case "salesOrder":
         return (
           <SalesOrderTable
@@ -191,6 +199,8 @@ const SalesModule: React.FC = () => {
         return <ReportTable />;
       case "salesAnalytics":
         return <SalesAnalytics />;
+      case "pdc":
+        return <PDCTable />;
       default:
         return <SalesDashboard />;
     }
