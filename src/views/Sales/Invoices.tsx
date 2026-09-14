@@ -141,6 +141,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     status?: string[];
     from_date?: string;
     to_date?: string;
+    pdc?: boolean;
   }>({});
 
   // ── Pagination (server)
@@ -201,6 +202,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           : undefined,
         filters.from_date,
         filters.to_date,
+        filters.pdc ? 1 : undefined,
       );
 
       if (!res || res.status_code !== 200) {
@@ -338,6 +340,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             : undefined,
           filters.from_date,
           filters.to_date,
+          filters.pdc ? 1 : undefined,
         );
 
         if (res?.status_code === 200) {
@@ -746,23 +749,23 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         tooltip: (inv) =>
           `Outstanding Amount: ${formatAmount(inv.currency, inv.outstanding_amount ?? 0, { withSymbol: true })}`,
       },
-{
-  key: "invoiceStatus",
-  header: "Status",
-  align: "center",
-  render: (inv) => (
-    <div className="py-1.5 flex items-center justify-center">
-      <div className="relative inline-flex items-center">
-        <StatusBadge status={inv.invoiceStatus} />
-        {inv.tags && (
-          <span className="absolute left-full ml-1 inline-flex items-center shrink-0 whitespace-nowrap rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-            {inv.tags}
-          </span>
-        )}
-      </div>
-    </div>
-  ),
-},
+      {
+        key: "invoiceStatus",
+        header: "Status",
+        align: "center",
+        render: (inv) => (
+          <div className="py-1.5 flex items-center justify-center">
+            <div className="relative inline-flex items-center">
+              <StatusBadge status={inv.invoiceStatus} />
+              {inv.tags && (
+                <span className="absolute left-full ml-1 inline-flex items-center shrink-0 whitespace-nowrap rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  {inv.tags}
+                </span>
+              )}
+            </div>
+          </div>
+        ),
+      },
       {
         key: "actions",
         header: "Actions",
@@ -976,14 +979,30 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           },
         ]}
         extraFilters={
-          <DateRangeFilter
-            from={filters.from_date}
-            to={filters.to_date}
-            onChange={(range) => {
-              setFilters((prev) => ({ ...prev, ...range }));
-              setPage(1);
-            }}
-          />
+          <div className="flex items-center gap-3">
+            <DateRangeFilter
+              from={filters.from_date}
+              to={filters.to_date}
+              onChange={(range) => {
+                setFilters((prev) => ({ ...prev, ...range }));
+                setPage(1);
+              }}
+            />
+            <label className="flex items-center gap-1.5 text-sm cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={filters.pdc ?? false}
+                onChange={(e) => {
+                  setFilters((prev) => ({
+                    ...prev,
+                    pdc: e.target.checked || undefined,
+                  }));
+                  setPage(1);
+                }}
+              />
+              PDC
+            </label>
+          </div>
         }
       />
 
