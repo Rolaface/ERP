@@ -18,8 +18,6 @@ import {
   closeSwal,
 } from "../../utils/alert";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { usePermission } from "../../hooks/permission/usePermission";
-import PermissionGate from "../PermissionGate";
 
 import { Paperclip, Check, X } from "lucide-react";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
@@ -93,7 +91,6 @@ interface PdcTableProps {
 
 const PdcTable: React.FC<PdcTableProps> = () => {
   const mountedRef = useRef(true);
-  const { can } = usePermission();
 
   // ── PDC rows — API-backed
   const [rows, setRows] = useState<PdcInvoice[]>([]);
@@ -501,7 +498,12 @@ const PdcTable: React.FC<PdcTableProps> = () => {
                 type="text"
                 className="w-full box-sizing-border-box px-2 py-1.5 border border-gray-300 rounded-md text-xs"
                 value={draft.amount}
-                onChange={(e) => updateDraft("amount", e.target.value)}
+                  onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^\d*\.?\d*$/.test(val)) {
+                    updateDraft("amount", val);
+                  }
+                }}
               />
             );
           }
@@ -535,7 +537,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
             );
           }
           return (
-            <div className="py-1.5 flex items-center justify-center">
+            <div className="py-1.5 flex items-center justify-center gap-1">
               {row.attachment ? (
                 <button
                 type="button"
@@ -547,9 +549,13 @@ const PdcTable: React.FC<PdcTableProps> = () => {
                       showApiError(err);
                     }
                   }}
-                  className="text-gray-500 hover:text-[#1a2b5c]"
+                  className="flex items-center gap-1 text-gray-500 hover:text-[#1a2b5c] max-w-[160px]"
+                  title={row.attachment.split("/").pop()}
                 >
                   <Paperclip size={15} />
+                   <span className="truncate text-xs">
+                    {row.attachment.split("/").pop()}
+                 </span>
                 </button>
               ) : (
                 <span>–</span>
@@ -617,26 +623,20 @@ const PdcTable: React.FC<PdcTableProps> = () => {
               </div>
             );
           }
-          const hasDelete = can(PDC_MODULE, "delete");
-
           return (
             <div className="flex items-center justify-center gap-2">
-              <PermissionGate module={PDC_MODULE} action="write">
                 <ActionButton
-                  type="edit"
-                  onClick={() => handleEdit(row)}
-                  iconOnly
-                  disabled={!!editingId}
-                  title="Edit PDC entry"
-                />
-              </PermissionGate>
-              <div className={!hasDelete ? "opacity-40 pointer-events-none" : ""}>
-                <ActionMenu
-                  showDownload={false}
-                  {...(hasDelete ? { onDelete: () => handleDelete(row) } : {})}
-                  customActions={[]}
-                />
-              </div>
+                type="edit"
+               onClick={() => handleEdit(row)}
+                iconOnly
+                disabled={!!editingId}
+                title="Edit PDC entry"
+              />
+              <ActionMenu
+                showDownload={false}
+                onDelete={() => handleDelete(row)}
+                customActions={[]}
+              />
             </div>
           );
         },
