@@ -90,6 +90,7 @@ export interface InvoiceSummary {
   invoiceStatus: InvoiceStatus;
   invoiceTypeParent: string;
   invoiceType: string;
+  tags: string | null;
 }
 
 export interface Address {

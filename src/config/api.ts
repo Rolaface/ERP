@@ -57,6 +57,15 @@ export const API = {
   salesDashboard: {
     sales_dashboard: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.sales_dashboard`,
   },
+  /* =========================
+   * PDC
+   * ========================= */
+  pdc: {
+    create: `${ERP_BASE}/api/method/custom_api.api.pdc.api.create`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.pdc.api.get`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.pdc.api.delete`,
+    update: `${ERP_BASE}/api/method/custom_api.api.pdc.api.update`,
+  },
 
   /* =========================
    * CUSTOMER DASHBOARD
