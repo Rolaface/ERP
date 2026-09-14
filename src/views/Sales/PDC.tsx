@@ -21,6 +21,8 @@ import { fireManagedSwal } from "../../utils/swalManager";
 
 import { Paperclip, Check, X } from "lucide-react";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -34,6 +36,7 @@ export interface PdcInvoice {
   refNumber: string; // cheque_reference_number
   date: string; // cheque_date, yyyy-mm-dd
   amount: string;
+  currency: string;
   attachment: string | null; // attachment url/filename from the server, or null
   status: PdcStatus;
 }
@@ -120,6 +123,11 @@ const PdcTable: React.FC<PdcTableProps> = () => {
   // ── Invoice number options for the dropdown, sourced from real Sales Invoices
   const [invoiceOptions, setInvoiceOptions] = useState<string[]>([]);
   const [invoiceOptionsLoading, setInvoiceOptionsLoading] = useState(false);
+   const currencyCodes = useMemo(
+   () => extractCurrencyCodesFlat(rows),
+    [rows],
+  );
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -155,6 +163,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
           refNumber: item.cheque_reference_number,
           date: item.cheque_date,
           amount: item.amount != null ? String(item.amount) : "",
+          currency: item.currency ?? "",
           attachment: item.attachment ?? null,
           status: item.status as PdcStatus,
         }));
@@ -243,6 +252,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
       refNumber: "",
       date: "",
       amount: "",
+      currency: "",
       attachment: null,
       status: "Unused",
     };
@@ -276,6 +286,13 @@ const PdcTable: React.FC<PdcTableProps> = () => {
 
       const refNumber = String(draft.refNumber ?? "").trim();
     const amount = String(draft.amount ?? "").trim();
+       if (draft.date) {
+      const today = new Date().toISOString().split("T")[0];
+      if (draft.date < today) {
+        showApiError("Cheque date cannot be backdated");
+        return;
+      }
+    }
 
     if (!addingNew) {
       try {
@@ -343,12 +360,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
       }
     } catch (err) {
       closeSwal();
-      setRows((prev) => prev.filter((r) => r.id !== draft.id));
       showApiError(err);
-        setEditingId(null);
-      setDraft(null);
-      setAttachmentFile(null);
-      setAddingNew(false);
     } finally {
       setSaving(false);
     }
@@ -475,6 +487,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
                 name="date"
                 value={draft.date}
                 required
+                disablePast
                 onChange={(name, value) => updateDraft(name as keyof PdcInvoice, value)}
               />
             );
@@ -510,7 +523,9 @@ const PdcTable: React.FC<PdcTableProps> = () => {
           return (
             <div className="py-1.5">
               <span className="block whitespace-nowrap">
-                {row.amount || "—"}
+                  {row.amount
+                  ? formatAmount(row.currency, Number(row.amount), { withSymbol: true })
+                  : "—"}
               </span>
             </div>
           );
@@ -629,12 +644,14 @@ const PdcTable: React.FC<PdcTableProps> = () => {
                 type="edit"
                onClick={() => handleEdit(row)}
                 iconOnly
-                disabled={!!editingId}
-                title="Edit PDC entry"
+                 disabled={!!editingId || row.status === "Used"}
+                title={row.status === "Used" ? "Used PDCs cannot be edited" : "Edit PDC entry"}
               />
               <ActionMenu
                 showDownload={false}
-                onDelete={() => handleDelete(row)}
+                 {...(row.status !== "Used"
+                  ? { onDelete: () => handleDelete(row) }
+                  : {})}
                 customActions={[]}
               />
             </div>
@@ -642,7 +659,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
         },
       },
     ],
-    [editingId, draft, invoiceOptions, invoiceOptionsLoading, attachmentFile, saving],
+    [editingId, draft, invoiceOptions, invoiceOptionsLoading, attachmentFile, saving, formatAmount],
   );
 
   return (

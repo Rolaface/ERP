@@ -128,7 +128,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfInvoiceNumber, setPdfInvoiceNumber] = useState<string | null>(null);
-  // ── PDC selection modal
+    // ── PDC selection modal
   const [pdcModalOpen, setPdcModalOpen] = useState(false);
   const [pdcList, setPdcList] = useState<PdcDetail[]>([]);
   const [pdcLoading, setPdcLoading] = useState(false);
@@ -296,7 +296,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   };
 
   const handleReceivePayment = async (inv: InvoiceSummary) => {
-    if (inv.tags === "PDC") {
+       if (inv.tags === "PDC") {
       setPdcInvoice(inv);
       setPdcModalOpen(true);
       setPdcLoading(true);
@@ -310,6 +310,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       }
       return;
     }
+       await openStandardPaymentEntry(inv);
+ };
+
+ const openStandardPaymentEntry = async (inv: InvoiceSummary) => {
     const res = await getSalesInvoiceById(inv.invoiceNumber);
     closeSwal();
     const d = res?.message?.data;
@@ -336,8 +340,17 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       },
     );
   };
-  const handlePdcSelect = (pdc: PdcDetail) => {
-    if (!pdcInvoice || !pdcInvoiceDetail) return;
+  const handlePdcSkip = () => {
+   if (!pdcInvoice) return;
+    const inv = pdcInvoice;
+    setPdcModalOpen(false);
+    setPdcInvoice(null);
+    setPdcInvoiceDetail(null);
+    setPdcList([]);
+    openStandardPaymentEntry(inv);
+  };
+   const handlePdcSelect = (pdc: PdcDetail) => {
+   if (!pdcInvoice || !pdcInvoiceDetail) return;
 
     setPdcModalOpen(false);
 
@@ -1099,7 +1112,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           document.body.removeChild(a);
         }}
       />
-
+      
       <PdcSelectionModal
         open={pdcModalOpen}
         pdcList={pdcList}
@@ -1111,6 +1124,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           setPdcList([]);
         }}
         onSelect={handlePdcSelect}
+         onSkip={handlePdcSkip}
       />
     </div>
   );
