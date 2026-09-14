@@ -655,8 +655,8 @@ const PdcTable: React.FC<PdcTableProps> = () => {
         loading={isInitialLoad}
         isFetching={isFetching}
         showToolbar
-        enableAdd={can(PDC_MODULE, "create") && !editingId}
-        addLabel="Record PDC invoice"
+         enableAdd={!editingId}
+        addLabel="Record PDC"
         onAdd={handleAdd}
         searchValue={searchTerm}
         onSearch={(q) => {
