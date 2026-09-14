@@ -676,9 +676,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                     ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
                   `}
                 >
-                  Human Resource
+                  Human Resources
                 </span>
-                {!open && <Tooltip label="Human Resource" />}
+                {!open && <Tooltip label="Human Resources" />}
               </NavLink>
             ))}
 

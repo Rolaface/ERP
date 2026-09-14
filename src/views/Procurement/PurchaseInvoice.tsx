@@ -117,6 +117,20 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [company, setCompany] = useState<any | null>(null);
   const { can } = usePermission();
+   const [sortBy, setSortBy] = useState("podate");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    pId: "name",
+    supplier: "supplier_name",
+    podate: "posting_date",
+    deliveryDate: "due_date",
+    amount: "grand_total",
+    grandTotalWithTax: "grand_total",
+    outstanding_amount: "outstanding_amount",
+  };
+
+  const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? field;
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
@@ -152,7 +166,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
   const fetchInvoice = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getPurchaseInvoices(page, pageSize, filters);
+                const res = await getPurchaseInvoices(page, pageSize, {
+        ...filters,
+        order_by: `${mapSortField(sortBy)} ${sortOrder}`,
+      });
       if (!res?.data || res.data.length === 0) {
         setOrders([]);
         setTotalItems(0);
@@ -182,7 +199,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, filters]);
+   }, [page, pageSize, filters, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchInvoice();
@@ -377,7 +394,10 @@ const handleViewAttachment = (file: any) => {
       let currentPage = 1;
       let totalPagesLocal = 1;
       do {
-        const res = await getPurchaseInvoices(currentPage, 100, filters);
+                      const res = await getPurchaseInvoices(currentPage, 100, {
+          ...filters,
+          order_by: `${mapSortField(sortBy)} ${sortOrder}`,
+        });
         if (res?.status_code === 200) {
           allData = [
             ...allData,
@@ -433,6 +453,18 @@ const handleViewAttachment = (file: any) => {
       closeSwal();
       showApiError(error);
     }
+  };
+
+   const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
   };
 
  const handleStatusChange = async (pId: string, newStatus: PIStatus) => {
@@ -508,6 +540,7 @@ const handleViewAttachment = (file: any) => {
       key: "pId",
       header: "PI ID",
       align: "left",
+       sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <span className="block">{o.pId || "—"}</span>
@@ -519,6 +552,7 @@ const handleViewAttachment = (file: any) => {
       key: "supplier",
       header: "Supplier",
       align: "center",
+       sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <span className="block">{o.supplier || "—"}</span>
@@ -529,6 +563,7 @@ const handleViewAttachment = (file: any) => {
     {
       key: "podate",
       header: "PI Date",
+       sortable: true,
       align: "center",
       render: (o) => (
         <div className="py-1.5">
@@ -541,6 +576,7 @@ const handleViewAttachment = (file: any) => {
       key: "deliveryDate",
       header: "Delivery Date",
       align: "center",
+       sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <span className="block">
@@ -564,6 +600,7 @@ const handleViewAttachment = (file: any) => {
       key: "amount",
       header: "Amount",
       align: "center",
+       sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <code className="block whitespace-nowrap">
@@ -577,6 +614,7 @@ const handleViewAttachment = (file: any) => {
       key: "grandTotalWithTax",
       header: "Grand Total",
       align: "center",
+       sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <code className="block whitespace-nowrap">
@@ -590,6 +628,7 @@ const handleViewAttachment = (file: any) => {
       key: "outstanding_amount",
       header: "Outstanding",
       align: "center",
+      sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <code className="block whitespace-nowrap">
@@ -713,7 +752,10 @@ const handleViewAttachment = (file: any) => {
         tableId="purchase-invoices"
         loading={loading}
         searchValue={searchTerm}
-        onSearch={setSearchTerm}
+               onSearch={setSearchTerm}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         enableAdd={can(PI_MODULE, "create")}
         addLabel="Add Purchase Invoice"
         onAdd={() => {

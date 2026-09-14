@@ -14,7 +14,8 @@ export interface PurchaseInvoiceFilters {
   from_date?: string;
   to_date?: string;
   supplier?: string;
-  sort_order?: "asc" | "desc";
+  order_by?: string;
+
 }
 
 export async function getPurchaseInvoices(

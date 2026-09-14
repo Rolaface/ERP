@@ -34,6 +34,7 @@ export async function getAllSalesInvoices(
   status?: string,
   from_date?: string,
   to_date?: string,
+   pdc?: number,
 ): Promise<any> {
 
   // AFTER
@@ -47,7 +48,8 @@ export async function getAllSalesInvoices(
   if (minOutstanding != null) params.set("minOutstanding", String(minOutstanding));
   if (status) params.set("status", status);       
   if (from_date) params.set("from_date", from_date); 
-  if (to_date) params.set("to_date", to_date);    
+  if (to_date) params.set("to_date", to_date);  
+  if (pdc != null) params.set("pdc", String(pdc));  
 
   const resp: AxiosResponse = await api.get(InvoiceAPI.getAll, { params });
 

@@ -11,6 +11,7 @@ interface Props {
   required?: boolean;
   disabled?: boolean;
   disableFuture?: boolean;
+  disablePast?: boolean;
   onChange: (name: string, value: string) => void;
   sx?: Record<string, unknown>;
 }
@@ -22,6 +23,7 @@ const DatePickerInput: React.FC<Props> = ({
   required,
   disabled,
   disableFuture,
+  disablePast,
   onChange,
   sx,
 }) => {
@@ -71,6 +73,11 @@ const DatePickerInput: React.FC<Props> = ({
       fallbackToToday();
       return;
     }
+        if (disablePast && newValue.isBefore(dayjs(), "day")) {
+     setInternalValue(newValue);
+      setError("Past date not allowed");
+      return;
+    }
 
     commitValue(newValue);
   };
@@ -89,6 +96,7 @@ const DatePickerInput: React.FC<Props> = ({
         format="DD-MMM-YYYY"
         disabled={disabled}
         disableFuture={disableFuture}
+          disablePast={disablePast}
         enableAccessibleFieldDOMStructure={false}
         onChange={handleChange}
         // When disabled, hide the open-picker button entirely so the field

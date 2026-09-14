@@ -50,6 +50,18 @@ type PaymentRow = {
 };
 
 const PAYMENT_ENTRY_MODULE = "Payment Entry";
+const SORT_FIELD_MAP: Record<string, string> = {
+  id: "name",
+  paymentDate: "posting_date",
+  partyType: "party_name",
+  partyName: "party_name",
+  mode: "mode_of_payment",
+  referenceNumber: "reference_no",
+  amount: "paid_amount",
+};
+
+const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? field;
+
 const statusOptions = [
   { label: "Draft", value: "Draft" },
   { label: "Approved", value: "Submitted" },
@@ -137,6 +149,8 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
           : undefined,
         filters.from_date,
         filters.to_date,
+         mapSortField(sortBy),
+  sortOrder,
       );
 
       if (!mountedRef.current) return;
@@ -168,7 +182,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, searchTerm, defaultPartyType, filters]);
+   }, [page, pageSize, searchTerm, defaultPartyType, filters, sortBy, sortOrder]);
 
   // Initial fetch
   useEffect(() => {
@@ -213,6 +227,8 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
             : undefined,
           filters.from_date,
           filters.to_date,
+           mapSortField(sortBy),   // ← add
+  sortOrder, 
         );
 
         const payments: PaymentAPI[] = response?.data?.payments || [];
@@ -289,31 +305,39 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
       {
         key: "id",
         header: "P Id",
+        sortable: true, 
         render: (row) => row.id || "-",
       },
       {
         key: "paymentDate",
         header: "Payment Date",
+        sortable: true,  
         render: (row) => row.paymentDate ? formatDate(row.paymentDate) : "-",
       },
       {
         key: "partyType",
         header: "party Type",
+        sortable: true, 
+        
         render: (row) => row.partyType || "—",
       },
       {
         key: "partyName",
         header: "Party",
+        
+        sortable: true,  
         render: (row) => row.partyName || "—",
       },
       {
         key: "mode",
         header: "Mode Of Payment",
+        sortable: true,
         render: (row) => row.mode || "—",
       },
       {
         key: "amount",
         header: "Amount",
+        sortable: true,
         align: "right",
         render: (row) => (
           <span className="whitespace-nowrap">

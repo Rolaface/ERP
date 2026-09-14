@@ -8,7 +8,7 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import { useHRView } from "../../hooks/permission/useHRView";
 import { usePermission } from "../../hooks/permission/usePermission";
-import Dashboard from "../DashbBoard";
+import Dashboard from "../Dashboard";
 
 const DashboardRedirect: React.FC = () => {
   const { isLoading } = usePermission();

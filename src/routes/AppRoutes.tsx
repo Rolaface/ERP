@@ -30,7 +30,7 @@ import ResetPassword from "../ResetPassword";
 import { isMasterSite } from "../config/site";
 
 // ── Lazy Modules ──
-const Dashboard = lazy(() => import("../views/DashbBoard"));
+const Dashboard = lazy(() => import("../views/Dashboard"));
 const SalesModule = lazy(() => import("../views/Sales/Sales"));
 const ProcurementModule = lazy(() => import("../views/Procurement/Procurement"));
 const InventoryModule = lazy(() => import("../views/Inventory/Inventory"));

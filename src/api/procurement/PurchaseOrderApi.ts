@@ -13,6 +13,7 @@ export interface PurchaseOrderFilters {
   supplier?: string;  
   from_date?: string;
   to_date?: string;
+  order_by?: string;
 
 }
 

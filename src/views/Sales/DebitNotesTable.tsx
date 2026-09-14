@@ -32,6 +32,7 @@ import { DebitNote } from "../../types/sales/Debitnotes";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
+import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
@@ -61,8 +62,29 @@ const DebitNotesTable: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [filters, setFilters] = useState<{
+    from_date?: string;
+    to_date?: string;
+  }>({});
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    noteNo: "name",
+    purchase_invoiceNo: "return_against",
+    supplier: "supplier_name",
+    amount: "grand_total",
+    date: "posting_date",
+  };
+
+  const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? field;
+
+  const statusOptions = [
+    { label: "Draft", value: "Draft" },
+    { label: "Return", value: "Return" },
+    { label: "Cancelled", value: "Cancelled" },
+  ];
 
   const [company, setCompany] = useState<any | null>(null);
 
@@ -72,9 +94,16 @@ const DebitNotesTable: React.FC = () => {
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
-  useEffect(() => {
+    useEffect(() => {
     setPage(1);
   }, [searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
 
   useEffect(() => {
     getCompanyById(COMPANY_ID)
@@ -94,10 +123,19 @@ const DebitNotesTable: React.FC = () => {
     return unsubscribe;
   }, []);
 
-  const fetchDebitNotes = async () => {
+    const fetchDebitNotes = async () => {
     try {
       setLoading(true);
-      const resp = await getAllDebitNotes(page, pageSize, searchTerm);
+          const resp = await getAllDebitNotes(
+        page,
+        pageSize,
+        searchTerm,
+        statusFilter.length > 0 ? statusFilter.join(",") : undefined,
+        mapSortField(sortBy),
+        sortOrder,
+        filters.from_date,
+        filters.to_date,
+      );
       setData(resp.data.map(mapItem));
       setTotalPages(resp.pagination.total_pages);
       setTotalItems(resp.pagination.total);
@@ -111,7 +149,7 @@ const DebitNotesTable: React.FC = () => {
 
   useEffect(() => {
     fetchDebitNotes();
-  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
+  }, [page, pageSize, sortBy, sortOrder, searchTerm, statusFilter, filters]);
 
   const handleSortChange = ({
     sortBy: colKey,
@@ -183,8 +221,17 @@ const DebitNotesTable: React.FC = () => {
       let current = 1;
       let total = 1;
 
-      do {
-        const resp = await getAllDebitNotes(current, 100, searchTerm);
+            do {
+               const resp = await getAllDebitNotes(
+          current,
+          100,
+          searchTerm,
+          statusFilter.length > 0 ? statusFilter.join(",") : undefined,
+          mapSortField(sortBy),
+          sortOrder,
+          filters.from_date,
+          filters.to_date,
+        );
         allData = [...allData, ...resp.data.map(mapItem)];
         total = resp.pagination.total_pages;
         current++;
@@ -331,9 +378,10 @@ const DebitNotesTable: React.FC = () => {
   };
 
   const columns: Column<DebitNote>[] = [
-    {
+      {
       key: "noteNo",
       header: "Debit Invoice No",
+      sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <span className="block">{o.noteNo || "—"}</span>
@@ -343,6 +391,7 @@ const DebitNotesTable: React.FC = () => {
     {
       key: "purchase_invoiceNo",
       header: "Receipt No",
+      sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <span className="block">{o.purchase_invoiceNo || "—"}</span>
@@ -352,6 +401,7 @@ const DebitNotesTable: React.FC = () => {
     {
       key: "supplier",
       header: "Supplier",
+      sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <span className="block">{o.supplier || "—"}</span>
@@ -362,6 +412,7 @@ const DebitNotesTable: React.FC = () => {
       key: "amount",
       header: "Amount",
       align: "right",
+       sortable: true,
       render: (r) => (
         <div className="py-1.5">
           <code className="block whitespace-nowrap">
@@ -373,6 +424,7 @@ const DebitNotesTable: React.FC = () => {
     {
       key: "date",
       header: "Date",
+      sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <span className="block">{formatDate(o.date) || "—"}</span>
@@ -484,10 +536,32 @@ const DebitNotesTable: React.FC = () => {
          pageSizeOptions={[20, 50, 100,200]}
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
-        sortBy={sortBy}
+               sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
         onRowDoubleClick={(r) => handleView(r.noteNo)}
+               multiSelectFilters={[
+          {
+            key: "status",
+            label: "Status",
+            options: statusOptions,
+            values: statusFilter,
+            onChange: (vals) => {
+              setStatusFilter(vals);
+              setPage(1);
+            },
+          },
+        ]}
+        extraFilters={
+          <DateRangeFilter
+            from={filters.from_date}
+            to={filters.to_date}
+            onChange={(range) => {
+              setFilters((prev) => ({ ...prev, ...range }));
+              setPage(1);
+            }}
+          />
+        }
       />
 
       <PurchaseInvoiceDetailModal
