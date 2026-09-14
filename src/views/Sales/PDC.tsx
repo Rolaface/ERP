@@ -208,7 +208,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
         "",
         undefined,
         undefined,
-        "Unpaid,Draft",
+          "Unpaid,Draft,Overdue",
         undefined,
         undefined,
       );
