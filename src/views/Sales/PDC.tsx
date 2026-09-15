@@ -3,6 +3,9 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import { getAllSalesInvoices } from "../../api/salesApi";
 import { getAllPdcInvoices, createPdcInvoice, updatePdcInvoice, deletePdcInvoiceById, downloadPdcAttachment } from "../../api/pdcApi";
+import { getSalesInvoiceById } from "../../api/salesApi";
+import { openPaymentEntryModal } from "../../store/modalStore";
+import { CreditCard } from "lucide-react";
 
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
@@ -10,6 +13,8 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 import {
   showApiError,
@@ -21,6 +26,8 @@ import { fireManagedSwal } from "../../utils/swalManager";
 
 import { Paperclip, Check, X } from "lucide-react";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -34,6 +41,7 @@ export interface PdcInvoice {
   refNumber: string; // cheque_reference_number
   date: string; // cheque_date, yyyy-mm-dd
   amount: string;
+  currency: string;
   attachment: string | null; // attachment url/filename from the server, or null
   status: PdcStatus;
 }
@@ -120,6 +128,12 @@ const PdcTable: React.FC<PdcTableProps> = () => {
   // ── Invoice number options for the dropdown, sourced from real Sales Invoices
   const [invoiceOptions, setInvoiceOptions] = useState<string[]>([]);
   const [invoiceOptionsLoading, setInvoiceOptionsLoading] = useState(false);
+  const [payingId, setPayingId] = useState<string | null>(null);
+   const currencyCodes = useMemo(
+   () => extractCurrencyCodesFlat(rows),
+    [rows],
+  );
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -155,6 +169,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
           refNumber: item.cheque_reference_number,
           date: item.cheque_date,
           amount: item.amount != null ? String(item.amount) : "",
+          currency: item.currency ?? "",
           attachment: item.attachment ?? null,
           status: item.status as PdcStatus,
         }));
@@ -182,6 +197,93 @@ const PdcTable: React.FC<PdcTableProps> = () => {
     }
   }, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
 
+    const fetchAllPdcInvoicesForExport = async (): Promise<PdcInvoice[]> => {
+    try {
+      let allData: PdcInvoice[] = [];
+      let current = 1;
+      let total = 1;
+
+      do {
+        const res = await getAllPdcInvoices(
+          current,
+          100,
+          mapSortField(sortBy),
+          sortOrder,
+          searchTerm,
+          filters.status && filters.status.length > 0
+            ? filters.status.join(",")
+            : undefined,
+          filters.from_date,
+          filters.to_date,
+        );
+
+        if (res?.status_code === 200) {
+          const mapped: PdcInvoice[] = (res.data ?? []).map((item: any) => ({
+            id: item.name ?? item.id,
+            invoiceNumber: item.document_name,
+            refNumber: item.cheque_reference_number,
+            date: item.cheque_date,
+            amount: item.amount != null ? String(item.amount) : "",
+            currency: item.currency ?? "",
+            attachment: item.attachment ?? null,
+            status: item.status as PdcStatus,
+          }));
+
+          allData = [...allData, ...mapped];
+          total = res.pagination?.total_pages || 1;
+        }
+
+        current++;
+      } while (current <= total);
+
+      return allData;
+    } catch (error) {
+      showApiError(error);
+      return [];
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      showLoading("Exporting PDC invoices...");
+
+      const dataToExport = await fetchAllPdcInvoicesForExport();
+
+      if (!dataToExport.length) {
+        closeSwal();
+        showApiError("No PDC invoices to export");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(
+        dataToExport.map((row) => ({
+          "Invoice No": row.invoiceNumber,
+          "Reference Number": row.refNumber,
+          Date: row.date ? formatDate(row.date) : "",
+          Currency: row.currency,
+          Amount: row.amount,
+          Status: row.status,
+        })),
+      );
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "PDC Invoices");
+
+      saveAs(
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "PDC_Invoices.xlsx",
+      );
+
+      closeSwal();
+      showSuccess("PDC invoices exported successfully");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
+
   useEffect(() => {
     fetchPdcInvoices();
   }, [fetchPdcInvoices]);
@@ -208,7 +310,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
         "",
         undefined,
         undefined,
-        "Unpaid,Draft",
+          "Unpaid,Draft,Overdue",
         undefined,
         undefined,
       );
@@ -243,6 +345,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
       refNumber: "",
       date: "",
       amount: "",
+      currency: "",
       attachment: null,
       status: "Unused",
     };
@@ -276,6 +379,13 @@ const PdcTable: React.FC<PdcTableProps> = () => {
 
       const refNumber = String(draft.refNumber ?? "").trim();
     const amount = String(draft.amount ?? "").trim();
+       if (draft.date) {
+      const today = new Date().toISOString().split("T")[0];
+      if (draft.date < today) {
+        showApiError("Cheque date cannot be backdated");
+        return;
+      }
+    }
 
     if (!addingNew) {
       try {
@@ -343,12 +453,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
       }
     } catch (err) {
       closeSwal();
-      setRows((prev) => prev.filter((r) => r.id !== draft.id));
       showApiError(err);
-        setEditingId(null);
-      setDraft(null);
-      setAttachmentFile(null);
-      setAddingNew(false);
     } finally {
       setSaving(false);
     }
@@ -387,6 +492,52 @@ const PdcTable: React.FC<PdcTableProps> = () => {
     } catch (err) {
       closeSwal();
       showApiError(err);
+    }
+  };
+
+    const handleReceivePayment = async (row: PdcInvoice) => {
+    if (payingId) return;
+    setPayingId(row.id);
+    try {
+      showLoading("Loading invoice...");
+      const res = await getSalesInvoiceById(row.invoiceNumber);
+      closeSwal();
+
+      const d = res?.message?.data;
+      if (!d) {
+        showApiError("Failed to load invoice details");
+        return;
+      }
+
+      openPaymentEntryModal(
+        {
+          paymentType: "Receive",
+          partyType: "Customer",
+          partyName: d.customerName,
+          partyId: d.customerId,
+          amount: Number(row.amount) || 0,
+          referenceName: row.invoiceNumber,
+          referenceType: "Sales Invoice",
+          glFrom: d?.gl_account ?? "",
+          glFromDisplay: d?.gl_account_name ?? "",
+          currencyFrom: d?.gl_account_currency ?? "",
+          modeOfPayment: d?.paymentMode ?? "",
+          referenceNo: row.refNumber,
+          referenceDate: row.date,
+        },
+        false,
+        {
+          onSuccess: (paymentId: string) => {
+            fetchPdcInvoices();
+            showSuccess(`Payment ${paymentId} created`);
+          },
+        },
+      );
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    } finally {
+      setPayingId(null);
     }
   };
 
@@ -475,6 +626,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
                 name="date"
                 value={draft.date}
                 required
+                disablePast
                 onChange={(name, value) => updateDraft(name as keyof PdcInvoice, value)}
               />
             );
@@ -510,7 +662,9 @@ const PdcTable: React.FC<PdcTableProps> = () => {
           return (
             <div className="py-1.5">
               <span className="block whitespace-nowrap">
-                {row.amount || "—"}
+                  {row.amount
+                  ? formatAmount(row.currency, Number(row.amount), { withSymbol: true })
+                  : "—"}
               </span>
             </div>
           );
@@ -625,24 +779,37 @@ const PdcTable: React.FC<PdcTableProps> = () => {
           }
           return (
             <div className="flex items-center justify-center gap-2">
+            
                 <ActionButton
                 type="edit"
                onClick={() => handleEdit(row)}
                 iconOnly
-                disabled={!!editingId}
-                title="Edit PDC entry"
+                 disabled={!!editingId || row.status === "Used"}
+                title={row.status === "Used" ? "Used PDCs cannot be edited" : "Edit PDC entry"}
               />
               <ActionMenu
                 showDownload={false}
-                onDelete={() => handleDelete(row)}
-                customActions={[]}
+                 {...(row.status !== "Used"
+                  ? { onDelete: () => handleDelete(row) }
+                  : {})}
+                customActions={
+                  row.status === "Unused"
+                    ? [
+                        {
+                          label: "Receive Payment",
+                         icon: <CreditCard size={14} />,
+                          onClick: () => handleReceivePayment(row),
+                        },
+                      ]
+                    : []
+                }
               />
             </div>
           );
         },
       },
     ],
-    [editingId, draft, invoiceOptions, invoiceOptionsLoading, attachmentFile, saving],
+     [editingId, draft, invoiceOptions, invoiceOptionsLoading, attachmentFile, saving, formatAmount, payingId],
   );
 
   return (
@@ -675,6 +842,8 @@ const PdcTable: React.FC<PdcTableProps> = () => {
         onPageChange={setPage}
         sortBy={sortBy}
         sortOrder={sortOrder}
+        enableExport
+        onExport={handleExportExcel}
         onSortChange={handleSortChange}
         multiSelectFilters={[
           {
