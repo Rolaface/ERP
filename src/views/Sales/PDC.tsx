@@ -23,6 +23,8 @@ import {
   closeSwal,
 } from "../../utils/alert";
 import { fireManagedSwal } from "../../utils/swalManager";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 
 import { Paperclip, Check, X } from "lucide-react";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
@@ -46,7 +48,8 @@ export interface PdcInvoice {
   status: PdcStatus;
 }
 
-const PDC_MODULE = "PDC Invoice";
+const PDC_MODULE = "Custom Pdc Details";
+const PAYMENT_MODULE = "Payment Entry";
 const DOCUMENT_TYPE = "Sales Invoice";
 
 const STATUS_OPTIONS: PdcStatus[] = ["Unused", "Used", "Expired", "Discard"];
@@ -98,7 +101,8 @@ interface PdcTableProps {
 }
 
 const PdcTable: React.FC<PdcTableProps> = () => {
-  const mountedRef = useRef(true);
+    const mountedRef = useRef(true);
+  const { can } = usePermission();
 
   // ── PDC rows — API-backed
   const [rows, setRows] = useState<PdcInvoice[]>([]);
@@ -592,7 +596,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
       },
       {
         key: "refNumber",
-        header: "Reference Number",
+        header: "Cheque Number",
         align: "left",
         sortable: true,
         render: (row) => {
@@ -615,7 +619,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
       },
       {
         key: "date",
-        header: "Date",
+        header: "Cheque Date",
         align: "left",
         sortable: true,
         render: (row) => {
@@ -780,20 +784,22 @@ const PdcTable: React.FC<PdcTableProps> = () => {
           return (
             <div className="flex items-center justify-center gap-2">
             
+                <PermissionGate module={PDC_MODULE} action="write">
                 <ActionButton
-                type="edit"
-               onClick={() => handleEdit(row)}
-                iconOnly
-                 disabled={!!editingId || row.status === "Used"}
-                title={row.status === "Used" ? "Used PDCs cannot be edited" : "Edit PDC entry"}
-              />
-              <ActionMenu
+                  type="edit"
+                 onClick={() => handleEdit(row)}
+                  iconOnly
+                   disabled={!!editingId || row.status === "Used"}
+                  title={row.status === "Used" ? "Used PDCs cannot be edited" : "Edit PDC entry"}
+                />
+              </PermissionGate>
+            <ActionMenu
                 showDownload={false}
-                 {...(row.status !== "Used"
+                 {...(row.status !== "Used" && can(PDC_MODULE, "delete")
                   ? { onDelete: () => handleDelete(row) }
                   : {})}
                 customActions={
-                  row.status === "Unused"
+                  row.status === "Unused" && can(PAYMENT_MODULE, "create")
                     ? [
                         {
                           label: "Receive Payment",
@@ -809,7 +815,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
         },
       },
     ],
-     [editingId, draft, invoiceOptions, invoiceOptionsLoading, attachmentFile, saving, formatAmount, payingId],
+     [editingId, draft, invoiceOptions, invoiceOptionsLoading, attachmentFile, saving, formatAmount, payingId, can],
   );
 
   return (
@@ -822,7 +828,7 @@ const PdcTable: React.FC<PdcTableProps> = () => {
         loading={isInitialLoad}
         isFetching={isFetching}
         showToolbar
-         enableAdd={!editingId}
+         enableAdd={!editingId && can(PDC_MODULE, "create")}
         addLabel="Record PDC"
         onAdd={handleAdd}
         searchValue={searchTerm}
@@ -840,9 +846,9 @@ const PdcTable: React.FC<PdcTableProps> = () => {
           setPage(1);
         }}
         onPageChange={setPage}
-        sortBy={sortBy}
+         sortBy={sortBy}
         sortOrder={sortOrder}
-        enableExport
+        enableExport={can(PDC_MODULE, "export")}
         onExport={handleExportExcel}
         onSortChange={handleSortChange}
         multiSelectFilters={[
