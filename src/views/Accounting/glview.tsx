@@ -82,6 +82,17 @@ const fmt = (n: number) =>
     maximumFractionDigits: 2,
   }).format(n);
 
+const MONTH_ABBR = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+const formatPostingDate = (val: string) => {
+  const [year, month, day] = val.split("-");
+  const monthName = MONTH_ABBR[Number(month) - 1] ?? month;
+  return `${day} ${monthName} ${year}`;
+};
+
 const today = () => new Date().toISOString().split("T")[0];
 const startOfYear = () => `${new Date().getFullYear()}-01-01`;
 
@@ -307,11 +318,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
             if (col.fieldname === "posting_date" && val) {
               return (
                 <span className="text-xs text-main tabular-nums">
-                  {new Date(String(val)).toLocaleDateString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  {formatPostingDate(String(val))}
                 </span>
               );
             }
