@@ -407,16 +407,20 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     ],
   );
 
-  const handleAmountToChange = (
+
+   const handleAmountToChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const val =
       parseFloat((e as React.ChangeEvent<HTMLInputElement>).target.value) || 0;
     const rate = parseFloat(form.exchangeRate) || 1;
+    const isFromBase = form.currencyFrom === form.companyDefaultCurrency;
     onChange(e);
     onFormChange({
       amount: val ? String(val) : "",
-      amountFrom: val ? String(+(val / rate).toFixed(4)) : "",
+      amountFrom: val
+        ? String(+((isFromBase ? val * rate : val / rate)).toFixed(4))
+        : "",
     });
   };
 
@@ -426,21 +430,38 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     const val =
       parseFloat((e as React.ChangeEvent<HTMLInputElement>).target.value) || 0;
     const rate = parseFloat(form.exchangeRate) || 1;
+    const isFromBase = form.currencyFrom === form.companyDefaultCurrency;
     onChange(e);
+    const converted = val
+      ? String(+((isFromBase ? val / rate : val * rate)).toFixed(4))
+      : "";
     onFormChange({
-      amountTo: val ? String(+(val * rate).toFixed(4)) : "",
-      amount: val ? String(+(val * rate).toFixed(4)) : "",
+      amountTo: converted,
+      amount: converted,
     });
   };
-
   // ── Auto-recalculate amountTo when exchange rate changes 
   useEffect(() => {
-    const from = parseFloat(form.amountFrom) || 0;
     const rate = parseFloat(form.exchangeRate) || 1;
+    const isFromBase = form.currencyFrom === form.companyDefaultCurrency;
+    const hasLockedInvoice =
+      form.paymentType === "Pay" && Boolean(form.referenceName);
+
+    if (hasLockedInvoice) {
+      const to = parseFloat(form.amountTo) || 0;
+      if (!to) return;
+      onFormChange({
+        amountFrom: String(+((isFromBase ? to * rate : to / rate)).toFixed(4)),
+      });
+      return;
+    }
+
+    const from = parseFloat(form.amountFrom) || 0;
     if (!from) return;
+    const converted = String(+((isFromBase ? from / rate : from * rate)).toFixed(4));
     onFormChange({
-      amountTo: String(+(from * rate).toFixed(4)),
-      amount: String(+(from * rate).toFixed(4)),
+      amountTo: converted,
+      amount: converted,
     });
   }, [form.exchangeRate]);
 

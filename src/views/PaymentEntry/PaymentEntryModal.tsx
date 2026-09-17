@@ -117,12 +117,15 @@ function buildPayload(
         : {}),
     }));
 
-  if (references.length === 0 && form?.referenceName && paymentAmount > 0) {
+    const partySideReferenceAmount =
+    form?.paymentType === "Receive" ? paymentAmount : receivedAmount;
+
+  if (references.length === 0 && form?.referenceName && partySideReferenceAmount > 0) {
     references = [
       {
         reference_doctype: referenceDoctype,
         reference_name: form.referenceName,
-        allocated_amount: paymentAmount,
+        allocated_amount: partySideReferenceAmount,
         ...(invoiceDueDates[form.referenceName]
           ? { due_date: invoiceDueDates[form.referenceName] }
           : {}),
@@ -311,9 +314,9 @@ const PaymentEntryModal: React.FC<Props> = ({
     if (!base.date) base.date = today;
     if (!base.referenceDate) base.referenceDate = today;
 
-    if (base.amount != null) {
+   if (base.amount != null) {
       base.amountFrom ??= base.amount;
-      base.amountTo ??= base.amount;
+      base.amountTo = base.amountTo || base.amount;
     }
 
     if (defaultValues?.partyId) {
@@ -410,6 +413,10 @@ const PaymentEntryModal: React.FC<Props> = ({
 
 
   const amountFrom = Number(form?.amountFrom ?? form?.amount ?? 0);
+  const partyAmount =
+    form?.paymentType === "Receive"
+      ? amountFrom
+      : Number(form?.amountTo ?? form?.amount ?? 0);
 
   useEffect(() => {
     if (!isOpen || isAdvanceFromPO) return;
@@ -431,8 +438,9 @@ const PaymentEntryModal: React.FC<Props> = ({
   // ── Derived values ─────────────────────────────────────────────────────────
   const paymentAmount = amountFrom;
   const totalAllocated = Number(form?.allocatedAmount ?? 0);
-  // While allocating, never show stale advance — hide it
-  const advance = isAllocating ? 0 : Math.max(0, paymentAmount - totalAllocated);
+  // Advance/allocation compare against the party-currency amount (invoices
+  // are in the party's currency), not the base-currency paid_from amount.
+  const advance = isAllocating ? 0 : Math.max(0, partyAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
 
@@ -534,13 +542,14 @@ const PaymentEntryModal: React.FC<Props> = ({
         delete updates.currencyFrom;
       }
       setForm((prev) => {
-        if (prev.referenceName) {
+         if (prev.referenceName) {
           const referenceName = prev.referenceName;
           const next = { ...prev, ...updates };
-          const lockedAmount = Math.max(
-            0,
-            Number(next.amountFrom ?? next.amount ?? 0),
-          );
+          const partySideAmount =
+            next.paymentType === "Receive"
+              ? Number(next.amountFrom ?? next.amount ?? 0)
+              : Number(next.amountTo ?? next.amount ?? 0);
+          const lockedAmount = Math.max(0, partySideAmount);
 
           return {
             ...next,
@@ -652,11 +661,14 @@ const PaymentEntryModal: React.FC<Props> = ({
     }
   }, [form, onClose, onSuccess, resetModalState]);
 
-  const invoiceListForm = {
+   const invoiceListForm = {
     partyType: form?.partyType,
     partyName: form?.partyName,
     partyId: form?.partyId,
-    amount: form?.amountFrom ?? form?.amount,
+    amount:
+      form?.paymentType === "Receive"
+        ? (form?.amountFrom ?? form?.amount)
+        : (form?.amountTo ?? form?.amount),
     fifoTrigger: form?.fifoTrigger,
     referenceInvoice: form?.referenceName,
     allocations: form?.allocations ?? {},
@@ -880,11 +892,11 @@ const PaymentEntryModal: React.FC<Props> = ({
                     <p className="text-[11px] text-muted animate-pulse">Calculating…</p>
                   ) : (
                     <>
-                      <p className={`text-xs font-semibold ${advance > 0 && paymentAmount > 0 ? "text-amber-500" : "text-emerald-600"
+                                    <p className={`text-xs font-semibold ${advance > 0 && partyAmount > 0 ? "text-amber-500" : "text-emerald-600"
                         }`}>
-                        {paymentAmount > 0 ? advance.toLocaleString() : "—"}
+                        {partyAmount > 0 ? advance.toLocaleString() : "—"}
                       </p>
-                      {advance > 0 && paymentAmount > 0 && (
+                      {advance > 0 && partyAmount > 0 && (
                         <p className="text-[10px] text-amber-400 mt-0.5 leading-relaxed">
                           {advance.toLocaleString()} will be treated as advance
                         </p>
