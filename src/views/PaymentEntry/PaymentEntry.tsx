@@ -10,9 +10,9 @@ import { getAllPayments } from "../../api/CustomerPayment";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import { showApiError } from "../../utils/alert";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
-import { openPaymentEntryModal,openSendEmailModal } from "../../store/modalStore";
+import { openPaymentEntryModal, openSendEmailModal } from "../../store/modalStore";
 import { usePermission } from "../../hooks/permission/usePermission";
-import { getPaymentEntryById,cancelPaymentEntry } from "../../api/BankAccountApi";
+import { getPaymentEntryById, cancelPaymentEntry } from "../../api/BankAccountApi";
 import { ActionMenu } from "../../components/ui/Table/ActionButton";
 import PaymentEntryDetailModal from "./PaymetnEntryDetailModal";
 import ActionButton from "../../components/ui/Table/ActionButton";
@@ -22,6 +22,8 @@ import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 import { showSuccess, showLoading, closeSwal } from "../../utils/alert";
 import { fireManagedSwal } from "../../utils/swalManager";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 interface PaymentAPI {
   paymentId: string;
   paymentDate: string;
@@ -32,7 +34,7 @@ interface PaymentAPI {
   referenceNumber?: string;
   amount: number;
   status: string;
-   paidCurrency?: string;
+  paidCurrency?: string;
 }
 
 type PaymentRow = {
@@ -48,11 +50,23 @@ type PaymentRow = {
 };
 
 const PAYMENT_ENTRY_MODULE = "Payment Entry";
+const SORT_FIELD_MAP: Record<string, string> = {
+  id: "name",
+  paymentDate: "posting_date",
+  partyType: "party_name",
+  partyName: "party_name",
+  mode: "mode_of_payment",
+  referenceNumber: "reference_no",
+  amount: "paid_amount",
+};
+
+const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? field;
+
 const statusOptions = [
-   { label: "Draft", value: "Draft" },
-   { label: "Approved", value: "Submitted" },
-   { label: "Cancelled", value: "Cancelled" },
- ];
+  { label: "Draft", value: "Draft" },
+  { label: "Approved", value: "Submitted" },
+  { label: "Cancelled", value: "Cancelled" },
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -94,7 +108,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<PaymentEntryDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
-  
+
 
   // ── Search
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,11 +116,11 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   // ── Sorting
   const [sortBy, setSortBy] = useState("paymentDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-   const [filters, setFilters] = useState<{
-  status?: string[];
-   from_date?: string;
-   to_date?: string;
- }>({});
+  const [filters, setFilters] = useState<{
+    status?: string[];
+    from_date?: string;
+    to_date?: string;
+  }>({});
 
   // ── Currency symbols + per-currency number formatting for the currencies
   // present in the currently loaded page of payments (same pattern as
@@ -129,12 +143,14 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         page,
         pageSize,
         searchTerm,
-          undefined, 
-      filters.status && filters.status.length > 0
-         ? filters.status.join(",")
-         : undefined,
-       filters.from_date,
-       filters.to_date,
+        undefined,
+        filters.status && filters.status.length > 0
+          ? filters.status.join(",")
+          : undefined,
+        filters.from_date,
+        filters.to_date,
+         mapSortField(sortBy),
+  sortOrder,
       );
 
       if (!mountedRef.current) return;
@@ -149,7 +165,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         mode: p.paymentMode || "—",
         amount: Number(p.amount) || 0,
         paymentDate: p.paymentDate || undefined,
-          currency: p.paidCurrency,
+        currency: p.paidCurrency,
       }));
 
       setData(mapped);
@@ -166,7 +182,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         setIsInitialLoad(false);
       }
     }
- }, [page, pageSize, searchTerm, defaultPartyType, filters]);
+   }, [page, pageSize, searchTerm, defaultPartyType, filters, sortBy, sortOrder]);
 
   // Initial fetch
   useEffect(() => {
@@ -192,37 +208,136 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
     setSortOrder(order);
     setPage(1);
   };
+  // ── Export: fetch every page so export isn't limited to the current page
+  const fetchAllPaymentsForExport = async (): Promise<PaymentRow[]> => {
+    try {
+      let allData: PaymentRow[] = [];
+      let current = 1;
+      let total = 1;
+
+      do {
+        const response = await getAllPayments(
+          defaultPartyType as "Customer" | "Supplier" | undefined,
+          current,
+          100,
+          searchTerm,
+          undefined,
+          filters.status && filters.status.length > 0
+            ? filters.status.join(",")
+            : undefined,
+          filters.from_date,
+          filters.to_date,
+           mapSortField(sortBy),   // ← add
+  sortOrder, 
+        );
+
+        const payments: PaymentAPI[] = response?.data?.payments || [];
+
+        const mapped: PaymentRow[] = payments.map((p) => ({
+          id: p.paymentId,
+          status: p.status || "—",
+          partyType: p.partyType || "—",
+          partyName: p.partyName || "—",
+          mode: p.paymentMode || "—",
+          amount: Number(p.amount) || 0,
+          paymentDate: p.paymentDate || undefined,
+          currency: p.paidCurrency,
+          referenceNumber: p.referenceNumber,
+        }));
+
+        allData = [...allData, ...mapped];
+        total = response?.data?.pagination?.totalPages || 1;
+        current++;
+      } while (current <= total);
+
+      return allData;
+    } catch (error) {
+      showApiError(error);
+      return [];
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      showLoading("Exporting Payment Entries...");
+
+      const dataToExport = await fetchAllPaymentsForExport();
+
+      if (!dataToExport.length) {
+        closeSwal();
+        showApiError("No payment entries to export");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(
+        dataToExport.map((p) => ({
+          "Payment Id": p.id,
+          "Payment Date": p.paymentDate ? formatDate(p.paymentDate) : "",
+          "Party Type": p.partyType,
+          Party: p.partyName,
+          "Mode Of Payment": p.mode,
+          Currency: p.currency ?? "",
+          Amount: p.amount,
+          Status: p.status === "Submitted" ? "Approved" : p.status,
+        })),
+      );
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Payment Entries");
+
+      saveAs(
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "Payment_Entries.xlsx",
+      );
+
+      closeSwal();
+      showSuccess("Payment entries exported successfully");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
   const columns: Column<PaymentRow>[] = useMemo(
     () => [
       {
         key: "id",
         header: "P Id",
+        sortable: true, 
         render: (row) => row.id || "-",
       },
       {
         key: "paymentDate",
         header: "Payment Date",
+        sortable: true,  
         render: (row) => row.paymentDate ? formatDate(row.paymentDate) : "-",
       },
       {
         key: "partyType",
         header: "party Type",
+        sortable: true, 
+        
         render: (row) => row.partyType || "—",
       },
       {
         key: "partyName",
         header: "Party",
+        
+        sortable: true,  
         render: (row) => row.partyName || "—",
       },
       {
         key: "mode",
         header: "Mode Of Payment",
+        sortable: true,
         render: (row) => row.mode || "—",
       },
       {
         key: "amount",
         header: "Amount",
+        sortable: true,
         align: "right",
         render: (row) => (
           <span className="whitespace-nowrap">
@@ -235,11 +350,11 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
       {
         key: "status",
         header: "Status",
-              render: (row: PaymentRow) => (
-         <StatusBadge
-           status={row.status === "Submitted" ? "Approved" : row.status}
-         />
-       ),
+        render: (row: PaymentRow) => (
+          <StatusBadge
+            status={row.status === "Submitted" ? "Approved" : row.status}
+          />
+        ),
       },
       {
         key: "actions",
@@ -291,36 +406,36 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
                     });
                   },
                 },
-  ...(row.status !== "Cancelled" ? [{
-  label: "Cancel",
-  icon: ACTION_ICONS.CANCEL,
-  danger: true,
-  onClick: async () => {
-    const result = await fireManagedSwal({
-      icon: "warning",
-      title: "Cancel Payment Entry?",
-      text: `Are you sure you want to cancel payment entry "${row.id}"? This action cannot be undone.`,
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, Cancel",
-      cancelButtonText: "No",
-    });
-    if (!result.isConfirmed) return;
+                ...(row.status !== "Cancelled" ? [{
+                  label: "Cancel",
+                  icon: ACTION_ICONS.CANCEL,
+                  danger: true,
+                  onClick: async () => {
+                    const result = await fireManagedSwal({
+                      icon: "warning",
+                      title: "Cancel Payment Entry?",
+                      text: `Are you sure you want to cancel payment entry "${row.id}"? This action cannot be undone.`,
+                      showCancelButton: true,
+                      confirmButtonColor: "#ef4444",
+                      cancelButtonColor: "#6b7280",
+                      confirmButtonText: "Yes, Cancel",
+                      cancelButtonText: "No",
+                    });
+                    if (!result.isConfirmed) return;
 
-    try {
-      showLoading("Cancelling payment entry...");
-      await cancelPaymentEntry({ payment_entry_name: row.id });
-      closeSwal();
+                    try {
+                      showLoading("Cancelling payment entry...");
+                      await cancelPaymentEntry({ payment_entry_name: row.id });
+                      closeSwal();
 
-      showSuccess("Payment entry cancelled successfully");
-      await fetchPayments();
-    } catch (error: any) {
-      closeSwal();
-      showApiError(error?.message || "Failed to cancel payment entry");
-    }
-  },
-}] : []),
+                      showSuccess("Payment entry cancelled successfully");
+                      await fetchPayments();
+                    } catch (error: any) {
+                      closeSwal();
+                      showApiError(error?.message || "Failed to cancel payment entry");
+                    }
+                  },
+                }] : []),
               ]}
             />
           </div>
@@ -362,6 +477,8 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
               { onSuccess: () => fetchPayments() }
             )
           }
+          enableExport={can(PAYMENT_ENTRY_MODULE, "export")}   // ← add
+          onExport={handleExportExcel}
           sortBy={sortBy}
           sortOrder={sortOrder}
           onSortChange={handleSortChange}
@@ -369,7 +486,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
           totalPages={totalPages}
           totalItems={totalItems}
           pageSize={pageSize}
-           pageSizeOptions={[20, 50, 100,200]}
+          pageSizeOptions={[20, 50, 100, 200]}
           onPageChange={setPage}
           onPageSizeChange={(size) => {
             setPageSize(size);
@@ -388,31 +505,31 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
               setDrawerLoading(false);
             }
           }}
-           multiSelectFilters={[
-           {
-             key: "status",
-             label: "Status",
-             options: statusOptions,
-             values: filters.status ?? [],
-             onChange: (vals) => {
-               setFilters((prev) => ({
-                 ...prev,
-                 status: vals.length > 0 ? vals : undefined,
-               }));
-               setPage(1);
-             },
-           },
-         ]}
-         extraFilters={
-           <DateRangeFilter
-             from={filters.from_date}
-             to={filters.to_date}
-             onChange={(range) => {
-               setFilters((prev) => ({ ...prev, ...range }));
-               setPage(1);
-             }}
-           />
-         }
+          multiSelectFilters={[
+            {
+              key: "status",
+              label: "Status",
+              options: statusOptions,
+              values: filters.status ?? [],
+              onChange: (vals) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  status: vals.length > 0 ? vals : undefined,
+                }));
+                setPage(1);
+              },
+            },
+          ]}
+          extraFilters={
+            <DateRangeFilter
+              from={filters.from_date}
+              to={filters.to_date}
+              onChange={(range) => {
+                setFilters((prev) => ({ ...prev, ...range }));
+                setPage(1);
+              }}
+            />
+          }
         />
       </div>
       <PaymentEntryDetailModal

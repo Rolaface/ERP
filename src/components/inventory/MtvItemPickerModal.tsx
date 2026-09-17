@@ -87,7 +87,7 @@ const MtvItemPickerModal: React.FC<MtvItemPickerModalProps> = ({
 
     return items.filter((item) =>
       [item.itemNm, item.itemCd, item.itemDesc].some((value) =>
-        value.toLowerCase().includes(query),
+        String(value ?? "").toLowerCase().includes(query),
       ),
     );
   }, [itemSearchText, items]);
@@ -168,9 +168,9 @@ const MtvItemPickerModal: React.FC<MtvItemPickerModalProps> = ({
             </div>
           ) : filteredItems.length > 0 ? (
             <div className="max-h-[280px] overflow-auto rounded border border-[var(--border)]">
-              {filteredItems.map((item) => (
+              {filteredItems.map((item, idx) => (
                 <button
-                  key={item.itemCd}
+                  key={`${item.itemCd}-${idx}`}
                   type="button"
                   onClick={() => {
                     onSelectItem({

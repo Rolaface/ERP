@@ -302,7 +302,7 @@ const TableInner = <T extends Record<string, any>>({
       )}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="shrink-0 border-b-2 border-[var(--border)] bg-card w-full overflow-x-auto">
+        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-auto">
           <table
             className="w-full table-fixed border-separate border-spacing-0"
             style={{ minWidth: `${tableMinWidth}px` }}
@@ -312,14 +312,6 @@ const TableInner = <T extends Record<string, any>>({
                 <col
                   key={column.key}
                   style={{
-                    // table-layout: fixed ignores min-width on <col> and,
-                    // for any column left as "auto", divides *leftover*
-                    // table space evenly among those columns rather than
-                    // sizing them to their content or minWidth. That's
-                    // what caused columns like STATUS/REMARKS/ACTIONS to
-                    // balloon with dead space while the table still
-                    // overflowed overall. Always resolve to a concrete
-                    // pixel width so every column is sized deterministically.
                     width:
                       column.width ||
                       column.minWidth ||
@@ -329,7 +321,7 @@ const TableInner = <T extends Record<string, any>>({
                 />
               ))}
             </colgroup>
-            <thead>
+            <thead className="sticky top-0 z-20 bg-card shadow-sm">
               <tr>
                 {visibleColumns.map((column) => {
                   const isSortable = !!column.sortable && !!onSortChange;
@@ -352,6 +344,7 @@ const TableInner = <T extends Record<string, any>>({
                           ? "cursor-pointer select-none transition-colors hover:text-primary"
                           : "",
                         isActive ? "text-primary" : "",
+                        "border-b-2 border-[var(--border)]",
                       ].join(" ")}
                     >
                       <span className="inline-flex max-w-full items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
@@ -379,28 +372,6 @@ const TableInner = <T extends Record<string, any>>({
                 })}
               </tr>
             </thead>
-          </table>
-        </div>
-
-        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-auto">
-          <table
-            className="w-full table-fixed border-separate border-spacing-0"
-            style={{ minWidth: `${tableMinWidth}px` }}
-          >
-            <colgroup>
-              {visibleColumns.map((column) => (
-                <col
-                  key={column.key}
-                  style={{
-                    width:
-                      column.width ||
-                      column.minWidth ||
-                      column.maxWidth ||
-                      "100px",
-                  }}
-                />
-              ))}
-            </colgroup>
             <tbody className="relative z-10">
               {loading ? (
                 Array.from({ length: pageSize }).map((_, idx) => (

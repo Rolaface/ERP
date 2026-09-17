@@ -30,7 +30,7 @@ import ResetPassword from "../ResetPassword";
 import { isMasterSite } from "../config/site";
 
 // ── Lazy Modules ──
-const Dashboard = lazy(() => import("../views/DashbBoard"));
+const Dashboard = lazy(() => import("../views/Dashboard"));
 const SalesModule = lazy(() => import("../views/Sales/Sales"));
 const ProcurementModule = lazy(() => import("../views/Procurement/Procurement"));
 const InventoryModule = lazy(() => import("../views/Inventory/Inventory"));
@@ -170,7 +170,7 @@ const router = createBrowserRouter(
             <Route
               path="/sales"
               element={
-                <PermissionRoute modules={["Sales Invoice"]} subscriptionCheck={(a) => a.sales}>
+                <PermissionRoute modules={["Sales Invoice", "Quotation", "Custom Pdc Details"]} subscriptionCheck={(a) => a.sales}>
                   <SalesModule />
                 </PermissionRoute>
               }
@@ -230,7 +230,19 @@ const router = createBrowserRouter(
             <Route
               path="/hr/*"
               element={
-                <PermissionRoute modules={["Employee", "Payroll Entry"]} subscriptionCheck={(a) => a.hasHrmsKey}>
+                    <PermissionRoute
+                  modules={[
+                    "Employee",
+                    "Payroll Entry",
+                    "Leave Type",
+                    "Leave Period",
+                    "Leave Policy",
+                    "Leave Policy Assignment",
+                    "Holiday List",
+                    "Shift Type",
+                  ]}
+                  subscriptionCheck={(a) => a.hasHrmsKey}
+                >
                   <HrPayrollModule />
                 </PermissionRoute>
               }

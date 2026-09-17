@@ -183,11 +183,11 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
 
           <div className="md:col-span-2">
             <ModalInput
-              label="HSN Code"
+              label="HSN / UNSPSC Code"
               name="itemClassCode"
               value={form.itemClassCode ?? ""}
               onChange={onFormChange}
-              placeholder="Search or tpye..."
+              placeholder="Search or type..."
               required
               error={errors?.itemClassCode}
               trailingIcon={
@@ -195,8 +195,8 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
                   ref={hsnTriggerRef}
                   type="button"
                   onClick={() => setHsnPopoverOpen((v) => !v)}
-                  aria-label="Browse HSN codes"
-                  title="Browse HSN codes"
+                  aria-label="Browse HSN / UNSPSC codes"
+                  title="Browse HSN / UNSPSC codes"
                   tabIndex={-1}
                   className="group flex h-full w-7 shrink-0 cursor-pointer items-center justify-center rounded-r border-l border-theme bg-primary/5 text-primary transition-colors hover:bg-primary/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--input-border-focus)] focus-visible:ring-inset"
                 >

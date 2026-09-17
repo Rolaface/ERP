@@ -1,29 +1,87 @@
-import { useEffect, useRef, useState } from "react";
-import { getItemClassifications } from "../../../api/itemClassificationCodeApi";
-import { HSNNode, buildTreeFromJson, toLegacyShape } from "./hsnTreeUtils";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  getItemClassificationChildren,
+  type ClassificationPage,
+} from "../../../api/itemClassificationCodeApi";
+import { HSNNode, toNode } from "./hsnTreeUtils";
 
-/** Loads the full HSN tree once per popover mount, cached until it unmounts. */
+const ROOT_KEY = "__root__";
+const CHILD_PAGE_SIZE = 50;
+
 export function useHsnTree(open: boolean) {
-  const [apiTree, setApiTree] = useState<HSNNode[]>([]);
-  const [isTreeLoading, setIsTreeLoading] = useState(false);
+  const [childrenByParent, setChildrenByParent] = useState<
+    Record<string, HSNNode[]>
+  >({});
+  const [paginationByParent, setPaginationByParent] = useState<
+    Record<string, ClassificationPage>
+  >({});
+  const [loadingByParent, setLoadingByParent] = useState<
+    Record<string, boolean>
+  >({});
   const [treeError, setTreeError] = useState<string | null>(null);
-  const hasFetchedRef = useRef(false);
+  const loadingKeys = useRef(new Set<string>());
+
+  const loadChildren = useCallback(
+    async (parentCode?: string, append = false) => {
+      const key = parentCode || ROOT_KEY;
+      if (loadingKeys.current.has(key)) return;
+      const existing = childrenByParent[key];
+      const pagination = paginationByParent[key];
+      if (!append && existing) return;
+      if (append && (!pagination?.has_next || !pagination.next_cursor)) return;
+
+      loadingKeys.current.add(key);
+      setLoadingByParent((current) => ({ ...current, [key]: true }));
+      setTreeError(null);
+      try {
+        const response = await getItemClassificationChildren(
+          parentCode,
+          CHILD_PAGE_SIZE,
+          append ? pagination.next_cursor : undefined,
+        );
+        const newItems = response.data.map(toNode);
+        setChildrenByParent((current) => ({
+          ...current,
+          [key]: append
+            ? [
+                ...(current[key] ?? []),
+                ...newItems.filter(
+                  (item) =>
+                    !(current[key] ?? []).some((old) => old.code === item.code),
+                ),
+              ]
+            : newItems,
+        }));
+        setPaginationByParent((current) => ({
+          ...current,
+          [key]: response.pagination,
+        }));
+      } catch {
+        setTreeError("Couldn't load HSN classifications.");
+      } finally {
+        loadingKeys.current.delete(key);
+        setLoadingByParent((current) => ({ ...current, [key]: false }));
+      }
+    },
+    [childrenByParent, paginationByParent],
+  );
 
   useEffect(() => {
-    if (!open || hasFetchedRef.current) return;
+    if (open) void loadChildren();
+  }, [open, loadChildren]);
 
-    hasFetchedRef.current = true;
-    setIsTreeLoading(true);
-    setTreeError(null);
-
-    getItemClassifications(1, 3000)
-      .then((res) => setApiTree(buildTreeFromJson(toLegacyShape(res.data))))
-      .catch(() => {
-        setTreeError("Couldn't load HSN classifications.");
-        hasFetchedRef.current = false; 
-      })
-      .finally(() => setIsTreeLoading(false));
-  }, [open]);
-
-  return { apiTree, isTreeLoading, treeError };
+  const rootItems = childrenByParent[ROOT_KEY] ?? [];
+  return {
+    apiTree: rootItems,
+    isTreeLoading: Boolean(loadingByParent[ROOT_KEY]) && rootItems.length === 0,
+    treeError,
+    getChildren: (parentCode?: string) =>
+      childrenByParent[parentCode || ROOT_KEY] ?? [],
+    loadChildren,
+    loadMoreChildren: (parentCode?: string) => loadChildren(parentCode, true),
+    isChildrenLoading: (parentCode?: string) =>
+      Boolean(loadingByParent[parentCode || ROOT_KEY]),
+    hasMoreChildren: (parentCode?: string) =>
+      Boolean(paginationByParent[parentCode || ROOT_KEY]?.has_next),
+  };
 }

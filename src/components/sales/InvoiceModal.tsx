@@ -12,7 +12,7 @@ import CustomerSelect from "../selects/CustomerSelect";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import ModalFooter from "../common/ModalFooter";
-import { ModalInput, ToggleSwitch } from "../ui/modal/modalComponent";
+import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
@@ -422,19 +422,18 @@ const handlePrincipalSelect = (value: string) => {
                 </div>
 
                 {/* Invoice Type — Product / Service / RVAT */}
-                <ToggleSwitch
-                  name="invoiceType"
-                  label="Invoice Type"
-                  checked={invoiceType === "Service"}
-                  onLabel="Service"
-                  offLabel="Product"
-                  onChange={() => {}}
-                  options={invoiceTypeOptions}
-                  value={invoiceType}
-                  onValueChange={(val) =>
-                    setInvoiceType(val as "Product" | "Service" | "RVAT" | "LPO" | "TOT" | "ITX")
-                  }
-                />
+                <div className="w-full sm:w-[130px]">
+                  <ModalSelect
+                    name="invoiceType"
+                    label="Invoice Type"
+                    value={invoiceType}
+                    options={invoiceTypeOptions}
+                    onChange={(e) =>
+                      setInvoiceType(e.target.value as "Product" | "Service" | "RVAT" | "LPO" | "TOT" | "ITX")
+                    }
+                    className="w-full"
+                  />
+                </div>
 
                 {invoiceType === "RVAT" && (
                   <div className="w-full sm:w-[240px]">

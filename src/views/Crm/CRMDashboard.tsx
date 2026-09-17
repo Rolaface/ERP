@@ -216,7 +216,7 @@ const CRMDashboard: React.FC = () => {
         label: "Total Customers",
         value: String(data.summary.total_customers),
         sub: `${data.summary.company_customers} Company / ${data.summary.individual_customers} Individual`,
-        onDoubleClick: () => navigate("/crm?tab=customer-managment"),
+        onDoubleClick: () => navigate("/crm?tab=customer-management"),
       },
       { label: "Overdue Payments", value: String(data.summary.overdue_payments) },
       { label: "Dormant Customers", value: String(data.summary.dormant_customers) },

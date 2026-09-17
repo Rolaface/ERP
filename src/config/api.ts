@@ -57,6 +57,15 @@ export const API = {
   salesDashboard: {
     sales_dashboard: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.sales_dashboard`,
   },
+  /* =========================
+   * PDC
+   * ========================= */
+  pdc: {
+    create: `${ERP_BASE}/api/method/custom_api.api.pdc.api.create`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.pdc.api.get`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.pdc.api.delete`,
+    update: `${ERP_BASE}/api/method/custom_api.api.pdc.api.update`,
+  },
 
   /* =========================
    * CUSTOMER DASHBOARD
@@ -265,6 +274,8 @@ export const API = {
   itemClassification: {
     getAll: `${ERP_BASE}/api/method/custom_api.api.item.item_classification.api.get_classifications`,
     getByCode: `${ERP_BASE}/api/method/custom_api.api.item.item_classification.api.get_classification_by_code`,
+    getChildren: `${ERP_BASE}/api/method/custom_api.api.item.item_classification.api.get_classification_children`,
+    search: `${ERP_BASE}/api/method/custom_api.api.item.item_classification.api.search_classifications`,
   },
   /* =========================
    * TAX

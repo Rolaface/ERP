@@ -21,13 +21,15 @@ const HsnResultRow: React.FC<HsnResultRowProps> = ({
   onHover,
   onActivate,
 }) => {
-  const isLeaf = mode === "search" || !!(item as HSNNode).code;
+  const isLeaf = !item.hasChildren;
 
   const itemLevel: number | undefined =
     mode === "search" ? (item as HSNLeaf).level : (item as HSNNode).level;
 
   const trail: TrailEntry[] | undefined =
-    mode === "search" ? (item as HSNLeaf).trail : (item as HSNNode).ancestorTrail;
+    mode === "search"
+      ? (item as HSNLeaf).trail
+      : (item as HSNNode).ancestorTrail;
 
   return (
     <div
@@ -41,37 +43,54 @@ const HsnResultRow: React.FC<HsnResultRowProps> = ({
       }`}
       style={
         isActive
-          ? { borderLeftColor: "var(--primary)", background: "var(--row-hover)" }
+          ? {
+              borderLeftColor: "var(--primary)",
+              background: "var(--row-hover)",
+            }
           : undefined
       }
     >
       {isLeaf ? (
         <Tag size={12} className={isActive ? "text-primary" : "text-muted"} />
       ) : (
-        <Folder size={12} className={isActive ? "text-primary" : "text-muted"} />
+        <Folder
+          size={12}
+          className={isActive ? "text-primary" : "text-muted"}
+        />
       )}
       <div className="min-w-0 flex-1">
-        <div className={`truncate text-[12px] ${isActive ? "font-medium text-primary" : "text-main"}`}>
+        <div
+          className={`truncate text-[12px] ${isActive ? "font-medium text-primary" : "text-main"}`}
+        >
           {itemLevel != null && (
-            <span className="mr-1 font-mono text-[10px] text-muted">(L{itemLevel})</span>
+            <span className="mr-1 font-mono text-[10px] text-muted">
+              (L{itemLevel})
+            </span>
           )}
           {item.name}
         </div>
         {trail && trail.length > 0 && (
           <div className="truncate text-[10px] text-muted">
-            {trail.map((t) => `(L${t.level}) ${t.name}`).join(" › ")}
+            {trail
+              .map((t) => `(L${t.class_level}) ${t.class_name ?? t.class_code}`)
+              .join(" › ")}
           </div>
         )}
       </div>
       {isLeaf ? (
         <span className="flex shrink-0 items-center gap-1">
           {isCurrentSelection && <Check size={11} className="text-primary" />}
-          <span className={`font-mono text-[10px] ${isActive ? "text-primary" : "text-muted"}`}>
-            {(item as HSNLeaf).code}
+          <span
+            className={`font-mono text-[10px] ${isActive ? "text-primary" : "text-muted"}`}
+          >
+            {item.code}
           </span>
         </span>
       ) : (
-        <ChevronRight size={12} className={isActive ? "text-primary" : "text-muted"} />
+        <ChevronRight
+          size={12}
+          className={isActive ? "text-primary" : "text-muted"}
+        />
       )}
     </div>
   );

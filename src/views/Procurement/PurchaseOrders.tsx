@@ -106,6 +106,18 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [company, setCompany] = useState<any | null>(null);
+  const [sortBy, setSortBy] = useState("date");
+const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+const SORT_FIELD_MAP: Record<string, string> = {
+  id: "name",
+  supplier: "supplier_name",
+  date: "transaction_date",
+  amount: "grand_total",
+  deliveryDate: "schedule_date",
+};
+
+const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? field;
 
   //email
   const [emailModalOpen, setEmailModalOpen] = useState(false);
@@ -158,7 +170,10 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
     try {
       setLoading(true);
 
-      const res = await getPurchaseOrders(page, pageSize, filters);
+            const res = await getPurchaseOrders(page, pageSize, {
+        ...filters,
+        order_by: `${mapSortField(sortBy)} ${sortOrder}`,
+      });
 
       if (!res?.data || res.data.length === 0) {
         setOrders([]);
@@ -193,7 +208,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
 
   useEffect(() => {
     fetchOrders();
-  }, [page, pageSize, filters]);
+  }, [page, pageSize, filters, sortBy, sortOrder]);
 
   const subscribeToRefresh = useDataRefreshStore(
     (state) => state.subscribeToRefresh,
@@ -208,6 +223,18 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
     );
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchOrders]);
+
+    const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
+  };
 
   const handleMakePayment = async (order: PurchaseOrder) => {
     if (order.status !== "Approved") {
@@ -393,7 +420,10 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
       let totalPagesLocal = 1;
 
       do {
-        const res = await getPurchaseOrders(currentPage, 100, filters);
+                const res = await getPurchaseOrders(currentPage, 100, {
+          ...filters,
+          order_by: `${mapSortField(sortBy)} ${sortOrder}`,
+        });
 
         if (res?.status_code === 200) {
           const mapped = res.data.map((po: any) => ({
@@ -566,6 +596,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
       key: "id",
       header: "PO ID",
       align: "left",
+      sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <span className="block">{o.id || "—"}</span>
@@ -576,6 +607,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
       key: "supplier",
       header: "Supplier",
       align: "center",
+      sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <span className="block">{o.supplier || "—"}</span>
@@ -587,6 +619,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
       key: "date",
       header: "Date",
       align: "center",
+      sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <span className="block">{o.date ? formatDate(o.date) : "—"}</span>
@@ -598,6 +631,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
       key: "amount",
       header: "Amount",
       align: "center",
+      sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <code className="inline-flex max-w-full rounded bg-row-hover px-2 py-0.5 text-xs text-main">
@@ -620,6 +654,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
       key: "deliveryDate",
       header: "Required By",
       align: "center",
+      sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <span className="block">
@@ -759,7 +794,10 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
         searchValue={searchTerm}
         enableExport={can(PO_MODULE, "export")}
         onExport={handleExportCSV}
-        onSearch={setSearchTerm}
+               onSearch={setSearchTerm}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         enableAdd={can(PO_MODULE, "create")}
         addLabel="Add Purchase Order"
         onAdd={handleAddClick}

@@ -46,7 +46,7 @@ const ALL_TABS = [
     module: null,
   },
   {
-    id: "customer-managment",
+    id: "customer-management",
     label: "Customer",
     icon: <Users {...iconProps} />,
     module: "Customer",
@@ -76,7 +76,7 @@ const ALL_TABS = [
 ];
 
 // Tabs that need full viewport lock (no scroll, fixed height layout)
-const VIEWPORT_LOCKED_TABS = new Set(["customer-managment"]);
+const VIEWPORT_LOCKED_TABS = new Set(["customer-management"]);
 
 const DEFAULT_TAB = "dashboard";
 
@@ -104,7 +104,7 @@ const CRM: React.FC = () => {
   const tabComponents = useMemo(
     () => ({
       dashboard: <CRMDashboard />,
-      "customer-managment": <CustomerManagement onAdd={handleAddCustomer} />,
+      "customer-management": <CustomerManagement onAdd={handleAddCustomer} />,
       payments: <Payments defaultPartyType="Customer" />,
       CustomerGroup: <CustomerGroup />,
       reports: <CRMReports />,

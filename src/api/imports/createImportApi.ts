@@ -22,7 +22,7 @@ interface CreateImportApiConfig<TRaw> {
 }
 
 export interface ImportApi {
-  uploadFile: (file: File) => Promise<ImportResult>;
+  uploadFile: (file: File, onProgress?: (pct: number, details?: any) => void) => Promise<ImportResult>;
   downloadTemplate: () => ReturnType<typeof downloadStaticTemplate>;
 }
 
@@ -33,7 +33,7 @@ export function createImportApi<TRaw = any>({
   parseResponse,
 }: CreateImportApiConfig<TRaw>): ImportApi {
   return {
-    async uploadFile(file) {
+    async uploadFile(file, onProgress) {
       const formData = new FormData();
       formData.append("file", file);
 

@@ -11,6 +11,29 @@ export interface ItemClassification {
   class_name: string;
   class_level: number;
   is_active: boolean;
+  has_children?: boolean;
+  path?: ClassificationPathEntry[];
+}
+
+export interface ClassificationPathEntry {
+  class_code: string;
+  class_name: string | null;
+  class_level: number;
+  missing?: boolean;
+}
+
+export interface ClassificationPage {
+  page_size: number;
+  has_next: boolean;
+  next_cursor: string | null;
+}
+
+export interface ItemClassificationPageResponse {
+  status_code: number;
+  status: "success" | "fail";
+  message: string;
+  data: ItemClassification[];
+  pagination: ClassificationPage;
 }
 
 interface ItemClassificationListResponse {
@@ -58,4 +81,34 @@ export async function getItemClassificationByCode(
   );
 
   return resp.data?.data ?? null;
+}
+
+export async function getItemClassificationChildren(
+  parentCode?: string,
+  pageSize = 50,
+  cursor?: string | null,
+): Promise<ItemClassificationPageResponse> {
+  const resp = await api.get<ItemClassificationPageResponse>(
+    ItemClassificationAPI.getChildren,
+    {
+      params: {
+        parent_code: parentCode,
+        page_size: pageSize,
+        cursor: cursor || undefined,
+      },
+    },
+  );
+  return resp.data;
+}
+
+export async function searchItemClassifications(
+  search: string,
+  pageSize = 30,
+  cursor?: string | null,
+): Promise<ItemClassificationPageResponse> {
+  const resp = await api.get<ItemClassificationPageResponse>(
+    ItemClassificationAPI.search,
+    { params: { search, page_size: pageSize, cursor: cursor || undefined } },
+  );
+  return resp.data;
 }

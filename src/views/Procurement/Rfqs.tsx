@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { openRfqModal } from "../../store/modalStore";
 import toast from "react-hot-toast";
 import { useEffect } from "react";
@@ -20,11 +20,8 @@ import {
   showLoading,
   closeSwal,
 } from "../../utils/alert";
-import {
-  ACTION_ICONS,
-  getStatusActionIcon,
-} from "../../components/UI_Utils/statusActionIcons";
 import { Ban, CheckCircle } from "lucide-react";
+import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 
 interface RFQ {
   name: string;
@@ -49,39 +46,66 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
   const [totalItems, setTotalItems] = useState(0);
   const { can } = usePermission();
 
- const fetchRFQs = async () => {
-  try {
-    setLoading(true);
-    const start = (page - 1) * pageSize;
-    const res = await getRFQ(start, pageSize, searchTerm);
-    setRfqs(res.data);
-    setTotalPages(res.pagination?.total_pages || 1);
-    setTotalItems(res.pagination?.total || 0);
-  } catch (error) {
-    toast.error("Failed to load RFQs");
-  } finally {
-    setLoading(false);
-  }
-};
+  // ── Sorting
+  const [sortBy, setSortBy] = useState("transaction_date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    name: "name",
+    transaction_date: "transaction_date",
+    schedule_date: "schedule_date",
+  };
+
+  const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? field;
+
+  // ── Filters
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [filters, setFilters] = useState<{
+    from_date?: string;
+    to_date?: string;
+  }>({});
+
+  const statusOptions = [
+    { label: "Draft", value: "Draft" },
+    { label: "Approved", value: "Submitted" },
+    { label: "Cancelled", value: "Cancelled" },
+  ];
+
+  const fetchRFQs = async () => {
+    try {
+      setLoading(true);
+      const start = (page - 1) * pageSize;
+      const res = await getRFQ(
+        start,
+        pageSize,
+        searchTerm,
+        statusFilter.length > 0 ? statusFilter.join(",") : undefined,
+        mapSortField(sortBy),
+        sortOrder,
+        filters.from_date,
+        filters.to_date,
+      );
+      setRfqs(res.data);
+      setTotalPages(res.pagination?.total_pages || 1);
+      setTotalItems(res.pagination?.total || 0);
+    } catch (error) {
+      toast.error("Failed to load RFQs");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchRFQs();
-  }, [page, pageSize,searchTerm]);
-  
+  }, [page, pageSize, searchTerm, statusFilter, filters, sortBy, sortOrder]);
+
   useEffect(() => {
-  setPage(1);
-}, [searchTerm]);
+    setPage(1);
+  }, [searchTerm]);
 
-  // ================= FILTER =================
-  const filteredRFQs = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-
-    return rfqs.filter(
-      (r) =>
-        r.name.toLowerCase().includes(term) ||
-        r.status.toLowerCase().includes(term)
-    );
-  }, [rfqs, searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, filters]);
 
   const handleAddClick = () => {
     openRfqModal(null, false, {
@@ -92,7 +116,6 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
   };
 
   const handleEdit = (rfq: RFQ) => {
-
     openRfqModal(rfq.name, true, {
       onSuccess: fetchRFQs,
     });
@@ -129,55 +152,68 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
       showApiError(error);
     }
   };
-const handleSubmit = async (rfq: RFQ) => {
-  const confirm = await fireManagedSwal({
-    icon: "warning",
-    title: "Approve RFQ?",
-    text: `This will approve "${rfq.name}". This action cannot be undone.`,
-    showCancelButton: true,
-    confirmButtonColor: "#22c55e",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, approve",
-  });
 
-  if (!confirm.isConfirmed) return;  // ✅ yahan ruk jayega agar cancel kiya
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
+  };
 
-  try {
-    showLoading("Submitting RFQ...");
-    await updateStatus(rfq.name, "submit");
-    closeSwal();
-    showSuccess("RFQ submitted successfully");
-    await fetchRFQs();
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+  const handleSubmit = async (rfq: RFQ) => {
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: "Approve RFQ?",
+      text: `This will approve "${rfq.name}". This action cannot be undone.`,
+      showCancelButton: true,
+      confirmButtonColor: "#22c55e",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, approve",
+    });
 
-const handleCancel = async (rfq: RFQ) => {
-  const confirm = await fireManagedSwal({
-    icon: "warning",
-    title: "Cancel RFQ?",
-    text: `This will cancel "${rfq.name}". This action cannot be undone.`,
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, cancel",
-  });
+    if (!confirm.isConfirmed) return;
 
-  if (!confirm.isConfirmed) return;
+    try {
+      showLoading("Submitting RFQ...");
+      await updateStatus(rfq.name, "submit");
+      closeSwal();
+      showSuccess("RFQ submitted successfully");
+      await fetchRFQs();
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
-  try {
-    showLoading("Cancelling RFQ...");
-    await updateStatus(rfq.name, "cancel");
-    closeSwal();
-    showSuccess("RFQ cancelled successfully");
-    await fetchRFQs();
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+  const handleCancel = async (rfq: RFQ) => {
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: "Cancel RFQ?",
+      text: `This will cancel "${rfq.name}". This action cannot be undone.`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, cancel",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      showLoading("Cancelling RFQ...");
+      await updateStatus(rfq.name, "cancel");
+      closeSwal();
+      showSuccess("RFQ cancelled successfully");
+      await fetchRFQs();
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
   const formatDate = (date: string | Date) => {
     if (!date) return "";
@@ -189,26 +225,26 @@ const handleCancel = async (rfq: RFQ) => {
       return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
     }
 
-    // Date object — use local methods
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
 
-
-  // ================= TABLE COLUMNS =================
   const columns: Column<RFQ>[] = [
     {
       key: "name",
       header: "RFQ ID",
+      sortable: true,
       render: (r) => <div className="py-1.5">{r.name}</div>,
     },
     {
       key: "transaction_date",
       header: "Request Date",
+      sortable: true,
       render: (r) => <div className="py-1.5">{r.transaction_date ? formatDate(r.transaction_date) : "—"}</div>,
     },
     {
       key: "schedule_date",
       header: "Quote Deadline",
+      sortable: true,
       render: (r) => <div className="py-1.5">{r.schedule_date ? formatDate(r.schedule_date) : "—"}</div>,
     },
     {
@@ -216,7 +252,7 @@ const handleCancel = async (rfq: RFQ) => {
       header: "Status",
       render: (r) => (
         <div className="py-1.5">
-          <StatusBadge status={r.status} />
+            <StatusBadge status={r.status === "Submitted" ? "Approved" : r.status} />
         </div>
       ),
     },
@@ -245,32 +281,32 @@ const handleCancel = async (rfq: RFQ) => {
           </PermissionGate>
 
           <ActionMenu
-  customActions={[
-    ...(can(RFQ_MODULE, "submit") && o.status === "Draft"
-      ? [{
-          label: "Approve",
-          icon: <CheckCircle className="w-4 h-4" />,
-          onClick: () => { handleSubmit(o); },      
-          }]
-      : []),
-    ...(can(RFQ_MODULE, "cancel") && o.status === "Submitted"
-      ? [{
-          label: "Cancel",
-          icon: <Ban className="w-4 h-4" />,
-          onClick: () => handleCancel(o),
-          danger: true,
-        }]
-      : []),
-  ]}
-  {...(can(RFQ_MODULE, "delete")
-    ? {
-        onDelete: o.status !== "Submitted"
-          ? (e) => handleDelete(o, e)
-          : undefined,
-        deleteLabel: o.status === "Submitted" ? "Delete" : undefined,
-      }
-    : {})}
-/>
+            customActions={[
+              ...(can(RFQ_MODULE, "submit") && o.status === "Draft"
+                ? [{
+                    label: "Approve",
+                    icon: <CheckCircle className="w-4 h-4" />,
+                    onClick: () => { handleSubmit(o); },
+                  }]
+                : []),
+              ...(can(RFQ_MODULE, "cancel") && o.status === "Submitted"
+                ? [{
+                    label: "Cancel",
+                    icon: <Ban className="w-4 h-4" />,
+                    onClick: () => handleCancel(o),
+                    danger: true,
+                  }]
+                : []),
+            ]}
+            {...(can(RFQ_MODULE, "delete")
+              ? {
+                  onDelete: o.status !== "Submitted"
+                    ? (e) => handleDelete(o, e)
+                    : undefined,
+                  deleteLabel: o.status === "Submitted" ? "Delete" : undefined,
+                }
+              : {})}
+          />
         </ActionGroup>
       ),
     },
@@ -280,7 +316,7 @@ const handleCancel = async (rfq: RFQ) => {
     <div className="h-full min-h-0">
       <Table
         columns={columns}
-        data={filteredRFQs}
+        data={rfqs}
         showToolbar
         loading={loading}
         searchValue={searchTerm}
@@ -289,14 +325,39 @@ const handleCancel = async (rfq: RFQ) => {
         addLabel="Add RFQ"
         enableColumnSelector
         onAdd={handleAddClick}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
-         pageSizeOptions={[20, 50, 100,200]}
+        pageSizeOptions={[20, 50, 100, 200]}
         onRowDoubleClick={(o) => handleView(o)}
+        multiSelectFilters={[
+          {
+            key: "status",
+            label: "Status",
+            options: statusOptions,
+            values: statusFilter,
+            onChange: (vals) => {
+              setStatusFilter(vals);
+              setPage(1);
+            },
+          },
+        ]}
+        extraFilters={
+          <DateRangeFilter
+            from={filters.from_date}
+            to={filters.to_date}
+            onChange={(range) => {
+              setFilters((prev) => ({ ...prev, ...range }));
+              setPage(1);
+            }}
+          />
+        }
       />
     </div>
   );

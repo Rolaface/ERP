@@ -321,7 +321,7 @@ const filteredPurchaseData = useMemo(() => {
             </InfoBox>
             </Link>
 
-            <Link to="/crm?tab=customer-managment" >
+            <Link to="/crm?tab=customer-management" >
             <InfoBox title="Customer" loading={loadingSummary}
               icon={<Users size={16} className="text-blue-500" />}>
               <div className="text-lg font-bold text-emerald-600">{summaryData?.customer?.totalCustomers || 0}</div>

@@ -99,7 +99,7 @@ const STATUS_MAP: Record<string, string> = {
   Draft: "bg-draft",
   Submitted: "bg-info",
   Paid: "bg-success",
-  "Party Paid": "bg-success",
+  "Partly Paid": "bg-success",
   Cancelled: "bg-danger",
   Return: "bg-danger",
   "Debit Note Issued": "bg-danger",

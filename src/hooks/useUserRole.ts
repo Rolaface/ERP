@@ -7,6 +7,7 @@ export const MODULE_STRUCTURE: Record<string, { key: string; label: string }[]> 
   Sales: [
     { key: "Sales Invoice", label: "Sales Invoice" },
     { key: "Quotation", label: "Quotation" },
+    { key: "Custom Pdc Details", label: "PDC" },
   ],
   CustomerManagement: [
     { key: "Customer", label: "Customer" },

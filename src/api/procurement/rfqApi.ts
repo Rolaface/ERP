@@ -12,12 +12,15 @@ export async function createRFQ(payload: any): Promise<any> {
   const resp: AxiosResponse = await api.post(rfqapi.create, payload);
   return resp.data;
 }
-
 export async function getRFQ(
   start: number,
   pageSize: number,
   search: string,
   status?: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
+  from_date?: string,
+  to_date?: string,
 ): Promise<RFQListResponse> {
   try {
     const query = buildListParams({
@@ -27,9 +30,19 @@ export async function getRFQ(
       search,
       searchFields: ["name", "status"],
       status,
+      sortBy,
+      sortOrder,
     });
 
-    const resp = await api.get(`${rfqapi.GetAll}?${query}`);
+    const params = new URLSearchParams(query);
+    if (from_date || to_date) {
+      const dateFilters: any[] = [];
+      if (from_date) dateFilters.push(["transaction_date", ">=", from_date]);
+      if (to_date) dateFilters.push(["transaction_date", "<=", to_date]);
+      params.append("filters", JSON.stringify(dateFilters));
+    }
+
+    const resp = await api.get(`${rfqapi.GetAll}?${params.toString()}`);
     return resp.data;
   } catch (error) {
     throw error;

@@ -13,6 +13,7 @@ import { customerImportApi } from "../../api/imports/customer import/customerimp
 import { inventoryItemImportApi } from "../../api/imports/inventory import/inventoryimportapi";
 import { purchaseInvoiceImportApi } from "../../api/imports/purchase import/purchaseinvoice_importapi";
 import { supplierImportApi } from "../../api/imports/supplier import/supplierimportapi";
+import { itemClassificationImportApi } from "../../api/imports/codes import/itemClassificationImportApi";
 import type { SubscriptionAccess } from "../../store/subscriptionStore";
 
 
@@ -79,6 +80,20 @@ export const IMPORT_MODULES: ImportModuleConfig[] = [
       { key: "rfq", label: "RFQ" },
       { key: "purchase-invoice", label: "Purchase Invoice", api: purchaseInvoiceImportApi },
       { key: "debit-note", label: "Debit Note" },
+    ],
+     subscriptionCheck: (a: SubscriptionAccess) => a.procurement,
+  },
+  {
+    key: "codes",
+    title: "Codes",
+    description: "Item Classification codes, Packaging codes, and UOM codes.",
+    category: "General",
+    icon: FileText,
+    status: "active",
+    subTypes: [
+      { key: "item-classification", label: "Item Classification", api: itemClassificationImportApi },
+      { key: "packaging", label: "Packaging" },
+      { key: "uom", label: "UOM" },
     ],
      subscriptionCheck: (a: SubscriptionAccess) => a.procurement,
   },

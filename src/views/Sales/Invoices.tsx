@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { useOutletContext } from "react-router-dom";
 
+
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import {
   openPaymentEntryModal,
@@ -21,6 +22,7 @@ import {
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
 
 import PdfPreviewModal from "./PdfPreviewModal";
+import PdcSelectionModal, { type PdcDetail } from "./PdcSelectionModal";
 import InvoiceDetailModal, { type InvoiceDetail } from "./InvoiceDetailsModal";
 import {
   useDataRefreshStore,
@@ -126,6 +128,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfInvoiceNumber, setPdfInvoiceNumber] = useState<string | null>(null);
+    // ── PDC selection modal
+  const [pdcModalOpen, setPdcModalOpen] = useState(false);
+  const [pdcList, setPdcList] = useState<PdcDetail[]>([]);
+  const [pdcLoading, setPdcLoading] = useState(false);
+  const [pdcInvoice, setPdcInvoice] = useState<InvoiceSummary | null>(null);
+  const [pdcInvoiceDetail, setPdcInvoiceDetail] = useState<any>(null);
   const createCreditNoteFromSalesInvoice =
     useDocumentConversion("siToCreditNote");
 
@@ -141,6 +149,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     status?: string[];
     from_date?: string;
     to_date?: string;
+    pdc?: boolean;
   }>({});
 
   // ── Pagination (server)
@@ -201,6 +210,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           : undefined,
         filters.from_date,
         filters.to_date,
+        filters.pdc ? 1 : undefined,
       );
 
       if (!res || res.status_code !== 200) {
@@ -229,6 +239,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         invoiceStatus: inv.status,
         invoiceTypeParent: inv.invoiceTypeParent,
         invoiceType: inv.taxCategory,
+        tags: inv.tags ?? null,
       }));
 
       setInvoices(mapped);
@@ -285,6 +296,24 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   };
 
   const handleReceivePayment = async (inv: InvoiceSummary) => {
+       if (inv.tags === "PDC") {
+      setPdcInvoice(inv);
+      setPdcModalOpen(true);
+      setPdcLoading(true);
+      try {
+        const res = await getSalesInvoiceById(inv.invoiceNumber);
+        const d = res?.message?.data;
+        setPdcInvoiceDetail(d ?? null);
+        setPdcList(d?.pdc_details ?? []);
+      } finally {
+        setPdcLoading(false);
+      }
+      return;
+    }
+       await openStandardPaymentEntry(inv);
+ };
+
+ const openStandardPaymentEntry = async (inv: InvoiceSummary) => {
     const res = await getSalesInvoiceById(inv.invoiceNumber);
     closeSwal();
     const d = res?.message?.data;
@@ -310,6 +339,49 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         },
       },
     );
+  };
+  const handlePdcSkip = () => {
+   if (!pdcInvoice) return;
+    const inv = pdcInvoice;
+    setPdcModalOpen(false);
+    setPdcInvoice(null);
+    setPdcInvoiceDetail(null);
+    setPdcList([]);
+    openStandardPaymentEntry(inv);
+  };
+   const handlePdcSelect = (pdc: PdcDetail) => {
+   if (!pdcInvoice || !pdcInvoiceDetail) return;
+
+    setPdcModalOpen(false);
+
+    openPaymentEntryModal(
+      {
+        paymentType: "Receive",
+        partyType: "Customer",
+        partyName: pdcInvoice.customerName,
+        partyId: pdcInvoice.customerId,
+        amount: pdc.amount,
+        referenceName: pdcInvoice.invoiceNumber,
+        referenceType: "Sales Invoice",
+        glFrom: pdcInvoiceDetail?.gl_account ?? "",
+        glFromDisplay: pdcInvoiceDetail?.gl_account_name ?? "",
+        currencyFrom: pdcInvoiceDetail?.gl_account_currency ?? "",
+        modeOfPayment: pdcInvoiceDetail?.paymentMode ?? "",
+        referenceNo: pdc.cheque_reference_number,
+        referenceDate: pdc.cheque_date,
+      },
+      false,
+      {
+        onSuccess: (paymentId) => {
+          fetchInvoices();
+          showSuccess(`Payment ${paymentId} created`);
+        },
+      },
+    );
+
+    setPdcInvoice(null);
+    setPdcInvoiceDetail(null);
+    setPdcList([]);
   };
 
   const handleCreateCreditNote = (siId: string, e?: React.MouseEvent) => {
@@ -337,6 +409,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             : undefined,
           filters.from_date,
           filters.to_date,
+          filters.pdc ? 1 : undefined,
         );
 
         if (res?.status_code === 200) {
@@ -750,8 +823,15 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Status",
         align: "center",
         render: (inv) => (
-          <div className="py-1.5">
-            <StatusBadge status={inv.invoiceStatus} />
+          <div className="py-1.5 flex items-center justify-center">
+            <div className="relative inline-flex items-center">
+              <StatusBadge status={inv.invoiceStatus} />
+              {inv.tags && (
+                <span className="absolute left-full ml-1 inline-flex items-center shrink-0 whitespace-nowrap rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  {inv.tags}
+                </span>
+              )}
+            </div>
           </div>
         ),
       },
@@ -968,14 +1048,30 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           },
         ]}
         extraFilters={
-          <DateRangeFilter
-            from={filters.from_date}
-            to={filters.to_date}
-            onChange={(range) => {
-              setFilters((prev) => ({ ...prev, ...range }));
-              setPage(1);
-            }}
-          />
+          <div className="flex items-center gap-3">
+            <DateRangeFilter
+              from={filters.from_date}
+              to={filters.to_date}
+              onChange={(range) => {
+                setFilters((prev) => ({ ...prev, ...range }));
+                setPage(1);
+              }}
+            />
+            <label className="flex items-center gap-1.5 text-sm cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={filters.pdc ?? false}
+                onChange={(e) => {
+                  setFilters((prev) => ({
+                    ...prev,
+                    pdc: e.target.checked || undefined,
+                  }));
+                  setPage(1);
+                }}
+              />
+              PDC
+            </label>
+          </div>
         }
       />
 
@@ -1015,6 +1111,20 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           a.click();
           document.body.removeChild(a);
         }}
+      />
+      
+      <PdcSelectionModal
+        open={pdcModalOpen}
+        pdcList={pdcList}
+        loading={pdcLoading}
+        onClose={() => {
+          setPdcModalOpen(false);
+          setPdcInvoice(null);
+          setPdcInvoiceDetail(null);
+          setPdcList([]);
+        }}
+        onSelect={handlePdcSelect}
+         onSkip={handlePdcSkip}
       />
     </div>
   );

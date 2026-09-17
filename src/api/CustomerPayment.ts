@@ -42,6 +42,8 @@ export const getAllPayments = async (
    status?: string,
 fromDate?: string,
  toDate?: string,
+ sortBy?: string,             // ← add
+  sortOrder?: "asc" | "desc",
 ): Promise<any> => {
   const resp: AxiosResponse = await api.get(
     CustomerPaymentAPI.getAllpayements,
@@ -55,6 +57,7 @@ fromDate?: string,
               ...(status && { status }),
        ...(fromDate && { fromDate }),
        ...(toDate && { toDate }),
+       ...(sortBy && { order_by: `${sortBy} ${sortOrder ?? "asc"}` }),
       },
     },
   );

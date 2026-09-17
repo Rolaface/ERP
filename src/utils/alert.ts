@@ -148,6 +148,10 @@ export const showLoading = (title = "Processing...") => {
   });
 };
 
+export const updateLoading = (html: string) => {
+  Swal.update({ html });
+};
+
 /*  Close  */
 export const closeSwal = () => {
   closeManagedSwal();

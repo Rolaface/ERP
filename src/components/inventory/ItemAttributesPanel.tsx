@@ -110,12 +110,12 @@ const ItemAttributesPanel: React.FC<ItemAttributesPanelProps> = React.memo(
                 }
               />
               <AttributeCheckbox
-                label="UseYn"
+                label="Used"
                 checked={!!form.useYn}
                 onChange={(v) =>  setField("useYn", v)}
               />
               <AttributeCheckbox
-                label="RentalYn"
+                label="Is Rental"
                 checked={!!form.rentalYn}
                 onChange={(v) =>  setField("rentalYn", v)}
               />

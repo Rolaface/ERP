@@ -15,8 +15,16 @@
     value: string;
   }
   export async function getExpenseCategories(search?: string): Promise<any> {
-    const url = search
-      ? `${ExpenseClaimAPI.Claim_Type}?search=${encodeURIComponent(search)}`
+    const params = new URLSearchParams();
+    if (search) {
+      params.append(
+        "or_filters",
+        JSON.stringify([["name", "like", `%${search}%`]])
+      );
+    }
+    const query = params.toString();
+    const url = query
+      ? `${ExpenseClaimAPI.Claim_Type}?${query}`
       : ExpenseClaimAPI.Claim_Type;
     const resp: AxiosResponse = await api.get(url);
     return resp.data || null;

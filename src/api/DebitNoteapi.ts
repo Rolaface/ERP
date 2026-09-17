@@ -73,41 +73,56 @@ export async function getAllDebitNotes(
   page = 1,
   page_size = 10,
   search: string = "",
+  status?: string,
+  sortBy?: string,
+  sortOrder: "asc" | "desc" = "desc",
+  from_date?: string,
+  to_date?: string,
 ): Promise<any> {
   const limit_start = (page - 1) * page_size;
 
-  const resp: AxiosResponse = await api.get(DebitNoteAPI.Debit_note, { 
+  const baseFilters: any[] = [["is_return", "=", 1]];
+  if (status) {
+    const statuses = status.split(",").map((s) => s.trim()).filter(Boolean);
+    if (statuses.length > 1) {
+      baseFilters.push(["status", "in", statuses]);
+    } else if (statuses.length === 1) {
+      baseFilters.push(["status", "=", statuses[0]]);
+    }
+  }
+  if (from_date) baseFilters.push(["posting_date", ">=", from_date]);
+  if (to_date) baseFilters.push(["posting_date", "<=", to_date]);
+
+  const resp: AxiosResponse = await api.get(DebitNoteAPI.Debit_note, {
     params: {
-      filters: JSON.stringify([["is_return", "=", 1]]),
-      fields: JSON.stringify(["name","supplier_name","currency","grand_total","status","posting_date","return_against"]),
+      filters: JSON.stringify(baseFilters),
+      fields: JSON.stringify(["name", "supplier_name", "currency", "grand_total", "status", "posting_date", "return_against"]),
       with_pagination: 1,
-      order_by: "posting_date desc",
+      order_by: sortBy ? `${sortBy} ${sortOrder}` : "posting_date desc",
       limit_start,
       limit_page_length: page_size,
       ...(search && { search }),
     },
   });
 
-const raw = resp.data;
-const items = Array.isArray(raw?.data) ? raw.data        
-            : Array.isArray(raw)        ? raw            
-            : [];
+  const raw = resp.data;
+  const items = Array.isArray(raw?.data) ? raw.data
+    : Array.isArray(raw) ? raw
+      : [];
 
+  const pagination = raw?.pagination ?? {};
+  const total = pagination.total ?? items.length;
 
-const pagination = raw?.pagination ?? {};
-const total = pagination.total ?? items.length;
-
-return {
-  data: items,   
-  pagination: {
-    total,
-    total_pages: (pagination.total_pages ?? Math.ceil(total / page_size)) || 1,
-    page,
-    page_size,
-  },
-};
+  return {
+    data: items,
+    pagination: {
+      total,
+      total_pages: (pagination.total_pages ?? Math.ceil(total / page_size)) || 1,
+      page,
+      page_size,
+    },
+  };
 }
-
 export async function deleteDebitNote(invoiceId: string): Promise<any> {
   const resp: AxiosResponse = await api.delete(`${DebitNoteAPI.Debit_note}/${encodeURIComponent(invoiceId)}`);
   return resp.data;

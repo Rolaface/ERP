@@ -56,6 +56,8 @@ interface Props {
     glFrom?: string;
     glFromDisplay?: string;
     currencyFrom?: string;
+    referenceNo?: string;
+    referenceDate?: string;
   };
 }
 
@@ -341,6 +343,12 @@ const PaymentEntryModal: React.FC<Props> = ({
     }
     if (defaultValues?.currencyFrom) {
       base.currencyFrom = defaultValues.currencyFrom;
+    }
+       if (defaultValues?.referenceNo) {
+      base.referenceNo = defaultValues.referenceNo;
+    }
+    if (defaultValues?.referenceDate) {
+      base.referenceDate = defaultValues.referenceDate;
     }
 
     if (defaultValues?.referenceName) {
