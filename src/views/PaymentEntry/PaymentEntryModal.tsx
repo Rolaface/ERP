@@ -311,10 +311,17 @@ const PaymentEntryModal: React.FC<Props> = ({
     if (!base.date) base.date = today;
     if (!base.referenceDate) base.referenceDate = today;
 
-    if (base.amount != null) {
-      base.amountFrom ??= base.amount;
-      base.amountTo ??= base.amount;
-    }
+   if (base.amount != null) {
+  if (base.paymentType === "Pay") {
+    // Invoice amount is in party currency → goes to Paid To.
+    // Paid From (company/base currency) is left to be derived once
+    // the exchange rate resolves.
+    base.amountTo = base.amount;
+  } else {
+    base.amountFrom ??= base.amount;
+    base.amountTo ??= base.amount;
+  }
+}
 
     if (defaultValues?.partyId) {
       base.partyId = defaultValues.partyId;
@@ -352,10 +359,14 @@ const PaymentEntryModal: React.FC<Props> = ({
     }
 
     if (defaultValues?.referenceName) {
-      const lockedAmount = Math.max(
-        0,
-        Number(base.amountFrom ?? base.amount ?? 0),
-      );
+     const lockedAmount = Math.max(
+  0,
+  Number(
+    base.paymentType === "Pay"
+      ? base.amountTo ?? base.amount ?? 0
+      : base.amountFrom ?? base.amount ?? 0
+  ),
+);
       base.allocations = {
         [defaultValues.referenceName]: lockedAmount,
       };
@@ -429,10 +440,26 @@ const PaymentEntryModal: React.FC<Props> = ({
   }, [amountFrom]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Derived values ─────────────────────────────────────────────────────────
-  const paymentAmount = amountFrom;
-  const totalAllocated = Number(form?.allocatedAmount ?? 0);
-  // While allocating, never show stale advance — hide it
-  const advance = isAllocating ? 0 : Math.max(0, paymentAmount - totalAllocated);
+const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
+const totalAllocated = Number(form?.allocatedAmount ?? 0);
+const rate = Number(form?.exchangeRate) || 1;
+
+const isPay = form?.paymentType === "Pay";
+const isSameCurrency =
+  !form?.currencyFrom ||
+  !form?.currencyTo ||
+  form?.currencyFrom === form?.currencyTo;
+
+const allocatedInPaymentCurrency =
+  isPay && !isSameCurrency
+    ? form?.currencyFrom === form?.companyDefaultCurrency
+      ? totalAllocated * rate
+      : totalAllocated / rate
+    : totalAllocated;
+
+const advance = isAllocating
+  ? 0
+  : Math.max(0, paymentAmount - allocatedInPaymentCurrency);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
 
@@ -538,20 +565,24 @@ const PaymentEntryModal: React.FC<Props> = ({
           const referenceName = prev.referenceName;
           const next = { ...prev, ...updates };
           const lockedAmount = Math.max(
-            0,
-            Number(next.amountFrom ?? next.amount ?? 0),
-          );
+  0,
+  Number(
+    next.paymentType === "Pay"
+      ? next.amountTo ?? next.amount ?? 0
+      : next.amountFrom ?? next.amount ?? 0
+  ),
+);
 
-          return {
-            ...next,
-            referenceType:
-              next.referenceType ??
-              prev.referenceType ??
-              inferReferenceType(next.partyType),
-            allocations: { [referenceName]: lockedAmount },
-            selectedInvoices: [referenceName],
-            allocatedAmount: lockedAmount,
-          };
+return {
+  ...next,
+  referenceType:
+    next.referenceType ??
+    prev.referenceType ??
+    inferReferenceType(next.partyType),
+  allocations: { [referenceName]: lockedAmount },
+  selectedInvoices: [referenceName],
+  allocatedAmount: lockedAmount,
+};
         }
         const currentAmount = Number(prev.amountFrom ?? prev.amount ?? 0);
 
@@ -652,15 +683,18 @@ const PaymentEntryModal: React.FC<Props> = ({
     }
   }, [form, onClose, onSuccess, resetModalState]);
 
-  const invoiceListForm = {
-    partyType: form?.partyType,
-    partyName: form?.partyName,
-    partyId: form?.partyId,
-    amount: form?.amountFrom ?? form?.amount,
-    fifoTrigger: form?.fifoTrigger,
-    referenceInvoice: form?.referenceName,
-    allocations: form?.allocations ?? {},
-  };
+const invoiceListForm = {
+  partyType: form?.partyType,
+  partyName: form?.partyName,
+  partyId: form?.partyId,
+  amount:
+    form?.paymentType === "Pay"
+      ? form?.amountTo ?? form?.amount
+      : form?.amountFrom ?? form?.amount,
+  fifoTrigger: form?.fifoTrigger,
+  referenceInvoice: form?.referenceName,
+  allocations: form?.allocations ?? {},
+};
 
   const requiresExchangeRate =
     Boolean(form?.currencyFrom) &&
