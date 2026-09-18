@@ -174,7 +174,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     rateToCurrency,
     date,
     exchangeRateArgs,
-    isPay,
+    // isPay,
   );
 
 

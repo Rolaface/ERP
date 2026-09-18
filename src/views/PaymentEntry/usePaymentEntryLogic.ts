@@ -455,7 +455,7 @@ export function useExchangeRate(
   currencyTo: string,
   date: string,
   args: "for_selling" | "for_buying",
-  enabled: boolean = true,   // 👈 new param
+  // enabled: boolean = true,   // 👈 new param
 ) {
   const [rate, setRate] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -469,12 +469,12 @@ export function useExchangeRate(
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (!enabled) {         
-      setRate(null);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
+    // if (!enabled) {         
+    //   setRate(null);
+    //   setError(null);
+    //   setIsLoading(false);
+    //   return;
+    // }
 
     if (!currenciesKnown) {
       setRate(null);
@@ -521,7 +521,7 @@ export function useExchangeRate(
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [currencyFrom, currencyTo, currenciesKnown, currenciesDiffer, date, args, enabled]);
+  }, [currencyFrom, currencyTo, currenciesKnown, currenciesDiffer, date, args]);
 
   return { rate, error, isLoadingRate: isLoading, currenciesDiffer };
 }
