@@ -104,7 +104,7 @@ const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 const res = await getAllEmployees(page, pageSize, undefined, searchParam, SortField, sortOrder);
       if (!mountedRef.current) return;
 
-      // FIX: fetch lookup data once, then return cached result via fetcher
+   
       const [allDepartments, allBranches] = await Promise.all([
         getAllDepartments(),
         getallbranches(),
