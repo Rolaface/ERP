@@ -181,7 +181,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   // Sync exchange rate result into form state
   useEffect(() => {
     // if (!isPay) return;
-    // if (!currenciesDiffer) {
+    if (!currenciesDiffer) {
       onFormChange({ exchangeRate: 1 });
       return;
     }
