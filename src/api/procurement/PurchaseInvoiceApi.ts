@@ -33,8 +33,8 @@ export async function getPurchaseInvoices(
       if (v != null) params.set(k, String(v));
     });
     if (status) {
-      const statuses = Array.isArray(status) ? status : [status];
-      statuses.forEach((s) => params.append("status", s));
+      const statuses = Array.isArray(status) ? status.join(",") : status;
+      params.set("status", statuses);
     }
   }
 
