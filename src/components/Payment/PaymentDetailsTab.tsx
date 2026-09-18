@@ -180,8 +180,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   // Sync exchange rate result into form state
   useEffect(() => {
-    if (!isPay) return;
-    if (!currenciesDiffer) {
+    // if (!isPay) return;
+    // if (!currenciesDiffer) {
       onFormChange({ exchangeRate: 1 });
       return;
     }
@@ -463,16 +463,24 @@ const handleAmountToChange = (
   });
 };
 
-  const handleAmountFromChange = (
+const handleAmountFromChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const val =
       parseFloat((e as React.ChangeEvent<HTMLInputElement>).target.value) || 0;
     const rate = parseFloat(form.exchangeRate) || 1;
+
+    const amountTo =
+      paymentType === "Pay"
+        ? currencyFrom === baseCurrency
+          ? val / rate
+          : val * rate
+        : val * rate;
+
     onChange(e);
     onFormChange({
-      amountTo: val ? String(+(val * rate).toFixed(4)) : "",
-      amount: val ? String(+(val * rate).toFixed(4)) : "",
+      amountTo: val ? String(+amountTo.toFixed(4)) : "",
+      amount: val ? String(+amountTo.toFixed(4)) : "",
     });
   };
 
