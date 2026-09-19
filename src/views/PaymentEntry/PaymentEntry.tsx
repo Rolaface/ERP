@@ -483,7 +483,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
           }}
           enableColumnSelector
           enableAdd={!isEmployee && can(PAYMENT_ENTRY_MODULE, "create")}
-          addLabel="Add Expense Payment"
+          addLabel="Add Payment Entry"
           onAdd={() =>
             openPaymentEntryModal(
               {
