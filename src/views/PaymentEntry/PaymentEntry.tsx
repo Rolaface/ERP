@@ -30,6 +30,7 @@ interface PaymentAPI {
   paymentType: string;
   partyType: string;
   partyName: string;
+  party?: string;
   paymentMode: string;
   referenceNumber?: string;
   amount: number;
@@ -42,6 +43,7 @@ type PaymentRow = {
   paymentDate?: string;
   paymentType?: string;
   partyName?: string;
+  partyId?: string;
   mode?: string;
   amount?: number;
   status: string;
@@ -53,8 +55,9 @@ const PAYMENT_ENTRY_MODULE = "Payment Entry";
 const SORT_FIELD_MAP: Record<string, string> = {
   id: "name",
   paymentDate: "posting_date",
-  partyType: "party_name",
+   partyType: "party_name",
   partyName: "party_name",
+  partyId: "party",
   mode: "mode_of_payment",
   referenceNumber: "reference_no",
   amount: "paid_amount",
@@ -91,6 +94,7 @@ interface PaymentEntryProps {
 const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   const mountedRef = useRef(true);
   const { can } = usePermission();
+  const isEmployee = defaultPartyType === "Employee";
 
   // ── Data state — split loading so page changes don't flash full skeleton
   const [data, setData] = useState<PaymentRow[]>([]);
@@ -138,8 +142,8 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
     setIsFetching(true);
 
     try {
-      const response = await getAllPayments(
-        defaultPartyType as "Customer" | "Supplier" | undefined,
+        const response = await getAllPayments(
+        defaultPartyType as "Customer" | "Supplier" | "Employee" | undefined,
         page,
         pageSize,
         searchTerm,
@@ -162,6 +166,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         status: p.status || "—",
         partyType: p.partyType || "—",
         partyName: p.partyName || "—",
+        partyId: p.party || "—",
         mode: p.paymentMode || "—",
         amount: Number(p.amount) || 0,
         paymentDate: p.paymentDate || undefined,
@@ -216,8 +221,8 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
       let total = 1;
 
       do {
-        const response = await getAllPayments(
-          defaultPartyType as "Customer" | "Supplier" | undefined,
+         const response = await getAllPayments(
+          defaultPartyType as "Customer" | "Supplier" | "Employee" | undefined,
           current,
           100,
           searchTerm,
@@ -227,7 +232,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
             : undefined,
           filters.from_date,
           filters.to_date,
-           mapSortField(sortBy),   // ← add
+           mapSortField(sortBy),  
   sortOrder, 
         );
 
@@ -236,8 +241,9 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         const mapped: PaymentRow[] = payments.map((p) => ({
           id: p.paymentId,
           status: p.status || "—",
-          partyType: p.partyType || "—",
+         partyType: p.partyType || "—",
           partyName: p.partyName || "—",
+          partyId: p.party || "—",
           mode: p.paymentMode || "—",
           amount: Number(p.amount) || 0,
           paymentDate: p.paymentDate || undefined,
@@ -273,8 +279,9 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         dataToExport.map((p) => ({
           "Payment Id": p.id,
           "Payment Date": p.paymentDate ? formatDate(p.paymentDate) : "",
-          "Party Type": p.partyType,
+          ...(isEmployee ? {} : { "Party Type": p.partyType }),
           Party: p.partyName,
+          ...(isEmployee ? { "Employee ID": p.partyId } : {}),
           "Mode Of Payment": p.mode,
           Currency: p.currency ?? "",
           Amount: p.amount,
@@ -314,20 +321,32 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         sortable: true,  
         render: (row) => row.paymentDate ? formatDate(row.paymentDate) : "-",
       },
-      {
-        key: "partyType",
-        header: "party Type",
-        sortable: true, 
-        
-        render: (row) => row.partyType || "—",
-      },
+      ...(!isEmployee
+        ? [
+            {
+              key: "partyType",
+              header: "party Type",
+              sortable: true,
+              render: (row: PaymentRow) => row.partyType || "—",
+            } as Column<PaymentRow>,
+          ]
+        : []),
       {
         key: "partyName",
-        header: "Party",
-        
-        sortable: true,  
+        header: isEmployee ? "Employee Name" : "Party",
+        sortable: true,
         render: (row) => row.partyName || "—",
       },
+      ...(isEmployee
+        ? [
+            {
+              key: "partyId",
+              header: "Employee ID",
+              sortable: true,
+              render: (row: PaymentRow) => row.partyId || "—",
+            } as Column<PaymentRow>,
+          ]
+        : []),
       {
         key: "mode",
         header: "Mode Of Payment",
@@ -441,8 +460,8 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
           </div>
         ),
       }
-    ],
-    [formatAmount],
+     ],
+    [formatAmount, isEmployee],
   );
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -452,7 +471,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         <Table
           columns={columns}
           data={data}
-          tableId="payment-entry"
+           tableId={isEmployee ? "expense-payment-entry" : "payment-entry"}
           rowKey={(r) => r.id}
           loading={isInitialLoad}
           isFetching={isFetching}
@@ -463,7 +482,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
             setPage(1);
           }}
           enableColumnSelector
-          enableAdd={can(PAYMENT_ENTRY_MODULE, "create")}
+          enableAdd={!isEmployee && can(PAYMENT_ENTRY_MODULE, "create")}
           addLabel="Add Payment Entry"
           onAdd={() =>
             openPaymentEntryModal(
