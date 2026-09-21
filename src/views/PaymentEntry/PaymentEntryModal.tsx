@@ -552,8 +552,8 @@ const advance = isAllocating
   const handleFormChange = useCallback(
     (updates: Record<string, any>) => {
       markDirty();
-      if (
-        (form.referenceType === "Employee Advance" && form.glTo) ||
+       if (
+        (["Employee Advance", "Expense Claim"].includes(form.referenceType) && form.glTo) ||
         (isGlToLocked_PI && form.glTo)
       ) {
         delete updates.glTo;
@@ -795,7 +795,8 @@ const invoiceListForm = {
                 islocked={Boolean(form?.referenceName)}
                 isGlFromLocked={isGlFromLocked}
                 isGlToLocked={
-                  (form.referenceType === "Employee Advance" && Boolean(form.glTo)) ||
+               (["Employee Advance", "Expense Claim"].includes(form.referenceType) &&
+                    Boolean(form.glTo)) ||
                   isGlToLocked_PI
                 }
                 isModeOfPaymentLocked={
