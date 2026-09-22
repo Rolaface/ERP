@@ -360,12 +360,12 @@ const ImportedPurchaseInvoice: React.FC = () => {
         render: (g) => (
           <div onClick={(e) => e.stopPropagation()}>
             <input
-              type="text"
-              value={remarks[g.items[0].id] ?? ""}
-              placeholder="Remarks"
-              
-              className="w-full rounded-md border border-theme bg-muted/50 px-2 py-1.5 text-xs text-muted cursor-not-allowed"
-            />
+  type="text"
+  value={remarks[g.items[0].id] ?? ""}
+  placeholder="Remarks"
+  onChange={(e) => handleRemarkChange(g.items[0].id, e.target.value)}
+  className="w-full rounded-md border border-theme bg-muted/50 px-2 py-1.5 text-xs text-main"
+/>
             {remarkErrors[g.key] && (
               <p className="text-[10px] text-danger mt-1">
                 {remarkErrors[g.key]}

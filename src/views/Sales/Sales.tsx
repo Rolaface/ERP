@@ -117,7 +117,7 @@ const ALL_SALES_TAB = [
     id: "pdc",
     label: "PDC",
     icon: <FileClock size={16} strokeWidth={1.75} />,
-    module: "Sales Invoice",
+    module: "Custom Pdc Details",
     action: "read" as const,
   },
 ];

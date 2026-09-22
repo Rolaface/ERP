@@ -104,7 +104,7 @@ const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 const res = await getAllEmployees(page, pageSize, undefined, searchParam, SortField, sortOrder);
       if (!mountedRef.current) return;
 
-      // FIX: fetch lookup data once, then return cached result via fetcher
+   
       const [allDepartments, allBranches] = await Promise.all([
         getAllDepartments(),
         getallbranches(),
@@ -142,7 +142,7 @@ const res = await getAllEmployees(page, pageSize, undefined, searchParam, SortFi
     }
   }, [page, pageSize, searchTerm, isEmployeeView, user?.employeeId, sortBy, sortOrder]);
 
-  // Keep a stable ref so subscriptions always call the latest version
+
   const fetchEmployeesRef = useRef(fetchEmployees);
   useEffect(() => {
     fetchEmployeesRef.current = fetchEmployees;
@@ -157,13 +157,12 @@ const res = await getAllEmployees(page, pageSize, undefined, searchParam, SortFi
     };
   }, []);
 
-  // Refetch on pagination / search change
 useEffect(() => {
   if (isInitialLoad) return;
   fetchEmployees();
 }, [page, pageSize, searchTerm, sortBy, sortOrder]);
 
-  // Subscribe once to refresh store
+
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(
       REFRESH_KEYS.EMPLOYEE_LIST,

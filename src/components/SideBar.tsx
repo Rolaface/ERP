@@ -139,7 +139,7 @@ const menuItems: MenuItem[] = [
     name: "Sales",
     to: "/sales",
     icon: <ShoppingCart {...iconProps} />,
-    modules: ["Sales Invoice"],
+    modules: ["Sales Invoice","Quotation","Custom Pdc Details"],
     subscriptionCheck: (a) => a.sales,
     hideInEmployeeView: true,
   },

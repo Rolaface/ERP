@@ -170,7 +170,7 @@ const router = createBrowserRouter(
             <Route
               path="/sales"
               element={
-                <PermissionRoute modules={["Sales Invoice"]} subscriptionCheck={(a) => a.sales}>
+                <PermissionRoute modules={["Sales Invoice", "Quotation", "Custom Pdc Details"]} subscriptionCheck={(a) => a.sales}>
                   <SalesModule />
                 </PermissionRoute>
               }
