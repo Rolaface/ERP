@@ -10,7 +10,7 @@ export default defineConfig({
     // target: "https://api.erp.lms.rolaface.com",
     // target: "http://lms.local:8000",
     // target: "http://zambia.local:8000",
-    target: 'https://api.erp.lms.rolaface.com',  
+    target: "https://api.erp.uat.izyanehub.com",
     changeOrigin: true,
     secure: true,
   },
