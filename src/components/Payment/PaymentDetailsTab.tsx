@@ -149,12 +149,21 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   const exchangeRateArgs: "for_selling" | "for_buying" =
     paymentType === "Pay" ? "for_buying" : "for_selling";
 
+  // currenciesDiffer reflects the actual transaction legs (Paid From vs
+  // Paid To), which is what decides whether the user should see/fetch a
+  // real rate. Do NOT base this on the base-currency-remapped pair below —
+  // that remapping is only for calling the rate API correctly and can
+  // differ from currencyFrom/currencyTo even when the two legs match
+  // (e.g. both USD, but baseCurrency is EUR), which would wrongly force
+  // a rate fetch instead of defaulting to 1.
   const currenciesDiffer =
     Boolean(currencyFrom) && Boolean(currencyTo) && currencyFrom !== currencyTo;
 
-  // to_currency is ALWAYS base; the non-base side becomes from_currency.
-  // Pay:     from = company (base), to = party  → swap so base lands on to_currency
-  // Receive: from = party,          to = company (base) → already correct
+  // to_currency is forced to base ONLY for Pay (from = company/base, to = party
+  // → swap so base lands on to_currency). For Receive, use the actual selected
+  // account currencies as-is — forcing baseCurrency here regardless of
+  // paymentType was collapsing the pair to base→base (rate = 1) whenever the
+  // Receive-side company bank account wasn't in the base currency.
   const isPay = paymentType === "Pay";
 
   const rateFromCurrency =
@@ -163,7 +172,21 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       : currencyFrom;
 
   const rateToCurrency =
-    baseCurrency || currencyTo;
+    isPay ? (baseCurrency || currencyTo) : currencyTo;
+
+  useEffect(() => {
+    console.log("[rate-debug]", {
+      paymentType,
+      partyType,
+      currencyFrom,
+      currencyTo,
+      baseCurrency,
+      rateFromCurrency,
+      rateToCurrency,
+      modeCurrency: selectedMode?.currency,
+      exchangeRate: form.exchangeRate,
+    });
+  }, [currencyFrom, currencyTo, baseCurrency, selectedMode, form.exchangeRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     rate: fetchedRate,
@@ -181,6 +204,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   // Sync exchange rate result into form state
   useEffect(() => {
     // if (!isPay) return;
+    
     if (!currenciesDiffer) {
       onFormChange({ exchangeRate: 1 });
       return;
@@ -241,10 +265,11 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         glFromDisplay: isGlFromLocked ? form.glFromDisplay : (selectedMode.accountName ?? ""),
         currencyFrom: isGlFromLocked ? form.currencyFrom : (selectedMode.currency ?? ""),
       });
-    } else if (paymentType === "Receive") {
+        } else if (paymentType === "Receive") {
       onFormChange({
-        glTo: selectedMode.defaultAccount ?? "",
-        currencyTo: selectedMode.currency ?? "",
+        glTo: isGlToLocked ? form.glTo : (selectedMode.defaultAccount ?? ""),
+        glToDisplay: isGlToLocked ? form.glToDisplay : (selectedMode.accountName ?? ""),
+        currencyTo: isGlToLocked ? form.currencyTo : (selectedMode.currency ?? ""),
       });
     } else if (paymentType === "Internal Transfer") {
       onFormChange({
@@ -252,7 +277,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         currencyFrom: isGlFromLocked ? form.currencyFrom : (selectedMode.currency ?? ""),
       });
     }
-  }, [selectedMode, paymentType, form.mode]);
+   }, [selectedMode, paymentType, form.mode, isGlToLocked, isGlFromLocked]);
 
   // ── Party change → auto-fill GL + bank accounts 
   // LOGIC:
@@ -295,7 +320,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         fetchPartyBanks(form.partyType, form.partyId)
       ]);
 
-      if (requestId !== requestRef.current) return;
+             if (requestId !== requestRef.current) return;
       if (!details) return;
       if (!isGlFromLocked && form.glFrom && form.glTo) return;
 
