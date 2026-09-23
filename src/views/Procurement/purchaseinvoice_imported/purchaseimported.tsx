@@ -581,11 +581,7 @@ const ImportedPurchaseInvoice: React.FC = () => {
           pageSize={Math.max(invoiceGroups.length, 1)}
           totalItems={invoiceGroups.length}
         />
-        {error && (
-          <div className="px-5 py-2 text-[12px] text-danger border-t border-theme">
-            {error}
-          </div>
-        )}
+       
       </div>
     </div>
   );
