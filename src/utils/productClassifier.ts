@@ -2,7 +2,7 @@ export type ProductId = "erp" | "lms";
 
 export interface RawSubscribedModules {
   erp?: {
-     enabled?: boolean;
+    enabled?: boolean;
     sales?: boolean;
     customer?: boolean;
     procurement?: boolean;
@@ -27,7 +27,7 @@ export interface RawSubscribedModules {
     };
   };
   hrms?: {
-     enabled?: boolean;
+    enabled?: boolean;
     settings?: {
       bank?: boolean;
       email?: boolean;
@@ -36,7 +36,12 @@ export interface RawSubscribedModules {
     };
     expenseManagement?: boolean;
   };
-  lending?: boolean;
+  lending?: {
+    enabled?: boolean;
+  };
+  los?: {
+    enabled?: boolean;
+  };
 }
 
 
@@ -44,8 +49,8 @@ export interface RawSubscribedModules {
 export function deriveSubscribedProducts(
   raw: RawSubscribedModules | null | undefined,
 ): ProductId[] {
- const hasErpSide = raw?.erp?.enabled === true || raw?.hrms?.enabled === true;
-  const hasLms = raw?.lending === true;
+  const hasErpSide = raw?.erp?.enabled === true || raw?.hrms?.enabled === true;
+  const hasLms = raw?.lending?.enabled === true || raw?.los?.enabled === true;
 
   if (hasErpSide && hasLms) return ["erp", "lms"];
   if (hasLms && !hasErpSide) return ["lms"];

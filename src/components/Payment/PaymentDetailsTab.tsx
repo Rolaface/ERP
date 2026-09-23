@@ -3,6 +3,7 @@ import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { MoveRight, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import dayjs from "dayjs";
+import { useCompanyStore } from "../../store/companyStore";
 import {
   usePaymentModes,
   usePartyOptions,
@@ -31,11 +32,11 @@ interface PaymentDetailsTabProps {
   isGlFromLocked?: boolean;
   isGlToLocked?: boolean;
   isModeOfPaymentLocked?: boolean;
-  isPartyTypeLocked?: boolean; 
+  isPartyTypeLocked?: boolean;
 }
 
 const PARTY_FILLED_FIELDS = {
-    partyId: "",         
+  partyId: "",
 
   partyName: "",
   glFrom: "",
@@ -140,33 +141,66 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   const currencyFrom = form.currencyFrom ?? "";
   const currencyTo = form.currencyTo ?? "";
   const date = form.date || dayjs().format("YYYY-MM-DD");
+
+  const storeBaseCurrency = useCompanyStore((s) => s.baseCurrency);
+  // fall back to the value the party-details API already puts on the form
+  const baseCurrency = storeBaseCurrency || form.companyDefaultCurrency || "";
+
   const exchangeRateArgs: "for_selling" | "for_buying" =
     paymentType === "Pay" ? "for_buying" : "for_selling";
+
+  const currenciesDiffer =
+    Boolean(currencyFrom) && Boolean(currencyTo) && currencyFrom !== currencyTo;
+
+  // to_currency is ALWAYS base; the non-base side becomes from_currency.
+  // Pay:     from = company (base), to = party  → swap so base lands on to_currency
+  // Receive: from = party,          to = company (base) → already correct
+  const isPay = paymentType === "Pay";
+
+  const rateFromCurrency =
+    isPay && currencyFrom === baseCurrency
+      ? currencyTo
+      : currencyFrom;
+
+  const rateToCurrency =
+    baseCurrency || currencyTo;
 
   const {
     rate: fetchedRate,
     error: rateError,
     isLoadingRate,
-    currenciesDiffer,
   } = useExchangeRate(
-    currencyFrom,
-    currencyTo,
+    rateFromCurrency,
+    rateToCurrency,
     date,
     exchangeRateArgs,
+    // isPay,
   );
+
 
   // Sync exchange rate result into form state
   useEffect(() => {
+    // if (!isPay) return;
     if (!currenciesDiffer) {
       onFormChange({ exchangeRate: 1 });
-    } else if (isLoadingRate) {
+      return;
+    }
+    if (isLoadingRate) {
       onFormChange({ exchangeRate: "" });
-    } else if (fetchedRate !== null) {
-      onFormChange({ exchangeRate: fetchedRate });
-    } else if (rateError) {
+      return;
+    }
+    if (fetchedRate !== null && Number(fetchedRate) > 0) {
+      // fetched direction is rateFromCurrency → rateToCurrency.
+      // The form needs currencyFrom → currencyTo, so invert on Pay.
+      // const oriented = isPay ? 1 / Number(fetchedRate) : Number(fetchedRate);
+      // onFormChange({ exchangeRate: +oriented.toFixed(9) });
+      onFormChange({ exchangeRate: +Number(fetchedRate).toFixed(9) });
+      return;
+    }
+    if (rateError) {
       onFormChange({ exchangeRate: "" });
     }
-  }, [fetchedRate, rateError, currenciesDiffer, isLoadingRate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchedRate, rateError, currenciesDiffer, isLoadingRate, isPay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // useEffect(() => {
   //   if (rateError && !isLoadingRate && currenciesDiffer) {
@@ -320,7 +354,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   const handlePartyNameSelect = useCallback(
     async (_: string, option: PartyOption | null) => {
-       const requestId = ++requestRef.current;
+      const requestId = ++requestRef.current;
 
       if (!option?.value) {
         onFormChange({
@@ -349,7 +383,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         fetchCompanyBanks(),
         fetchPartyBanks(partyType, option.value),
       ]);
-          if (requestId !== requestRef.current) return;  
+      if (requestId !== requestRef.current) return;
 
 
       if (!details) return;
@@ -407,42 +441,75 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     ],
   );
 
-  const handleAmountToChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const val =
-      parseFloat((e as React.ChangeEvent<HTMLInputElement>).target.value) || 0;
-    const rate = parseFloat(form.exchangeRate) || 1;
-    onChange(e);
-    onFormChange({
-      amount: val ? String(val) : "",
-      amountFrom: val ? String(+(val / rate).toFixed(4)) : "",
-    });
-  };
+const handleAmountToChange = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+) => {
+  const val =
+    parseFloat((e as React.ChangeEvent<HTMLInputElement>).target.value) || 0;
+  const rate = parseFloat(form.exchangeRate) || 1;
 
-  const handleAmountFromChange = (
+  const amountFrom =
+    paymentType === "Pay"
+      ? currencyFrom === baseCurrency
+        ? val * rate
+        : val / rate
+      : val / rate;
+
+  onChange(e);
+
+  onFormChange({
+    amount: val ? String(val) : "",
+    amountFrom: val ? String(+amountFrom.toFixed(4)) : "",
+  });
+};
+
+const handleAmountFromChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const val =
       parseFloat((e as React.ChangeEvent<HTMLInputElement>).target.value) || 0;
     const rate = parseFloat(form.exchangeRate) || 1;
+
+    const amountTo =
+      paymentType === "Pay"
+        ? currencyFrom === baseCurrency
+          ? val / rate
+          : val * rate
+        : val * rate;
+
     onChange(e);
     onFormChange({
-      amountTo: val ? String(+(val * rate).toFixed(4)) : "",
-      amount: val ? String(+(val * rate).toFixed(4)) : "",
+      amountTo: val ? String(+amountTo.toFixed(4)) : "",
+      amount: val ? String(+amountTo.toFixed(4)) : "",
     });
   };
 
   // ── Auto-recalculate amountTo when exchange rate changes 
   useEffect(() => {
-    const from = parseFloat(form.amountFrom) || 0;
     const rate = parseFloat(form.exchangeRate) || 1;
-    if (!from) return;
-    onFormChange({
-      amountTo: String(+(from * rate).toFixed(4)),
-      amount: String(+(from * rate).toFixed(4)),
-    });
-  }, [form.exchangeRate]);
+
+    if (paymentType === "Pay") {
+      const to = parseFloat(form.amountTo) || 0;
+      if (!to) return;
+
+      const amountFrom =
+        currencyFrom === baseCurrency
+          ? to * rate
+          : to / rate;
+
+      onFormChange({
+        amountFrom: String(+amountFrom.toFixed(4)),
+      });
+    } else {
+      // Existing behavior: amountFrom is the source; derive amountTo.
+      const from = parseFloat(form.amountFrom) || 0;
+      if (!from) return;
+      onFormChange({
+        amountTo: String(+(from * rate).toFixed(4)),
+        amount: String(+(from * rate).toFixed(4)),
+      });
+    }
+  }, [form.exchangeRate, currencyFrom, baseCurrency]);// eslint-disable-line react-hooks/exhaustive-deps
 
   const canAllocate =
     Number(form?.amountTo || 0) > 0 &&
@@ -744,7 +811,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
             label="Party Type"
             name="partyType"
             value={form.partyType}
-            disabled={islocked || isPartyLocked || isInternalTransfer || isPartyTypeLocked} 
+            disabled={islocked || isPartyLocked || isInternalTransfer || isPartyTypeLocked}
             onChange={handlePartyTypeChange}
             options={[
               { label: "Supplier", value: "Supplier" },
@@ -892,14 +959,14 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                   <ModalInput
                     label="Account (GL)"
                     name="glTo"
-                   value={getGLNameWithoutAbbreviation(form.glToDisplay ?? form.glTo ?? "")}
+                    value={getGLNameWithoutAbbreviation(form.glToDisplay ?? form.glTo ?? "")}
                     onChange={() => { }}
                     disabled
                   />
                 ) : (
                   <SearchSelect2
                     label="Account (GL)"
-                   value={getGLNameWithoutAbbreviation(form.glToDisplay ?? form.glTo ?? "")}
+                    value={getGLNameWithoutAbbreviation(form.glToDisplay ?? form.glTo ?? "")}
                     onChange={handleGlToChange}
                     fetchOptions={handleGlToFetchOptions}
                   />

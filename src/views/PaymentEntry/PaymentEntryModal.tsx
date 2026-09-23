@@ -311,10 +311,17 @@ const PaymentEntryModal: React.FC<Props> = ({
     if (!base.date) base.date = today;
     if (!base.referenceDate) base.referenceDate = today;
 
-    if (base.amount != null) {
-      base.amountFrom ??= base.amount;
-      base.amountTo ??= base.amount;
-    }
+   if (base.amount != null) {
+  if (base.paymentType === "Pay") {
+    // Invoice amount is in party currency → goes to Paid To.
+    // Paid From (company/base currency) is left to be derived once
+    // the exchange rate resolves.
+    base.amountTo = base.amount;
+  } else {
+    base.amountFrom ??= base.amount;
+    base.amountTo ??= base.amount;
+  }
+}
 
     if (defaultValues?.partyId) {
       base.partyId = defaultValues.partyId;
@@ -352,15 +359,22 @@ const PaymentEntryModal: React.FC<Props> = ({
     }
 
     if (defaultValues?.referenceName) {
-      const lockedAmount = Math.max(
-        0,
-        Number(base.amountFrom ?? base.amount ?? 0),
-      );
+     const lockedAmount = Math.max(
+  0,
+  Number(
+    base.paymentType === "Pay"
+      ? base.amountTo ?? base.amount ?? 0
+      : base.amountFrom ?? base.amount ?? 0
+  ),
+);
       base.allocations = {
         [defaultValues.referenceName]: lockedAmount,
       };
       base.allocatedAmount = lockedAmount;
       base.selectedInvoices = [defaultValues.referenceName];
+      // Remember the invoice's actual outstanding amount so any amount the
+      // user later enters above it can be flagged as an advance.
+      base.referenceOutstanding = lockedAmount;
     }
 
     const hasPartyAndAmount =
@@ -409,15 +423,22 @@ const PaymentEntryModal: React.FC<Props> = ({
   }, [isOpen]);
 
 
-  const amountFrom = Number(form?.amountFrom ?? form?.amount ?? 0);
+ const amountFrom = Number(form?.amountFrom ?? form?.amount ?? 0);
+  // Amount that actually drives invoice allocation — party currency side
+  // (Pay: amountTo is the party/invoice currency; Receive: amountFrom is).
+  const partyDrivenAmount = Number(
+    form?.paymentType === "Pay"
+      ? form?.amountTo ?? form?.amount ?? 0
+      : form?.amountFrom ?? form?.amount ?? 0,
+  );
 
   useEffect(() => {
     if (!isOpen || isAdvanceFromPO) return;
 
     const hasParty = Boolean(form?.partyName) && Boolean(form?.partyType);
-    const amountChanged = amountFrom !== prevAmountRef.current;
+    const amountChanged = partyDrivenAmount !== prevAmountRef.current;
 
-    if (hasParty && amountChanged && amountFrom > 0) {
+    if (hasParty && amountChanged && partyDrivenAmount > 0) {
       // Amount just changed with party selected → allocation will run → show spinner NOW
       setIsAllocating(true);
     }
@@ -425,14 +446,22 @@ const PaymentEntryModal: React.FC<Props> = ({
       setIsAllocating(false);
     }
 
-    prevAmountRef.current = amountFrom;
-  }, [amountFrom]); // eslint-disable-line react-hooks/exhaustive-deps
+    prevAmountRef.current = partyDrivenAmount;
+  }, [partyDrivenAmount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Derived values ─────────────────────────────────────────────────────────
-  const paymentAmount = amountFrom;
-  const totalAllocated = Number(form?.allocatedAmount ?? 0);
-  // While allocating, never show stale advance — hide it
-  const advance = isAllocating ? 0 : Math.max(0, paymentAmount - totalAllocated);
+const paymentAmount =
+  form?.paymentType === "Pay"
+    ? Number(form?.amountTo ?? form?.amount ?? 0)
+    : Number(form?.amountFrom ?? form?.amount ?? 0);
+const totalAllocated = Number(form?.allocatedAmount ?? 0);
+
+// paymentAmount and totalAllocated are both already in the party/invoice
+// currency (amountTo for Pay, amountFrom for Receive) — no conversion needed
+// regardless of which currency the paying/receiving bank account is in.
+const advance = isAllocating
+  ? 0
+  : Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
 
@@ -453,27 +482,30 @@ const PaymentEntryModal: React.FC<Props> = ({
 
   const getOptimisticAmountState = (prev: Record<string, any>, name: string, value: string) => {
     const numericValue = Number(value) || 0;
+    const isRef = Boolean(prev.referenceName);
+
+    if (isRef) {
+      // Reference-locked case: allocation is entirely recomputed by
+      // handleFormChange (from amountTo/amountFrom, currency-aware). Just
+      // update the raw field here — don't guess at allocation using a
+      // possibly-wrong-currency raw value.
+      return { [name]: value, fifoTrigger: Date.now() };
+    }
 
     if (numericValue === 0) {
-      const isRef = Boolean(prev.referenceName);
       return {
         [name]: value,
         fifoTrigger: Date.now(),
         allocatedAmount: 0,
-        allocations: isRef ? { [prev.referenceName]: 0 } : {},
-        selectedInvoices: isRef ? [prev.referenceName] : []
+        allocations: {},
+        selectedInvoices: [],
       };
     }
-    const isRef = Boolean(prev.referenceName);
     const outstanding = Number(prev.totalOutstanding || 0);
 
     return {
       [name]: value,
-      allocatedAmount: isRef ? numericValue : Math.min(numericValue, outstanding),
-      ...(isRef && {
-        allocations: { ...prev.allocations, [prev.referenceName]: numericValue },
-        selectedInvoices: Array.from(new Set([...(prev.selectedInvoices || []), prev.referenceName])),
-      }),
+      allocatedAmount: Math.min(numericValue, outstanding),
     };
   };
 
@@ -520,8 +552,8 @@ const PaymentEntryModal: React.FC<Props> = ({
   const handleFormChange = useCallback(
     (updates: Record<string, any>) => {
       markDirty();
-      if (
-        (form.referenceType === "Employee Advance" && form.glTo) ||
+             if (
+         (["Employee Advance", "Expense Claim"].includes(form.referenceType) && form.glTo) ||
         (isGlToLocked_PI && form.glTo)
       ) {
         delete updates.glTo;
@@ -537,21 +569,31 @@ const PaymentEntryModal: React.FC<Props> = ({
         if (prev.referenceName) {
           const referenceName = prev.referenceName;
           const next = { ...prev, ...updates };
-          const lockedAmount = Math.max(
-            0,
-            Number(next.amountFrom ?? next.amount ?? 0),
+          const enteredAmount = Math.max(
+  0,
+  Number(
+    next.paymentType === "Pay"
+      ? next.amountTo ?? next.amount ?? 0
+      : next.amountFrom ?? next.amount ?? 0
+  ),
+);
+          const outstanding = Number(
+            next.referenceOutstanding ?? enteredAmount,
           );
+          // Cap allocation at the invoice's actual outstanding — any amount
+          // entered above it is an advance, not extra allocation.
+          const lockedAmount = Math.min(enteredAmount, outstanding);
 
-          return {
-            ...next,
-            referenceType:
-              next.referenceType ??
-              prev.referenceType ??
-              inferReferenceType(next.partyType),
-            allocations: { [referenceName]: lockedAmount },
-            selectedInvoices: [referenceName],
-            allocatedAmount: lockedAmount,
-          };
+return {
+  ...next,
+  referenceType:
+    next.referenceType ??
+    prev.referenceType ??
+    inferReferenceType(next.partyType),
+  allocations: { [referenceName]: lockedAmount },
+  selectedInvoices: [referenceName],
+  allocatedAmount: lockedAmount,
+};
         }
         const currentAmount = Number(prev.amountFrom ?? prev.amount ?? 0);
 
@@ -652,15 +694,18 @@ const PaymentEntryModal: React.FC<Props> = ({
     }
   }, [form, onClose, onSuccess, resetModalState]);
 
-  const invoiceListForm = {
-    partyType: form?.partyType,
-    partyName: form?.partyName,
-    partyId: form?.partyId,
-    amount: form?.amountFrom ?? form?.amount,
-    fifoTrigger: form?.fifoTrigger,
-    referenceInvoice: form?.referenceName,
-    allocations: form?.allocations ?? {},
-  };
+const invoiceListForm = {
+  partyType: form?.partyType,
+  partyName: form?.partyName,
+  partyId: form?.partyId,
+  amount:
+    form?.paymentType === "Pay"
+      ? form?.amountTo ?? form?.amount
+      : form?.amountFrom ?? form?.amount,
+  fifoTrigger: form?.fifoTrigger,
+  referenceInvoice: form?.referenceName,
+  allocations: form?.allocations ?? {},
+};
 
   const requiresExchangeRate =
     Boolean(form?.currencyFrom) &&
@@ -750,7 +795,8 @@ const PaymentEntryModal: React.FC<Props> = ({
                 islocked={Boolean(form?.referenceName)}
                 isGlFromLocked={isGlFromLocked}
                 isGlToLocked={
-                  (form.referenceType === "Employee Advance" && Boolean(form.glTo)) ||
+                 (["Employee Advance", "Expense Claim"].includes(form.referenceType) &&
+                   Boolean(form.glTo)) ||
                   isGlToLocked_PI
                 }
                 isModeOfPaymentLocked={

@@ -139,7 +139,7 @@ const menuItems: MenuItem[] = [
     name: "Sales",
     to: "/sales",
     icon: <ShoppingCart {...iconProps} />,
-    modules: ["Sales Invoice","Quotation","Custom Pdc Details"],
+    modules: ["Sales Invoice", "Quotation", "Custom Pdc Details"],
     subscriptionCheck: (a) => a.sales,
     hideInEmployeeView: true,
   },
@@ -703,7 +703,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             </NavLink>
           )}
 
-          {!isEmployeeView && user?.subscribedProducts?.includes("lms") && (
+          {!isEmployeeView && access.lending && (
             <button
               type="button"
               onClick={() => {
@@ -721,6 +721,26 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               {!open && <Tooltip label="Lending" />}
             </button>
           )}
+
+          {!isEmployeeView && access.los && (
+            <button
+              type="button"
+              onClick={() => {
+                const sid = user?.sid || localStorage.getItem("session_id");
+                window.location.href = `${LMS_FRONTEND}?sid=${encodeURIComponent(sid ?? "")}&mode=los`;
+              }}
+              className="group relative flex h-10 w-full items-center rounded-lg transition-all duration-150 text-muted hover:bg-row-hover hover:text-main"
+            >
+              <span className={`flex h-10 shrink-0 items-center justify-center text-[17px] transition-all duration-300 ${open ? "w-10" : "w-full"}`}>
+                <FileText {...iconProps} />
+              </span>
+              <span className={`truncate text-[14px] font-semibold tracking-tight transition-all duration-200 pr-3 ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
+                Loan Origination
+              </span>
+              {!open && <Tooltip label="Loan Origination" />}
+            </button>
+          )}
+
 
 
           {/* ── Settings ── */}
