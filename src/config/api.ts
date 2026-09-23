@@ -174,6 +174,7 @@ export const API = {
     getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
     createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
     getAccountsResource: `${ERP_BASE}/api/resource/Account`,
+    updatePaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.update_payment_entry`,
     getPaymentEntryById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
     cancelPaymentEntry:`${ERP_BASE}/api/method/custom_api.api.payment_entry_delete.delete_payment_entry`,
   },

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { CreditCard, FileText, Banknote , X, Loader2 } from "lucide-react";
+import { CreditCard, FileText, Banknote, X, Loader2 } from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
@@ -10,6 +10,7 @@ import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import InvoiceList from "./invoicelist";
 import {
   createPaymentEntry,
+  updatePaymentEntry,
   type CreatePaymentEntryPayload,
   type PaymentReference,
   type PaymentTax,
@@ -24,7 +25,6 @@ import { fetchCostCenters, fetchProjects } from "../../api/getAllApi";
 
 type TabType = "details" | "invoices" | "taxes" | "deductions";
 
-
 const ALL_TABS = [
   { key: "details" as TabType, label: "Details", icon: CreditCard },
   { key: "invoices" as TabType, label: "Invoices", icon: FileText },
@@ -38,7 +38,8 @@ interface Props {
   onSubmit?: (data?: any) => void;
   onSuccess?: (paymentEntryName: string) => void;
   modalId: string;
-
+  isEdit?: boolean;
+  paymentEntryId?: string;
   customerId?: string;
   defaultValues?: {
     paymentType?: "Pay" | "Receive" | "Internal Transfer";
@@ -47,7 +48,11 @@ interface Props {
     partyId?: string;
     amount?: number;
     referenceName?: string;
-    referenceType?: "Purchase Order" | "Purchase Invoice" | "Sales Invoice"|"Sales Order";
+    referenceType?:
+      | "Purchase Order"
+      | "Purchase Invoice"
+      | "Sales Invoice"
+      | "Sales Order";
     date?: string;
     glTo?: string;
     glToDisplay?: string;
@@ -69,12 +74,10 @@ const inferReferenceType = (
   return undefined;
 };
 
-function buildPayload(
-  form: Record<string, any>,
-): CreatePaymentEntryPayload {
+function buildPayload(form: Record<string, any>): CreatePaymentEntryPayload {
   const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
   const receivedAmount = Number(form?.amountTo ?? paymentAmount);
-  
+
   const parsedExchangeRate = Number(form?.exchangeRate);
   const exchangeRate =
     Number.isFinite(parsedExchangeRate) && parsedExchangeRate > 0
@@ -140,7 +143,6 @@ function buildPayload(
 
   const isInternalTransfer = form?.paymentType === "Internal Transfer";
 
-
   const payload: CreatePaymentEntryPayload = {
     payment_type: form?.paymentType ?? "",
     ...(!isInternalTransfer && {
@@ -171,7 +173,6 @@ function buildPayload(
 
   return payload;
 }
-
 
 function validateForm(form: Record<string, any>): string | null {
   if (!form?.paymentType) return "Payment Type is required.";
@@ -236,6 +237,8 @@ const PaymentEntryModal: React.FC<Props> = ({
   customerId,
   defaultValues,
   modalId,
+  isEdit,
+  paymentEntryId,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>("details");
   const [form, setForm] = useState<Record<string, any>>({});
@@ -244,25 +247,37 @@ const PaymentEntryModal: React.FC<Props> = ({
   const [deductionRows, setDeductionRows] = useState<DeductionRow[]>([]);
   const deductionRowsRef = useRef<DeductionRow[]>([]);
 
-
   const [isSaving, setIsSaving] = useState(false);
   const [isAllocating, setIsAllocating] = useState(false);
   const lastFetchedPartyKeyRef = useRef<string>("");
 
   // ── Track previous amountFrom to detect user-driven changes ──────────────
   const prevAmountRef = useRef<number>(0);
-  const { markDirty, resetDirty, handleCloseWithConfirm, activate, deactivate } = useUnsavedChanges();
+  const {
+    markDirty,
+    resetDirty,
+    handleCloseWithConfirm,
+    activate,
+    deactivate,
+  } = useUnsavedChanges();
 
   useEffect(() => {
     if (!isOpen) return;
     const cleanup = activate();
-    return () => { cleanup?.(); deactivate(); resetDirty(); };
+    return () => {
+      cleanup?.();
+      deactivate();
+      resetDirty();
+    };
   }, [isOpen]);
 
-  const isAdvanceFromPO =
-    defaultValues?.referenceType === "Purchase Order";
-  const isGlFromLocked = defaultValues?.referenceType === "Sales Invoice" && Boolean(defaultValues?.glFrom);
-  const isGlToLocked_PI = defaultValues?.referenceType === "Purchase Invoice" && Boolean(defaultValues?.glTo);
+  const isAdvanceFromPO = defaultValues?.referenceType === "Purchase Order";
+  const isGlFromLocked =
+    defaultValues?.referenceType === "Sales Invoice" &&
+    Boolean(defaultValues?.glFrom);
+  const isGlToLocked_PI =
+    defaultValues?.referenceType === "Purchase Invoice" &&
+    Boolean(defaultValues?.glTo);
   const isInternalTransfer = form?.paymentType === "Internal Transfer";
   const resetModalState = useCallback(() => {
     setForm(getInitialForm());
@@ -293,7 +308,7 @@ const PaymentEntryModal: React.FC<Props> = ({
 
     const base: Record<string, any> = {
       ...getInitialForm(),
-      ...(defaultValues ?? {})
+      ...(defaultValues ?? {}),
     };
 
     if (customerId) {
@@ -344,7 +359,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     if (defaultValues?.currencyFrom) {
       base.currencyFrom = defaultValues.currencyFrom;
     }
-       if (defaultValues?.referenceNo) {
+    if (defaultValues?.referenceNo) {
       base.referenceNo = defaultValues.referenceNo;
     }
     if (defaultValues?.referenceDate) {
@@ -386,7 +401,7 @@ const PaymentEntryModal: React.FC<Props> = ({
 
     const applyDefault = async (
       fetcher: () => Promise<{ value: string }[]>,
-      field: string
+      field: string,
     ) => {
       try {
         const options = await fetcher();
@@ -405,9 +420,10 @@ const PaymentEntryModal: React.FC<Props> = ({
     applyDefault(fetchCostCenters, "costCenter");
     applyDefault(fetchProjects, "project");
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
-
 
   const amountFrom = Number(form?.amountFrom ?? form?.amount ?? 0);
 
@@ -420,8 +436,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     if (hasParty && amountChanged && amountFrom > 0) {
       // Amount just changed with party selected → allocation will run → show spinner NOW
       setIsAllocating(true);
-    }
-    else if (!hasParty) {
+    } else if (!hasParty) {
       setIsAllocating(false);
     }
 
@@ -432,15 +447,15 @@ const PaymentEntryModal: React.FC<Props> = ({
   const paymentAmount = amountFrom;
   const totalAllocated = Number(form?.allocatedAmount ?? 0);
   // While allocating, never show stale advance — hide it
-  const advance = isAllocating ? 0 : Math.max(0, paymentAmount - totalAllocated);
+  const advance = isAllocating
+    ? 0
+    : Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
-
 
   const handleDeductionRowsChange = useCallback((rows: DeductionRow[]) => {
     deductionRowsRef.current = rows;
     setDeductionRows(rows);
   }, []);
-
 
   const getResetPartyState = (prev: any, name: string, value: string) => ({
     ...prev,
@@ -451,7 +466,11 @@ const PaymentEntryModal: React.FC<Props> = ({
     allocations: {},
   });
 
-  const getOptimisticAmountState = (prev: Record<string, any>, name: string, value: string) => {
+  const getOptimisticAmountState = (
+    prev: Record<string, any>,
+    name: string,
+    value: string,
+  ) => {
     const numericValue = Number(value) || 0;
 
     if (numericValue === 0) {
@@ -461,7 +480,7 @@ const PaymentEntryModal: React.FC<Props> = ({
         fifoTrigger: Date.now(),
         allocatedAmount: 0,
         allocations: isRef ? { [prev.referenceName]: 0 } : {},
-        selectedInvoices: isRef ? [prev.referenceName] : []
+        selectedInvoices: isRef ? [prev.referenceName] : [],
       };
     }
     const isRef = Boolean(prev.referenceName);
@@ -469,10 +488,17 @@ const PaymentEntryModal: React.FC<Props> = ({
 
     return {
       [name]: value,
-      allocatedAmount: isRef ? numericValue : Math.min(numericValue, outstanding),
+      allocatedAmount: isRef
+        ? numericValue
+        : Math.min(numericValue, outstanding),
       ...(isRef && {
-        allocations: { ...prev.allocations, [prev.referenceName]: numericValue },
-        selectedInvoices: Array.from(new Set([...(prev.selectedInvoices || []), prev.referenceName])),
+        allocations: {
+          ...prev.allocations,
+          [prev.referenceName]: numericValue,
+        },
+        selectedInvoices: Array.from(
+          new Set([...(prev.selectedInvoices || []), prev.referenceName]),
+        ),
       }),
     };
   };
@@ -489,9 +515,11 @@ const PaymentEntryModal: React.FC<Props> = ({
     return () => clearTimeout(timeoutId);
   }, [form?.amount, form?.amountFrom, form?.referenceName]);
 
-
   const handleCloseRequest = useCallback(() => {
-    handleCloseWithConfirm(() => { resetModalState(); onClose(); }, modalId);
+    handleCloseWithConfirm(() => {
+      resetModalState();
+      onClose();
+    }, modalId);
   }, [handleCloseWithConfirm, modalId, onClose, resetModalState]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -513,8 +541,7 @@ const PaymentEntryModal: React.FC<Props> = ({
         return { ...prev, [name]: value };
       });
     },
-    [markDirty]
-
+    [markDirty],
   );
 
   const handleFormChange = useCallback(
@@ -559,15 +586,24 @@ const PaymentEntryModal: React.FC<Props> = ({
           !prev.referenceName &&
           currentAmount > 0 &&
           updates.allocatedAmount === 0 &&
-          (!updates.allocations || Object.keys(updates.allocations).length === 0)
+          (!updates.allocations ||
+            Object.keys(updates.allocations).length === 0)
         ) {
-          const { allocatedAmount, allocations, selectedInvoices, ...safeUpdates } = updates;
-          return Object.keys(safeUpdates).length ? { ...prev, ...safeUpdates } : prev;
+          const {
+            allocatedAmount,
+            allocations,
+            selectedInvoices,
+            ...safeUpdates
+          } = updates;
+          return Object.keys(safeUpdates).length
+            ? { ...prev, ...safeUpdates }
+            : prev;
         }
 
         if (
           currentAmount === 0 &&
-          (updates.allocatedAmount !== undefined || updates.allocations !== undefined)
+          (updates.allocatedAmount !== undefined ||
+            updates.allocations !== undefined)
         ) {
           return prev;
         }
@@ -583,7 +619,7 @@ const PaymentEntryModal: React.FC<Props> = ({
       });
       // setError((prev) => (prev ? null : prev));
     },
-    [form.referenceType, form.glTo, markDirty]
+    [form.referenceType, form.glTo, markDirty],
   );
 
   const goToTab = useCallback((tab: TabType) => {
@@ -606,33 +642,43 @@ const PaymentEntryModal: React.FC<Props> = ({
   const handleSave = useCallback(async () => {
     const validationError = validateForm(form);
     if (validationError) {
-      // setError(validationError);
       setActiveTab("details");
       showApiError(validationError);
       return;
     }
 
     setIsSaving(true);
-    showLoading("Creating Payment Entry…");
+    showLoading(isEdit ? "Updating Payment Entry…" : "Creating Payment Entry…");
 
     try {
       const payload = buildPayload(form);
       payload.deductions = deductionRowsRef.current
-        .filter((r) => r.account && r.cost_center && r.amount !== null && r.amount > 0)
+        .filter(
+          (r) =>
+            r.account && r.cost_center && r.amount !== null && r.amount > 0,
+        )
         .map((r) => ({
           account: r.account,
           cost_center: r.cost_center,
           amount: r.amount as number,
         }));
-      const response = await createPaymentEntry(payload);
+
+      const response =
+        isEdit && paymentEntryId
+          ? await updatePaymentEntry(paymentEntryId, payload)
+          : await createPaymentEntry(payload);
 
       closeSwal();
 
-
       if (response?.status === "success") {
-        showSuccess(response.message || "Payment created successfully");
+        showSuccess(
+          response.message ||
+            (isEdit
+              ? "Payment updated successfully"
+              : "Payment created successfully"),
+        );
 
-        const paymentId = response.data?.paymentId || "";
+        const paymentId = response.data?.paymentId || paymentEntryId || "";
 
         await onSubmit?.(paymentId);
         onSuccess?.(paymentId);
@@ -640,17 +686,15 @@ const PaymentEntryModal: React.FC<Props> = ({
         resetModalState();
         onClose();
       } else {
-        // fallback if backend sends unexpected structure
         showApiError(response);
       }
-
     } catch (err: any) {
       closeSwal();
       showApiError(err);
     } finally {
       setIsSaving(false);
     }
-  }, [form, onClose, onSuccess, resetModalState]);
+  }, [form, onClose, onSuccess, resetModalState, isEdit, paymentEntryId]);
 
   const invoiceListForm = {
     partyType: form?.partyType,
@@ -679,12 +723,15 @@ const PaymentEntryModal: React.FC<Props> = ({
       <Button
         variant="secondary"
         onClick={handleCloseRequest}
-
         disabled={isSaving}
       >
         Cancel
       </Button>
-      <Button variant="primary" onClick={handleSave} disabled={isSubmitDisabled}>
+      <Button
+        variant="primary"
+        onClick={handleSave}
+        disabled={isSubmitDisabled}
+      >
         {isSaving ? "Saving…" : "Submit"}
       </Button>
     </>
@@ -695,17 +742,16 @@ const PaymentEntryModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={handleCloseRequest}
-      title="Add Payment Entry"
+      title={isEdit ? "Edit Payment Entry" : "Add Payment Entry"}
       subtitle={
         isAdvanceFromPO
           ? `Advance payment against PO: ${defaultValues?.referenceName}`
           : "Pay or receive payment from Customer / Supplier / Employee / Shareholder"
       }
-      icon={Banknote }
+      icon={Banknote}
       footer={footer}
       customWidth="62vw"
       height="95vh"
-
     >
       <div className="flex flex-col h-full">
         {/* ── Tabs ── */}
@@ -715,10 +761,11 @@ const PaymentEntryModal: React.FC<Props> = ({
               <button
                 key={t.key}
                 onClick={() => goToTab(t.key)}
-                className={`py-3 text-sm font-medium flex items-center gap-2 transition-colors ${activeTab === t.key
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted hover:text-main"
-                  }`}
+                className={`py-3 text-sm font-medium flex items-center gap-2 transition-colors ${
+                  activeTab === t.key
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-muted hover:text-main"
+                }`}
               >
                 <t.icon size={15} />
                 {t.label}
@@ -750,16 +797,20 @@ const PaymentEntryModal: React.FC<Props> = ({
                 islocked={Boolean(form?.referenceName)}
                 isGlFromLocked={isGlFromLocked}
                 isGlToLocked={
-                  (form.referenceType === "Employee Advance" && Boolean(form.glTo)) ||
+                  (form.referenceType === "Employee Advance" &&
+                    Boolean(form.glTo)) ||
                   isGlToLocked_PI
                 }
                 isModeOfPaymentLocked={
-                  form.referenceType === "Employee Advance" && Boolean(form.mode)
+                  form.referenceType === "Employee Advance" &&
+                  Boolean(form.mode)
                 }
                 isPartyLocked={Boolean(
                   form?.referenceName && form?.partyName && form?.partyType,
                 )}
-                isPartyTypeLocked={Boolean(form?.partyType && !form?.referenceName)}
+                isPartyTypeLocked={Boolean(
+                  form?.partyType && !form?.referenceName,
+                )}
                 partyFetchKeyRef={lastFetchedPartyKeyRef}
               />
             </div>
@@ -807,10 +858,17 @@ const PaymentEntryModal: React.FC<Props> = ({
               <div>
                 <p className="text-[11px] text-muted">Total Outstanding</p>
                 {form?.totalOutstanding == null ? (
-                  <p className="text-[11px] text-muted animate-pulse">Loading…</p>
+                  <p className="text-[11px] text-muted animate-pulse">
+                    Loading…
+                  </p>
                 ) : (
-                  <p className={`text-sm font-semibold ${Number(form.totalOutstanding) > 0 ? "text-amber-500" : "text-emerald-600"
-                    }`}>
+                  <p
+                    className={`text-sm font-semibold ${
+                      Number(form.totalOutstanding) > 0
+                        ? "text-amber-500"
+                        : "text-emerald-600"
+                    }`}
+                  >
                     {Number(form.totalOutstanding).toLocaleString()}
                   </p>
                 )}
@@ -829,7 +887,9 @@ const PaymentEntryModal: React.FC<Props> = ({
             {isAdvanceFromPO && (
               <div>
                 <p className="text-[11px] text-muted">Against</p>
-                <p className="text-xs font-medium text-primary">{form?.referenceName}</p>
+                <p className="text-xs font-medium text-primary">
+                  {form?.referenceName}
+                </p>
               </div>
             )}
 
@@ -841,7 +901,9 @@ const PaymentEntryModal: React.FC<Props> = ({
                 {paymentAmount > 0 ? (
                   paymentAmount.toLocaleString()
                 ) : (
-                  <span className="text-[11px] font-normal text-muted">Not set</span>
+                  <span className="text-[11px] font-normal text-muted">
+                    Not set
+                  </span>
                 )}
               </p>
             </div>
@@ -849,8 +911,13 @@ const PaymentEntryModal: React.FC<Props> = ({
             {/* Spinner — shown while allocating */}
             {isAllocating && !isAdvanceFromPO && !isInternalTransfer && (
               <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg mt-2">
-                <Loader2 size={14} className="animate-spin text-primary flex-shrink-0" />
-                <p className="text-[11px] text-primary font-medium">Calculating allocation…</p>
+                <Loader2
+                  size={14}
+                  className="animate-spin text-primary flex-shrink-0"
+                />
+                <p className="text-[11px] text-primary font-medium">
+                  Calculating allocation…
+                </p>
               </div>
             )}
 
@@ -859,29 +926,42 @@ const PaymentEntryModal: React.FC<Props> = ({
                 <div>
                   <p className="text-[11px] text-muted">Invoices Settled</p>
                   <p className="text-xs font-medium text-main">
-                    {isAllocating
-                      ? <span className="text-muted animate-pulse">—</span>
-                      : selectedCount}
+                    {isAllocating ? (
+                      <span className="text-muted animate-pulse">—</span>
+                    ) : (
+                      selectedCount
+                    )}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-[11px] text-muted">Allocated</p>
                   <p className="text-base font-bold text-primary">
-                    {isAllocating
-                      ? <span className="text-sm font-normal text-muted animate-pulse">—</span>
-                      : totalAllocated.toLocaleString()}
+                    {isAllocating ? (
+                      <span className="text-sm font-normal text-muted animate-pulse">
+                        —
+                      </span>
+                    ) : (
+                      totalAllocated.toLocaleString()
+                    )}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-[11px] text-muted">Advance</p>
                   {isAllocating ? (
-                    <p className="text-[11px] text-muted animate-pulse">Calculating…</p>
+                    <p className="text-[11px] text-muted animate-pulse">
+                      Calculating…
+                    </p>
                   ) : (
                     <>
-                      <p className={`text-xs font-semibold ${advance > 0 && paymentAmount > 0 ? "text-amber-500" : "text-emerald-600"
-                        }`}>
+                      <p
+                        className={`text-xs font-semibold ${
+                          advance > 0 && paymentAmount > 0
+                            ? "text-amber-500"
+                            : "text-emerald-600"
+                        }`}
+                      >
                         {paymentAmount > 0 ? advance.toLocaleString() : "—"}
                       </p>
                       {advance > 0 && paymentAmount > 0 && (

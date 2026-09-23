@@ -713,7 +713,82 @@ export async function createPaymentEntry(
 
 
 
+
+
+export async function updatePaymentEntry(
+  id: string,
+  payload: CreatePaymentEntryPayload
+): Promise<CreatePaymentEntryResponse> {
+  const resp: AxiosResponse = await api.put(
+    `${Account.updatePaymentEntry}?id=${id}`,
+    payload
+  );
+
+  const data = resp?.data;
+
+  if (data?.status_code !== 200) {
+    throw new Error(data?.message || "Failed to update payment entry.");
+  }
+
+  return data as CreatePaymentEntryResponse;
+}
+
+
 export interface PaymentEntryDetail {
+  header: {
+    payment_id: string;
+    payment_type: string;
+    status: string;
+    posting_date: string;
+    company: string;
+    naming_series: string;
+  };
+  party_info: {
+    party_type: string;
+    party: string;
+    party_name: string;
+    contact_person?: string;
+  };
+  transaction_info: {
+    mode_of_payment: string;
+    paid_from: string;
+    paid_from_account_name: string;
+    paid_from_currency: string;
+    paid_to: string;
+    paid_to_account_name: string;
+    paid_to_currency: string;
+    bank?: string;
+    bank_account_no?: string;
+    party_bank_account?: string | null;
+    reference_no?: string;
+    reference_date?: string;
+    clearance_date?: string | null;
+    cost_center?: string;
+    project?: string | null;
+  };
+  amounts: {
+    paid_amount: number;
+    received_amount: number;
+    base_paid_amount: number;
+    base_received_amount: number;
+    total_allocated_amount: number;
+    unallocated_amount: number;
+    difference_amount: number;
+    source_exchange_rate: number;
+    target_exchange_rate: number;
+    amount_in_words: string;
+  };
+  allocations: {
+    reference_doctype: string;
+    reference_name: string;
+    total_amount: number;
+    outstanding_amount: number;
+    allocated_amount: number;
+    account: string;
+  }[];
+  taxes: any[];
+  deductions: any[];
+  remarks?: string;
   contact_email?: string;
   attachments?: { name: string; file_name: string }[];
 }
@@ -852,3 +927,5 @@ export async function cancelPaymentEntry(payload: {
     throw new Error(msg);
   }
 }
+
+

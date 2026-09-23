@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 // import {
@@ -10,9 +16,15 @@ import { getAllPayments } from "../../api/CustomerPayment";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import { showApiError } from "../../utils/alert";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
-import { openPaymentEntryModal, openSendEmailModal } from "../../store/modalStore";
+import {
+  openPaymentEntryModal,
+  openSendEmailModal,
+} from "../../store/modalStore";
 import { usePermission } from "../../hooks/permission/usePermission";
-import { getPaymentEntryById, cancelPaymentEntry } from "../../api/BankAccountApi";
+import {
+  getPaymentEntryById,
+  cancelPaymentEntry,
+} from "../../api/BankAccountApi";
 import { ActionMenu } from "../../components/ui/Table/ActionButton";
 import PaymentEntryDetailModal from "./PaymetnEntryDetailModal";
 import ActionButton from "../../components/ui/Table/ActionButton";
@@ -71,8 +83,18 @@ const statusOptions = [
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const MONTHS = [
-  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+  "JAN",
+  "FEB",
+  "MAR",
+  "APR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AUG",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DEC",
 ];
 
 const formatDate = (date: string | Date): string => {
@@ -109,7 +131,6 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   const [drawerData, setDrawerData] = useState<PaymentEntryDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
 
-
   // ── Search
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -129,8 +150,12 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   const { formatAmount } = useCurrencySymbols(currencyCodes);
 
   // ── Reset page on search change
-  useEffect(() => { setPage(1); }, [searchTerm]);
-  useEffect(() => { setPage(1); }, [filters]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
 
   // ── Fetch
   const fetchPayments = useCallback(async () => {
@@ -149,8 +174,8 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
           : undefined,
         filters.from_date,
         filters.to_date,
-         mapSortField(sortBy),
-  sortOrder,
+        mapSortField(sortBy),
+        sortOrder,
       );
 
       if (!mountedRef.current) return;
@@ -172,7 +197,9 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
       setTotalPages(response?.data?.pagination?.totalPages ?? 1);
       setTotalItems(response?.data?.pagination?.total ?? mapped.length);
     } catch (error: any) {
-      showApiError(error?.response?.data?.message || "Failed to fetch payments");
+      showApiError(
+        error?.response?.data?.message || "Failed to fetch payments",
+      );
       setData([]);
       setTotalPages(1);
       setTotalItems(0);
@@ -182,13 +209,23 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         setIsInitialLoad(false);
       }
     }
-   }, [page, pageSize, searchTerm, defaultPartyType, filters, sortBy, sortOrder]);
+  }, [
+    page,
+    pageSize,
+    searchTerm,
+    defaultPartyType,
+    filters,
+    sortBy,
+    sortOrder,
+  ]);
 
   // Initial fetch
   useEffect(() => {
     mountedRef.current = true;
     fetchPayments();
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   // Refetch on dependency change (skip initial)
@@ -227,8 +264,8 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
             : undefined,
           filters.from_date,
           filters.to_date,
-           mapSortField(sortBy),   // ← add
-  sortOrder, 
+          mapSortField(sortBy), // ← add
+          sortOrder,
         );
 
         const payments: PaymentAPI[] = response?.data?.payments || [];
@@ -305,27 +342,27 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
       {
         key: "id",
         header: "P Id",
-        sortable: true, 
+        sortable: true,
         render: (row) => row.id || "-",
       },
       {
         key: "paymentDate",
         header: "Payment Date",
-        sortable: true,  
-        render: (row) => row.paymentDate ? formatDate(row.paymentDate) : "-",
+        sortable: true,
+        render: (row) => (row.paymentDate ? formatDate(row.paymentDate) : "-"),
       },
       {
         key: "partyType",
         header: "party Type",
-        sortable: true, 
-        
+        sortable: true,
+
         render: (row) => row.partyType || "—",
       },
       {
         key: "partyName",
         header: "Party",
-        
-        sortable: true,  
+
+        sortable: true,
         render: (row) => row.partyName || "—",
       },
       {
@@ -381,19 +418,74 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
                 }
               }}
             />
+            <ActionButton
+              type="edit"
+              iconOnly
+              disabled={!can(PAYMENT_ENTRY_MODULE, "write")}
+              onClick={async () => {
+                try {
+                  showLoading("Loading payment entry...");
+                  const res = await getPaymentEntryById(row.id);
+                  closeSwal();
+
+                  if (res?.message?.status_code !== 200) {
+                    showApiError("Failed to load payment entry");
+                    return;
+                  }
+
+                  const d = res.message.data;
+
+                  openPaymentEntryModal(
+                    {
+                      paymentType: d.header.payment_type as any,
+                      partyType: d.party_info.party_type,
+                      partyName: d.party_info.party_name,
+                      partyId: d.party_info.party,
+                      amount: d.amounts.paid_amount,
+                      date: d.header.posting_date,
+
+                      glFrom: d.transaction_info.paid_from,
+                      glFromDisplay: d.transaction_info.paid_from_account_name,
+                      currencyFrom: d.transaction_info.paid_from_currency,
+
+                      glTo: d.transaction_info.paid_to,
+                      glToDisplay: d.transaction_info.paid_to_account_name,
+                      currencyTo: d.transaction_info.paid_to_currency,
+
+                      modeOfPayment: d.transaction_info.mode_of_payment,
+                      referenceNo: d.transaction_info.reference_no,
+                      referenceDate: d.transaction_info.reference_date,
+                    },
+                    true,
+                    {
+                      paymentEntryId: row.id,
+                      onSuccess: () => fetchPayments(),
+                    },
+                  );
+                } catch (error) {
+                  closeSwal();
+                  showApiError(error);
+                }
+              }}
+            />
 
             <ActionMenu
               customActions={[
                 {
-                  label: "Compose Email", icon: ACTION_ICONS.EMAIL,
+                  label: "Compose Email",
+                  icon: ACTION_ICONS.EMAIL,
                   onClick: async () => {
                     let contactEmail: string | null = null;
-                    let invoiceAttachments: { name: string; file_name: string }[] = [];
+                    let invoiceAttachments: {
+                      name: string;
+                      file_name: string;
+                    }[] = [];
                     try {
                       const res = await getPaymentEntryById(row.id);
                       if (res?.message?.status_code === 200) {
                         contactEmail = res.message.data?.contact_email ?? null;
-                        invoiceAttachments = res.message.data?.attachments ?? [];
+                        invoiceAttachments =
+                          res.message.data?.attachments ?? [];
                       }
                     } catch {
                       // non-critical: modal opens with empty To/attachments
@@ -406,41 +498,50 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
                     });
                   },
                 },
-                ...(row.status !== "Cancelled" ? [{
-                  label: "Cancel",
-                  icon: ACTION_ICONS.CANCEL,
-                  danger: true,
-                  onClick: async () => {
-                    const result = await fireManagedSwal({
-                      icon: "warning",
-                      title: "Cancel Payment Entry?",
-                      text: `Are you sure you want to cancel payment entry "${row.id}"? This action cannot be undone.`,
-                      showCancelButton: true,
-                      confirmButtonColor: "#ef4444",
-                      cancelButtonColor: "#6b7280",
-                      confirmButtonText: "Yes, Cancel",
-                      cancelButtonText: "No",
-                    });
-                    if (!result.isConfirmed) return;
+                ...(row.status !== "Cancelled"
+                  ? [
+                      {
+                        label: "Cancel",
+                        icon: ACTION_ICONS.CANCEL,
+                        danger: true,
+                        onClick: async () => {
+                          const result = await fireManagedSwal({
+                            icon: "warning",
+                            title: "Cancel Payment Entry?",
+                            text: `Are you sure you want to cancel payment entry "${row.id}"? This action cannot be undone.`,
+                            showCancelButton: true,
+                            confirmButtonColor: "#ef4444",
+                            cancelButtonColor: "#6b7280",
+                            confirmButtonText: "Yes, Cancel",
+                            cancelButtonText: "No",
+                          });
+                          if (!result.isConfirmed) return;
 
-                    try {
-                      showLoading("Cancelling payment entry...");
-                      await cancelPaymentEntry({ payment_entry_name: row.id });
-                      closeSwal();
+                          try {
+                            showLoading("Cancelling payment entry...");
+                            await cancelPaymentEntry({
+                              payment_entry_name: row.id,
+                            });
+                            closeSwal();
 
-                      showSuccess("Payment entry cancelled successfully");
-                      await fetchPayments();
-                    } catch (error: any) {
-                      closeSwal();
-                      showApiError(error?.message || "Failed to cancel payment entry");
-                    }
-                  },
-                }] : []),
+                            showSuccess("Payment entry cancelled successfully");
+                            await fetchPayments();
+                          } catch (error: any) {
+                            closeSwal();
+                            showApiError(
+                              error?.message ||
+                                "Failed to cancel payment entry",
+                            );
+                          }
+                        },
+                      },
+                    ]
+                  : []),
               ]}
             />
           </div>
         ),
-      }
+      },
     ],
     [formatAmount],
   );
@@ -470,14 +571,15 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
               {
                 ...(defaultPartyType && {
                   partyType: defaultPartyType,
-                  paymentType: defaultPartyType === "Customer" ? "Receive" : "Pay",
+                  paymentType:
+                    defaultPartyType === "Customer" ? "Receive" : "Pay",
                 }),
               },
               false,
-              { onSuccess: () => fetchPayments() }
+              { onSuccess: () => fetchPayments() },
             )
           }
-          enableExport={can(PAYMENT_ENTRY_MODULE, "export")}   // ← add
+          enableExport={can(PAYMENT_ENTRY_MODULE, "export")}
           onExport={handleExportExcel}
           sortBy={sortBy}
           sortOrder={sortOrder}
@@ -545,7 +647,6 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   );
   //   </AppPage>
   // );
-
 };
 
 export default PaymentEntry;

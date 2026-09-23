@@ -79,7 +79,7 @@ export type ModalType =
     onSubmit?: (data: unknown) => Promise<void> | void;
     isViewMode?: boolean;
     loading?: boolean;
-   
+     paymentEntryId?: string;
     importConfig?: {
     title: string;
     subtitle?: string;

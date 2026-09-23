@@ -46,16 +46,19 @@ export const bankModalsRegistry: Record<string, ModalRenderFn> = {
     />
   ),
 
-  paymentEntry: (modal, _context, { handleClose, handleSubmit }) => (
-    <PaymentEntryModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={handleSubmit}
-      defaultValues={modal.initialData as any}
-    />
-  ),
+paymentEntry: (modal, context, { handleClose, handleSubmit }) => (
+  <PaymentEntryModal
+    key={modal.id}
+    modalId={modal.id}
+    isOpen={true}
+    onClose={handleClose}
+    onSubmit={handleSubmit}
+    onSuccess={context?.onSuccess}
+    defaultValues={modal.initialData as any}
+    isEdit={modal.isEdit}
+    paymentEntryId={context?.paymentEntryId}
+  />
+),
 
   currencyExchange: (modal, context, { handleClose, handleSubmit }) => (
     <CurrencyConversionModal
