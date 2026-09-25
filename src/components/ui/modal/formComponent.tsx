@@ -224,10 +224,11 @@ Checkbox.displayName = "Checkbox";
 // Card Component 
 // 
 interface CardProps {
-  title: string;
+  title?: string;
   subtitle?: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
+  headerExtra?: React.ReactNode;
   className?: string;
 }
 
@@ -235,6 +236,7 @@ export const Card: React.FC<CardProps> = ({
   title,
   subtitle,
   icon,
+  headerExtra,
   children,
   className = "",
 }) => (
@@ -245,19 +247,22 @@ export const Card: React.FC<CardProps> = ({
       className,
     ].join(" ")}
   >
-    <div className="flex items-center gap-3 mb-5">
-      {icon && (
-        <div
-          className="p-2 rounded-lg"
-          style={{ backgroundColor: "rgba(37, 99, 235, 0.08)" }} // primary-like tint
-        >
-          {icon}
+    <div className="flex items-center justify-between gap-3 mb-5">
+      <div className="flex items-center gap-3 min-w-0">
+        {icon && (
+          <div
+            className="p-2 rounded-lg shrink-0"
+            style={{ backgroundColor: "rgba(37, 99, 235, 0.08)" }} // primary-like tint
+          >
+            {icon}
+          </div>
+        )}
+        <div className="min-w-0">
+          <h3 className="text-base font-bold text-main">{title}</h3>
+          {subtitle && <p className="text-xs text-muted">{subtitle}</p>}
         </div>
-      )}
-      <div>
-        <h3 className="text-base font-bold text-main">{title}</h3>
-        {subtitle && <p className="text-xs text-muted">{subtitle}</p>}
       </div>
+      {headerExtra && <div className="shrink-0">{headerExtra}</div>}
     </div>
     {children}
   </div>

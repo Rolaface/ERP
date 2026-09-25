@@ -27,7 +27,7 @@ import {
   Mail,
   User,
   CreditCard,
-  FileUp, Coins
+  FileUp, Coins , Layers
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -205,6 +205,13 @@ const settingsItems: SettingsItem[] = [
     icon: <Building2 {...iconProps} />,
     modules: ["Company"],
     subscriptionCheck: (a) => a.settingsAccess("company"),
+    hideInEmployeeView: true,
+  },
+  {
+    to: "/subscribe",
+    label: "Subscription",
+    icon: <Layers {...iconProps} />,
+    modules: [""],
     hideInEmployeeView: true,
   },
   {

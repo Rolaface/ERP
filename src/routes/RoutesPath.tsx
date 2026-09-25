@@ -22,5 +22,6 @@ export const ROUTES = {
   EmailTemplate: "/Email-Template",
   performance: "/performance",
   scheduler: "/scheduler",
-  Import:"/imports"
+  Import:"/imports",
+  Subscription: "/subscribe"
 };

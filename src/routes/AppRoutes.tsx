@@ -49,6 +49,7 @@ const Performance = lazy(() => import("../views/hr/performace/PerformanceModule"
 const Scheduler = lazy(() => import("../views/Scheduler/SchedulerTable"));
 const Imports = lazy(() => import("../views/Import/importdata"));
 const SelectLmsMode = lazy(() => import("../views/SelectLmsMode"));
+const Subscription = lazy(() => import("../views/Subscription/Subscription"))
 
 // ── Component Helpers ──
 interface PermissionRouteProps {
@@ -263,6 +264,14 @@ const router = createBrowserRouter(
               element={
                 <PermissionRoute modules={["Company"]} subscriptionCheck={(a) => a.settingsAccess("company")}>
                   <CompanySetup />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/subscribe"
+              element={
+                <PermissionRoute modules={["Subscription"]} >
+                  <Subscription />
                 </PermissionRoute>
               }
             />

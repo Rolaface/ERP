@@ -58,7 +58,7 @@ const navTabs = [
   { id: "bank", label: "Bank Details", icon: <Landmark {...iconProps} /> },
   { id: "accounting", label: "Accounting Details", icon: <Wallet {...iconProps} /> },
   { id: "buyingSelling", label: "Buying & Selling", icon: <Repeat {...iconProps} /> },
-  { id: "subscribed", label: "Subscription", icon: <Layers {...iconProps} /> },
+  // { id: "subscribed", label: "Subscription", icon: <Layers {...iconProps} /> },
   { id: "Templates", label: "Templates", icon: <FileText {...iconProps} /> },
   { id: "logo", label: "Logo & Signature", icon: <UploadCloud {...iconProps} /> },
   { id: "naming", label: "Naming Series", icon: <Hash {...iconProps} /> },
