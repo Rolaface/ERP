@@ -242,9 +242,6 @@ const MySubscription: React.FC = () => {
                   <span className="text-[11px] text-muted">
                     Available as add-on (+₹{product.addOnPrice?.toLocaleString()}/mo)
                   </span>
-                  <Button variant="secondary" icon={<Plus className="h-3.5 w-3.5" />} className="!px-3 !py-1.5 !text-xs">
-                    Add Product
-                  </Button>
                 </div>
               )}
             </div>
