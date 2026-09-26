@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {  CheckCircle, XCircle } from "lucide-react";
 
 import {
@@ -16,6 +16,8 @@ import { useAuth } from "../../../context/AuthContext";
 import { parseFrappeError } from "../tabs/leave-config/hooks/parseFrappeError";
 import ActionButton, { ActionGroup, ActionMenu } from "../../../components/ui/Table/ActionButton";
 import { openLeaveApplyModal } from "../../../store/modalStore";
+import LeaveBalanceTable from "./LeaveBalanceTable";
+import { useUrlTab } from "../../../hooks/useUrlTab";
 
 interface MenuAction {
   label: string;
@@ -42,6 +44,15 @@ export default function LeaveApproval() {
   const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "Open" });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+const leaveTabs = useMemo(
+   () => [{ id: "applications" }, { id: "balance" }] as const,
+   [],
+ );
+ const [viewMode, setViewMode] = useUrlTab<"applications" | "balance">({
+   tabs: leaveTabs,
+   defaultTab: "applications",
+   param: "view",
+ });
 
   // useEffect(() => {
   //   getAllLeaveApplied();
@@ -261,6 +272,11 @@ export default function LeaveApproval() {
     },
   ];
 
+   if (viewMode === "balance") {
+    return (
+      <LeaveBalanceTable onBack={() => setViewMode("applications")} />
+    );
+  }
   return (
     <div className="space-y-2">
       <Table
@@ -287,17 +303,15 @@ export default function LeaveApproval() {
               <option value="Open">Pending Approval</option>
               <option value="Approved">Approved</option>
               <option value="Rejected">Rejected</option>
-              <option value="Cancelled">Cancelled</option>
+                      <option value="Cancelled">Cancelled</option>
             </select>
-            {/* <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showHistory}
-                onChange={(e) => setShowHistory(e.target.checked)}
-                className="cursor-pointer"
-              />
-              Show Leave History
-            </label> */}
+                       <button
+              type="button"
+              onClick={() => setViewMode("balance")}
+              className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-main transition-colors hover:bg-row-hover"
+            >
+              Leave Balance
+            </button>
           </>
         }
         defaultVisibleCount={8}
