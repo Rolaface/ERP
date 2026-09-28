@@ -39,7 +39,8 @@ import AssigneeCell from "../components/AssigneeCell";
 import PriorityChip from "../components/PriorityChip";
 import StatusCell from "../components/StatusCell";
 import TaskDetailDrawer from "../Drawer/Taskdetaildrawer";
-import { openEmployeeTimesheetFormModal } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";import {
+import { openEmployeeTimesheetFormModal } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
+import {
   Clock,
   ChevronDown,
   ChevronRight,
@@ -91,9 +92,21 @@ const fetchUserOptions = async (q: string): Promise<Option[]> => {
   }));
 };
 
-const HrTaskView: React.FC = () => {
+type TaskViewContext = "admin" | "employee";
+
+interface HrTaskViewProps {
+  context?: TaskViewContext;
+  currentUserEmail?: string;
+}
+
+const HrTaskView: React.FC<HrTaskViewProps> = ({
+  context = "admin",
+  currentUserEmail,
+}) => {
   const { can } = usePermission();
   const mountedRef = useRef(true);
+
+  const isEmployee = context === "employee";
 
   const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
 
@@ -346,18 +359,24 @@ const HrTaskView: React.FC = () => {
     console.warn("handleEdit: Task edit modal not wired yet.", id);
   };
 
- const handleLogTime = (task: TaskEntry) => {
-  openEmployeeTimesheetFormModal({
-    title: "Log Time",
-    subtitle: `Logging time for ${task.subject}`,
-    prefillTask: {
-      project: task.project,
-      projectName: getProjectDisplayName(task.project),
-      task: task.name,
-      taskName: task.subject,
-    },
-  });
-};
+  const getProjectDisplayName = (code: string | null): string => {
+    if (!code) return "—";
+    const match = projectOptions.find((p) => p.name === code);
+    return match?.project_name || code;
+  };
+
+  const handleLogTime = (task: TaskEntry) => {
+    openEmployeeTimesheetFormModal({
+      title: "Log Time",
+      subtitle: `Logging time for ${task.subject}`,
+      prefillTask: {
+        project: task.project ?? "",
+        projectName: getProjectDisplayName(task.project),
+        task: task.name,
+        taskName: task.subject,
+      },
+    });
+  };
 
   const canLogTime = (t: TaskEntry) => t.is_group !== 1;
 
@@ -384,7 +403,6 @@ const HrTaskView: React.FC = () => {
     if (picked.length === 0) return;
 
     openEmployeeTimesheetFormModal({
-      
       title: "Log Time",
       subtitle: `Logging time for ${picked.length} task${
         picked.length > 1 ? "s" : ""
@@ -449,12 +467,6 @@ const HrTaskView: React.FC = () => {
     }
   };
 
-  const getProjectDisplayName = (code: string | null): string => {
-    if (!code) return "—";
-    const match = projectOptions.find((p) => p.name === code);
-    return match?.project_name || code;
-  };
-
   const handleAssigneesChange = async (
     taskName: string,
     nextEmails: string[],
@@ -480,6 +492,19 @@ const HrTaskView: React.FC = () => {
       showApiError(error);
       throw error;
     }
+  };
+
+  const handleTakeTask = async (taskName: string) => {
+    if (!currentUserEmail) return;
+
+    const task = findTask(taskName);
+    if (!task) return;
+
+    const current = parseAssignedEmails(task._assign);
+    const me = currentUserEmail.toLowerCase();
+    if (current.some((e) => e.toLowerCase() === me)) return;
+
+    await handleAssigneesChange(taskName, [...current, currentUserEmail]);
   };
 
   const columns: Column<TaskRow>[] = [
@@ -605,12 +630,21 @@ const HrTaskView: React.FC = () => {
         const emails = parseAssignedEmails(t._assign);
         const canEdit = can(TASK_MODULE, "write");
 
+        const canTake =
+  isEmployee &&
+  Boolean(currentUserEmail) &&
+  t.is_group !== 1 &&
+  !emails.some(
+    (e) => e.toLowerCase() === (currentUserEmail as string).toLowerCase(),
+  );
+
         return (
           <AssigneeCell
             emails={emails}
-            disabled={!canEdit}
+            disabled={!canEdit || isEmployee}
             fetchOptions={fetchUserOptions}
             onChange={(nextValues) => handleAssigneesChange(t.name, nextValues)}
+            onTake={canTake ? () => handleTakeTask(t.name) : undefined}
           />
         );
       },
@@ -709,7 +743,6 @@ const HrTaskView: React.FC = () => {
             options: userFilterOptions,
             values: assigneeFilter,
             onChange: setAssigneeFilter,
-
             searchPlaceholder: "Search employee...",
             onSearch: fetchUserOptions,
           },

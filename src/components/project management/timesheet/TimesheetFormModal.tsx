@@ -1,5 +1,13 @@
-import React, { useCallback, useRef, useState ,useEffect} from "react";
-import { Clock, Plus, Calendar, MoreVertical, Pencil, Copy, Trash2 } from "lucide-react";
+import React, { useCallback, useRef, useState, useEffect } from "react";
+import {
+  Clock,
+  Plus,
+  Calendar,
+  MoreVertical,
+  Pencil,
+  Copy,
+  Trash2,
+} from "lucide-react";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import { Popover } from "../../../components/common/Popover";
 import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
@@ -32,14 +40,14 @@ interface TimesheetFormModalProps {
   onClose: () => void;
   modalId?: string;
   onSuccess?: () => void;
- context?: TimesheetContext;
-prefillTask?: PrefillTask;
+  context?: TimesheetContext;
+  prefillTask?: PrefillTask;
   // Multi-task prefill (e.g. bulk "Log Time" from the Task list): one row per entry.
   prefillTasks?: PrefillTask[];
   restrictions?: TimesheetModalRestrictions;
   title?: string;
   subtitle?: string;
-   timesheetId?: string;
+  timesheetId?: string;
 }
 
 type RowActionsView = "menu" | "rates";
@@ -48,7 +56,8 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   isOpen,
   onClose,
   modalId,
-  onSuccess, context = "admin",
+  onSuccess,
+  context = "admin",
   prefillTask,
   prefillTasks,
   restrictions,
@@ -78,7 +87,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     save,
   } = useTimesheetModal({ onSuccess, restrictions });
 
- const isEmployee = context === "employee";
+  const isEmployee = context === "employee";
 
   const [isLoadingTimesheet, setIsLoadingTimesheet] = useState(false);
 
@@ -105,38 +114,33 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     };
   }, [isOpen, timesheetId, loadFromDetail]);
 
-
   const prefillAppliedRef = useRef(false);
 
-useEffect(() => {
-  if (!isOpen) {
-    prefillAppliedRef.current = false;
-    return;
-  }
-  if (timesheetId || prefillAppliedRef.current) return;
+  useEffect(() => {
+    if (!isOpen) {
+      prefillAppliedRef.current = false;
+      return;
+    }
+    if (timesheetId || prefillAppliedRef.current) return;
 
-  // prefillTasks (multi) wins; the single prefillTask flow keeps working.
-  const items = prefillTasks?.length
-    ? prefillTasks
-    : prefillTask
-      ? [prefillTask]
-      : [];
-  if (items.length === 0) return;
+    // prefillTasks (multi) wins; the single prefillTask flow keeps working.
+    const items = prefillTasks?.length
+      ? prefillTasks
+      : prefillTask
+        ? [prefillTask]
+        : [];
+    if (items.length === 0) return;
 
-  prefillAppliedRef.current = true;
-  addLines(
-    items.map((p) => ({
-      project: p.project,
-      project_name: p.projectName,
-      task: p.task,
-      task_name: p.taskName,
-    })),
-  );
-}, [isOpen, prefillTask, prefillTasks, timesheetId, addLines]);
-
-
-  
-
+    prefillAppliedRef.current = true;
+    addLines(
+      items.map((p) => ({
+        project: p.project,
+        project_name: p.projectName,
+        task: p.task,
+        task_name: p.taskName,
+      })),
+    );
+  }, [isOpen, prefillTask, prefillTasks, timesheetId, addLines]);
 
   useEffect(() => {
     if (!isOpen) reset();
@@ -145,13 +149,14 @@ useEffect(() => {
   const companyCurrency =
     useCompanyDefaultsStore.getState().defaults?.default_currency;
 
-  
   const [openActionsId, setOpenActionsId] = useState<string | null>(null);
   const [actionsView, setActionsView] = useState<RowActionsView>("menu");
   const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const activeTriggerRef = {
-    current: openActionsId ? (triggerRefs.current[openActionsId] ?? null) : null,
+    current: openActionsId
+      ? (triggerRefs.current[openActionsId] ?? null)
+      : null,
   };
 
   const closeRowActions = useCallback(() => {
@@ -180,112 +185,114 @@ useEffect(() => {
       >
         Cancel
       </button>
-     <button
-  onClick={handleSave}
-  disabled={isSaving}
-  className="inline-flex items-center gap-1.5 px-5 py-1.5 bg-primary hover:opacity-90 text-primary-foreground rounded-md text-xs font-semibold transition-opacity shadow-sm disabled:opacity-50"
->
-  {isSaving ? "Saving..." : isEditMode ? "Update Timesheet" : "Save Timesheet"}
-</button>
+      <button
+        onClick={handleSave}
+        disabled={isSaving}
+        className="inline-flex items-center gap-1.5 px-5 py-1.5 bg-primary hover:opacity-90 text-primary-foreground rounded-md text-xs font-semibold transition-opacity shadow-sm disabled:opacity-50"
+      >
+        {isSaving
+          ? "Saving..."
+          : isEditMode
+            ? "Update Timesheet"
+            : "Save Timesheet"}
+      </button>
     </div>
   );
 
   return (
-<MinimizableModal
-  modalId={modalId || "timesheet-form"}
-  isOpen={isOpen}
-  onClose={onClose}
-  title={isEditMode ? "Edit Timesheet" : title}
-  subtitle={
-    isEditMode
-      ? "Update time entries and billing details"
-      : subtitle
-  }
-  icon={Clock}
-  footer={footer}
-  customWidth="1400px"
-  height="750px"
->
+    <MinimizableModal
+      modalId={modalId || "timesheet-form"}
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditMode ? "Edit Timesheet" : title}
+      subtitle={
+        isEditMode ? "Update time entries and billing details" : subtitle
+      }
+      icon={Clock}
+      footer={footer}
+      customWidth="1400px"
+      height="750px"
+    >
       <div className="flex gap-5 h-full min-h-0">
         {/* ── Left: main content area ── */}
         <div className="flex-1 min-w-0 flex flex-col gap-5 overflow-auto">
           {/* Timesheet Information — no header date; date is per-row now */}
           {!isEmployee && (
-          <div className="bg-card border border-theme rounded-xl p-4 shrink-0">
-            <div className="flex items-center justify-between pb-2 mb-3 border-b border-theme">
-              <span className="text-[11px] font-bold text-main uppercase tracking-wider">
-                Timesheet Information
-              </span>
-            </div>
+            <div className="bg-card border border-theme rounded-xl p-4 shrink-0">
+              <div className="flex items-center justify-between pb-2 mb-3 border-b border-theme">
+                <span className="text-[11px] font-bold text-main uppercase tracking-wider">
+                  Timesheet Information
+                </span>
+              </div>
 
-            <div className="grid grid-cols-[1fr_1fr_1fr_110px_120px] gap-4 items-end">
-              <SearchSelect2
-                label="Project"
-                value={form.project_name}
-                fetchOptions={fetchProjectOptionsRestricted}
-                onChange={setProject}
-                placeholder="Search project..."
-              />
-
-              {restrictions?.lockCustomer ? (
-                <ModalInput
-                  label="Customer"
-                  value={form.customer_name}
-                  disabled
-                  name="customer"
-                />
-              ) : (
-                <CustomerSelect
-                  label="Customer"
-                  value={form.customer_name}
-                  selectedId={form.customer}
-                  onChange={(customer) => {
-                    setCustomer(customer.id, {
-                      label: customer.name,
-                      value: customer.id,
-                      meta: { currency: customer.currency },
-                    });
-                  }}
-                  placeholder="Search customer..."
-                />
-              )}
-
-              {restrictions?.employee ? (
-                <ModalInput
-                  label="Employee"
-                  value={form.employee_name}
-                  disabled
-                  name="employee"
-                />
-              ) : (
+              <div className="grid grid-cols-[1fr_1fr_1fr_110px_120px] gap-4 items-end">
                 <SearchSelect2
-                  label="Employee"
-                  value={form.employee_name}
-                  fetchOptions={fetchEmployeeOptions}
-                  onChange={setEmployee}
-                  placeholder="Search employee..."
+                  label="Project"
+                  value={form.project_name}
+                  fetchOptions={fetchProjectOptionsRestricted}
+                  onChange={setProject}
+                  placeholder="Search project..."
                 />
-              )}
 
-              <ModalInput
-                label="Currency"
-                value={form.currency || ""}
-                disabled
-                name="currency"
-                placeholder="—"
-                className="text-center font-mono font-semibold"
-              />
-              {form.currency && form.currency !== companyCurrency && (
+                {restrictions?.lockCustomer ? (
+                  <ModalInput
+                    label="Customer"
+                    value={form.customer_name}
+                    disabled
+                    name="customer"
+                  />
+                ) : (
+                  <CustomerSelect
+                    label="Customer"
+                    value={form.customer_name}
+                    selectedId={form.customer}
+                    onChange={(customer) => {
+                      setCustomer(customer.id, {
+                        label: customer.name,
+                        value: customer.id,
+                        meta: { currency: customer.currency },
+                      });
+                    }}
+                    placeholder="Search customer..."
+                  />
+                )}
+
+                {restrictions?.employee ? (
+                  <ModalInput
+                    label="Employee"
+                    value={form.employee_name}
+                    disabled
+                    name="employee"
+                  />
+                ) : (
+                  <SearchSelect2
+                    label="Employee"
+                    value={form.employee_name}
+                    fetchOptions={fetchEmployeeOptions}
+                    onChange={setEmployee}
+                    placeholder="Search employee..."
+                  />
+                )}
+
                 <ModalInput
-                  label="Exchange Rate"
-                  value={form.exchange_rate?.toFixed(4) ?? "1.0000"}
+                  label="Currency"
+                  value={form.currency || ""}
                   disabled
-                  name="exchange_rate"
+                  name="currency"
+                  placeholder="—"
                   className="text-center font-mono font-semibold"
                 />
-              )}
+                {form.currency && form.currency !== companyCurrency && (
+                  <ModalInput
+                    label="Exchange Rate"
+                    value={form.exchange_rate?.toFixed(4) ?? "1.0000"}
+                    disabled
+                    name="exchange_rate"
+                    className="text-center font-mono font-semibold"
+                  />
+                )}
+              </div>
             </div>
-          </div>
           )}
 
           {/* Time entries */}
@@ -302,7 +309,7 @@ useEffect(() => {
                 </span>
               </div>
               <button
-                 onClick={() => addLine()}
+                onClick={() => addLine()}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:opacity-90 text-primary-foreground rounded-lg text-xs font-semibold transition-opacity"
               >
                 <Plus size={12} /> Add Row
@@ -327,10 +334,10 @@ useEffect(() => {
                     <th className="p-2.5 min-w-[120px]">Activity Type</th>
                     <th className="p-2.5 min-w-[220px]">Date &amp; Time</th>
                     <th className="p-2.5 text-right">Hours</th>
-                   {!isEmployee && (
-  <th className="p-2.5 text-center">Billable</th>
-)}
-<th className="p-2.5 text-center">Done</th>
+                    {!isEmployee && (
+                      <th className="p-2.5 text-center">Billable</th>
+                    )}
+                    <th className="p-2.5 text-center">Done</th>
                     <th className="p-2.5 text-center w-16">Actions</th>
                   </tr>
                 </thead>
@@ -415,33 +422,32 @@ useEffect(() => {
                         />
                       </td>
                       <td className="p-2">
-                        <DateTimeRangePicker
-                          date={l.date}
-                          from_time={l.from_time}
-                          to_time={l.to_time}
-                          onApply={(date, from, to) =>
-                            updateLine(l.id, {
-                              date,
-                              from_time: from,
-                              to_time: to,
-                            })
-                          }
-                        />
-                      </td>
+  <DateTimeRangePicker
+    date={l.date}
+    to_date={l.to_date}
+    from_time={l.from_time}
+    to_time={l.to_time}
+    onApply={(date, from, to, toDate) =>
+      updateLine(l.id, { date, to_date: toDate, from_time: from, to_time: to })
+    }
+  />
+</td>
                       <td className="p-2 text-right font-mono font-bold text-primary">
                         {l.hours.toFixed(1)}h
                       </td>
-                     {!isEmployee && (
-  <td className="p-2 text-center">
-    <input
-      type="checkbox"
-      checked={l.is_billable}
-      onChange={(e) =>
-        updateLine(l.id, { is_billable: e.target.checked })
-      }
-    />
-  </td>
-)}
+                      {!isEmployee && (
+                        <td className="p-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={l.is_billable}
+                            onChange={(e) =>
+                              updateLine(l.id, {
+                                is_billable: e.target.checked,
+                              })
+                            }
+                          />
+                        </td>
+                      )}
                       <td className="p-2 text-center">
                         <input
                           type="checkbox"
@@ -479,14 +485,11 @@ useEffect(() => {
         </div>
 
         {/* ── Right: billing summary sidebar (fixed, always visible) ── */}
-     {!isEmployee && (
-  <aside className="w-[240px] shrink-0 h-full overflow-auto">
-    <TimesheetSummary
-      totals={totals}
-      currency={form.currency}
-    />
-  </aside>
-)}
+        {!isEmployee && (
+          <aside className="w-[240px] shrink-0 h-full overflow-auto">
+            <TimesheetSummary totals={totals} currency={form.currency} />
+          </aside>
+        )}
       </div>
 
       {/* Single shared popover per row: shows the actions menu, or — once
@@ -501,15 +504,15 @@ useEffect(() => {
       >
         {openActionsId && actionsView === "menu" && (
           <div className="py-1">
-           {!isEmployee && (
-  <button
-    onClick={() => setActionsView("rates")}
-    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-main hover:bg-app/60 transition-colors"
-  >
-    <Pencil size={12} className="text-primary" />
-    Update Rates
-  </button>
-)}
+            {!isEmployee && (
+              <button
+                onClick={() => setActionsView("rates")}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-main hover:bg-app/60 transition-colors"
+              >
+                <Pencil size={12} className="text-primary" />
+                Update Rates
+              </button>
+            )}
             <button
               onClick={() => {
                 duplicateLine(openActionsId);

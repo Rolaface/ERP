@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Loader2, UserPlus } from "lucide-react";
 
 import { Option } from "../../../../components/selects/tabelselect/MultiSearchSelect";
 
@@ -8,6 +9,7 @@ interface AssigneeCellProps {
   disabled?: boolean;
   fetchOptions: (q: string) => Promise<Option[]>;
   onChange: (nextEmails: string[]) => void | Promise<void>;
+  onTake?: () => void | Promise<void>;
 }
 
 const AVATAR_PALETTE: [string, string][] = [
@@ -56,6 +58,7 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
   disabled,
   fetchOptions,
   onChange,
+  onTake,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{
@@ -82,11 +85,20 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
     Record<string, Option>
   >({});
   const [saving, setSaving] = useState(false);
+  const [taking, setTaking] = useState(false);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
   const fetchOptionsRef = useRef(fetchOptions);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     fetchOptionsRef.current = fetchOptions;
@@ -169,22 +181,29 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
     if (!open) return;
     const id = ++requestIdRef.current;
     setIsLoading(true);
-    fetchOptionsRef.current(debouncedSearch).then((data) => {
-      if (id !== requestIdRef.current) return;
-      setOptions(data);
-      setIsLoading(false);
-      setPendingOptionsMap((prev) => {
-        let changed = false;
-        const next = { ...prev };
-        data.forEach((opt) => {
-          if (next[opt.value]) {
-            next[opt.value] = opt;
-            changed = true;
-          }
+    fetchOptionsRef
+      .current(debouncedSearch)
+      .then((data) => {
+        if (id !== requestIdRef.current || !mountedRef.current) return;
+        setOptions(data);
+        setIsLoading(false);
+        setPendingOptionsMap((prev) => {
+          let changed = false;
+          const next = { ...prev };
+          data.forEach((opt) => {
+            if (next[opt.value]) {
+              next[opt.value] = opt;
+              changed = true;
+            }
+          });
+          return changed ? next : prev;
         });
-        return changed ? next : prev;
+      })
+      .catch(() => {
+        if (id !== requestIdRef.current || !mountedRef.current) return;
+        setOptions([]);
+        setIsLoading(false);
       });
-    });
   }, [debouncedSearch, open]);
 
   useEffect(() => {
@@ -222,10 +241,22 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
     setSaving(true);
     try {
       await onChange(pendingEmails);
-      setOpen(false);
+      if (mountedRef.current) setOpen(false);
     } catch {
     } finally {
-      setSaving(false);
+      if (mountedRef.current) setSaving(false);
+    }
+  };
+
+  const handleTake = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (taking || !onTake) return;
+    setTaking(true);
+    try {
+      await onTake();
+    } catch {
+    } finally {
+      if (mountedRef.current) setTaking(false);
     }
   };
 
@@ -242,25 +273,78 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
 
   const visible = emails.slice(0, 3);
   const overflow = emails.length - visible.length;
+  const hasAssignees = emails.length > 0;
+
+const takeButton = onTake ? (
+  <button
+    type="button"
+    onClick={handleTake}
+    onDoubleClick={(e) => e.stopPropagation()}
+    disabled={taking}
+    title={
+      hasAssignees ? "Add yourself to this task" : "Assign this task to yourself"
+    }
+    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/40 bg-primary/10 font-semibold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60 ${
+      hasAssignees ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-[11px]"
+    }`}
+  >
+    {taking ? (
+      <Loader2 size={12} className="animate-spin" />
+    ) : (
+      <UserPlus size={12} />
+    )}
+    {taking ? "Joining..." : hasAssignees ? "Join" : "Take task"}
+  </button>
+) : null;
+
+if (!hasAssignees && takeButton) return takeButton;
+
+  if (emails.length === 0 && onTake) {
+    return (
+      <button
+        type="button"
+        onClick={handleTake}
+        onDoubleClick={(e) => e.stopPropagation()}
+        disabled={taking}
+        title="Assign this task to yourself"
+        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {taking ? (
+          <Loader2 size={12} className="animate-spin" />
+        ) : (
+          <UserPlus size={12} />
+        )}
+        {taking ? "Taking..." : "Take task"}
+      </button>
+    );
+  }
 
   return (
     <>
       <button
         ref={triggerRef}
         type="button"
-        disabled={disabled}
+        aria-disabled={disabled || undefined}
         onClick={(e) => {
           e.stopPropagation();
+          if (disabled) return;
           openPopover();
         }}
+        onDoubleClick={(e) => e.stopPropagation()}
         onMouseEnter={emails.length > 0 ? handleMouseEnter : undefined}
         onMouseLeave={emails.length > 0 ? handleMouseLeave : undefined}
-        className="relative flex items-center min-w-[120px] text-left disabled:cursor-not-allowed"
+        className={`relative flex items-center min-w-[120px] text-left ${
+          disabled ? "cursor-default" : "cursor-pointer"
+        }`}
       >
         {emails.length === 0 ? (
-          <span className="flex items-center gap-1 text-xs text-muted border border-dashed border-theme rounded-full px-2.5 py-1 hover:text-main hover:border-main">
-            + Assign
-          </span>
+          disabled ? (
+            <span className="text-xs text-muted">Unassigned</span>
+          ) : (
+            <span className="flex items-center gap-1 text-xs text-muted border border-dashed border-theme rounded-full px-2.5 py-1 hover:text-main hover:border-main">
+              + Assign
+            </span>
+          )
         ) : (
           <div className="flex items-center -space-x-1.5">
             {visible.map((email) => {
