@@ -349,6 +349,7 @@ const HrTaskView: React.FC = () => {
 
   const handleLogTime = (task: TaskEntry) => {
     openTimesheetFormModal({
+        mode: "employee",
       title: "Log Time",
       subtitle: `Logging time for ${task.subject}`,
       prefillTask: {
@@ -385,6 +386,7 @@ const HrTaskView: React.FC = () => {
     if (picked.length === 0) return;
 
     openTimesheetFormModal({
+      mode: "employee",
       title: "Log Time",
       subtitle: `Logging time for ${picked.length} task${
         picked.length > 1 ? "s" : ""
