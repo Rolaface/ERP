@@ -5,10 +5,10 @@ import { getTimesheetHours } from "../../../../api/project/timesheet/timesheet.a
 import type { TimesheetHoursEntry } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import TimesheetMatrix from "./Timesheetmatrix";
 import ViewToggle from "./Viewtoggle";
-// Adjust the path to wherever DateRangeFilter lives in your project
+
 import DateRangeFilter from "../../../../components/ui/modal/DateRangeFilter";
 
-type ViewMode = "month" | "week" | "day" | "list";
+type ViewMode = "month" | "week" | "day" | "list" | "year";
 
 interface Props {
   canViewAll: boolean;
@@ -30,8 +30,16 @@ const VIEWS: { label: string; value: ViewMode }[] = [
   { label: "List", value: "list" },
 ];
 
+const ADMIN_VIEWS: { label: string; value: ViewMode }[] = [
+  { label: "Day", value: "day" },
+  { label: "Week", value: "week" },
+  { label: "Month", value: "month" },
+  { label: "Year", value: "year" },
+];
+
 const WEEK_START_DAY = 1;
 const DAYS_IN_WEEK = 7;
+const MONTHS_IN_YEAR = 12;
 const HOURS_DECIMALS = 2;
 const DRAFT_DOCSTATUS = 0;
 const MAX_CHIPS_MONTH = 2;
@@ -75,6 +83,9 @@ const getVisibleDays = (view: ViewMode, anchor: Date): Date[] => {
   const firstOfMonth = new Date(y, m, 1);
   const lastOfMonth = new Date(y, m + 1, 0);
 
+  if (view === "year") {
+    return daysBetween(new Date(y, 0, 1), new Date(y, MONTHS_IN_YEAR - 1, 31));
+  }
   if (view === "day") return [anchor];
   if (view === "week") {
     const start = startOfWeek(anchor);
@@ -88,12 +99,14 @@ const getVisibleDays = (view: ViewMode, anchor: Date): Date[] => {
 };
 
 const shiftAnchor = (view: ViewMode, anchor: Date, dir: 1 | -1) => {
+  if (view === "year") return new Date(anchor.getFullYear() + dir, 0, 1);
   if (view === "day") return addDays(anchor, dir);
   if (view === "week") return addDays(anchor, dir * DAYS_IN_WEEK);
   return new Date(anchor.getFullYear(), anchor.getMonth() + dir, 1);
 };
 
 const getTitle = (view: ViewMode, days: Date[], anchor: Date) => {
+  if (view === "year") return String(anchor.getFullYear());
   if (view === "day") {
     return anchor.toLocaleDateString(undefined, {
       weekday: "long",
@@ -103,7 +116,10 @@ const getTitle = (view: ViewMode, days: Date[], anchor: Date) => {
     });
   }
   if (view === "week") {
-    const short: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
+    const short: Intl.DateTimeFormatOptions = {
+      day: "numeric",
+      month: "short",
+    };
     return `${days[0].toLocaleDateString(undefined, short)} – ${days[
       days.length - 1
     ].toLocaleDateString(undefined, { ...short, year: "numeric" })}`;
@@ -205,7 +221,7 @@ const DayDetail: React.FC<{ events: DayEvent[]; showPrimary: boolean }> = ({
 const TimesheetCalendar: React.FC<Props> = ({ canViewAll, onSwitchToList }) => {
   const [view, setView] = useState<ViewMode>("month");
   const [anchor, setAnchor] = useState(() => new Date());
-  // Custom range (admin only). null = normal month navigation.
+  // Custom range (admin only). null = normal period navigation.
   const [range, setRange] = useState<DateRange | null>(null);
   const [entries, setEntries] = useState<TimesheetHoursEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -218,14 +234,24 @@ const TimesheetCalendar: React.FC<Props> = ({ canViewAll, onSwitchToList }) => {
         : getVisibleDays(view, anchor),
     [view, anchor, range],
   );
-  // Admin matrix shows only the days of the month (no padded weeks)
-  const matrixDays = useMemo(
-    () =>
-      range || view !== "month"
-        ? visibleDays
-        : getVisibleDays("list", anchor),
-    [view, anchor, range, visibleDays],
-  );
+
+  // Admin matrix columns: year -> 12 months, month -> days of the month
+  // (no padded weeks), everything else -> the visible days.
+  const matrixDays = useMemo(() => {
+    if (!range && view === "year") {
+      return Array.from(
+        { length: MONTHS_IN_YEAR },
+        (_, i) => new Date(anchor.getFullYear(), i, 1),
+      );
+    }
+    return range || view !== "month"
+      ? visibleDays
+      : getVisibleDays("list", anchor);
+  }, [view, anchor, range, visibleDays]);
+
+  const matrixGranularity: "day" | "month" =
+    view === "year" && !range ? "month" : "day";
+
   const fromDate = toYMD(visibleDays[0]);
   const toDate = toYMD(visibleDays[visibleDays.length - 1]);
   const todayKey = toYMD(new Date());
@@ -326,7 +352,10 @@ const TimesheetCalendar: React.FC<Props> = ({ canViewAll, onSwitchToList }) => {
     const start = fromYMD(from_date);
     const end = fromYMD(to_date ?? from_date);
     const lastAllowed = addDays(start, MAX_RANGE_DAYS - 1);
-    setRange({ from: toYMD(start), to: toYMD(end > lastAllowed ? lastAllowed : end) });
+    setRange({
+      from: toYMD(start),
+      to: toYMD(end > lastAllowed ? lastAllowed : end),
+    });
     setAnchor(start);
   };
 
@@ -454,19 +483,13 @@ const TimesheetCalendar: React.FC<Props> = ({ canViewAll, onSwitchToList }) => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            className={navButton}
-            onClick={() => shift(-1)}
-          >
+          <button className={navButton} onClick={() => shift(-1)}>
             <ChevronLeft size={14} />
           </button>
           <span className="min-w-[190px] text-center text-base font-bold text-main">
             {title}
           </span>
-          <button
-            className={navButton}
-            onClick={() => shift(1)}
-          >
+          <button className={navButton} onClick={() => shift(1)}>
             <ChevronRight size={14} />
           </button>
         </div>
@@ -475,16 +498,18 @@ const TimesheetCalendar: React.FC<Props> = ({ canViewAll, onSwitchToList }) => {
           <span className="font-mono text-xs font-bold text-main">
             {loading ? "Loading..." : `Total: ${formatHours(rangeTotal)}`}
           </span>
-          {!canViewAll && (
           <div className="flex overflow-hidden rounded-lg border border-[var(--border)]">
-            {VIEWS.map((v) => (
+            {(canViewAll ? ADMIN_VIEWS : VIEWS).map((v) => (
               <button
                 key={v.value}
-                onClick={() => setView(v.value)}
+                onClick={() => {
+                  setRange(null);
+                  setView(v.value);
+                }}
                 className={[
                   "px-3 py-1.5 text-xs font-semibold transition-colors",
-                  view === v.value
-                    ? "bg-primary/10 text-primary"
+                  view === v.value && !range
+                    ? "bg-primary text-white"
                     : "text-muted hover:text-main",
                 ].join(" ")}
               >
@@ -492,7 +517,6 @@ const TimesheetCalendar: React.FC<Props> = ({ canViewAll, onSwitchToList }) => {
               </button>
             ))}
           </div>
-          )}
           {canViewAll && (
             <DateRangeFilter
               from={range?.from}
@@ -520,6 +544,7 @@ const TimesheetCalendar: React.FC<Props> = ({ canViewAll, onSwitchToList }) => {
               days={matrixDays}
               entries={entries}
               todayKey={todayKey}
+              granularity={matrixGranularity}
             />
           ) : null}
           {!showMatrix && (view === "month" || view === "week")

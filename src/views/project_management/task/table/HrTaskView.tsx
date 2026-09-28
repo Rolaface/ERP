@@ -110,11 +110,14 @@ const HrTaskView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [projectFilter, setProjectFilter] = useState<string[]>([]);
+  const [assigneeFilter, setAssigneeFilter] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
-
+  const [userFilterOptions, setUserFilterOptions] = useState<
+    { label: string; value: string }[]
+  >([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<TaskDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
@@ -125,10 +128,9 @@ const HrTaskView: React.FC = () => {
   );
   const [loadingGroups, setLoadingGroups] = useState<Set<string>>(new Set());
 
-  // Bulk "Log Time" selection. Keyed by task name and kept as a Map of full
-  // entries so it survives pagination / refetches (the table only sees the
-  // current page, so the parent owns the selection).
   const [selected, setSelected] = useState<Map<string, TaskEntry>>(new Map());
+
+  const assigneeActive = assigneeFilter.length > 0;
 
   useEffect(() => {
     getAllProjects()
@@ -141,6 +143,17 @@ const HrTaskView: React.FC = () => {
       .catch(showApiError);
   }, []);
 
+  useEffect(() => {
+    fetchUserOptions("")
+      .then((list) => {
+        if (!mountedRef.current) return;
+        setUserFilterOptions(
+          list.map((u) => ({ label: u.label, value: u.value })),
+        );
+      })
+      .catch(showApiError);
+  }, []);
+
   const projectFilterOptions = projectOptions.map((p) => ({
     label: p.project_name,
     value: p.name,
@@ -148,7 +161,7 @@ const HrTaskView: React.FC = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, statusFilter, projectFilter]);
+  }, [searchTerm, statusFilter, projectFilter, assigneeFilter]);
 
   const fetchTasks = useCallback(async () => {
     if (!mountedRef.current) return;
@@ -163,6 +176,7 @@ const HrTaskView: React.FC = () => {
         searchTerm || undefined,
         sortBy || undefined,
         sortOrder,
+        assigneeFilter.length ? assigneeFilter : undefined,
       );
       if (!mountedRef.current) return;
 
@@ -185,6 +199,7 @@ const HrTaskView: React.FC = () => {
     searchTerm,
     statusFilter,
     projectFilter,
+    assigneeFilter,
     sortBy,
     sortOrder,
   ]);
@@ -211,6 +226,7 @@ const HrTaskView: React.FC = () => {
     searchTerm,
     statusFilter,
     projectFilter,
+    assigneeFilter,
     sortBy,
     sortOrder,
   ]);
@@ -221,6 +237,7 @@ const HrTaskView: React.FC = () => {
     );
     return unsubscribe;
   }, [subscribeToRefresh]);
+
   const findTask = (name: string): TaskEntry | undefined =>
     tasks.find((t) => t.name === name) ??
     Object.values(childrenMap)
@@ -291,6 +308,7 @@ const HrTaskView: React.FC = () => {
   };
 
   const rows = useMemo<TaskRow[]>(() => {
+    if (assigneeActive) return tasks.map((t) => ({ ...t, _depth: 0 }));
     const walk = (list: TaskEntry[], depth: number): TaskRow[] =>
       list.flatMap((t) => [
         { ...t, _depth: depth },
@@ -299,7 +317,8 @@ const HrTaskView: React.FC = () => {
           : []),
       ]);
     return walk(tasks, 0);
-  }, [tasks, childrenMap, expanded]);
+  }, [tasks, childrenMap, expanded, assigneeActive]);
+
   const handleAdd = () => {
     console.warn("handleAdd: Task create modal not wired yet.");
   };
@@ -323,6 +342,7 @@ const HrTaskView: React.FC = () => {
       showApiError(error);
     }
   };
+
   const handleEdit = (id: string) => {
     console.warn("handleEdit: Task edit modal not wired yet.", id);
   };
@@ -340,9 +360,7 @@ const HrTaskView: React.FC = () => {
     });
   };
 
-  // Group tasks and tasks without a project can't have time logged on them
-  // (same rule as the per-row clock button).
-  const canLogTime = (t: TaskEntry) => t.is_group !== 1 && !!t.project;
+  const canLogTime = (t: TaskEntry) => t.is_group !== 1;
 
   const handleRowSelect = (t: TaskEntry, checked: boolean) =>
     setSelected((prev) => {
@@ -480,7 +498,7 @@ const HrTaskView: React.FC = () => {
             className="flex items-start gap-1"
             style={{ paddingLeft: t._depth * TREE_INDENT_PX }}
           >
-            {isGroup ? (
+            {isGroup && !assigneeActive ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -579,7 +597,6 @@ const HrTaskView: React.FC = () => {
         );
       },
     },
-
     {
       key: "_assign",
       header: "Assigned To",
@@ -598,7 +615,6 @@ const HrTaskView: React.FC = () => {
         );
       },
     },
-
     {
       key: "progress",
       header: "Progress",
@@ -686,6 +702,16 @@ const HrTaskView: React.FC = () => {
             options: projectFilterOptions,
             values: projectFilter,
             onChange: setProjectFilter,
+          },
+          {
+            key: "assignee",
+            label: "Assigned To",
+            options: userFilterOptions,
+            values: assigneeFilter,
+            onChange: setAssigneeFilter,
+
+            searchPlaceholder: "Search employee...",
+            onSearch: fetchUserOptions,
           },
         ]}
         sortBy={sortBy}

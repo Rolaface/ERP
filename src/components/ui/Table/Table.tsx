@@ -19,6 +19,9 @@ export interface MultiSelectFilterConfig {
   options: MultiSelectOption[];
   values: string[];
   onChange: (values: string[]) => void;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  onSearch?: (q: string) => Promise<MultiSelectOption[]>;
 }
 interface TableProps<T> {
   columns: Column<T>[];
@@ -298,16 +301,19 @@ const TableInner = <T extends Record<string, any>>({
 
           {(multiSelectFilters?.length || extraFilters) && (
             <div className="flex shrink-0 items-center gap-4">
-              {multiSelectFilters?.map((f) => (
-                <MultiSelectFilter
-                  key={f.key}
-                  options={f.options}
-                  values={f.values}
-                  onChange={f.onChange}
-                  placeholder={f.label}
-                  panelTitle={`Filter by ${f.label}`}
-                />
-              ))}
+             {multiSelectFilters?.map((f) => (
+  <MultiSelectFilter
+    key={f.key}
+    options={f.options}
+    values={f.values}
+    onChange={f.onChange}
+    placeholder={f.label}
+    panelTitle={`Filter by ${f.label}`}
+    searchable={f.searchable}
+    searchPlaceholder={f.searchPlaceholder}
+    onSearch={f.onSearch}
+  />
+))}
               {extraFilters}
             </div>
           )}

@@ -47,6 +47,7 @@ export async function getAllTasks(
   const resp: AxiosResponse = await api.get(url);
   return resp.data?.data ?? [];
 }
+
 const CHILD_TASK_LIMIT = 500;
 const TASK_LIST_FIELDS = [
   "name",
@@ -65,7 +66,7 @@ const TASK_LIST_FIELDS = [
   "is_group",
   "is_milestone",
   "_assign",
-   "parent_task",
+  "parent_task",
 ];
 
 export async function getTaskList(
@@ -76,6 +77,7 @@ export async function getTaskList(
   search?: string,
   sortBy?: string,
   sortOrder?: "asc" | "desc",
+  assignees?: string[],
 ): Promise<TaskListResponse> {
   const start = (page - 1) * pageSize;
 
@@ -98,7 +100,18 @@ export async function getTaskList(
   if (projects && projects.length > 0) {
     filters.push(["project", "in", projects]);
   }
-filters.push(["parent_task", "is", "not set"]);
+
+  if (assignees && assignees.length > 0) {
+    const orFilters = assignees.map((email) => [
+      "_assign",
+      "like",
+      `%"${email}"%`,
+    ]);
+    url += `&or_filters=${encodeURIComponent(JSON.stringify(orFilters))}`;
+  } else {
+    filters.push(["parent_task", "is", "not set"]);
+  }
+
   url += `&filters=${encodeURIComponent(JSON.stringify(filters))}`;
   const resp: AxiosResponse<TaskListResponse> = await api.get(url);
   return resp.data;
@@ -147,15 +160,12 @@ export async function assignTask(
   taskName: string,
   email: string,
 ): Promise<any> {
-  const resp: AxiosResponse = await api.post(
-    TaskAPI.assign,
-    {
-      assign_to: JSON.stringify([email]),
-      doctype: "Task",
-      name: taskName,
-      description: "Task assigned from Task Management",
-    },
-  );
+  const resp: AxiosResponse = await api.post(TaskAPI.assign, {
+    assign_to: JSON.stringify([email]),
+    doctype: "Task",
+    name: taskName,
+    description: "Task assigned from Task Management",
+  });
 
   return resp.data;
 }
@@ -166,15 +176,12 @@ export async function assignTaskToUsers(
 ): Promise<any> {
   if (emails.length === 0) return null;
 
-  const resp: AxiosResponse = await api.post(
-    TaskAPI.assign,
-    {
-      assign_to: JSON.stringify(emails),
-      doctype: "Task",
-      name: taskName,
-      description: "Task assigned from Task Management",
-    },
-  );
+  const resp: AxiosResponse = await api.post(TaskAPI.assign, {
+    assign_to: JSON.stringify(emails),
+    doctype: "Task",
+    name: taskName,
+    description: "Task assigned from Task Management",
+  });
 
   return resp.data;
 }
@@ -183,14 +190,11 @@ export async function unassignTask(
   taskName: string,
   email: string,
 ): Promise<any> {
-  const resp: AxiosResponse = await api.post(
-    TaskAPI.unassign,
-    {
-      doctype: "Task",
-      name: taskName,
-      assign_to: email,
-    },
-  );
+  const resp: AxiosResponse = await api.post(TaskAPI.unassign, {
+    doctype: "Task",
+    name: taskName,
+    assign_to: email,
+  });
 
   return resp.data;
 }
