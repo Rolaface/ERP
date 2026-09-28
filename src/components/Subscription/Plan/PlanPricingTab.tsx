@@ -48,18 +48,6 @@ export const PlanPricingTab: React.FC<{
           value={form.billingFrequency}
           onValueChange={(v) => onFieldChange("billingFrequency", v as PlanBillingFrequency)}
         />
-        {form.billingFrequency === "Custom" && (
-          <PlanField label="Interval (months)" required error={errors.customIntervalMonths} className="w-40">
-            <NumericInput
-              name="customIntervalMonths"
-              value={form.customIntervalMonths}
-              onChange={(v) => onFieldChange("customIntervalMonths", v)}
-              decimalScale={0}
-              placeholder="e.g. 2"
-              className={`w-full ${errors.customIntervalMonths ? "border-danger" : ""}`}
-            />
-          </PlanField>
-        )}
       </div>
 
       <PlanField label="Pricing Model" className="mt-4">

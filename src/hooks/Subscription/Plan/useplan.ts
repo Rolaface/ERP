@@ -170,7 +170,6 @@ export const BILLING_FREQUENCY_OPTIONS: { label: string; value: PlanBillingFrequ
   { label: "Quarterly", value: "Quarterly" },
   { label: "Half-Yearly", value: "Half-Yearly" },
   { label: "Yearly", value: "Yearly" },
-  { label: "Custom", value: "Custom" },
 ];
 
 export const RENEWAL_MODE_OPTIONS: { label: string; value: PlanRenewalMode }[] = [

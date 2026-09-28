@@ -96,17 +96,6 @@ const MySubscription: React.FC = () => {
       {/* Header actions */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-bold text-main">My Subscription</h2>
-            <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" /> {CURRENT_SUBSCRIPTION.status}
-            </span>
-            {CURRENT_SUBSCRIPTION.autoRenew && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-app px-2.5 py-0.5 text-xs font-medium text-muted">
-                Auto-renew enabled
-              </span>
-            )}
-          </div>
           <p className="mt-1 text-sm text-muted">
             View and manage your current subscription, entitlements, and billing cycles.
           </p>
