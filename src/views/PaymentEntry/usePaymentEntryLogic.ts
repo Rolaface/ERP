@@ -455,6 +455,7 @@ export function useExchangeRate(
   currencyTo: string,
   date: string,
   args: "for_selling" | "for_buying",
+  // enabled: boolean = true,   // 👈 new param
 ) {
   const [rate, setRate] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -467,6 +468,13 @@ export function useExchangeRate(
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    // if (!enabled) {         
+    //   setRate(null);
+    //   setError(null);
+    //   setIsLoading(false);
+    //   return;
+    // }
 
     if (!currenciesKnown) {
       setRate(null);
@@ -484,10 +492,9 @@ export function useExchangeRate(
 
     setRate(null);
     setError(null);
+    setIsLoading(true);   // fix from before — set synchronously, no dead gap
 
     debounceRef.current = setTimeout(async () => {
-      setIsLoading(true);
-
       const effectiveDate = date || dayjs().format("YYYY-MM-DD");
       try {
         const result: ExchangeRateResult = await getExchangeRate(
@@ -496,7 +503,6 @@ export function useExchangeRate(
           effectiveDate,
           args,
         );
-
         if (result.error) {
           setError(result.error);
           setRate(null);

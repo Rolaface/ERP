@@ -48,6 +48,7 @@ const EmailTemplate = lazy(() => import("../views/Email/EmailTemplate"));
 const Performance = lazy(() => import("../views/hr/performace/PerformanceModule"));
 const Scheduler = lazy(() => import("../views/Scheduler/SchedulerTable"));
 const Imports = lazy(() => import("../views/Import/importdata"));
+const SelectLmsMode = lazy(() => import("../views/SelectLmsMode"));
 
 // ── Component Helpers ──
 interface PermissionRouteProps {
@@ -164,6 +165,7 @@ const router = createBrowserRouter(
 
         {/* ── Protected Routes ── */}
         <Route element={<ProtectedRoute />}>
+        <Route path="/select-lms-mode" element={<SelectLmsMode />} />
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardRedirect />} />
 
