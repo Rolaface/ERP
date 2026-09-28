@@ -19,11 +19,15 @@ export interface MultiSelectFilterConfig {
   options: MultiSelectOption[];
   values: string[];
   onChange: (values: string[]) => void;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  onSearch?: (q: string) => Promise<MultiSelectOption[]>;
 }
 interface TableProps<T> {
   columns: Column<T>[];
   data: T[];
   tableId?: string;
+  customHeight?: string;
   rowKey?: (row: T) => string;
   loading?: boolean;
   isFetching?: boolean;
@@ -55,6 +59,14 @@ interface TableProps<T> {
   defaultVisibleCount?: number;
   onRowDoubleClick?: (item: T) => void;
   primaryAction?: React.ReactNode;
+
+
+  selectable?: boolean;
+  isRowSelected?: (row: T) => boolean;
+  isRowSelectable?: (row: T) => boolean;
+  onRowSelect?: (row: T, checked: boolean) => void;
+  // rows = the selectable rows of the current page
+  onSelectAll?: (rows: T[], checked: boolean) => void;
 }
 
 const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({
@@ -115,10 +127,34 @@ const ExpandedPanel: React.FC<{ children: React.ReactNode; open: boolean }> = ({
   );
 };
 
-// Parses a CSS width string like "140px", "12rem", or "20%" down to a
-// plain px number for summing. Non-px units fall back to a sane default
-// rather than being silently treated as 0 (which would shrink the table
-// below what the column actually needs).
+
+const SELECT_COL_WIDTH = 40;
+
+
+
+const HeaderCheckbox: React.FC<{
+  checked: boolean;
+  indeterminate: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}> = ({ checked, indeterminate, disabled, onChange }) => {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.checked)}
+      aria-label="Select all rows on this page"
+    />
+  );
+};
+
+
 const parseWidthToPx = (val?: string): number => {
   if (!val) return 0;
   const trimmed = val.trim();
@@ -127,7 +163,7 @@ const parseWidthToPx = (val?: string): number => {
     return isNaN(n) ? 0 : n;
   }
   const n = parseFloat(trimmed);
-  return isNaN(n) ? 0 : n; // best-effort for unitless/other units
+  return isNaN(n) ? 0 : n;
 };
 
 const TableInner = <T extends Record<string, any>>({
@@ -138,6 +174,7 @@ const TableInner = <T extends Record<string, any>>({
   isFetching = false,
   emptyMessage = "No records found.",
   tableId,
+  customHeight = "calc(95.5vh - 130px)",
   expandedRowRender,
   onRowClick,
   showToolbar = false,
@@ -164,6 +201,11 @@ const TableInner = <T extends Record<string, any>>({
   onPageChange,
   onPageSizeChange,
   onRowDoubleClick,
+  selectable = false,
+  isRowSelected,
+  isRowSelectable,
+  onRowSelect,
+  onSelectAll,
 }: TableProps<T>) => {
   const allKeys = useMemo(() => columns.map((col) => col.key), [columns]);
   const { getVisibleKeys, setVisibleKeys: saveVisibleKeys } = useColumnStore();
@@ -194,14 +236,17 @@ const TableInner = <T extends Record<string, any>>({
     [columns, visibleKeys],
   );
 
-  // The table's minimum width used to be a hardcoded 900px regardless of
-  // what columns were actually passed in. That meant even a lean 5-column
-  // table was forced to be at least 900px wide, causing horizontal scroll
-  // on containers narrower than that for no real reason. Instead, derive
-  // the floor from the columns actually being rendered: sum each column's
-  // explicit width (or minWidth as a fallback, or 100px as a last resort),
-  // then apply a small sane floor so a table with very few columns doesn't
-  // look oddly squeezed.
+
+  const selectableRows = selectable
+    ? data.filter((r) => (isRowSelectable ? isRowSelectable(r) : true))
+    : [];
+  const selectedCount = selectableRows.filter((r) => isRowSelected?.(r)).length;
+  const allSelected =
+    selectableRows.length > 0 && selectedCount === selectableRows.length;
+  const someSelected = selectedCount > 0 && !allSelected;
+  const totalColSpan = visibleColumns.length + (selectable ? 1 : 0);
+
+
   const tableMinWidth = useMemo(() => {
     const total = visibleColumns.reduce((sum, column) => {
       const w =
@@ -211,8 +256,8 @@ const TableInner = <T extends Record<string, any>>({
         100;
       return sum + w;
     }, 0);
-    return Math.max(total, 480);
-  }, [visibleColumns]);
+    return Math.max(total + (selectable ? SELECT_COL_WIDTH : 0), 480);
+  }, [visibleColumns, selectable]);
 
   const handleColumnSort = (colKey: string) => {
     if (!onSortChange) return;
@@ -240,9 +285,7 @@ const TableInner = <T extends Record<string, any>>({
   return (
     <div
       className="app-surface relative z-10 flex w-full flex-col overflow-hidden"
-      style={{
-        height: "calc(95.5vh - 130px)",
-      }}
+      style={{ height: customHeight }}
     >
       {showToolbar && (
         <div className="flex shrink-0 flex-col gap-3 border-b border-[var(--border)] bg-card px-3 py-3 sm:px-4 lg:flex-row lg:items-center lg:justify-between">
@@ -258,16 +301,19 @@ const TableInner = <T extends Record<string, any>>({
 
           {(multiSelectFilters?.length || extraFilters) && (
             <div className="flex shrink-0 items-center gap-4">
-              {multiSelectFilters?.map((f) => (
-                <MultiSelectFilter
-                  key={f.key}
-                  options={f.options}
-                  values={f.values}
-                  onChange={f.onChange}
-                  placeholder={f.label}
-                  panelTitle={`Filter by ${f.label}`}
-                />
-              ))}
+             {multiSelectFilters?.map((f) => (
+  <MultiSelectFilter
+    key={f.key}
+    options={f.options}
+    values={f.values}
+    onChange={f.onChange}
+    placeholder={f.label}
+    panelTitle={`Filter by ${f.label}`}
+    searchable={f.searchable}
+    searchPlaceholder={f.searchPlaceholder}
+    onSearch={f.onSearch}
+  />
+))}
               {extraFilters}
             </div>
           )}
@@ -308,6 +354,7 @@ const TableInner = <T extends Record<string, any>>({
             style={{ minWidth: `${tableMinWidth}px` }}
           >
             <colgroup>
+              {selectable && <col style={{ width: `${SELECT_COL_WIDTH}px` }} />}
               {visibleColumns.map((column) => (
                 <col
                   key={column.key}
@@ -323,6 +370,18 @@ const TableInner = <T extends Record<string, any>>({
             </colgroup>
             <thead className="sticky top-0 z-20 bg-card shadow-sm">
               <tr>
+                {selectable && (
+                  <th className="bg-[var(--border)]/10 border-b-2 border-[var(--border)] px-3 py-2.5 text-center">
+                    <HeaderCheckbox
+                      checked={allSelected}
+                      indeterminate={someSelected}
+                      disabled={selectableRows.length === 0}
+                      onChange={(checked) =>
+                        onSelectAll?.(selectableRows, checked)
+                      }
+                    />
+                  </th>
+                )}
                 {visibleColumns.map((column) => {
                   const isSortable = !!column.sortable && !!onSortChange;
                   const isActive = sortBy === column.key;
@@ -377,13 +436,13 @@ const TableInner = <T extends Record<string, any>>({
                 Array.from({ length: pageSize }).map((_, idx) => (
                   <SkeletonRow
                     key={idx}
-                    columnsCount={visibleColumns.length}
+                    columnsCount={totalColSpan}
                     rowIdx={idx}
                   />
                 ))
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan={visibleColumns.length} className="p-0">
+                  <td colSpan={totalColSpan} className="p-0">
                     <div className="flex items-center justify-center h-[300px] w-full">
                       <p className="text-sm font-medium text-muted opacity-60">
                         {emptyMessage}
@@ -396,7 +455,7 @@ const TableInner = <T extends Record<string, any>>({
                   {/* Subtle fetching indicator - show only when isFetching and data exists */}
                   {isFetching && data.length > 0 && (
                     <tr className="absolute top-0 left-0 right-0 z-20 h-full bg-white/30">
-                      <td colSpan={visibleColumns.length}>
+                      <td colSpan={totalColSpan}>
                         <div className="flex items-center justify-center py-1">
                           <div className="h-1 w-20 rounded-full bg-primary/30 animate-pulse" />
                         </div>
@@ -423,6 +482,27 @@ const TableInner = <T extends Record<string, any>>({
                             isExpanded ? "row-highlighted" : "",
                           ].join(" ")}
                         >
+                          {selectable && (
+                            <td
+                              className="border-b border-[var(--border)]/20 px-3 py-1.5 text-center"
+                              onClick={(e) => e.stopPropagation()}
+                              onDoubleClick={(e) => e.stopPropagation()}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={!!isRowSelected?.(item)}
+                                disabled={
+                                  isRowSelectable
+                                    ? !isRowSelectable(item)
+                                    : false
+                                }
+                                onChange={(e) =>
+                                  onRowSelect?.(item, e.target.checked)
+                                }
+                                aria-label="Select row"
+                              />
+                            </td>
+                          )}
                           {visibleColumns.map((column) => {
                             const rawValue = item[column.key];
                             const fallbackText =
@@ -507,7 +587,7 @@ const TableInner = <T extends Record<string, any>>({
 
                         <tr>
                           <td
-                            colSpan={visibleColumns.length}
+                            colSpan={totalColSpan}
                             className="p-0"
                             style={{
                               borderBottom: isExpanded
