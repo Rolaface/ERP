@@ -712,7 +712,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     <HrTableFrame>
       <Table
         tableId="hr-task"
-        customHeight="calc(85.5vh - 100px)"
+      
         columns={columns}
         data={rows}
         rowKey={(row) => row.name}
