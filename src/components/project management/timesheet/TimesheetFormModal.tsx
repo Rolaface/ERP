@@ -32,7 +32,7 @@ interface TimesheetFormModalProps {
   onClose: () => void;
   modalId?: string;
   onSuccess?: () => void;
-  
+   mode?: "admin" | "employee";
 prefillTask?: PrefillTask;
   // Multi-task prefill (e.g. bulk "Log Time" from the Task list): one row per entry.
   prefillTasks?: PrefillTask[];
@@ -48,7 +48,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   isOpen,
   onClose,
   modalId,
-  onSuccess,
+  onSuccess, mode = "admin",
   prefillTask,
   prefillTasks,
   restrictions,
@@ -78,7 +78,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     save,
   } = useTimesheetModal({ onSuccess, restrictions });
 
-  
+  const isEmployee = mode === "employee";
 
   const [isLoadingTimesheet, setIsLoadingTimesheet] = useState(false);
 
@@ -211,6 +211,7 @@ useEffect(() => {
         {/* ── Left: main content area ── */}
         <div className="flex-1 min-w-0 flex flex-col gap-5 overflow-auto">
           {/* Timesheet Information — no header date; date is per-row now */}
+          {!isEmployee && (
           <div className="bg-card border border-theme rounded-xl p-4 shrink-0">
             <div className="flex items-center justify-between pb-2 mb-3 border-b border-theme">
               <span className="text-[11px] font-bold text-main uppercase tracking-wider">
@@ -286,6 +287,7 @@ useEffect(() => {
               )}
             </div>
           </div>
+          )}
 
           {/* Time entries */}
           <div className="flex-1 min-h-0 flex flex-col bg-card border border-theme rounded-xl overflow-hidden">
@@ -326,8 +328,10 @@ useEffect(() => {
                     <th className="p-2.5 min-w-[120px]">Activity Type</th>
                     <th className="p-2.5 min-w-[220px]">Date &amp; Time</th>
                     <th className="p-2.5 text-right">Hours</th>
-                    <th className="p-2.5 text-center">Billable</th>
-                    <th className="p-2.5 text-center">Done</th>
+                   {!isEmployee && (
+  <th className="p-2.5 text-center">Billable</th>
+)}
+<th className="p-2.5 text-center">Done</th>
                     <th className="p-2.5 text-center w-16">Actions</th>
                   </tr>
                 </thead>
@@ -428,15 +432,17 @@ useEffect(() => {
                       <td className="p-2 text-right font-mono font-bold text-primary">
                         {l.hours.toFixed(1)}h
                       </td>
-                      <td className="p-2 text-center">
-                        <input
-                          type="checkbox"
-                          checked={l.is_billable}
-                          onChange={(e) =>
-                            updateLine(l.id, { is_billable: e.target.checked })
-                          }
-                        />
-                      </td>
+                     {!isEmployee && (
+  <td className="p-2 text-center">
+    <input
+      type="checkbox"
+      checked={l.is_billable}
+      onChange={(e) =>
+        updateLine(l.id, { is_billable: e.target.checked })
+      }
+    />
+  </td>
+)}
                       <td className="p-2 text-center">
                         <input
                           type="checkbox"
@@ -474,9 +480,14 @@ useEffect(() => {
         </div>
 
         {/* ── Right: billing summary sidebar (fixed, always visible) ── */}
-        <aside className="w-[240px] shrink-0 h-full overflow-auto">
-          <TimesheetSummary totals={totals} currency={form.currency} />
-        </aside>
+     {!isEmployee && (
+  <aside className="w-[240px] shrink-0 h-full overflow-auto">
+    <TimesheetSummary
+      totals={totals}
+      currency={form.currency}
+    />
+  </aside>
+)}
       </div>
 
       {/* Single shared popover per row: shows the actions menu, or — once
@@ -491,13 +502,15 @@ useEffect(() => {
       >
         {openActionsId && actionsView === "menu" && (
           <div className="py-1">
-            <button
-              onClick={() => setActionsView("rates")}
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-main hover:bg-app/60 transition-colors"
-            >
-              <Pencil size={12} className="text-primary" />
-              Update Rates
-            </button>
+           {!isEmployee && (
+  <button
+    onClick={() => setActionsView("rates")}
+    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-main hover:bg-app/60 transition-colors"
+  >
+    <Pencil size={12} className="text-primary" />
+    Update Rates
+  </button>
+)}
             <button
               onClick={() => {
                 duplicateLine(openActionsId);
