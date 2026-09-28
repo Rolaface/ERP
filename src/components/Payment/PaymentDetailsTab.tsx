@@ -157,8 +157,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   // Receive: from = party,          to = company (base) → already correct
   const isPay = paymentType === "Pay";
 
-  const rateFromCurrency =
-    isPay && currencyFrom === baseCurrency
+    const rateFromCurrency =
+    currencyFrom === baseCurrency
       ? currencyTo
       : currencyFrom;
 
@@ -447,13 +447,8 @@ const handleAmountToChange = (
   const val =
     parseFloat((e as React.ChangeEvent<HTMLInputElement>).target.value) || 0;
   const rate = parseFloat(form.exchangeRate) || 1;
-
   const amountFrom =
-    paymentType === "Pay"
-      ? currencyFrom === baseCurrency
-        ? val * rate
-        : val / rate
-      : val / rate;
+    currencyFrom === baseCurrency ? val * rate : val / rate;
 
   onChange(e);
 
@@ -470,12 +465,8 @@ const handleAmountFromChange = (
       parseFloat((e as React.ChangeEvent<HTMLInputElement>).target.value) || 0;
     const rate = parseFloat(form.exchangeRate) || 1;
 
-    const amountTo =
-      paymentType === "Pay"
-        ? currencyFrom === baseCurrency
-          ? val / rate
-          : val * rate
-        : val * rate;
+        const amountTo =
+      currencyFrom === baseCurrency ? val / rate : val * rate;
 
     onChange(e);
     onFormChange({
@@ -504,9 +495,10 @@ const handleAmountFromChange = (
       // Existing behavior: amountFrom is the source; derive amountTo.
       const from = parseFloat(form.amountFrom) || 0;
       if (!from) return;
+           const to = currencyFrom === baseCurrency ? from / rate : from * rate;
       onFormChange({
-        amountTo: String(+(from * rate).toFixed(4)),
-        amount: String(+(from * rate).toFixed(4)),
+        amountTo: String(+to.toFixed(4)),
+        amount: String(+to.toFixed(4)),
       });
     }
   }, [form.exchangeRate, currencyFrom, baseCurrency]);// eslint-disable-line react-hooks/exhaustive-deps
