@@ -95,7 +95,9 @@ const EmployeeExpenses = lazy(
 const TaskManagement = lazy(
   () => import("../project_management/task/table/HrTaskView"),
 );
-
+const EmployeeTaskTimesheet = lazy(
+  () => import("./EmployeeView/project/EmployeeTaskTimesheet"),
+);
 // ─── Employee tab IDs — must stay in sync with EMPLOYEE_HR_TABS in Sidebar.tsx
 
 const EMPLOYEE_TAB_IDS = [
@@ -104,7 +106,7 @@ const EMPLOYEE_TAB_IDS = [
   "emp-profile",
   "emp-leave",
   "emp-attendance",
-  "emp-timesheet",
+  "emp-task-timesheet",
   "emp-documents",
   "emp-reports",
   "emp-performance-growth",
@@ -285,8 +287,8 @@ const HrPayrollModule: React.FC = () => {
           return <EmployeeLeave isEmployeeView={true} />;
         case "emp-attendance":
           return <EmployeeAttendanceTimesheet mode="attendance" />;
-        case "emp-timesheet":
-          return <EmployeeAttendanceTimesheet mode="timesheet" />;
+        case "emp-task-timesheet":
+  return <EmployeeTaskTimesheet />;
         case "emp-documents":
           return <EmployeeDocuments />;
         case "emp-reports":
