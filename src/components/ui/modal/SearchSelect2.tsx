@@ -295,7 +295,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                     onClick={() => {
                       onChange(search, { label: search, value: search });
                       setIsCustom(true);
-                      userEditingRef.current = false; // ← CHANGED
+                      userEditingRef.current = false; 
                       setOpen(false);
                     }}
                     className="px-3 py-2 cursor-pointer text-[13px] text-primary hover:bg-primary/10 border-t border-theme transition-colors"

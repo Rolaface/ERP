@@ -55,11 +55,15 @@ function toTitleCase(str: string): string {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
-
+const STATUS_LABEL_MAP: Record<string, string> = {
+  submitted: "Approved",
+};
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant }) => {
   const safeStatus = normalizeStatus(status);
   const resolved = resolveVariant(safeStatus, variant);
-  const displayText = status ? toTitleCase(safeStatus) : "Unknown";
+  const displayText = status
+  ? STATUS_LABEL_MAP[safeStatus] ?? toTitleCase(safeStatus)
+  : "Unknown";
 
   return (
     <span
