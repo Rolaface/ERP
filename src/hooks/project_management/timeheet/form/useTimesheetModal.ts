@@ -83,13 +83,18 @@ export async function fetchTaskOptions(
 
 // ── helpers ──
 
-function calcHours(from: string, to: string): number {
-  if (!from || !to) return 0;
-  const [h1, m1] = from.split(":").map(Number);
-  const [h2, m2] = to.split(":").map(Number);
-  let diff = h2 * 60 + m2 - (h1 * 60 + m1);
-  if (diff < 0) diff += 24 * 60;
-  return Math.round((diff / 60) * 100) / 100;
+function calcHours(
+  date: string,
+  from: string,
+  toDate: string,
+  to: string,
+): number {
+  if (!date || !toDate || !from || !to) return 0;
+  const start = new Date(`${date}T${from}:00`).getTime();
+  const end = new Date(`${toDate}T${to}:00`).getTime();
+  let diff = (end - start) / 60000;
+  if (diff < 0 && toDate === date) diff += 24 * 60;
+  return diff > 0 ? Math.round((diff / 60) * 100) / 100 : 0;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -103,6 +108,7 @@ function emptyLine(
   headerProject?: { project: string; project_name: string },
   initialTask?: { project: string; project_name: string; task: string; task_name: string },
 ): TimesheetLineDraft {
+  const date = today();
   return {
     id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     isEditing: true,
@@ -113,10 +119,11 @@ function emptyLine(
     task_name: initialTask?.task_name ?? "",
     activity_type: "",
     description: "",
-    date: today(),
+    date,
+    to_date: date,
     from_time: "09:00",
     to_time: "13:00",
-    hours: calcHours("09:00", "13:00"),
+    hours: calcHours(date, "09:00", date, "13:00"),
     is_completed: false,
     is_billable: true,
     billing_rate: 0,
@@ -139,6 +146,7 @@ function mapTimeLogToLine(log: TimesheetDetail["time_logs"][number]): TimesheetL
     activity_type: log.activity_type,
     description: log.description ?? "",
     date: from.date,
+    to_date: to.date,
     from_time: from.time,
     to_time: to.time,
     hours: log.hours,
@@ -345,8 +353,21 @@ const addLine = useCallback(
         lines: f.lines.map((l) => {
           if (l.id !== id) return l;
           const next = { ...l, ...patch };
-          if (patch.from_time !== undefined || patch.to_time !== undefined) {
-            next.hours = calcHours(next.from_time, next.to_time);
+          if (patch.date !== undefined && patch.to_date === undefined) {
+            if (next.to_date < next.date) next.to_date = next.date;
+          }
+          if (
+            patch.date !== undefined ||
+            patch.to_date !== undefined ||
+            patch.from_time !== undefined ||
+            patch.to_time !== undefined
+          ) {
+            next.hours = calcHours(
+              next.date,
+              next.from_time,
+              next.to_date,
+              next.to_time,
+            );
           }
           return next;
         }),
@@ -459,12 +480,16 @@ const addLine = useCallback(
 
   const buildPayload = useCallback(
     (exchangeRate: number): TimesheetCreatePayload => {
-      const rowDates = form.lines
+      const rowStarts = form.lines
         .map((l) => l.date)
         .filter(Boolean)
         .sort();
-      const derivedStart = rowDates[0] || today();
-      const derivedEnd = rowDates[rowDates.length - 1] || today();
+      const rowEnds = form.lines
+        .map((l) => l.to_date)
+        .filter(Boolean)
+        .sort();
+      const derivedStart = rowStarts[0] || today();
+      const derivedEnd = rowEnds[rowEnds.length - 1] || today();
 
       return {
         ...(editingName ? { name: editingName } : {}),
@@ -486,7 +511,7 @@ const addLine = useCallback(
           task: l.task,
           description: l.description,
           from_time: `${l.date} ${l.from_time}:00`,
-          to_time: `${l.date} ${l.to_time}:00`,
+          to_time: `${l.to_date} ${l.to_time}:00`,
           hours: l.hours,
           billing_hours: l.is_billable ? l.hours : 0,
           is_billable: l.is_billable ? 1 : 0,

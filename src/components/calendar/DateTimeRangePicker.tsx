@@ -12,6 +12,9 @@ const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 function toYMD(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+function parseYMD(s: string) {
+  return new Date(`${s}T00:00:00`);
+}
 function calDays(year: number, month: number) {
   const first = new Date(year, month, 1).getDay();
   const total = new Date(year, month + 1, 0).getDate();
@@ -24,6 +27,10 @@ function fmtDate(s?: string) {
   if (!s) return "";
   const [y, m, d] = s.split("-");
   return `${d} ${MONTHS[+m - 1].slice(0, 3)} ${y}`;
+}
+function daysBetween(from: string, to: string) {
+  if (!from || !to) return 1;
+  return Math.round((parseYMD(to).getTime() - parseYMD(from).getTime()) / 86400000) + 1;
 }
 
 // ─── time helpers ───
@@ -76,6 +83,7 @@ const DEFAULT_QUICK_DURATIONS = [
   { label: "8h", minutes: 480 },
 ];
 
+// ─── time dropdown ───
 
 interface TimeDropdownProps {
   label: string;
@@ -174,12 +182,13 @@ const TimeDropdown: React.FC<TimeDropdownProps> = ({ label, value, options, onCh
   );
 };
 
-
+// ─── month calendar (supports a date range) ───
 
 interface MonthCalProps {
   year: number;
   month: number;
-  selected?: string;
+  selected?: string;    // range start
+  selectedEnd?: string; // range end
   onDay: (ymd: string) => void;
   onPrev: () => void;
   onNext: () => void;
@@ -188,7 +197,7 @@ interface MonthCalProps {
 }
 
 const MonthCal: React.FC<MonthCalProps> = ({
-  year, month, selected, onDay, onPrev, onNext, disableFuture, disablePast,
+  year, month, selected, selectedEnd, onDay, onPrev, onNext, disableFuture, disablePast,
 }) => {
   const cells = calDays(year, month);
   const todayYMD = toYMD(new Date());
@@ -196,11 +205,11 @@ const MonthCal: React.FC<MonthCalProps> = ({
   return (
     <div style={{ minWidth: 220 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <button onClick={onPrev} style={navBtn}>‹</button>
+        <button type="button" onClick={onPrev} style={navBtn}>‹</button>
         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
           {MONTHS[month]} {year}
         </span>
-        <button onClick={onNext} style={navBtn}>›</button>
+        <button type="button" onClick={onNext} style={navBtn}>›</button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 4 }}>
@@ -215,7 +224,10 @@ const MonthCal: React.FC<MonthCalProps> = ({
         {cells.map((day, i) => {
           if (day === null) return <div key={i} />;
           const ymd = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const isSelected = ymd === selected;
+          const isStart = ymd === selected;
+          const isEnd = ymd === selectedEnd;
+          const isSelected = isStart || isEnd;
+          const inRange = !!selected && !!selectedEnd && ymd > selected && ymd < selectedEnd;
           const isToday = ymd === todayYMD;
           const disabled =
             (disableFuture && ymd > todayYMD) || (disablePast && ymd < todayYMD);
@@ -223,6 +235,7 @@ const MonthCal: React.FC<MonthCalProps> = ({
           return (
             <button
               key={i}
+              type="button"
               onClick={() => !disabled && onDay(ymd)}
               disabled={disabled}
               style={{
@@ -232,8 +245,14 @@ const MonthCal: React.FC<MonthCalProps> = ({
                 fontSize: 12,
                 fontWeight: isSelected ? 700 : 400,
                 cursor: disabled ? "not-allowed" : "pointer",
-                background: isSelected ? "var(--primary)" : "transparent",
-                color: isSelected ? "#fff" : disabled ? "var(--muted)" : isToday ? "var(--primary)" : "var(--text)",
+                background: isSelected ? "var(--primary)" : inRange ? "var(--row-hover)" : "transparent",
+                color: isSelected
+                  ? "#fff"
+                  : disabled
+                    ? "var(--muted)"
+                    : inRange || isToday
+                      ? "var(--primary)"
+                      : "var(--text)",
                 opacity: disabled ? 0.4 : 1,
                 outline: isToday && !isSelected ? "1.5px solid var(--input-focus-ring)" : "none",
                 transition: "all .12s",
@@ -263,13 +282,14 @@ const navBtn: React.CSSProperties = {
   lineHeight: 1,
 };
 
-
+// ─── main component ───
 
 export interface DateTimeRangePickerProps {
   date: string;
+  to_date?: string;
   from_time: string;
   to_time: string;
-  onApply: (date: string, from_time: string, to_time: string) => void;
+  onApply: (date: string, from_time: string, to_time: string, to_date: string) => void;
   disabled?: boolean;
   intervalMinutes?: number;
   quickDurations?: { label: string; minutes: number }[];
@@ -280,6 +300,7 @@ export interface DateTimeRangePickerProps {
 
 const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
   date,
+  to_date,
   from_time,
   to_time,
   onApply,
@@ -291,10 +312,12 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
   placeholder = "Set time",
 }) => {
   const today = new Date();
-  const initial = date ? new Date(date) : today;
+  const initial = date ? parseYMD(date) : today;
 
   const [open, setOpen] = useState(false);
   const [draftDate, setDraftDate] = useState(date || toYMD(today));
+  const [draftToDate, setDraftToDate] = useState(to_date || date || toYMD(today));
+  const [pickingEnd, setPickingEnd] = useState(false);
   const [viewY, setViewY] = useState(initial.getFullYear());
   const [viewM, setViewM] = useState(initial.getMonth());
   const [draftFrom, setDraftFrom] = useState(from_time);
@@ -307,8 +330,10 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
 
   useEffect(() => {
     if (!open) return;
-    const d = date ? new Date(date) : today;
+    const d = date ? parseYMD(date) : today;
     setDraftDate(date || toYMD(today));
+    setDraftToDate(to_date || date || toYMD(today));
+    setPickingEnd(false);
     setViewY(d.getFullYear());
     setViewM(d.getMonth());
     setDraftFrom(from_time);
@@ -333,6 +358,7 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
 
   const rangeInvalid = !draftFrom || !draftTo || toMinutes(draftTo) <= toMinutes(draftFrom);
   const draftHours = rangeInvalid ? 0 : calcDurationHours(draftFrom, draftTo);
+  const dayCount = daysBetween(draftDate, draftToDate);
 
   const handleQuickDuration = (minutes: number) => {
     const base = draftFrom || "09:00";
@@ -340,9 +366,26 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
     setDraftTo(addMinutes(base, minutes));
   };
 
+  // 1st click = start date, 2nd click = end date (swaps if clicked before start)
+  const handleDayClick = (ymd: string) => {
+    if (!pickingEnd) {
+      setDraftDate(ymd);
+      setDraftToDate(ymd);
+      setPickingEnd(true);
+    } else {
+      if (ymd < draftDate) {
+        setDraftToDate(draftDate);
+        setDraftDate(ymd);
+      } else {
+        setDraftToDate(ymd);
+      }
+      setPickingEnd(false);
+    }
+  };
+
   const handleApply = () => {
     if (rangeInvalid || !draftDate) return;
-    onApply(draftDate, draftFrom, draftTo);
+    onApply(draftDate, draftFrom, draftTo, draftToDate || draftDate);
     setOpen(false);
   };
 
@@ -355,11 +398,15 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
     else setViewM((m) => m + 1);
   };
 
-
+  const dateLabel = date
+    ? `${fmtDate(date)}${to_date && to_date !== date ? " → " + fmtDate(to_date) : ""}`
+    : "";
   const triggerLabel =
     from_time && to_time
-      ? `${formatTime12h(from_time)} → ${formatTime12h(to_time)}`
+      ? `${dateLabel ? dateLabel + " · " : ""}${formatTime12h(from_time)} → ${formatTime12h(to_time)}`
       : placeholder;
+
+  const showError = rangeInvalid && !!draftFrom && !!draftTo;
 
   return (
     <div style={{ position: "relative", display: "inline-block", width: "100%" }}>
@@ -411,18 +458,32 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
               overflow: "hidden",
             }}
           >
-            {/* ── calendar ── */}
+            {/* ── calendar (date range) ── */}
             <div style={{ padding: 16, borderRight: "1.5px solid var(--border)" }}>
               <MonthCal
                 year={viewY}
                 month={viewM}
                 selected={draftDate}
-                onDay={setDraftDate}
+                selectedEnd={draftToDate}
+                onDay={handleDayClick}
                 onPrev={prevMonth}
                 onNext={nextMonth}
                 disableFuture={disableFuture}
                 disablePast={disablePast}
               />
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textAlign: "center",
+                  color: pickingEnd ? "var(--primary)" : "var(--muted)",
+                }}
+              >
+                {pickingEnd
+                  ? "Now select end date"
+                  : `${fmtDate(draftDate)}${draftToDate && draftToDate !== draftDate ? " → " + fmtDate(draftToDate) : ""}`}
+              </div>
             </div>
 
             {/* ── time range ── */}
@@ -477,20 +538,21 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                   borderRadius: 8,
                   fontSize: 12,
                   fontWeight: 700,
-                  background: rangeInvalid && draftFrom && draftTo ? "rgba(220,38,38,0.12)" : "var(--row-hover)",
-                  color: rangeInvalid && draftFrom && draftTo ? "var(--danger, #dc2626)" : "var(--primary)",
+                  background: showError ? "rgba(220,38,38,0.12)" : "var(--row-hover)",
+                  color: showError ? "var(--danger, #dc2626)" : "var(--primary)",
                 }}
               >
-                {rangeInvalid && draftFrom && draftTo
+                {showError
                   ? "End time must be after start time."
-                  : `Duration: ${draftHours.toFixed(1)} hrs`}
+                  : `Duration: ${draftHours.toFixed(1)} hrs${dayCount > 1 ? ` × ${dayCount} days` : ""}`}
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, borderTop: "1.5px solid var(--border)", paddingTop: 10 }}>
-                <button onClick={() => setOpen(false)} style={footerBtn("ghost")}>
+                <button type="button" onClick={() => setOpen(false)} style={footerBtn("ghost")}>
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={handleApply}
                   disabled={rangeInvalid || !draftDate}
                   style={footerBtn("primary", rangeInvalid || !draftDate)}

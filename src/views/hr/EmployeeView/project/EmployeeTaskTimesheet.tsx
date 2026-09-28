@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import { ListTodo, Clock } from "lucide-react";
 
@@ -20,8 +20,18 @@ const TASK_TIMESHEET_TABS = [
   },
 ];
 
+const getStoredUserEmail = (): string | undefined => {
+  try {
+    const raw = localStorage.getItem("auth_user");
+    return raw ? JSON.parse(raw)?.email : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 const EmployeeTaskTimesheet: React.FC = () => {
   const [activeTab, setActiveTab] = useState("task");
+  const currentUserEmail = useMemo(getStoredUserEmail, []);
 
   return (
     <div className="h-full flex flex-col">
@@ -32,7 +42,9 @@ const EmployeeTaskTimesheet: React.FC = () => {
       />
 
       <div className="flex-1 overflow-y-auto mt-5">
-        {activeTab === "task" && <HrTaskView />}
+        {activeTab === "task" && (
+          <HrTaskView context="employee" currentUserEmail={currentUserEmail} />
+        )}
 
         {activeTab === "timesheet" && <HrTimesheetView />}
       </div>
