@@ -87,11 +87,16 @@ export const EMPLOYEE_HR_TABS: EmployeeTabItem[] = [
     label: "Leave",
     icon: <Calendar size={16} strokeWidth={1.75} />,
   },
-  {
-    id: "emp-timesheet",
-    label: "Timesheet & Attendance",
-    icon: <Clock size={16} strokeWidth={1.75} />,
-  },
+{
+  id: "emp-attendance",
+  label: "Attendance",
+  icon: <Calendar size={16} strokeWidth={1.75} />,
+},
+{
+  id: "emp-task-timesheet",
+  label: "Task & Timesheet",
+  icon: <Clock size={16} strokeWidth={1.75} />,
+},
   {
     id: "emp-financials",
     label: "Financials",
