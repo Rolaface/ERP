@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { AppSubTabs } from "../../../components/ui/app-shell";
 
-// Adjust these imports based on your actual file structure
+
 import EmployeeAttendance from "./EmployeeAttendance";
-import EmployeeTimesheet from "./EmployeeTimesheet";
+import EmployeeTimesheet from "./project/EmployeeTaskTimesheet";
 
 const TABS = [
   { id: "attendance", label: "Attendance" },
@@ -21,7 +21,7 @@ const EmployeeAttendanceTimesheet: React.FC<EmployeeAttendanceTimesheetProps> = 
     setTab(tabId as "attendance" | "timesheet");
   };
 
-  // Parent controls which view via `mode` — no internal tab switcher needed
+
   if (mode) {
     return (
       <div className="h-full flex flex-col">
@@ -33,7 +33,7 @@ const EmployeeAttendanceTimesheet: React.FC<EmployeeAttendanceTimesheetProps> = 
     );
   }
 
-  // Fallback: no mode passed, keep old combined behavior with internal tabs
+
   return (
     <div className="h-full flex flex-col">
       {/* Navigation Header */}
