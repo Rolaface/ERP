@@ -60,24 +60,25 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
   const renderFooter = () => {
     if (!data) return null;
 
-    if (data.status === "Submitted" && onApprove) {
-      return (
-        <button
-          className="idm-btn"
-          disabled={actionLoading}
-          onClick={() => onApprove(data.name)}
-          style={{
-            ...footerBtnStyle,
-            flex: 1,
-            justifyContent: "center",
-            background: "var(--primary)",
-            color: "#fff",
-          }}
-        >
-          Approve Timesheet
-        </button>
-      );
-    }
+if (data.status === "Submitted" && onApprove) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        textAlign: "center",
+        padding: "8px 12px",
+        color: "var(--success)",
+        fontWeight: 600,
+        fontSize: 13,
+        background: "var(--bg)",
+        borderRadius: 8,
+        border: "1px solid var(--border)",
+      }}
+    >
+      Approved
+    </div>
+  );
+}
 
     if (data.status === "Draft" && onSubmit) {
       return (
@@ -139,7 +140,11 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
       }
       kicker="Timesheet"
       title={data?.name ?? "—"}
-      statusLabel={data?.status ?? "Draft"}
+  statusLabel={
+  data?.status === "Submitted"
+    ? "Approved"
+    : data?.status ?? "Draft"
+}
       statusClassName={statusCls}
       loading={loading}
       footer={renderFooter()}
