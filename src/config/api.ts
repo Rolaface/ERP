@@ -1,3 +1,4 @@
+import LeaveBalance from "../components/dashboard/domains/hr/LeaveBalance";
 import { ENV } from "./env";
 import { ERP_BASE, ERP_FRONTEND, LMS_FRONTEND } from './resolverUrls';
 // console.log("🚀 ~ LMS_FRONTEND:", LMS_FRONTEND)
@@ -241,6 +242,7 @@ export const API = {
     updateStatus: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee_status`,
     employeeDetailsById: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.custom_employee_details`,
     leaveApproverDetails: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_leave_approvers`,
+    leaveBalance: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_all_employee_leave_details`,
     employeeCheckInOut: `${ERP_BASE}/api/resource/Employee Checkin`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
