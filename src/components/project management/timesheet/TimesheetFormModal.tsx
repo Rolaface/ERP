@@ -26,13 +26,13 @@ interface PrefillTask {
   task: string;
   taskName: string;
 }
-
+type TimesheetContext = "admin" | "employee";
 interface TimesheetFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   modalId?: string;
   onSuccess?: () => void;
-   mode?: "admin" | "employee";
+ context?: TimesheetContext;
 prefillTask?: PrefillTask;
   // Multi-task prefill (e.g. bulk "Log Time" from the Task list): one row per entry.
   prefillTasks?: PrefillTask[];
@@ -48,7 +48,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   isOpen,
   onClose,
   modalId,
-  onSuccess, mode = "admin",
+  onSuccess, context = "admin",
   prefillTask,
   prefillTasks,
   restrictions,
@@ -78,7 +78,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     save,
   } = useTimesheetModal({ onSuccess, restrictions });
 
-  const isEmployee = mode === "employee";
+ const isEmployee = context === "employee";
 
   const [isLoadingTimesheet, setIsLoadingTimesheet] = useState(false);
 
@@ -137,8 +137,7 @@ useEffect(() => {
 
   
 
-  // Clear stale edit data when the modal closes, so the next "New Timesheet"
-  // open doesn't accidentally reopen with a previous record's rows.
+
   useEffect(() => {
     if (!isOpen) reset();
   }, [isOpen, reset]);

@@ -37,7 +37,10 @@ import { ACTION_ICONS } from "../../../../components/UI_Utils/statusActionIcons"
 
 import TimesheetDetailDrawer from "../drawer/TimesheetDetailDrawer";
 import { useCurrencySymbols } from "../../../../hooks/Usecurrencysymbols";
-import { openTimesheetFormModal } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
+import {
+  openAdminTimesheetFormModal,
+  openEmployeeTimesheetFormModal,
+} from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
 import TimesheetCalendar from "../components/TimesheetCalendar";
 import ViewToggle, { type TimesheetMode } from "../components/Viewtoggle";
 
@@ -158,21 +161,22 @@ const HrTimesheetView: React.FC = () => {
 
   // ── Handlers ─────────────────────────────────────────────────
 
-  const handleAdd = () => {
-    openTimesheetFormModal({
-      onSuccess: () => {
-        triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST);
-      },
-    });
-  };
-  const handleEdit = (id: string) => {
-    openTimesheetFormModal({
-      timesheetId: id,
-      onSuccess: () => {
-        triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST);
-      },
-    });
-  };
+const openTimesheetForm = can(TS_MODULE, "delete")
+  ? openAdminTimesheetFormModal
+  : openEmployeeTimesheetFormModal;
+
+const handleAdd = () => {
+  openTimesheetForm({
+    onSuccess: () => triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST),
+  });
+};
+
+const handleEdit = (id: string) => {
+  openTimesheetForm({
+    timesheetId: id,
+    onSuccess: () => triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST),
+  });
+};
 
   const handleView = async (id: string) => {
     setDrawerOpen(true);
