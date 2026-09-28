@@ -39,8 +39,7 @@ import AssigneeCell from "../components/AssigneeCell";
 import PriorityChip from "../components/PriorityChip";
 import StatusCell from "../components/StatusCell";
 import TaskDetailDrawer from "../Drawer/Taskdetaildrawer";
-import { openTimesheetFormModal } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
-import {
+import { openEmployeeTimesheetFormModal } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";import {
   Clock,
   ChevronDown,
   ChevronRight,
@@ -347,19 +346,18 @@ const HrTaskView: React.FC = () => {
     console.warn("handleEdit: Task edit modal not wired yet.", id);
   };
 
-  const handleLogTime = (task: TaskEntry) => {
-    openTimesheetFormModal({
-        mode: "employee",
-      title: "Log Time",
-      subtitle: `Logging time for ${task.subject}`,
-      prefillTask: {
-        project: task.project,
-        projectName: getProjectDisplayName(task.project),
-        task: task.name,
-        taskName: task.subject,
-      },
-    });
-  };
+ const handleLogTime = (task: TaskEntry) => {
+  openEmployeeTimesheetFormModal({
+    title: "Log Time",
+    subtitle: `Logging time for ${task.subject}`,
+    prefillTask: {
+      project: task.project,
+      projectName: getProjectDisplayName(task.project),
+      task: task.name,
+      taskName: task.subject,
+    },
+  });
+};
 
   const canLogTime = (t: TaskEntry) => t.is_group !== 1;
 
@@ -385,8 +383,8 @@ const HrTaskView: React.FC = () => {
     const picked = Array.from(selected.values());
     if (picked.length === 0) return;
 
-    openTimesheetFormModal({
-      mode: "employee",
+    openEmployeeTimesheetFormModal({
+      
       title: "Log Time",
       subtitle: `Logging time for ${picked.length} task${
         picked.length > 1 ? "s" : ""
