@@ -14,6 +14,7 @@ export interface TimesheetLineDraft {
   date: string;
   from_time: string; 
   to_time: string; 
+    to_date: string;
   hours: number;
   is_completed: boolean;
   is_billable: boolean;
