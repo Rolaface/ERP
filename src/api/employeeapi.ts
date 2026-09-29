@@ -166,3 +166,12 @@ export async function getAllShiftTypes(): Promise<any> {
   });
   return resp.data?.data || [];
 }
+export async function getEmployeeLeaveBalance(
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(EmployeeAPI.leaveBalance, {
+    params: { page, page_size: pageSize },
+  });
+  return resp.data;
+}

@@ -34,7 +34,7 @@ export async function receiveCustomerPayment(
 }
 
 export const getAllPayments = async (
-  partyType?: "Customer" | "Supplier",
+  partyType?: "Customer" | "Supplier" | "Employee",
   page?: number,
   pageSize?: number,
   search?: string,

@@ -74,6 +74,29 @@ export const useLogin = () => {
 
     // ── only lms forward sid ─────────────
     if (products.length === 1 && products[0] === "lms") {
+       const lendingEnabled = basicUser.subscribedModules?.lending?.enabled === true;
+      const losEnabled = basicUser.subscribedModules?.los?.enabled === true;
+
+      // Pure lending-only or pure los-only — go straight to LMS with the
+      // right mode, no picker needed.
+      if (lendingEnabled !== losEnabled) {
+        const sid = basicUser.sid;
+        localStorage.removeItem("session_id");
+        localStorage.removeItem("auth_user");
+        const modeParam = losEnabled ? "&mode=los" : "";
+        window.location.href = `${LMS_FRONTEND}?sid=${encodeURIComponent(sid ?? "")}${modeParam}`;
+        return;
+      }
+
+      // Both lending and los subscribed (and no erp/hrms) — let the user
+     // choose which area to enter. Route stays inside the ERP app, so
+      // keep the session in localStorage instead of clearing it.
+      if (lendingEnabled && losEnabled) {
+        navigate("/select-lms-mode");
+        return;
+      }
+
+     
       const sid = basicUser.sid;
       localStorage.removeItem("session_id");
       localStorage.removeItem("auth_user");

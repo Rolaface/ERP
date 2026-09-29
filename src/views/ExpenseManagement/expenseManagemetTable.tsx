@@ -175,6 +175,7 @@ const ExpenseHistory: React.FC = () => {
             referenceType: "Expense Claim",
             glTo: claim.payable_account ?? "",
             glToDisplay: claim.payable_account_name ?? "",
+            currencyTo: claim.currency ?? "",
           },
           false,
           {

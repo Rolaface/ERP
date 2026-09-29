@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { CreditCard, FileText, Wallet, ClipboardCheck  } from "lucide-react";
+import { CreditCard, FileText, Wallet, ClipboardCheck, Banknote  } from "lucide-react";
 import { usePermission } from "../../hooks/permission/usePermission";
 import {
   AppPage,
@@ -10,6 +10,7 @@ import {
 import ExpenseHistory from "./expenseManagemetTable";
 import ExpenseTypeTable from "./expenseTypeTable";
 import EmployeeAdvanceTable from "./employeeAdvanceTable";
+import PaymentEntry from "../PaymentEntry/PaymentEntry";
 const ALL_EXPENSE_TABS = [
   {
     id: "expenseType",
@@ -32,6 +33,14 @@ const ALL_EXPENSE_TABS = [
     module: "Employee Advance",
     action: "read" as const,
   },
+    {
+    id: "expensePayment",
+    label: "Expense Payment",
+    icon: <Banknote size={16} strokeWidth={1.75} />,
+    module: "Payment Entry",
+    action: "read" as const,
+  },
+
   
 ];
 
@@ -73,6 +82,7 @@ const ExpenseManagement: React.FC = () => {
         {resolvedTab === "expenseType" && <ExpenseTypeTable />}
         {resolvedTab === "expenseHistory" && <ExpenseHistory />}
         {resolvedTab === "advance" && <EmployeeAdvanceTable />}
+        {resolvedTab === "expensePayment" && <PaymentEntry defaultPartyType="Employee" />}
       </AppPageBody>
     </AppPage>
   );

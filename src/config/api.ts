@@ -1,5 +1,6 @@
+import LeaveBalance from "../components/dashboard/domains/hr/LeaveBalance";
 import { ENV } from "./env";
-import { ERP_BASE, ERP_FRONTEND, LMS_FRONTEND } from './resolverUrls';
+import { ERP_BASE, ERP_FRONTEND, LMS_FRONTEND } from "./resolverUrls";
 // console.log("🚀 ~ LMS_FRONTEND:", LMS_FRONTEND)
 // console.log("🚀 ~ ERP_FRONTEND:", ERP_FRONTEND)
 // console.log("🚀 ~ ERP_BASE:", ERP_BASE)
@@ -175,7 +176,7 @@ export const API = {
     createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
     getAccountsResource: `${ERP_BASE}/api/resource/Account`,
     getPaymentEntryById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
-    cancelPaymentEntry:`${ERP_BASE}/api/method/custom_api.api.payment_entry_delete.delete_payment_entry`,
+    cancelPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment_entry_delete.delete_payment_entry`,
   },
 
   accounting: {
@@ -241,6 +242,7 @@ export const API = {
     updateStatus: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee_status`,
     employeeDetailsById: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.custom_employee_details`,
     leaveApproverDetails: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_leave_approvers`,
+    leaveBalance: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_all_employee_leave_details`,
     employeeCheckInOut: `${ERP_BASE}/api/resource/Employee Checkin`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
@@ -308,21 +310,22 @@ export const API = {
    * IMPORTED ITEMS
    * ========================= */
   imports: {
-  getPendingDeclarations: "/api/method/zra_smart_invoice.imports_item.api.get_import_items", 
-  submitDecisions: "/api/method/zra_smart_invoice.imports_item.api.process_imported_declarations",      
-  getImportedDeclarations: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_logs`, 
-  getImportedDeclarationById: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_log_by_id`, 
-},
+    getPendingDeclarations:
+      "/api/method/zra_smart_invoice.imports_item.api.get_import_items",
+    submitDecisions:
+      "/api/method/zra_smart_invoice.imports_item.api.process_imported_declarations",
+    getImportedDeclarations: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_logs`,
+    getImportedDeclarationById: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_log_by_id`,
+  },
   /* =========================
    * IMPORTED pi
    * ========================= */
 
-purchaseInvoiceImports :{
-get :`${ERP_BASE}/api/method/zra_smart_invoice.modules.purchase_invoice.api.get_purchase_sales`,
-submitDecisions:`${ERP_BASE}/api/method/zra_smart_inv.......`,
-getImportedPurchaseInvoices:`${ERP_BASE}/api/method/zra_smart_inv.......`,
-
-},
+  purchaseInvoiceImports: {
+    get: `${ERP_BASE}/api/method/zra_smart_invoice.modules.purchase_invoice.api.get_purchase_sales`,
+    submitDecisions: `${ERP_BASE}/api/method/zra_smart_inv.......`,
+    getImportedPurchaseInvoices: `${ERP_BASE}/api/method/zra_smart_inv.......`,
+  },
 
   /* =========================
    * ITEM GROUP
@@ -512,7 +515,7 @@ getImportedPurchaseInvoices:`${ERP_BASE}/api/method/zra_smart_inv.......`,
     correct: `${ERP_BASE}/api/method/custom_api.api.stock_correction.create_stock_correction`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.delete_stock_entry`,
     stockLedger: `${ERP_BASE}/api/method/frappe.desk.query_report.run`,
-    stockEntry:`${ERP_BASE}/api/method/custom_api.api.stock.stock_entry_api.create_stock_entry`
+    stockEntry: `${ERP_BASE}/api/method/custom_api.api.stock.stock_entry_api.create_stock_entry`,
   },
 
   /* =========================
@@ -525,8 +528,6 @@ getImportedPurchaseInvoices:`${ERP_BASE}/api/method/zra_smart_inv.......`,
     delete: `${ERP_BASE}/api/resource/Warehouse`,
     getAllWarehouses: `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
   },
-
-
 
   /* =========================
    * upload inventory
@@ -773,15 +774,37 @@ getImportedPurchaseInvoices:`${ERP_BASE}/api/method/zra_smart_inv.......`,
     },
   },
 
+  project: {
+    task: {
+      list: `${ERP_BASE}/api/resource/Task`,
+      create: `${ERP_BASE}/api/resource/Task`,
+     
+      assign: `${ERP_BASE}/api/method/frappe.desk.form.assign_to.add`,
+      unassign: `${ERP_BASE}/api/method/frappe.desk.form.assign_to.remove`,
+      
+      
+    },
+    project: {
+      list: `${ERP_BASE}/api/resource/Project`,
+    },
+    timesheet: {
+      list: `${ERP_BASE}/api/resource/Timesheet`,
+      create:`${ERP_BASE}/api/resource/Timesheet`,
+      update:`${ERP_BASE}/api/resource/Timesheet`,
+      cancel:`${ERP_BASE}/api/resource/Timesheet`,
+    },
+    activityType:{ list: `${ERP_BASE}/api/resource/Activity Type`,
+  }
+  },
 
   /* =========================
- * FRAPPE RESOURCE (generic doctype REST access)
- * ========================= */
-resource: {
-  batch: `${ERP_BASE}/api/resource/Batch`,
-  itemGroup: `${ERP_BASE}/api/resource/Item Group`, 
-  brand: `${ERP_BASE}/api/resource/Brand`,
-},
+   * FRAPPE RESOURCE (generic doctype REST access)
+   * ========================= */
+  resource: {
+    batch: `${ERP_BASE}/api/resource/Batch`,
+    itemGroup: `${ERP_BASE}/api/resource/Item Group`,
+    brand: `${ERP_BASE}/api/resource/Brand`,
+  },
 
   /* =========================
    * UTILS
@@ -800,23 +823,22 @@ resource: {
     getleavepolicy: `${ERP_BASE}/api/method/custom_hrms.api.search.get_leave_policies`,
     getUsers: `${ERP_BASE}/api/method/custom_hrms.api.search.get_users`,
     getPayrollEmployees: `${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_employee`,
-    getBranches:     `${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
-    createbranch:    `${ERP_BASE}/api/resource/Branch`,
-    getshifts:       `${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
-    employeesearch:  `${ERP_BASE}/api/method/custom_hrms.api.search.get_employees`,
+    getBranches: `${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
+    createbranch: `${ERP_BASE}/api/resource/Branch`,
+    getshifts: `${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
+    employeesearch: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employees`,
     searchCustomers: `${ERP_BASE}/api/method/custom_api.api.search.get_customers`,
-    search_warehouse:`${ERP_BASE}/api/method/custom_api.api.search.get_warehouses`,
-    search_Items:    `${ERP_BASE}/api/method/custom_api.api.search.get_items`,
-    search_batches:  `${ERP_BASE}/api/method/custom_api.api.search.get_batches`
+    search_warehouse: `${ERP_BASE}/api/method/custom_api.api.search.get_warehouses`,
+    search_Items: `${ERP_BASE}/api/method/custom_api.api.search.get_items`,
+    search_batches: `${ERP_BASE}/api/method/custom_api.api.search.get_batches`,
   },
   salaryPreviewAPI: {
     getSalaryPreview: `${ERP_BASE}/api/method/custom_hrms.api.salary_preview.api.get_salary_breakdown`,
   },
   getZraMTVAPI: {
-    getRrpItem: `${ERP_BASE}/api/method/zra_smart_invoice.modules.mtv.api.get_rrp_items`
+    getRrpItem: `${ERP_BASE}/api/method/zra_smart_invoice.modules.mtv.api.get_rrp_items`,
   },
   getZraRvatPrincipalAPI: {
-    getPrincipal: `${ERP_BASE}/api/method/zra_smart_invoice.modules.rvat.api.get_principals`
-  }
-
+    getPrincipal: `${ERP_BASE}/api/method/zra_smart_invoice.modules.rvat.api.get_principals`,
+  },
 } as const;
