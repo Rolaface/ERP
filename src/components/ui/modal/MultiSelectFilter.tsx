@@ -12,9 +12,12 @@ interface MultiSelectFilterProps {
   onChange: (values: string[]) => void;
   placeholder?: string;
   panelTitle?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  onSearch?: (q: string) => Promise<MultiSelectOption[]>;
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+const SEARCH_DEBOUNCE_MS = 300;
 
 export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   options,
@@ -22,10 +25,15 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   onChange,
   placeholder = "Filter",
   panelTitle = "Filter",
+  searchable = false,
+  searchPlaceholder = "Search...",
+  onSearch,
 }) => {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [remoteOptions, setRemoteOptions] = useState<MultiSelectOption[]>([]);
+  const [searching, setSearching] = useState(false);
 
-  // Portal positioning
   const [dropdownPos, setDropdownPos] = useState<{
     top: number;
     left: number;
@@ -34,8 +42,21 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   const [isMobile, setIsMobile] = useState(false);
 
   const triggerRef = useRef<HTMLDivElement>(null);
+  const requestIdRef = useRef(0);
+  const onSearchRef = useRef(onSearch);
+  const labelCacheRef = useRef<Map<string, string>>(new Map());
 
-  // Close on outside click
+  const remote = !!onSearch;
+  const showSearch = searchable || remote;
+
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
+
+  useEffect(() => {
+    options.forEach((o) => labelCacheRef.current.set(o.value, o.label));
+  }, [options]);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -53,7 +74,36 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Recalculate position on open / scroll / resize
+  useEffect(() => {
+    if (!open) setQuery("");
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !onSearchRef.current) return;
+
+    const id = ++requestIdRef.current;
+    const run = () => {
+      const search = onSearchRef.current;
+      if (!search) return;
+      setSearching(true);
+      search(query.trim())
+        .then((list) => {
+          if (id !== requestIdRef.current) return;
+          list.forEach((o) => labelCacheRef.current.set(o.value, o.label));
+          setRemoteOptions(list);
+        })
+        .catch(() => {
+          if (id === requestIdRef.current) setRemoteOptions([]);
+        })
+        .finally(() => {
+          if (id === requestIdRef.current) setSearching(false);
+        });
+    };
+
+    const timer = setTimeout(run, query ? SEARCH_DEBOUNCE_MS : 0);
+    return () => clearTimeout(timer);
+  }, [open, query]);
+
   useEffect(() => {
     if (!open) return;
 
@@ -87,7 +137,6 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
     };
   }, [open]);
 
-  // ── Live toggle — applies immediately, no Done button needed ──
   const toggleValue = (value: string) => {
     const next = values.includes(value)
       ? values.filter((v) => v !== value)
@@ -101,79 +150,109 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
 
   const hasValue = values.length > 0;
 
-  // ─── Dropdown portal content ────────────────────────────────────────────────
+  const q = query.trim().toLowerCase();
+  let visibleOptions: MultiSelectOption[];
+  if (remote) {
+    const pinned: MultiSelectOption[] = q
+      ? []
+      : values
+          .filter((v) => !remoteOptions.some((o) => o.value === v))
+          .map((v) => ({ value: v, label: labelCacheRef.current.get(v) ?? v }));
+    visibleOptions = [...pinned, ...remoteOptions];
+  } else if (searchable && q) {
+    visibleOptions = options.filter(
+      (opt) =>
+        opt.label.toLowerCase().includes(q) ||
+        opt.value.toLowerCase().includes(q),
+    );
+  } else {
+    visibleOptions = options;
+  }
 
   const dropdown =
     open && dropdownPos
       ? createPortal(
-        <div
-          id="multi-select-portal"
-          className="absolute z-[99999] flex flex-col overflow-hidden rounded-2xl border-[1.5px] border-[var(--border)] bg-card shadow-lg"
-          style={{
-            top: dropdownPos.top,
-            left: dropdownPos.left,
-            width: dropdownPos.width,
-          }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b-[1.5px] border-[var(--border)] bg-[var(--bg)] px-3.5 py-2.5">
-            <p className="m-0 text-[10px] font-bold uppercase tracking-wide text-muted">
-              {panelTitle}
-            </p>
-            {hasValue && (
-              <button
-                onClick={clearAll}
-                className="border-none bg-transparent p-0 text-[11px] font-bold text-primary cursor-pointer"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          {/* Options list */}
-          <div className="max-h-64 overflow-y-auto py-1.5">
-            {options.map((opt) => {
-              const checked = values.includes(opt.value);
-              return (
-                <label
-                  key={opt.value}
-                  className={[
-                    "flex items-center gap-2.5 px-3.5 py-2 text-[13px] cursor-pointer transition-colors duration-150",
-                    checked
-                      ? "bg-row-hover text-primary font-semibold"
-                      : "text-main font-medium hover:bg-row-hover",
-                  ].join(" ")}
+          <div
+            id="multi-select-portal"
+            className="absolute z-[99999] flex flex-col overflow-hidden rounded-2xl border-[1.5px] border-[var(--border)] bg-card shadow-lg"
+            style={{
+              top: dropdownPos.top,
+              left: dropdownPos.left,
+              width: dropdownPos.width,
+            }}
+          >
+            <div className="flex items-center justify-between border-b-[1.5px] border-[var(--border)] bg-[var(--bg)] px-3.5 py-2.5">
+              <p className="m-0 text-[10px] font-bold uppercase tracking-wide text-muted">
+                {panelTitle}
+              </p>
+              {hasValue && (
+                <button
+                  onClick={clearAll}
+                  className="border-none bg-transparent p-0 text-[11px] font-bold text-primary cursor-pointer"
                 >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleValue(opt.value)}
-                    className="h-[15px] w-[15px] cursor-pointer rounded"
-                    style={{ accentColor: "var(--primary)" }}
-                  />
-                  <span>{opt.label}</span>
-                </label>
-              );
-            })}
-          </div>
+                  Clear
+                </button>
+              )}
+            </div>
 
-          {/* Footer — just closes the panel, filter is already applied */}
-          <div className="border-t-[1.5px] border-[var(--border)] px-3.5 py-2.5">
-            <button
-              onClick={() => setOpen(false)}
-              className="w-full rounded-lg bg-primary py-[7px] text-center text-xs font-bold text-white transition-opacity hover:opacity-90"
-            >
-              Done
-            </button>
-          </div>
-        </div>,
-        document.body,
-      )
+            {showSearch && (
+              <div className="border-b-[1.5px] border-[var(--border)] px-3 py-2">
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={searchPlaceholder}
+                  className="w-full rounded-lg border border-[var(--border)] bg-card px-2.5 py-1.5 text-xs text-main outline-none placeholder:text-muted focus:border-primary"
+                />
+              </div>
+            )}
+
+            <div className="max-h-64 overflow-y-auto py-1.5">
+              {visibleOptions.map((opt) => {
+                const checked = values.includes(opt.value);
+                return (
+                  <label
+                    key={opt.value}
+                    className={[
+                      "flex items-center gap-2.5 px-3.5 py-2 text-[13px] cursor-pointer transition-colors duration-150",
+                      checked
+                        ? "bg-row-hover text-primary font-semibold"
+                        : "text-main font-medium hover:bg-row-hover",
+                    ].join(" ")}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleValue(opt.value)}
+                      className="h-[15px] w-[15px] cursor-pointer rounded"
+                      style={{ accentColor: "var(--primary)" }}
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                );
+              })}
+              {visibleOptions.length === 0 && (
+                <p className="m-0 px-3.5 py-3 text-xs text-muted">
+                  {searching ? "Searching..." : "No results found"}
+                </p>
+              )}
+            </div>
+
+            <div className="border-t-[1.5px] border-[var(--border)] px-3.5 py-2.5">
+              <button
+                onClick={() => setOpen(false)}
+                className="w-full rounded-lg bg-primary py-[7px] text-center text-xs font-bold text-white transition-opacity hover:opacity-90"
+              >
+                Done
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )
       : null;
 
   return (
     <div ref={triggerRef} className="relative inline-block">
-      {/* Trigger button */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

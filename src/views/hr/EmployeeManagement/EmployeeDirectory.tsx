@@ -413,7 +413,7 @@ useEffect(() => {
 
            sortBy={sortBy}                               
   sortOrder={sortOrder}                          
-  onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {   {/* ADD */}
+  onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {  
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
     setPage(1);

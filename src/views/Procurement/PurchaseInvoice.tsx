@@ -117,7 +117,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [company, setCompany] = useState<any | null>(null);
   const { can } = usePermission();
-   const [sortBy, setSortBy] = useState("podate");
+   const [sortBy, setSortBy] = useState("creation");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const SORT_FIELD_MAP: Record<string, string> = {

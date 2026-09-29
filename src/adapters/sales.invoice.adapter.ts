@@ -33,11 +33,7 @@ function normalizeSalesInvoice(raw: SalesInvoiceRaw): NormalizedInvoice {
   // Always prefer lowercase — it's the consistent field.
   // Fall back to PascalCase only if lowercase is missing/NaN (backend inconsistency guard).
   const outstanding = Number(raw.outstanding_amount ?? raw.OutStandingAmount ?? 0);
-const totalAmount = Number(
-  raw.totalAmount ??
-  (raw as any).total ??
-  0
-);
+const totalAmount = Number(raw.grand_total ?? raw.total);
 
   return {
    invoiceNumber: raw.invoiceNumber ?? (raw as any).id,  
@@ -97,7 +93,7 @@ export const salesInvoiceAdapter: InvoiceAdapter = {
     return normalizeSalesInvoice({
       ...raw,
       invoiceNumber: raw.id ?? raw.invoiceNumber,
-      totalAmount: raw.total ?? raw.totalAmount,
+     totalAmount: raw.grand_total ?? 0,
       dateOfInvoice: raw.invoiceDate ?? raw.dateOfInvoice,
     });
   },
