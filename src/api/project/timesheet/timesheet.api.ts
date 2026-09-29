@@ -3,7 +3,7 @@ import { createAxiosInstance } from "../../axiosInstance";
 import { buildListParams } from "../../../api/utils/queryBuilder";
 import { API, ERP_BASE } from "../../../config/api";
 import type { TimesheetDetail, TimesheetListResponse ,TimesheetHoursEntry} from "../../../types/Project_Management/Timesheet/Table/timesheet.types";
-
+import { frappeDelete } from "../../Delete/frappeDeleteApi";
 const api = createAxiosInstance(ERP_BASE);
 export const TimesheetAPI = API.project.timesheet;
 
@@ -205,4 +205,15 @@ export async function getTimesheetHours(
     activity_type: d.activity_type,
     description: d.description,
   }));
+}
+
+export async function deleteTimesheetById(id: string): Promise<void> {
+  if (!id) {
+    throw new Error("deleteTimesheetById: Timesheet ID is required.");
+  }
+
+  await frappeDelete({
+    doctype: "Timesheet",
+    name: id,
+  });
 }
