@@ -17,6 +17,8 @@ export interface SalesInvoiceRaw {
   OutStandingAmount: number; 
   invoiceTypeParent: string;
   invoiceType: string | null;
+  grand_total: number;
+  total:number;
 }
 
 export interface PurchaseInvoiceRaw {
