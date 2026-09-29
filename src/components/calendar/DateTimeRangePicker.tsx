@@ -1,13 +1,20 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import { createPortal } from "react-dom";
-
-// ─── shared date helpers (same pattern as DateRangeFilter) ───
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+const POPOVER_GAP = 6;
+const VIEWPORT_MARGIN = 8;
 
 function toYMD(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -32,8 +39,6 @@ function daysBetween(from: string, to: string) {
   if (!from || !to) return 1;
   return Math.round((parseYMD(to).getTime() - parseYMD(from).getTime()) / 86400000) + 1;
 }
-
-// ─── time helpers ───
 
 export function calcDurationHours(from: string, to: string): number {
   if (!from || !to) return 0;
@@ -83,8 +88,6 @@ const DEFAULT_QUICK_DURATIONS = [
   { label: "8h", minutes: 480 },
 ];
 
-// ─── time dropdown ───
-
 interface TimeDropdownProps {
   label: string;
   value: string;
@@ -108,7 +111,7 @@ const TimeDropdown: React.FC<TimeDropdownProps> = ({ label, value, options, onCh
 
   useEffect(() => {
     if (!open || !listRef.current) return;
-    const activeEl = listRef.current.querySelector('[data-active="true"]') as HTMLElement | null;
+    const activeEl = listRef.current.querySelector<HTMLElement>('[data-active="true"]');
     activeEl?.scrollIntoView({ block: "center" });
   }, [open]);
 
@@ -182,13 +185,11 @@ const TimeDropdown: React.FC<TimeDropdownProps> = ({ label, value, options, onCh
   );
 };
 
-// ─── month calendar (supports a date range) ───
-
 interface MonthCalProps {
   year: number;
   month: number;
-  selected?: string;    // range start
-  selectedEnd?: string; // range end
+  selected?: string;
+  selectedEnd?: string;
   onDay: (ymd: string) => void;
   onPrev: () => void;
   onNext: () => void;
@@ -224,9 +225,7 @@ const MonthCal: React.FC<MonthCalProps> = ({
         {cells.map((day, i) => {
           if (day === null) return <div key={i} />;
           const ymd = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const isStart = ymd === selected;
-          const isEnd = ymd === selectedEnd;
-          const isSelected = isStart || isEnd;
+          const isSelected = ymd === selected || ymd === selectedEnd;
           const inRange = !!selected && !!selectedEnd && ymd > selected && ymd < selectedEnd;
           const isToday = ymd === todayYMD;
           const disabled =
@@ -282,8 +281,6 @@ const navBtn: React.CSSProperties = {
   lineHeight: 1,
 };
 
-// ─── main component ───
-
 export interface DateTimeRangePickerProps {
   date: string;
   to_date?: string;
@@ -311,46 +308,72 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
   disablePast,
   placeholder = "Set time",
 }) => {
-  const today = new Date();
-  const initial = date ? parseYMD(date) : today;
-
   const [open, setOpen] = useState(false);
-  const [draftDate, setDraftDate] = useState(date || toYMD(today));
-  const [draftToDate, setDraftToDate] = useState(to_date || date || toYMD(today));
+  const [draftDate, setDraftDate] = useState(date);
+  const [draftToDate, setDraftToDate] = useState(to_date || date);
   const [pickingEnd, setPickingEnd] = useState(false);
-  const [viewY, setViewY] = useState(initial.getFullYear());
-  const [viewM, setViewM] = useState(initial.getMonth());
+  const [viewY, setViewY] = useState(() => (date ? parseYMD(date) : new Date()).getFullYear());
+  const [viewM, setViewM] = useState(() => (date ? parseYMD(date) : new Date()).getMonth());
   const [draftFrom, setDraftFrom] = useState(from_time);
   const [draftTo, setDraftTo] = useState(to_time);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const popRef = useRef<HTMLDivElement>(null);
 
   const timeOptions = buildTimeOptions(intervalMinutes);
 
   useEffect(() => {
     if (!open) return;
-    const d = date ? parseYMD(date) : today;
-    setDraftDate(date || toYMD(today));
-    setDraftToDate(to_date || date || toYMD(today));
+    const today = new Date();
+    const base = date || toYMD(today);
+    const d = parseYMD(base);
+    setDraftDate(base);
+    setDraftToDate(to_date || base);
     setPickingEnd(false);
     setViewY(d.getFullYear());
     setViewM(d.getMonth());
     setDraftFrom(from_time);
     setDraftTo(to_time);
-
-    const rect = triggerRef.current?.getBoundingClientRect();
-    if (rect) setPos({ top: rect.bottom + window.scrollY + 6, left: rect.left + window.scrollX });
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const place = useCallback(() => {
+    const trigger = triggerRef.current?.getBoundingClientRect();
+    const pop = popRef.current;
+    if (!trigger || !pop) return;
+
+    const { offsetWidth: w, offsetHeight: h } = pop;
+    const spaceBelow = window.innerHeight - trigger.bottom - VIEWPORT_MARGIN;
+    const spaceAbove = trigger.top - VIEWPORT_MARGIN;
+    const openUp = h > spaceBelow && spaceAbove > spaceBelow;
+
+    const rawTop = openUp ? trigger.top - h - POPOVER_GAP : trigger.bottom + POPOVER_GAP;
+    const top = Math.max(VIEWPORT_MARGIN, Math.min(rawTop, window.innerHeight - h - VIEWPORT_MARGIN));
+    const left = Math.max(VIEWPORT_MARGIN, Math.min(trigger.left, window.innerWidth - w - VIEWPORT_MARGIN));
+
+    setPos((prev) => (prev && prev.top === top && prev.left === left ? prev : { top, left }));
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPos(null);
+      return;
+    }
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, viewY, viewM, place]);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
-      const pop = document.getElementById("datetime-range-portal");
-      if (triggerRef.current && !triggerRef.current.contains(target) && pop && !pop.contains(target)) {
-        setOpen(false);
-      }
+      if (triggerRef.current?.contains(target) || popRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -359,6 +382,7 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
   const rangeInvalid = !draftFrom || !draftTo || toMinutes(draftTo) <= toMinutes(draftFrom);
   const draftHours = rangeInvalid ? 0 : calcDurationHours(draftFrom, draftTo);
   const dayCount = daysBetween(draftDate, draftToDate);
+  const showError = rangeInvalid && !!draftFrom && !!draftTo;
 
   const handleQuickDuration = (minutes: number) => {
     const base = draftFrom || "09:00";
@@ -366,21 +390,20 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
     setDraftTo(addMinutes(base, minutes));
   };
 
-  // 1st click = start date, 2nd click = end date (swaps if clicked before start)
   const handleDayClick = (ymd: string) => {
     if (!pickingEnd) {
       setDraftDate(ymd);
       setDraftToDate(ymd);
       setPickingEnd(true);
-    } else {
-      if (ymd < draftDate) {
-        setDraftToDate(draftDate);
-        setDraftDate(ymd);
-      } else {
-        setDraftToDate(ymd);
-      }
-      setPickingEnd(false);
+      return;
     }
+    if (ymd < draftDate) {
+      setDraftToDate(draftDate);
+      setDraftDate(ymd);
+    } else {
+      setDraftToDate(ymd);
+    }
+    setPickingEnd(false);
   };
 
   const handleApply = () => {
@@ -390,12 +413,20 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
   };
 
   const prevMonth = () => {
-    if (viewM === 0) { setViewM(11); setViewY((y) => y - 1); }
-    else setViewM((m) => m - 1);
+    if (viewM === 0) {
+      setViewM(11);
+      setViewY((y) => y - 1);
+    } else {
+      setViewM((m) => m - 1);
+    }
   };
   const nextMonth = () => {
-    if (viewM === 11) { setViewM(0); setViewY((y) => y + 1); }
-    else setViewM((m) => m + 1);
+    if (viewM === 11) {
+      setViewM(0);
+      setViewY((y) => y + 1);
+    } else {
+      setViewM((m) => m + 1);
+    }
   };
 
   const dateLabel = date
@@ -405,8 +436,6 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
     from_time && to_time
       ? `${dateLabel ? dateLabel + " · " : ""}${formatTime12h(from_time)} → ${formatTime12h(to_time)}`
       : placeholder;
-
-  const showError = rangeInvalid && !!draftFrom && !!draftTo;
 
   return (
     <div style={{ position: "relative", display: "inline-block", width: "100%" }}>
@@ -441,24 +470,24 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
       </button>
 
       {open &&
-        pos &&
         createPortal(
           <div
-            id="datetime-range-portal"
+            ref={popRef}
             style={{
-              position: "absolute",
-              top: pos.top,
-              left: pos.left,
+              position: "fixed",
+              top: pos?.top ?? 0,
+              left: pos?.left ?? 0,
+              visibility: pos ? "visible" : "hidden",
               zIndex: 99999,
+              maxHeight: `calc(100vh - ${VIEWPORT_MARGIN * 2}px)`,
+              overflowY: "auto",
               background: "var(--card)",
               border: "1.5px solid var(--border)",
               borderRadius: 14,
               boxShadow: "var(--shadow-lg)",
               display: "flex",
-              overflow: "hidden",
             }}
           >
-            {/* ── calendar (date range) ── */}
             <div style={{ padding: 16, borderRight: "1.5px solid var(--border)" }}>
               <MonthCal
                 year={viewY}
@@ -486,7 +515,6 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
               </div>
             </div>
 
-            {/* ── time range ── */}
             <div style={{ padding: 16, width: 280, display: "flex", flexDirection: "column", gap: 12 }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 0.5, margin: 0 }}>
                 Time Range
@@ -505,8 +533,8 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                   {quickDurations.map((q) => {
                     const active =
                       !rangeInvalid &&
-                      draftFrom &&
-                      draftTo &&
+                      !!draftFrom &&
+                      !!draftTo &&
                       calcDurationHours(draftFrom, draftTo) === q.minutes / 60;
                     return (
                       <button
