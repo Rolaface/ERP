@@ -4,7 +4,8 @@ import { showApiError } from "../../../../utils/alert";
 import { getTimesheetHours } from "../../../../api/project/timesheet/timesheet.api";
 import type { TimesheetHoursEntry } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import TimesheetMatrix from "./Timesheetmatrix";
-import ViewToggle from "./Viewtoggle";
+import { TIMESHEET_VIEW_OPTIONS } from "./imesheetViews"
+import ViewSelector from "../../../project_management/ViewSelector";
 
 import DateRangeFilter from "../../../../components/ui/modal/DateRangeFilter";
 
@@ -524,10 +525,11 @@ const TimesheetCalendar: React.FC<Props> = ({ canViewAll, onSwitchToList }) => {
               onChange={handleRangeChange}
             />
           )}
-          <ViewToggle
-            mode="calendar"
-            onChange={(m) => m === "table" && onSwitchToList()}
-          />
+         <ViewSelector
+  value="calendar"
+  options={TIMESHEET_VIEW_OPTIONS}
+  onChange={(m) => m === "table" && onSwitchToList()}
+/>
         </div>
       </div>
 
