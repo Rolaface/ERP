@@ -48,11 +48,18 @@ import {
   Loader2,
 } from "lucide-react";
 import TaskKanban from "../components/Taskkanban";
-import TaskViewToggle, { type TaskMode } from "../components/Taskviewtoggle";
+import type { TaskMode } from "../components/Taskviewtoggle";
+import ViewSelector, {
+  type ViewOption,
+} from "../../../project_management/ViewSelector";
 
 const TASK_MODULE = "Task";
 const TREE_INDENT_PX = 16;
 const DEFAULT_VIEW: TaskMode = "kanban";
+const VIEW_OPTIONS: ViewOption<TaskMode>[] = [
+  { value: "kanban", label: "Kanban" },
+  { value: "table", label: "Table" },
+];
 
 type TaskRow = TaskEntry & { _depth: number };
 
@@ -730,7 +737,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       },
     },
   ];
-
+const viewSelector = (
+  <ViewSelector value={view} options={VIEW_OPTIONS} onChange={setView} />
+);
   return (
     <HrTableFrame>
       {view === "kanban" ? (
@@ -749,9 +758,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
             fetchProjects={fetchProjectOptions}
             fetchUsers={fetchUserOptions}
             getProjectName={getProjectDisplayName}
-            canEdit={!isEmployee && can(TASK_MODULE, "write")}
+            canEdit={can(TASK_MODULE, "write")}
             onView={handleView}
-            toolbarRight={<TaskViewToggle mode="kanban" onChange={setView} />}
+           toolbarRight={viewSelector}
           />
         </div>
       ) : (
@@ -831,7 +840,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
                 </>
               )}
 
-              <TaskViewToggle mode="table" onChange={setView} />
+             {viewSelector}
             </div>
           }
           enableColumnSelector
@@ -853,7 +862,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
         open={drawerOpen}
         data={drawerData}
         loading={drawerLoading}
-        canEditStatus={!isEmployee && can(TASK_MODULE, "write")}
+        canEditStatus={can(TASK_MODULE, "write")}
         actionLoading={drawerActionLoading}
         onClose={() => {
           setDrawerOpen(false);

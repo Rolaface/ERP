@@ -42,7 +42,9 @@ import {
   openEmployeeTimesheetFormModal,
 } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
 import TimesheetCalendar from "../components/TimesheetCalendar";
-import ViewToggle, { type TimesheetMode } from "../components/Viewtoggle";
+import type { TimesheetMode } from "../components/Viewtoggle";
+import { TIMESHEET_VIEW_OPTIONS } from "../../timesheet/components/imesheetViews";
+import ViewSelector from "../../../project_management/ViewSelector";
 
 // ── Constants ────────────────────────────────────────────────────
 
@@ -449,7 +451,13 @@ const handleEdit = (id: string) => {
             setPage(1);
           }}
           enableAdd={can(TS_MODULE, "create")}
-          primaryAction={<ViewToggle mode="table" onChange={setView} />}
+         primaryAction={
+  <ViewSelector
+    value={view}
+    options={TIMESHEET_VIEW_OPTIONS}
+    onChange={setView}
+  />
+}
           addLabel="+ Add Timesheet"
           onAdd={handleAdd}
           enableColumnSelector
