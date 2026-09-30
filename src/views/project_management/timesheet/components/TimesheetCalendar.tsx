@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { showApiError } from "../../../../utils/alert";
+import { showApiError, showDayOffToast } from "../../../../utils/alert";
 import { getTimesheetHours } from "../../../../api/project/timesheet/timesheet.api";
 import type { TimesheetHoursEntry } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import type { TimesheetModalRestrictions } from "../../../../hooks/project_management/timeheet/form/useTimesheetModal";
 import { useDayOffs } from "../../../../hooks/project_management/timeheet/useDayOffs";
 import TimesheetMatrix from "./Timesheetmatrix";
 import { DAY_OFF_TONE } from "./DayOffChip";
+import { WEEKLY_OFF_COLOR } from "./Weeklyoff";
 import {
   openAdminTimesheetFormModal,
   openEmployeeTimesheetFormModal,
@@ -44,6 +45,8 @@ interface Props {
   restrictions?: TimesheetModalRestrictions;
 }
 
+const WEEKLY_OFF_LABEL = "Weekly Off";
+
 const TimesheetCalendar: React.FC<Props> = ({
   canViewAll,
   canEdit,
@@ -60,8 +63,6 @@ const TimesheetCalendar: React.FC<Props> = ({
   const openTimesheetForm = canViewAll
     ? openAdminTimesheetFormModal
     : openEmployeeTimesheetFormModal;
-
-  // ── Derived date ranges ──────────────────────────────────────
 
   const visibleDays = useMemo(
     () =>
@@ -92,8 +93,6 @@ const TimesheetCalendar: React.FC<Props> = ({
   const showMatrix = canViewAll && view !== "list";
 
   const dayOffs = useDayOffs(fromDate, toDate, canViewAll);
-
-  // ── Data ─────────────────────────────────────────────────────
 
   useEffect(() => {
     let cancelled = false;
@@ -131,8 +130,6 @@ const TimesheetCalendar: React.FC<Props> = ({
       return Boolean(off && !off.halfDay);
     },
   };
-
-  // ── Navigation ───────────────────────────────────────────────
 
   const title = range
     ? [visibleDays[0], visibleDays[visibleDays.length - 1]]
@@ -195,14 +192,32 @@ const TimesheetCalendar: React.FC<Props> = ({
     setAnchor(start);
   };
 
-  // ── Modals ───────────────────────────────────────────────────
-
   const reload = () => setReloadKey((k) => k + 1);
+
+  const warnIfDayOff = (dateKey: string, employeeName?: string) => {
+    const off = employeeName
+      ? (dayOffs.holidayOn(dateKey) ?? dayOffs.leaveOn(dateKey, employeeName))
+      : dayData.dayOffOn(dateKey);
+    if (!off) return;
+
+    showDayOffToast({
+      dateLabel: fromYMD(dateKey).toLocaleDateString(undefined, {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      }),
+      kind: off.kind,
+      label: off.kind === "weekly_off" ? WEEKLY_OFF_LABEL : off.label,
+      halfDay: off.halfDay,
+      who: employeeName,
+    });
+  };
 
   const openLogModal = (
     date: string,
     employee?: { id: string; name: string },
   ) => {
+    warnIfDayOff(date, employee?.name);
     openTimesheetForm({
       prefillDate: date,
       prefillEmployee: employee,
@@ -227,8 +242,6 @@ const TimesheetCalendar: React.FC<Props> = ({
   };
 
   const logButtonDate = view === "day" ? toYMD(anchor) : todayKey;
-
-  // ── Body ─────────────────────────────────────────────────────
 
   const scrolls = !showMatrix && (view === "day" || view === "list");
 
@@ -302,7 +315,6 @@ const TimesheetCalendar: React.FC<Props> = ({
         views={canViewAll ? ADMIN_VIEWS : VIEWS}
         range={range}
         canViewAll={canViewAll}
-        logDisabled={dayData.isDayOff(logButtonDate)}
         onToday={goToday}
         onPrev={() => shift(-1)}
         onNext={() => shift(1)}
@@ -322,7 +334,7 @@ const TimesheetCalendar: React.FC<Props> = ({
         {renderBody()}
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 text-[10px] font-semibold text-muted">
+      <div className="flex shrink-0 flex-wrap items-center gap-4 text-[10px] font-semibold text-muted">
         <LegendItem color={`var(${APPROVED_TONE})`} label="Approved" />
         <LegendItem
           color={`var(${DRAFT_TONE})`}
@@ -333,6 +345,7 @@ const TimesheetCalendar: React.FC<Props> = ({
           label="Company Holiday"
         />
         <LegendItem color={`var(${DAY_OFF_TONE.leave})`} label="Leave" />
+        <LegendItem color={WEEKLY_OFF_COLOR} label={WEEKLY_OFF_LABEL} />
         <span className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-[var(--border)]" />
           No Entry

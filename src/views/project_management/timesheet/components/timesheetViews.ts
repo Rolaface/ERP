@@ -1,4 +1,4 @@
-import type { ViewOption } from "../../../project_management/ViewSelector";
+import type { ViewOption } from "../../ViewSelector";
 import type { TimesheetMode } from "./Viewtoggle";
 
 export const TIMESHEET_VIEW_OPTIONS: ViewOption<TimesheetMode>[] = [
