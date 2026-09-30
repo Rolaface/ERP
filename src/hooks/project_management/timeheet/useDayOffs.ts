@@ -72,10 +72,20 @@ export const useDayOffs = (
       return;
     }
     let cancelled = false;
-    getHolidayDayOffs(listName)
-      .then((items) => {
-        if (cancelled) return;
-        const map: DayOffMap = new Map(items.map((i) => [i.date, i]));
+   getHolidayDayOffs(listName)
+  .then((items) => {
+    if (cancelled) return;
+    console.log(
+      "HOLIDAY DEBUG",
+      listName,
+      "weekly:",
+      items.filter((i) => i.kind === "weekly_off").length,
+      "holidays:",
+      items.filter((i) => i.kind === "company_holiday").length,
+      "sat 2026-09-05:",
+      items.find((i) => i.date === "2026-09-05"),
+    );
+    const map: DayOffMap = new Map(items.map((i) => [i.date, i]));
         holidayCache.set(listName, map);
         setHolidays(map);
       })
