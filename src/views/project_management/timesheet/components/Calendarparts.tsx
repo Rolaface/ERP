@@ -114,14 +114,11 @@ export const DayOffBar: React.FC<{ off: DayOff; className?: string }> = ({
     (DAY_OFF_TONE as Record<string, string>)[off.kind] ?? "--border";
   return (
     <div
-      title={off.label}
+      title={off.halfDay ? `${off.label} (Half day)` : off.label}
       className={`flex h-5 w-full shrink-0 items-center overflow-hidden rounded px-1.5 text-[10px] font-semibold ${className}`}
       style={tintStyle(tone, 20)}
     >
-      <span className="truncate">
-        {off.label}
-        {off.halfDay ? " · Half day" : ""}
-      </span>
+      <span className="truncate">{off.label}</span>
     </div>
   );
 };

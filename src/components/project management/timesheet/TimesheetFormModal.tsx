@@ -232,6 +232,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     removeLines([...selectedIds]);
     setSelectedIds(new Set());
   };
+
   const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
 
   const handleSortByDate = () => {
@@ -239,6 +240,10 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     sortLines(next);
     setSortDir(next);
   };
+
+  useEffect(() => {
+    if (!isOpen) setSortDir(null);
+  }, [isOpen]);
 
   const handleSave = async () => {
     const ok = await save();

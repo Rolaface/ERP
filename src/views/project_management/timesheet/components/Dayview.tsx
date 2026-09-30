@@ -28,7 +28,7 @@ interface AgendaProps extends CommonProps {
 }
 
 const primaryButton =
-  "inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90";
 
 const EntryRow: React.FC<{
   e: TimesheetHoursEntry;
@@ -80,14 +80,11 @@ const EntryRow: React.FC<{
 const entryMeta = (e: TimesheetHoursEntry) =>
   [e.activity_type, e.description, e.timesheet].filter(Boolean).join(" · ");
 
-// ── Day ──────────────────────────────────────────────────────────
-
 export const DayView: React.FC<DayViewProps> = ({
   date,
   eventsByDay,
   dayTotal,
   dayOffOn,
-  isDayOff,
   canViewAll,
   onLog,
   onEdit,
@@ -96,10 +93,12 @@ export const DayView: React.FC<DayViewProps> = ({
   const events = eventsByDay[key] ?? [];
   const total = dayTotal(key);
   const off = dayOffOn(key);
-  const blocked = isDayOff(key);
 
   const groups = useMemo(() => {
-    const map = new Map<string, { items: TimesheetHoursEntry[]; hours: number }>();
+    const map = new Map<
+      string,
+      { items: TimesheetHoursEntry[]; hours: number }
+    >();
     events
       .flatMap((ev) => ev.items)
       .forEach((e) => {
@@ -112,14 +111,17 @@ export const DayView: React.FC<DayViewProps> = ({
     return Array.from(map.entries()).sort((a, b) => b[1].hours - a[1].hours);
   }, [events, canViewAll]);
 
-  const maxHours = Math.max(0, ...events.flatMap((ev) => ev.items.map((i) => i.hours)));
+  const maxHours = Math.max(
+    0,
+    ...events.flatMap((ev) => ev.items.map((i) => i.hours)),
+  );
   const draftHours = events.reduce((s, ev) => s + ev.draftHours, 0);
   const approvedHours = total - draftHours;
   const approvedPct = total > 0 ? (approvedHours / total) * 100 : 0;
 
   return (
     <div className="grid gap-3 p-0.5 lg:grid-cols-[minmax(0,1fr)_300px]">
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         {groups.length === 0 && (
           <p className="rounded-xl border border-[var(--border)] bg-card py-10 text-center text-sm text-muted">
             No timesheet entries for this day.
@@ -131,7 +133,9 @@ export const DayView: React.FC<DayViewProps> = ({
             className="overflow-hidden rounded-xl border border-[var(--border)] bg-card"
           >
             <div className="flex items-center justify-between border-b border-[var(--border)]/40 px-3 py-2">
-              <span className="text-xs font-bold text-main">{name}</span>
+              <span className="min-w-0 truncate text-xs font-bold text-main">
+                {name}
+              </span>
               <span className="font-mono text-xs font-bold text-primary">
                 {formatHours(g.hours)}
               </span>
@@ -141,7 +145,11 @@ export const DayView: React.FC<DayViewProps> = ({
                 <EntryRow
                   key={`${e.timesheet}-${i}`}
                   e={e}
-                  title={canViewAll ? projectTask(e) || e.activity_type || "—" : e.task || e.activity_type || "—"}
+                  title={
+                    canViewAll
+                      ? projectTask(e) || e.activity_type || "—"
+                      : e.task || e.activity_type || "—"
+                  }
                   meta={entryMeta(e)}
                   maxHours={maxHours}
                   onEdit={onEdit}
@@ -154,7 +162,9 @@ export const DayView: React.FC<DayViewProps> = ({
 
       <aside className="h-fit space-y-3 rounded-xl border border-[var(--border)] bg-card p-4">
         <div>
-          <p className="text-xs font-semibold text-muted">{describeDay(date)}</p>
+          <p className="text-xs font-semibold text-muted">
+            {describeDay(date)}
+          </p>
           <p className="mt-1 font-mono text-3xl font-bold text-main">
             {formatHours(total)}
           </p>
@@ -163,19 +173,31 @@ export const DayView: React.FC<DayViewProps> = ({
         <div>
           <div className="flex h-2 overflow-hidden rounded-full bg-[var(--border)]/30">
             <div
-              style={{ width: `${approvedPct}%`, background: `var(${APPROVED_TONE})` }}
+              style={{
+                width: `${approvedPct}%`,
+                background: `var(${APPROVED_TONE})`,
+              }}
             />
             <div
-              style={{ width: `${100 - approvedPct}%`, background: total > 0 ? `var(${DRAFT_TONE})` : "transparent" }}
+              style={{
+                width: `${100 - approvedPct}%`,
+                background: total > 0 ? `var(${DRAFT_TONE})` : "transparent",
+              }}
             />
           </div>
           <div className="mt-2 flex justify-between text-[11px] font-semibold text-muted">
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full" style={{ background: `var(${APPROVED_TONE})` }} />
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ background: `var(${APPROVED_TONE})` }}
+              />
               Approved {formatHours(approvedHours)}
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full" style={{ background: `var(${DRAFT_TONE})` }} />
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ background: `var(${DRAFT_TONE})` }}
+              />
               Draft {formatHours(draftHours)}
             </span>
           </div>
@@ -186,7 +208,7 @@ export const DayView: React.FC<DayViewProps> = ({
           <p className="text-[11px] font-semibold text-muted">Weekly off</p>
         )}
 
-        <button className={primaryButton} disabled={blocked} onClick={() => onLog(key)}>
+        <button className={primaryButton} onClick={() => onLog(key)}>
           <Plus size={14} /> Log time
         </button>
       </aside>
@@ -194,14 +216,11 @@ export const DayView: React.FC<DayViewProps> = ({
   );
 };
 
-// ── List (agenda) ────────────────────────────────────────────────
-
 export const AgendaList: React.FC<AgendaProps> = ({
   days,
   eventsByDay,
   dayTotal,
   dayOffOn,
-  isDayOff,
   canViewAll,
   onLog,
   onEdit,
@@ -233,20 +252,20 @@ export const AgendaList: React.FC<AgendaProps> = ({
             className="overflow-hidden rounded-xl border border-[var(--border)] bg-card"
           >
             <div className="flex items-center justify-between border-b border-[var(--border)]/40 px-3 py-2">
-              <span className="text-xs font-bold text-main">{describeDay(d)}</span>
+              <span className="text-xs font-bold text-main">
+                {describeDay(d)}
+              </span>
               <div className="flex items-center gap-3">
                 <span className="font-mono text-xs font-bold text-primary">
                   {formatHours(dayTotal(key))}
                 </span>
-                {!isDayOff(key) && (
-                  <button
-                    className="rounded-md border border-[var(--border)] p-1 text-muted transition-colors hover:text-main"
-                    title="Log time on this day"
-                    onClick={() => onLog(key)}
-                  >
-                    <Plus size={12} />
-                  </button>
-                )}
+                <button
+                  className="rounded-md border border-[var(--border)] p-1 text-muted transition-colors hover:text-main"
+                  title="Log time on this day"
+                  onClick={() => onLog(key)}
+                >
+                  <Plus size={12} />
+                </button>
               </div>
             </div>
             {off && off.kind !== "weekly_off" && (

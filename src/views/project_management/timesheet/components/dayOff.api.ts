@@ -42,16 +42,34 @@ const fromYMD = (s: string) => {
 const nextDay = (d: Date) =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
 
-export const getHolidayDayOffs = async (listName: string): Promise<DayOff[]> => {
-  const url = `${API.holidayList.getByName}?name=${encodeURIComponent(listName)}`;
+const fetchHolidayRows = async (url: string): Promise<HolidayRow[]> => {
   const resp = await api.get(url);
-  const rows: HolidayRow[] = resp.data?.data?.holidays ?? [];
-  return rows.map((h) => ({
+  return resp.data?.data?.holidays ?? [];
+};
+
+const toDayOffs = (rows: HolidayRow[]): DayOff[] =>
+  rows.map((h) => ({
     date: h.holiday_date,
     kind: h.weekly_off ? "weekly_off" : "company_holiday",
     label: h.description,
     halfDay: Boolean(h.is_half_day),
   }));
+
+export const getHolidayDayOffs = async (
+  listName: string,
+): Promise<DayOff[]> => {
+  const name = encodeURIComponent(listName);
+  const primary = await fetchHolidayRows(
+    `${API.holidayList.getByName}?name=${name}`,
+  );
+  if (primary.some((h) => h.weekly_off)) return toDayOffs(primary);
+
+  try {
+    const full = await fetchHolidayRows(`/api/resource/Holiday%20List/${name}`);
+    return toDayOffs(full.length > primary.length ? full : primary);
+  } catch {
+    return toDayOffs(primary);
+  }
 };
 
 const expandLeave = (l: LeaveRow, from: string, to: string): DayOff[] => {

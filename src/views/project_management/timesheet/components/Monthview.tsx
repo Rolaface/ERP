@@ -8,6 +8,11 @@ import {
   type DayData,
   type DayEvent,
 } from "./Calendarutils";
+import {
+  WEEKLY_OFF_COLOR,
+  WEEKLY_OFF_TAG_BG,
+  weeklyOffFill,
+} from "./Weeklyoff";
 
 interface Props extends DayData {
   days: Date[];
@@ -23,6 +28,7 @@ const FOOTER_ROW = 22;
 const OFF_ROW = 22;
 const CHIP_ROW = 22;
 const CELL_PADDING = 6;
+const MIN_CELL = 120;
 
 const MonthView: React.FC<Props> = ({
   days,
@@ -31,20 +37,19 @@ const MonthView: React.FC<Props> = ({
   eventsByDay,
   dayTotal,
   dayOffOn,
-  isDayOff,
   onLog,
   onOpenDay,
   chipEdit,
 }) => {
   const weeks = Math.max(1, Math.round(days.length / DAYS_IN_WEEK));
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [cellHeight, setCellHeight] = useState(120);
+  const [cellHeight, setCellHeight] = useState(MIN_CELL);
 
-  // Measure the grid so we know how many chips fit without scrolling inside a cell
   useEffect(() => {
     const el = bodyRef.current;
     if (!el) return;
-    const measure = () => setCellHeight(el.clientHeight / weeks);
+    const measure = () =>
+      setCellHeight(Math.max(MIN_CELL, el.clientHeight / weeks));
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
@@ -53,7 +58,7 @@ const MonthView: React.FC<Props> = ({
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-card">
-      <div className="grid grid-cols-7 border-b border-[var(--border)]/60">
+      <div className="grid shrink-0 grid-cols-7 border-b border-[var(--border)]/60">
         {days.slice(0, DAYS_IN_WEEK).map((d, i) => (
           <div
             key={i}
@@ -66,15 +71,17 @@ const MonthView: React.FC<Props> = ({
 
       <div
         ref={bodyRef}
-        className="grid min-h-0 flex-1 grid-cols-7 gap-px bg-[var(--border)]/40"
-        style={{ gridTemplateRows: `repeat(${weeks}, minmax(0, 1fr))` }}
+        className="custom-scrollbar grid min-h-0 flex-1 grid-cols-7 gap-px overflow-y-auto bg-[var(--border)]/40"
+        style={{
+          gridTemplateRows: `repeat(${weeks}, minmax(${MIN_CELL}px, 1fr))`,
+        }}
       >
         {days.map((d) => {
           const key = toYMD(d);
           const events = eventsByDay[key] ?? [];
           const total = dayTotal(key);
           const off = dayOffOn(key);
-          const blocked = isDayOff(key);
+          const isWeeklyOff = off?.kind === "weekly_off";
           const showOffBar = off && off.kind !== "weekly_off";
           const isOutside = d.getMonth() !== anchor.getMonth();
           const isToday = key === todayKey;
@@ -84,21 +91,17 @@ const MonthView: React.FC<Props> = ({
             DATE_ROW -
             FOOTER_ROW -
             CELL_PADDING -
-            (showOffBar ? OFF_ROW : 0);
+            (showOffBar || isWeeklyOff ? OFF_ROW : 0);
           const fit = Math.max(1, Math.floor(available / CHIP_ROW));
-          const overflow = events.length > fit;
-          const shown = overflow ? events.slice(0, Math.max(fit - 1, 0)) : events;
+          const shown = events.slice(0, fit);
           const hidden = events.length - shown.length;
 
           return (
             <div
               key={key}
-              onClick={blocked ? undefined : () => onLog(key)}
-              className={`group/cell relative flex min-h-0 flex-col overflow-hidden p-1 ${
-                off?.kind === "weekly_off"
-                  ? "bg-[var(--border)]/15"
-                  : "bg-card"
-              } ${blocked ? "" : "cursor-pointer hover:bg-row-hover"}`}
+              onClick={() => onLog(key)}
+              style={isWeeklyOff ? weeklyOffFill : undefined}
+              className="group/cell relative flex min-h-0 cursor-pointer flex-col overflow-hidden bg-card p-1 hover:bg-row-hover"
             >
               <div className="flex h-6 shrink-0 items-center justify-between">
                 <span
@@ -113,14 +116,24 @@ const MonthView: React.FC<Props> = ({
                 >
                   {d.getDate()}
                 </span>
-                {!blocked && (
-                  <span className="hidden h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary group-hover/cell:flex">
-                    <Plus size={12} />
-                  </span>
-                )}
+                <span className="hidden h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary group-hover/cell:flex">
+                  <Plus size={12} />
+                </span>
               </div>
 
               {showOffBar && off && <DayOffBar off={off} className="mb-0.5" />}
+
+              {isWeeklyOff && (
+                <div
+                  className="mb-0.5 flex h-5 shrink-0 items-center rounded px-1.5 text-[10px] font-bold uppercase tracking-wide"
+                  style={{
+                    color: WEEKLY_OFF_COLOR,
+                    background: WEEKLY_OFF_TAG_BG,
+                  }}
+                >
+                  Weekly Off
+                </div>
+              )}
 
               <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden">
                 {shown.map((ev) => (

@@ -51,9 +51,9 @@ const mergeClassNames = (
     .join(" "),
 });
 
-const withManagedDefaults = <T>(
-  options: SweetAlertOptions<T>
-): SweetAlertOptions<T> => ({
+const withManagedDefaults = (
+  options: SweetAlertOptions
+): SweetAlertOptions => ({
   target: document.body,
   heightAuto: false,
   returnFocus: false,
@@ -62,9 +62,21 @@ const withManagedDefaults = <T>(
   customClass: mergeClassNames(options.customClass),
 });
 
-export const fireManagedSwal = async <T = unknown>(
-  options: SweetAlertOptions<T>
-): Promise<SweetAlertResult<T>> => {
+const withToastDefaults = (options: SweetAlertOptions): SweetAlertOptions => ({
+  target: document.body,
+  heightAuto: false,
+  returnFocus: false,
+  backdrop: false,
+  ...options,
+});
+
+export const fireManagedSwal = async (
+  options: SweetAlertOptions
+): Promise<SweetAlertResult> => {
+  if (options.toast) {
+    return Swal.fire(withToastDefaults(options));
+  }
+
   markSwalOpen();
 
   try {
