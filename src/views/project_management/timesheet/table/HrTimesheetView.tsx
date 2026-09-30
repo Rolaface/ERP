@@ -475,10 +475,11 @@ if (t.status === "Submitted" && can(TS_MODULE, "delete")) {
           className="app-surface overflow-hidden"
           style={{ height: CONTENT_HEIGHT }}
         >
-          <TimesheetCalendar
-            canViewAll={can(TS_MODULE, "delete")}
-            onSwitchToList={() => setView("table")}
-          />
+        <TimesheetCalendar
+  canViewAll={can(TS_MODULE, "delete")}
+  canEdit={can(TS_MODULE, "write")}
+  onSwitchToList={() => setView("table")}
+/>
         </div>
       ) : (
         <Table
