@@ -6,6 +6,11 @@ import {
   type DayData,
   type DayEvent,
 } from "./Calendarutils";
+import {
+  WEEKLY_OFF_COLOR,
+  WEEKLY_OFF_TAG_BG,
+  weeklyOffFill,
+} from "./Weeklyoff";
 
 interface Props extends DayData {
   days: Date[];
@@ -22,7 +27,6 @@ const WeekView: React.FC<Props> = ({
   eventsByDay,
   dayTotal,
   dayOffOn,
-  isDayOff,
   onLog,
   chipEdit,
 }) => {
@@ -30,8 +34,7 @@ const WeekView: React.FC<Props> = ({
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-card">
-      {/* Header: weekday, date circle, day total */}
-      <div className="grid grid-cols-7 border-b border-[var(--border)]/60">
+      <div className="grid shrink-0 grid-cols-7 border-b border-[var(--border)]/60">
         {days.map((d) => {
           const key = toYMD(d);
           const total = dayTotal(key);
@@ -61,39 +64,45 @@ const WeekView: React.FC<Props> = ({
         })}
       </div>
 
-      {/* All-day strip: holiday / leave */}
-      <div className="grid grid-cols-7 border-b border-[var(--border)]/60">
+      <div className="grid shrink-0 grid-cols-7 border-b border-[var(--border)]/60">
         {days.map((d) => {
           const key = toYMD(d);
           const off = dayOffOn(key);
+          const isWeeklyOff = off?.kind === "weekly_off";
           return (
             <div
               key={key}
-              className={`min-h-[28px] p-1 ${colBorder} ${todayTint(key)} ${
-                off?.kind === "weekly_off" ? "bg-[var(--border)]/15" : ""
-              }`}
+              style={isWeeklyOff ? weeklyOffFill : undefined}
+              className={`min-h-[28px] p-1 ${colBorder} ${todayTint(key)}`}
             >
-              {off && off.kind !== "weekly_off" && <DayOffBar off={off} />}
+              {off && !isWeeklyOff && <DayOffBar off={off} />}
+              {isWeeklyOff && (
+                <div
+                  className="flex h-5 items-center justify-center rounded text-[10px] font-bold uppercase tracking-wide"
+                  style={{
+                    color: WEEKLY_OFF_COLOR,
+                    background: WEEKLY_OFF_TAG_BG,
+                  }}
+                >
+                  Weekly Off
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* Entries */}
       <div className="grid min-h-0 flex-1 grid-cols-7">
         {days.map((d) => {
           const key = toYMD(d);
           const events = eventsByDay[key] ?? [];
-          const blocked = isDayOff(key);
+          const isWeeklyOff = dayOffOn(key)?.kind === "weekly_off";
           return (
             <div
               key={key}
-              onClick={blocked ? undefined : () => onLog(key)}
-              className={`custom-scrollbar flex min-h-0 flex-col gap-1.5 overflow-y-auto p-1.5 ${colBorder} ${todayTint(key)} ${
-                dayOffOn(key)?.kind === "weekly_off"
-                  ? "bg-[var(--border)]/15"
-                  : ""
-              } ${blocked ? "" : "cursor-pointer hover:bg-row-hover"}`}
+              onClick={() => onLog(key)}
+              style={isWeeklyOff ? weeklyOffFill : undefined}
+              className={`custom-scrollbar flex min-h-0 cursor-pointer flex-col gap-1.5 overflow-y-auto p-1.5 hover:bg-row-hover ${colBorder} ${todayTint(key)}`}
             >
               {events.map((ev) => (
                 <EventCard key={ev.id} ev={ev} onEdit={chipEdit(ev)} />
@@ -103,8 +112,7 @@ const WeekView: React.FC<Props> = ({
         })}
       </div>
 
-      {/* Footer totals */}
-      <div className="grid grid-cols-7 border-t border-[var(--border)]/60">
+      <div className="grid shrink-0 grid-cols-7 border-t border-[var(--border)]/60">
         {days.map((d) => {
           const key = toYMD(d);
           const total = dayTotal(key);

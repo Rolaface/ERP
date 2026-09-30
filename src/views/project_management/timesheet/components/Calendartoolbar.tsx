@@ -2,7 +2,7 @@ import React from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import DateRangeFilter from "../../../../components/ui/modal/DateRangeFilter";
 import ViewSelector from "../../../project_management/ViewSelector";
-import { TIMESHEET_VIEW_OPTIONS } from "./imesheetViews";
+import { TIMESHEET_VIEW_OPTIONS } from "./timesheetViews";
 import { formatHours, type DateRange, type ViewMode } from "./Calendarutils";
 
 interface Props {
@@ -13,7 +13,6 @@ interface Props {
   views: { label: string; value: ViewMode }[];
   range: DateRange | null;
   canViewAll: boolean;
-  logDisabled: boolean;
   onToday: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -28,7 +27,7 @@ const ghostButton =
 const iconButton =
   "flex h-8 w-8 items-center justify-center rounded-full text-main transition-colors hover:bg-row-hover";
 const primaryButton =
-  "inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:opacity-90";
 
 const CalendarToolbar: React.FC<Props> = ({
   title,
@@ -38,7 +37,6 @@ const CalendarToolbar: React.FC<Props> = ({
   views,
   range,
   canViewAll,
-  logDisabled,
   onToday,
   onPrev,
   onNext,
@@ -95,7 +93,7 @@ const CalendarToolbar: React.FC<Props> = ({
         options={TIMESHEET_VIEW_OPTIONS}
         onChange={(m) => m === "table" && onSwitchToList()}
       />
-      <button className={primaryButton} disabled={logDisabled} onClick={onLog}>
+      <button className={primaryButton} onClick={onLog}>
         <Plus size={12} /> Log Time
       </button>
     </div>

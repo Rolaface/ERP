@@ -44,7 +44,7 @@ import {
 } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
 import TimesheetCalendar from "../components/TimesheetCalendar";
 import type { TimesheetMode } from "../components/Viewtoggle";
-import { TIMESHEET_VIEW_OPTIONS } from "../../timesheet/components/imesheetViews";
+import { TIMESHEET_VIEW_OPTIONS } from "../components/timesheetViews";
 import ViewSelector from "../../../project_management/ViewSelector";
 
 // ── Constants ────────────────────────────────────────────────────

@@ -10,6 +10,7 @@ import { getAllActivityTypes } from "../../../../api/project/projectapi/Activity
 import type { TimesheetHoursEntry } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import type { DayOffLookup } from "./dayOff.types";
 import DayOffChip, { DAY_OFF_TONE } from "./DayOffChip";
+import { WEEKLY_OFF_COLOR, weeklyOffFill } from "./Weeklyoff";
 
 interface Props {
   days: Date[];
@@ -316,6 +317,7 @@ const TimesheetMatrix: React.FC<Props> = ({
                 return (
                   <th
                     key={key}
+                    style={weeklyOff ? weeklyOffFill : undefined}
                     className="sticky top-0 z-20 bg-card px-0.5 py-3"
                   >
                     <div
@@ -346,6 +348,13 @@ const TimesheetMatrix: React.FC<Props> = ({
                         style={{
                           background: `var(${DAY_OFF_TONE.company_holiday})`,
                         }}
+                      />
+                    )}
+                    {weeklyOff && (
+                      <div
+                        title="Weekly Off"
+                        className="mx-auto mt-1 h-1 w-4 rounded-full"
+                        style={{ background: WEEKLY_OFF_COLOR }}
                       />
                     )}
                   </th>
@@ -401,13 +410,8 @@ const TimesheetMatrix: React.FC<Props> = ({
                       ? undefined
                       : (dayOffs?.holidayOn(key) ??
                         dayOffs?.leaveOn(key, row.name));
-                    const showOffChip = off && off.kind !== "weekly_off";
-                    const canAdd = clickable && !(off && !off.halfDay);
-                    const columnTint = isCurrent(key)
-                      ? "bg-primary/5"
-                      : off?.kind === "weekly_off"
-                        ? "bg-[var(--border)]/15"
-                        : "";
+                    const canAdd = clickable;
+                    const columnTint = isCurrent(key) ? "bg-primary/5" : "";
                     const draftIds = cell
                       ? [
                           ...new Set(
@@ -426,6 +430,9 @@ const TimesheetMatrix: React.FC<Props> = ({
                         key={key}
                         onClick={
                           canAdd ? () => onCellClick?.(row.name, key) : undefined
+                        }
+                        style={
+                          off?.kind === "weekly_off" ? weeklyOffFill : undefined
                         }
                         className={`group/cell px-[3px] py-1 ${columnTint} ${canAdd ? "cursor-pointer" : ""}`}
                       >
@@ -452,7 +459,7 @@ const TimesheetMatrix: React.FC<Props> = ({
                               </button>
                             )}
                           </div>
-                        ) : showOffChip ? (
+                        ) : off ? (
                           <DayOffChip
                             off={off}
                             compact={compact}
@@ -460,7 +467,7 @@ const TimesheetMatrix: React.FC<Props> = ({
                           />
                         ) : (
                           <div
-                            title={canAdd ? "Log time" : off?.label}
+                            title={canAdd ? "Log time" : undefined}
                             className={`relative ${emptyChip} ${canAdd ? addableChip : ""}`}
                           >
                             <span
