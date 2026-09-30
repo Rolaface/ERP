@@ -368,7 +368,15 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         return;
       }
 
-      onFormChange({ partyId: option.value, partyName: option.label });
+     onFormChange({
+  ...PARTY_FILLED_FIELDS,
+  partyId: option.value,
+  partyName: option.label,
+  allocatedAmount: 0,
+  selectedInvoices: [],
+  allocations: {},
+  fifoTrigger: Date.now(),
+});
 
 
       if (

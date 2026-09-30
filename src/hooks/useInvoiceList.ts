@@ -110,6 +110,7 @@ export function useInvoiceList(
       ? paymentAmount // treat initial as already allocated
       : null,
   );
+  const lastAllocatedPartyRef = useRef<string | null>(null);
 
   const publishAllocation = useCallback((map: AllocationMap) => {
     onFormChangeRef.current(buildAllocationResult(map));
@@ -211,28 +212,29 @@ export function useInvoiceList(
 
   // ── Effect 1: On mount — partyId / referenceInvoice change ───────────────
   // Reset state, then decide: run auto-allocation or just fetch page.
-  useEffect(() => {
-    setCurrentPage(1);
-    setInvoices([]);
-    setPagination(null);
-    setFetchError(null);
+useEffect(() => {
+  setCurrentPage(1);
+  setInvoices([]);
+  setPagination(null);
+  setFetchError(null);
+  setEditingRow(null);
 
-    if (!isSupported || !partyType || !partyId) return;
+  setAllocated({});
+  setInputValues({});
 
-    const budget = paymentAmountRef.current;
-    const needsAllocation =
-      budget > 0 && lastAutoAllocatedAmountRef.current !== budget;
+  lastAutoAllocatedAmountRef.current = null;
+  lastAllocatedPartyRef.current = null;
 
-    if (needsAllocation) {
-      // Reset allocation state before re-running
-      setAllocated({});
-      setInputValues({});
-      runAutoAllocation();
-    } else {
-      // Allocation already correct for this amount — just fetch display page
-      fetchPageRef.current(1);
-    }
-  }, [partyType, partyId, referenceInvoice]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!isSupported || !partyType || !partyId) return;
+
+  const budget = paymentAmountRef.current;
+
+  if (budget > 0) {
+    runAutoAllocation();
+  } else {
+    fetchPageRef.current(1);
+  }
+}, [partyType, partyId, referenceInvoice]);
 
   // ── Effect 2: Page navigation ─────────────────────────────────────────────
   useEffect(() => {
