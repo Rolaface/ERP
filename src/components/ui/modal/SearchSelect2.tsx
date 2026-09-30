@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 
 export type Option = {
@@ -23,8 +29,19 @@ interface SearchSelectProps {
   onInputChange?: (input: string) => void;
 }
 
+interface DropdownPos {
+  top?: number;
+  bottom?: number;
+  left: number;
+  width: number;
+  maxHeight: number;
+}
+
 const DEBOUNCE_DELAY = 400;
 const MIN_SEARCH_LENGTH = 2;
+const DROPDOWN_MAX_HEIGHT = 208;
+const DROPDOWN_GAP = 2;
+const VIEWPORT_EDGE = 8;
 
 const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
   ({
@@ -45,10 +62,11 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
     const [options, setOptions] = useState<Option[]>([]);
     const [open, setOpen] = useState(false);
     const [isCustom, setIsCustom] = useState(false);
-    const [dropdownPos, setDropdownPos] = useState({
+    const [dropdownPos, setDropdownPos] = useState<DropdownPos>({
       top: 0,
       left: 0,
       width: 0,
+      maxHeight: DROPDOWN_MAX_HEIGHT,
     });
 
     const inputRef = useRef<HTMLInputElement>(null);
@@ -107,16 +125,42 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
       });
     }, [debouncedSearch, open]);
 
-    useEffect(() => {
-      if (open && wrapperRef.current) {
-        const rect = wrapperRef.current.getBoundingClientRect();
-        setDropdownPos({
-          top: rect.bottom,
-          left: rect.left,
-          width: rect.width,
-        });
-      }
-    }, [open]);
+    const updatePosition = useCallback(() => {
+      const el = wrapperRef.current;
+      if (!el) return;
+
+      const rect = el.getBoundingClientRect();
+      const spaceBelow =
+        window.innerHeight - rect.bottom - DROPDOWN_GAP - VIEWPORT_EDGE;
+      const spaceAbove = rect.top - DROPDOWN_GAP - VIEWPORT_EDGE;
+      const openUp =
+        spaceBelow < DROPDOWN_MAX_HEIGHT && spaceAbove > spaceBelow;
+
+      const available = Math.max(openUp ? spaceAbove : spaceBelow, 80);
+
+      setDropdownPos({
+        left: rect.left,
+        width: rect.width,
+        maxHeight: Math.min(DROPDOWN_MAX_HEIGHT, available),
+        ...(openUp
+          ? { bottom: window.innerHeight - rect.top + DROPDOWN_GAP }
+          : { top: rect.bottom + DROPDOWN_GAP }),
+      });
+    }, []);
+
+    useLayoutEffect(() => {
+      if (!open) return;
+
+      updatePosition();
+
+      window.addEventListener("resize", updatePosition);
+      window.addEventListener("scroll", updatePosition, true);
+
+      return () => {
+        window.removeEventListener("resize", updatePosition);
+        window.removeEventListener("scroll", updatePosition, true);
+      };
+    }, [open, updatePosition]);
 
     useEffect(() => {
       const handleClick = (e: MouseEvent) => {
@@ -208,7 +252,6 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
               ].join(" ")}
             />
 
-            {/* Clear button — only show when user is actively typing */}
             {isCustom && search && (
               <button
                 type="button"
@@ -247,14 +290,15 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
               style={{
                 position: "fixed",
                 top: dropdownPos.top,
+                bottom: dropdownPos.bottom,
                 left: dropdownPos.left,
                 width: dropdownPos.width,
+                maxHeight: dropdownPos.maxHeight,
                 zIndex: 99999,
               }}
-              className="bg-card border border-theme rounded shadow-lg max-h-52 overflow-auto"
+              className="bg-card border border-theme rounded shadow-lg overflow-auto"
             >
               {options.map((opt) => (
-                // AFTER
                 <div
                   key={opt.value || opt.label}
                   onMouseDown={(e) => e.preventDefault()}
@@ -295,7 +339,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                     onClick={() => {
                       onChange(search, { label: search, value: search });
                       setIsCustom(true);
-                      userEditingRef.current = false; 
+                      userEditingRef.current = false;
                       setOpen(false);
                     }}
                     className="px-3 py-2 cursor-pointer text-[13px] text-primary hover:bg-primary/10 border-t border-theme transition-colors"
