@@ -18,7 +18,7 @@ export interface DateRange {
 
 export type DayOff = NonNullable<ReturnType<DayOffLookup["holidayOn"]>>;
 
-/** Shape every view receives so they all read the same data the same way. */
+
 export interface DayData {
   eventsByDay: Record<string, DayEvent[]>;
   dayTotal: (key: string) => number;
@@ -151,7 +151,7 @@ export const draftIds = (items: TimesheetHoursEntry[]) => [
   ),
 ];
 
-/** Group entries by day, then by label (employee for admins, project·task otherwise). */
+
 export const buildEventsByDay = (
   entries: TimesheetHoursEntry[],
   canViewAll: boolean,
@@ -181,7 +181,7 @@ export const buildEventsByDay = (
   );
 };
 
-/** Background + text colour for a status tone, using theme tokens. */
+
 export const tintStyle = (tone: string, pct = 16) => ({
   background: `color-mix(in srgb, var(${tone}) ${pct}%, transparent)`,
   color: `var(${tone})`,

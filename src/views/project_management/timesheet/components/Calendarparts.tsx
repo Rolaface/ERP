@@ -15,7 +15,7 @@ const editTitle = (ev: DayEvent, onEdit?: () => void) =>
     onEdit ? " — click to edit draft" : ""
   }`;
 
-/** One-line chip (Google Calendar style): coloured bar, label, hours. */
+
 export const EventBar: React.FC<{ ev: DayEvent; onEdit?: () => void }> = ({
   ev,
   onEdit,
@@ -54,7 +54,7 @@ export const EventBar: React.FC<{ ev: DayEvent; onEdit?: () => void }> = ({
   );
 };
 
-/** Taller card used inside Week columns. */
+
 export const EventCard: React.FC<{ ev: DayEvent; onEdit?: () => void }> = ({
   ev,
   onEdit,
@@ -105,7 +105,7 @@ export const EventCard: React.FC<{ ev: DayEvent; onEdit?: () => void }> = ({
   );
 };
 
-/** Full-width tinted strip for holiday / leave, like an all-day event. */
+
 export const DayOffBar: React.FC<{ off: DayOff; className?: string }> = ({
   off,
   className = "",
