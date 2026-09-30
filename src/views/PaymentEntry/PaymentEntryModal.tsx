@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { CreditCard, FileText, Banknote , X, Loader2 } from "lucide-react";
+import { CreditCard, FileText, Banknote, X, Loader2 } from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
@@ -24,7 +24,6 @@ import { fetchCostCenters, fetchProjects } from "../../api/getAllApi";
 
 type TabType = "details" | "invoices" | "taxes" | "deductions";
 
-
 const ALL_TABS = [
   { key: "details" as TabType, label: "Details", icon: CreditCard },
   { key: "invoices" as TabType, label: "Invoices", icon: FileText },
@@ -47,7 +46,11 @@ interface Props {
     partyId?: string;
     amount?: number;
     referenceName?: string;
-    referenceType?: "Purchase Order" | "Purchase Invoice" | "Sales Invoice"|"Sales Order";
+    referenceType?:
+      | "Purchase Order"
+      | "Purchase Invoice"
+      | "Sales Invoice"
+      | "Sales Order";
     date?: string;
     glTo?: string;
     glToDisplay?: string;
@@ -69,12 +72,10 @@ const inferReferenceType = (
   return undefined;
 };
 
-function buildPayload(
-  form: Record<string, any>,
-): CreatePaymentEntryPayload {
+function buildPayload(form: Record<string, any>): CreatePaymentEntryPayload {
   const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
   const receivedAmount = Number(form?.amountTo ?? paymentAmount);
-  
+
   const parsedExchangeRate = Number(form?.exchangeRate);
   const exchangeRate =
     Number.isFinite(parsedExchangeRate) && parsedExchangeRate > 0
@@ -140,7 +141,6 @@ function buildPayload(
 
   const isInternalTransfer = form?.paymentType === "Internal Transfer";
 
-
   const payload: CreatePaymentEntryPayload = {
     payment_type: form?.paymentType ?? "",
     ...(!isInternalTransfer && {
@@ -171,7 +171,6 @@ function buildPayload(
 
   return payload;
 }
-
 
 function validateForm(form: Record<string, any>): string | null {
   if (!form?.paymentType) return "Payment Type is required.";
@@ -244,25 +243,37 @@ const PaymentEntryModal: React.FC<Props> = ({
   const [deductionRows, setDeductionRows] = useState<DeductionRow[]>([]);
   const deductionRowsRef = useRef<DeductionRow[]>([]);
 
-
   const [isSaving, setIsSaving] = useState(false);
   const [isAllocating, setIsAllocating] = useState(false);
   const lastFetchedPartyKeyRef = useRef<string>("");
 
   // ── Track previous amountFrom to detect user-driven changes ──────────────
   const prevAmountRef = useRef<number>(0);
-  const { markDirty, resetDirty, handleCloseWithConfirm, activate, deactivate } = useUnsavedChanges();
+  const {
+    markDirty,
+    resetDirty,
+    handleCloseWithConfirm,
+    activate,
+    deactivate,
+  } = useUnsavedChanges();
 
   useEffect(() => {
     if (!isOpen) return;
     const cleanup = activate();
-    return () => { cleanup?.(); deactivate(); resetDirty(); };
+    return () => {
+      cleanup?.();
+      deactivate();
+      resetDirty();
+    };
   }, [isOpen]);
 
-  const isAdvanceFromPO =
-    defaultValues?.referenceType === "Purchase Order";
-  const isGlFromLocked = defaultValues?.referenceType === "Sales Invoice" && Boolean(defaultValues?.glFrom);
-  const isGlToLocked_PI = defaultValues?.referenceType === "Purchase Invoice" && Boolean(defaultValues?.glTo);
+  const isAdvanceFromPO = defaultValues?.referenceType === "Purchase Order";
+  const isGlFromLocked =
+    defaultValues?.referenceType === "Sales Invoice" &&
+    Boolean(defaultValues?.glFrom);
+  const isGlToLocked_PI =
+    defaultValues?.referenceType === "Purchase Invoice" &&
+    Boolean(defaultValues?.glTo);
   const isInternalTransfer = form?.paymentType === "Internal Transfer";
   const resetModalState = useCallback(() => {
     setForm(getInitialForm());
@@ -293,7 +304,7 @@ const PaymentEntryModal: React.FC<Props> = ({
 
     const base: Record<string, any> = {
       ...getInitialForm(),
-      ...(defaultValues ?? {})
+      ...(defaultValues ?? {}),
     };
 
     if (customerId) {
@@ -311,17 +322,17 @@ const PaymentEntryModal: React.FC<Props> = ({
     if (!base.date) base.date = today;
     if (!base.referenceDate) base.referenceDate = today;
 
-   if (base.amount != null) {
-  if (base.paymentType === "Pay") {
-    // Invoice amount is in party currency → goes to Paid To.
-    // Paid From (company/base currency) is left to be derived once
-    // the exchange rate resolves.
-    base.amountTo = base.amount;
-  } else {
-    base.amountFrom ??= base.amount;
-    base.amountTo ??= base.amount;
-  }
-}
+    if (base.amount != null) {
+      if (base.paymentType === "Pay") {
+        // Invoice amount is in party currency → goes to Paid To.
+        // Paid From (company/base currency) is left to be derived once
+        // the exchange rate resolves.
+        base.amountTo = base.amount;
+      } else {
+        base.amountFrom ??= base.amount;
+        base.amountTo ??= base.amount;
+      }
+    }
 
     if (defaultValues?.partyId) {
       base.partyId = defaultValues.partyId;
@@ -351,7 +362,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     if (defaultValues?.currencyFrom) {
       base.currencyFrom = defaultValues.currencyFrom;
     }
-       if (defaultValues?.referenceNo) {
+    if (defaultValues?.referenceNo) {
       base.referenceNo = defaultValues.referenceNo;
     }
     if (defaultValues?.referenceDate) {
@@ -359,14 +370,14 @@ const PaymentEntryModal: React.FC<Props> = ({
     }
 
     if (defaultValues?.referenceName) {
-     const lockedAmount = Math.max(
-  0,
-  Number(
-    base.paymentType === "Pay"
-      ? base.amountTo ?? base.amount ?? 0
-      : base.amountFrom ?? base.amount ?? 0
-  ),
-);
+      const lockedAmount = Math.max(
+        0,
+        Number(
+          base.paymentType === "Pay"
+            ? (base.amountTo ?? base.amount ?? 0)
+            : (base.amountFrom ?? base.amount ?? 0),
+        ),
+      );
       base.allocations = {
         [defaultValues.referenceName]: lockedAmount,
       };
@@ -400,7 +411,7 @@ const PaymentEntryModal: React.FC<Props> = ({
 
     const applyDefault = async (
       fetcher: () => Promise<{ value: string }[]>,
-      field: string
+      field: string,
     ) => {
       try {
         const options = await fetcher();
@@ -419,17 +430,18 @@ const PaymentEntryModal: React.FC<Props> = ({
     applyDefault(fetchCostCenters, "costCenter");
     applyDefault(fetchProjects, "project");
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
 
-
- const amountFrom = Number(form?.amountFrom ?? form?.amount ?? 0);
+  const amountFrom = Number(form?.amountFrom ?? form?.amount ?? 0);
   // Amount that actually drives invoice allocation — party currency side
   // (Pay: amountTo is the party/invoice currency; Receive: amountFrom is).
   const partyDrivenAmount = Number(
     form?.paymentType === "Pay"
-      ? form?.amountTo ?? form?.amount ?? 0
-      : form?.amountFrom ?? form?.amount ?? 0,
+      ? (form?.amountTo ?? form?.amount ?? 0)
+      : (form?.amountFrom ?? form?.amount ?? 0),
   );
 
   useEffect(() => {
@@ -441,8 +453,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     if (hasParty && amountChanged && partyDrivenAmount > 0) {
       // Amount just changed with party selected → allocation will run → show spinner NOW
       setIsAllocating(true);
-    }
-    else if (!hasParty) {
+    } else if (!hasParty) {
       setIsAllocating(false);
     }
 
@@ -450,26 +461,24 @@ const PaymentEntryModal: React.FC<Props> = ({
   }, [partyDrivenAmount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Derived values ─────────────────────────────────────────────────────────
-const paymentAmount =
-  form?.paymentType === "Pay"
-    ? Number(form?.amountTo ?? form?.amount ?? 0)
-    : Number(form?.amountFrom ?? form?.amount ?? 0);
-const totalAllocated = Number(form?.allocatedAmount ?? 0);
+  const paymentAmount =
+    form?.paymentType === "Pay"
+      ? Number(form?.amountTo ?? form?.amount ?? 0)
+      : Number(form?.amountFrom ?? form?.amount ?? 0);
+  const totalAllocated = Number(form?.allocatedAmount ?? 0);
 
-// paymentAmount and totalAllocated are both already in the party/invoice
-// currency (amountTo for Pay, amountFrom for Receive) — no conversion needed
-// regardless of which currency the paying/receiving bank account is in.
-const advance = isAllocating
-  ? 0
-  : Math.max(0, paymentAmount - totalAllocated);
+  // paymentAmount and totalAllocated are both already in the party/invoice
+  // currency (amountTo for Pay, amountFrom for Receive) — no conversion needed
+  // regardless of which currency the paying/receiving bank account is in.
+  const advance = isAllocating
+    ? 0
+    : Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
-
 
   const handleDeductionRowsChange = useCallback((rows: DeductionRow[]) => {
     deductionRowsRef.current = rows;
     setDeductionRows(rows);
   }, []);
-
 
   const getResetPartyState = (prev: any, name: string, value: string) => ({
     ...prev,
@@ -480,7 +489,11 @@ const advance = isAllocating
     allocations: {},
   });
 
-  const getOptimisticAmountState = (prev: Record<string, any>, name: string, value: string) => {
+  const getOptimisticAmountState = (
+    prev: Record<string, any>,
+    name: string,
+    value: string,
+  ) => {
     const numericValue = Number(value) || 0;
     const isRef = Boolean(prev.referenceName);
 
@@ -521,9 +534,11 @@ const advance = isAllocating
     return () => clearTimeout(timeoutId);
   }, [form?.amount, form?.amountFrom, form?.referenceName]);
 
-
   const handleCloseRequest = useCallback(() => {
-    handleCloseWithConfirm(() => { resetModalState(); onClose(); }, modalId);
+    handleCloseWithConfirm(() => {
+      resetModalState();
+      onClose();
+    }, modalId);
   }, [handleCloseWithConfirm, modalId, onClose, resetModalState]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -545,15 +560,15 @@ const advance = isAllocating
         return { ...prev, [name]: value };
       });
     },
-    [markDirty]
-
+    [markDirty],
   );
 
   const handleFormChange = useCallback(
     (updates: Record<string, any>) => {
       markDirty();
-             if (
-         (["Employee Advance", "Expense Claim"].includes(form.referenceType) && form.glTo) ||
+      if (
+        (["Employee Advance", "Expense Claim"].includes(form.referenceType) &&
+          form.glTo) ||
         (isGlToLocked_PI && form.glTo)
       ) {
         delete updates.glTo;
@@ -566,17 +581,34 @@ const advance = isAllocating
         delete updates.currencyFrom;
       }
       setForm((prev) => {
+        const isPartyChange =
+          updates.partyId !== undefined || updates.partyName !== undefined;
+
+        if (isPartyChange) {
+          return {
+            ...prev,
+            ...updates,
+            allocations: {},
+            selectedInvoices: [],
+            allocatedAmount: 0,
+            totalOutstanding:
+              updates.totalOutstanding !== undefined
+                ? updates.totalOutstanding
+                : null,
+          };
+        }
+
         if (prev.referenceName) {
           const referenceName = prev.referenceName;
           const next = { ...prev, ...updates };
           const enteredAmount = Math.max(
-  0,
-  Number(
-    next.paymentType === "Pay"
-      ? next.amountTo ?? next.amount ?? 0
-      : next.amountFrom ?? next.amount ?? 0
-  ),
-);
+            0,
+            Number(
+              next.paymentType === "Pay"
+                ? (next.amountTo ?? next.amount ?? 0)
+                : (next.amountFrom ?? next.amount ?? 0),
+            ),
+          );
           const outstanding = Number(
             next.referenceOutstanding ?? enteredAmount,
           );
@@ -584,16 +616,16 @@ const advance = isAllocating
           // entered above it is an advance, not extra allocation.
           const lockedAmount = Math.min(enteredAmount, outstanding);
 
-return {
-  ...next,
-  referenceType:
-    next.referenceType ??
-    prev.referenceType ??
-    inferReferenceType(next.partyType),
-  allocations: { [referenceName]: lockedAmount },
-  selectedInvoices: [referenceName],
-  allocatedAmount: lockedAmount,
-};
+          return {
+            ...next,
+            referenceType:
+              next.referenceType ??
+              prev.referenceType ??
+              inferReferenceType(next.partyType),
+            allocations: { [referenceName]: lockedAmount },
+            selectedInvoices: [referenceName],
+            allocatedAmount: lockedAmount,
+          };
         }
         const currentAmount = Number(prev.amountFrom ?? prev.amount ?? 0);
 
@@ -601,15 +633,24 @@ return {
           !prev.referenceName &&
           currentAmount > 0 &&
           updates.allocatedAmount === 0 &&
-          (!updates.allocations || Object.keys(updates.allocations).length === 0)
+          (!updates.allocations ||
+            Object.keys(updates.allocations).length === 0)
         ) {
-          const { allocatedAmount, allocations, selectedInvoices, ...safeUpdates } = updates;
-          return Object.keys(safeUpdates).length ? { ...prev, ...safeUpdates } : prev;
+          const {
+            allocatedAmount,
+            allocations,
+            selectedInvoices,
+            ...safeUpdates
+          } = updates;
+          return Object.keys(safeUpdates).length
+            ? { ...prev, ...safeUpdates }
+            : prev;
         }
 
         if (
           currentAmount === 0 &&
-          (updates.allocatedAmount !== undefined || updates.allocations !== undefined)
+          (updates.allocatedAmount !== undefined ||
+            updates.allocations !== undefined)
         ) {
           return prev;
         }
@@ -625,7 +666,7 @@ return {
       });
       // setError((prev) => (prev ? null : prev));
     },
-    [form.referenceType, form.glTo, markDirty]
+    [form.referenceType, form.glTo, markDirty],
   );
 
   const goToTab = useCallback((tab: TabType) => {
@@ -660,7 +701,10 @@ return {
     try {
       const payload = buildPayload(form);
       payload.deductions = deductionRowsRef.current
-        .filter((r) => r.account && r.cost_center && r.amount !== null && r.amount > 0)
+        .filter(
+          (r) =>
+            r.account && r.cost_center && r.amount !== null && r.amount > 0,
+        )
         .map((r) => ({
           account: r.account,
           cost_center: r.cost_center,
@@ -669,7 +713,6 @@ return {
       const response = await createPaymentEntry(payload);
 
       closeSwal();
-
 
       if (response?.status === "success") {
         showSuccess(response.message || "Payment created successfully");
@@ -685,7 +728,6 @@ return {
         // fallback if backend sends unexpected structure
         showApiError(response);
       }
-
     } catch (err: any) {
       closeSwal();
       showApiError(err);
@@ -694,18 +736,18 @@ return {
     }
   }, [form, onClose, onSuccess, resetModalState]);
 
-const invoiceListForm = {
-  partyType: form?.partyType,
-  partyName: form?.partyName,
-  partyId: form?.partyId,
-  amount:
-    form?.paymentType === "Pay"
-      ? form?.amountTo ?? form?.amount
-      : form?.amountFrom ?? form?.amount,
-  fifoTrigger: form?.fifoTrigger,
-  referenceInvoice: form?.referenceName,
-  allocations: form?.allocations ?? {},
-};
+  const invoiceListForm = {
+    partyType: form?.partyType,
+    partyName: form?.partyName,
+    partyId: form?.partyId,
+    amount:
+      form?.paymentType === "Pay"
+        ? (form?.amountTo ?? form?.amount)
+        : (form?.amountFrom ?? form?.amount),
+    fifoTrigger: form?.fifoTrigger,
+    referenceInvoice: form?.referenceName,
+    allocations: form?.allocations ?? {},
+  };
 
   const requiresExchangeRate =
     Boolean(form?.currencyFrom) &&
@@ -724,12 +766,15 @@ const invoiceListForm = {
       <Button
         variant="secondary"
         onClick={handleCloseRequest}
-
         disabled={isSaving}
       >
         Cancel
       </Button>
-      <Button variant="primary" onClick={handleSave} disabled={isSubmitDisabled}>
+      <Button
+        variant="primary"
+        onClick={handleSave}
+        disabled={isSubmitDisabled}
+      >
         {isSaving ? "Saving…" : "Submit"}
       </Button>
     </>
@@ -746,11 +791,10 @@ const invoiceListForm = {
           ? `Advance payment against PO: ${defaultValues?.referenceName}`
           : "Pay or receive payment from Customer / Supplier / Employee / Shareholder"
       }
-      icon={Banknote }
+      icon={Banknote}
       footer={footer}
       customWidth="62vw"
       height="95vh"
-
     >
       <div className="flex flex-col h-full">
         {/* ── Tabs ── */}
@@ -760,10 +804,11 @@ const invoiceListForm = {
               <button
                 key={t.key}
                 onClick={() => goToTab(t.key)}
-                className={`py-3 text-sm font-medium flex items-center gap-2 transition-colors ${activeTab === t.key
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted hover:text-main"
-                  }`}
+                className={`py-3 text-sm font-medium flex items-center gap-2 transition-colors ${
+                  activeTab === t.key
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-muted hover:text-main"
+                }`}
               >
                 <t.icon size={15} />
                 {t.label}
@@ -795,17 +840,22 @@ const invoiceListForm = {
                 islocked={Boolean(form?.referenceName)}
                 isGlFromLocked={isGlFromLocked}
                 isGlToLocked={
-                 (["Employee Advance", "Expense Claim"].includes(form.referenceType) &&
-                   Boolean(form.glTo)) ||
+                  (["Employee Advance", "Expense Claim"].includes(
+                    form.referenceType,
+                  ) &&
+                    Boolean(form.glTo)) ||
                   isGlToLocked_PI
                 }
                 isModeOfPaymentLocked={
-                  form.referenceType === "Employee Advance" && Boolean(form.mode)
+                  form.referenceType === "Employee Advance" &&
+                  Boolean(form.mode)
                 }
                 isPartyLocked={Boolean(
                   form?.referenceName && form?.partyName && form?.partyType,
                 )}
-                isPartyTypeLocked={Boolean(form?.partyType && !form?.referenceName)}
+                isPartyTypeLocked={Boolean(
+                  form?.partyType && !form?.referenceName,
+                )}
                 partyFetchKeyRef={lastFetchedPartyKeyRef}
               />
             </div>
@@ -815,6 +865,7 @@ const invoiceListForm = {
             {!isAdvanceFromPO && !isInternalTransfer && form?.partyName && (
               <div className={activeTab === "invoices" ? "block" : "hidden"}>
                 <InvoiceList
+                  key={`${form?.partyType}:${form?.partyId}`}
                   form={invoiceListForm}
                   onFormChange={handleFormChange}
                   onLoadingChange={handleAllocationLoadingChange}
@@ -853,10 +904,17 @@ const invoiceListForm = {
               <div>
                 <p className="text-[11px] text-muted">Total Outstanding</p>
                 {form?.totalOutstanding == null ? (
-                  <p className="text-[11px] text-muted animate-pulse">Loading…</p>
+                  <p className="text-[11px] text-muted animate-pulse">
+                    Loading…
+                  </p>
                 ) : (
-                  <p className={`text-sm font-semibold ${Number(form.totalOutstanding) > 0 ? "text-amber-500" : "text-emerald-600"
-                    }`}>
+                  <p
+                    className={`text-sm font-semibold ${
+                      Number(form.totalOutstanding) > 0
+                        ? "text-amber-500"
+                        : "text-emerald-600"
+                    }`}
+                  >
                     {Number(form.totalOutstanding).toLocaleString()}
                   </p>
                 )}
@@ -875,7 +933,9 @@ const invoiceListForm = {
             {isAdvanceFromPO && (
               <div>
                 <p className="text-[11px] text-muted">Against</p>
-                <p className="text-xs font-medium text-primary">{form?.referenceName}</p>
+                <p className="text-xs font-medium text-primary">
+                  {form?.referenceName}
+                </p>
               </div>
             )}
 
@@ -887,7 +947,9 @@ const invoiceListForm = {
                 {paymentAmount > 0 ? (
                   paymentAmount.toLocaleString()
                 ) : (
-                  <span className="text-[11px] font-normal text-muted">Not set</span>
+                  <span className="text-[11px] font-normal text-muted">
+                    Not set
+                  </span>
                 )}
               </p>
             </div>
@@ -895,8 +957,13 @@ const invoiceListForm = {
             {/* Spinner — shown while allocating */}
             {isAllocating && !isAdvanceFromPO && !isInternalTransfer && (
               <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg mt-2">
-                <Loader2 size={14} className="animate-spin text-primary flex-shrink-0" />
-                <p className="text-[11px] text-primary font-medium">Calculating allocation…</p>
+                <Loader2
+                  size={14}
+                  className="animate-spin text-primary flex-shrink-0"
+                />
+                <p className="text-[11px] text-primary font-medium">
+                  Calculating allocation…
+                </p>
               </div>
             )}
 
@@ -905,29 +972,42 @@ const invoiceListForm = {
                 <div>
                   <p className="text-[11px] text-muted">Invoices Settled</p>
                   <p className="text-xs font-medium text-main">
-                    {isAllocating
-                      ? <span className="text-muted animate-pulse">—</span>
-                      : selectedCount}
+                    {isAllocating ? (
+                      <span className="text-muted animate-pulse">—</span>
+                    ) : (
+                      selectedCount
+                    )}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-[11px] text-muted">Allocated</p>
                   <p className="text-base font-bold text-primary">
-                    {isAllocating
-                      ? <span className="text-sm font-normal text-muted animate-pulse">—</span>
-                      : totalAllocated.toLocaleString()}
+                    {isAllocating ? (
+                      <span className="text-sm font-normal text-muted animate-pulse">
+                        —
+                      </span>
+                    ) : (
+                      totalAllocated.toLocaleString()
+                    )}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-[11px] text-muted">Advance</p>
                   {isAllocating ? (
-                    <p className="text-[11px] text-muted animate-pulse">Calculating…</p>
+                    <p className="text-[11px] text-muted animate-pulse">
+                      Calculating…
+                    </p>
                   ) : (
                     <>
-                      <p className={`text-xs font-semibold ${advance > 0 && paymentAmount > 0 ? "text-amber-500" : "text-emerald-600"
-                        }`}>
+                      <p
+                        className={`text-xs font-semibold ${
+                          advance > 0 && paymentAmount > 0
+                            ? "text-amber-500"
+                            : "text-emerald-600"
+                        }`}
+                      >
                         {paymentAmount > 0 ? advance.toLocaleString() : "—"}
                       </p>
                       {advance > 0 && paymentAmount > 0 && (
