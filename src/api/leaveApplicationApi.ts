@@ -144,3 +144,40 @@ export async function getAllHolidayLists(year?: number): Promise<any[]> {
     throw error;
   }
 }
+
+export async function getEmployeeLeaveApplications(
+  employee: string,
+  fromDate: string,
+  toDate: string,
+): Promise<LeaveApplication[]> {
+  try {
+    const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> =
+      await api.get(LEAVE_APP_RESOURCE.getAll, {
+        params: {
+          fields: JSON.stringify([
+            "name",
+            "employee",
+            "employee_name",
+            "leave_type",
+            "from_date",
+            "to_date",
+            "half_day",
+            "half_day_date",
+            "total_leave_days",
+            "status",
+          ]),
+          filters: JSON.stringify([
+            ["employee", "=", employee],
+            ["status", "=", "Approved"],
+            ["from_date", "<=", toDate],
+            ["to_date", ">=", fromDate],
+          ]),
+          limit_page_length: 0,
+        },
+      });
+
+    return resp.data?.data || [];
+  } catch (error) {
+    throw error;
+  }
+}

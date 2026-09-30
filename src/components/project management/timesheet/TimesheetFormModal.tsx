@@ -6,7 +6,11 @@ import {
   MoreVertical,
   Pencil,
   Copy,
+  CopyPlus,
   Trash2,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import { Popover } from "../../../components/common/Popover";
@@ -34,7 +38,14 @@ interface PrefillTask {
   task: string;
   taskName: string;
 }
+
+interface PrefillEmployee {
+  id: string;
+  name: string;
+}
+
 type TimesheetContext = "admin" | "employee";
+
 interface TimesheetFormModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -42,8 +53,9 @@ interface TimesheetFormModalProps {
   onSuccess?: () => void;
   context?: TimesheetContext;
   prefillTask?: PrefillTask;
-  // Multi-task prefill (e.g. bulk "Log Time" from the Task list): one row per entry.
   prefillTasks?: PrefillTask[];
+  prefillDate?: string;
+  prefillEmployee?: PrefillEmployee;
   restrictions?: TimesheetModalRestrictions;
   title?: string;
   subtitle?: string;
@@ -60,6 +72,8 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   context = "admin",
   prefillTask,
   prefillTasks,
+  prefillDate,
+  prefillEmployee,
   restrictions,
   title = "New Timesheet",
   subtitle = "Create employee timesheet allocation and track billable hours",
@@ -80,7 +94,9 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     setLineTask,
     setLineActivity,
     removeLine,
+    removeLines,
     duplicateLine,
+    sortLines,
     updateLineRates,
     loadFromDetail,
     reset,
@@ -91,8 +107,6 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
 
   const [isLoadingTimesheet, setIsLoadingTimesheet] = useState(false);
 
-  // Edit mode: fetch the record and prefill the form the moment the modal
-  // opens with a timesheetId. New-Timesheet flow (no id) is untouched.
   useEffect(() => {
     if (!isOpen || !timesheetId) return;
     let cancelled = false;
@@ -123,15 +137,27 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     }
     if (timesheetId || prefillAppliedRef.current) return;
 
-    // prefillTasks (multi) wins; the single prefillTask flow keeps working.
     const items = prefillTasks?.length
       ? prefillTasks
       : prefillTask
         ? [prefillTask]
         : [];
-    if (items.length === 0) return;
+    if (items.length === 0 && !prefillDate) return;
 
     prefillAppliedRef.current = true;
+
+    if (prefillEmployee) {
+      setEmployee(prefillEmployee.id, {
+        label: prefillEmployee.name,
+        value: prefillEmployee.id,
+      });
+    }
+
+    if (items.length === 0) {
+      addLine(undefined, prefillDate);
+      return;
+    }
+
     addLines(
       items.map((p) => ({
         project: p.project,
@@ -139,8 +165,19 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
         task: p.task,
         task_name: p.taskName,
       })),
+      prefillDate,
     );
-  }, [isOpen, prefillTask, prefillTasks, timesheetId, addLines]);
+  }, [
+    isOpen,
+    prefillTask,
+    prefillTasks,
+    prefillDate,
+    prefillEmployee,
+    timesheetId,
+    addLine,
+    addLines,
+    setEmployee,
+  ]);
 
   useEffect(() => {
     if (!isOpen) reset();
@@ -163,6 +200,45 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     setOpenActionsId(null);
     setActionsView("menu");
   }, []);
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const allSelected =
+    form.lines.length > 0 && selectedIds.size === form.lines.length;
+  const someSelected = selectedIds.size > 0 && !allSelected;
+
+  const toggleRow = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const toggleAll = () =>
+    setSelectedIds(
+      allSelected ? new Set() : new Set(form.lines.map((l) => l.id)),
+    );
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const valid = new Set(form.lines.map((l) => l.id));
+      const next = new Set([...prev].filter((id) => valid.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [form.lines]);
+
+  const handleBulkDelete = () => {
+    removeLines([...selectedIds]);
+    setSelectedIds(new Set());
+  };
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
+
+  const handleSortByDate = () => {
+    const next = sortDir === "asc" ? "desc" : "asc";
+    sortLines(next);
+    setSortDir(next);
+  };
 
   const handleSave = async () => {
     const ok = await save();
@@ -187,7 +263,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
       </button>
       <button
         onClick={handleSave}
-        disabled={isSaving}
+        disabled={isSaving || isLoadingTimesheet}
         className="inline-flex items-center gap-1.5 px-5 py-1.5 bg-primary hover:opacity-90 text-primary-foreground rounded-md text-xs font-semibold transition-opacity shadow-sm disabled:opacity-50"
       >
         {isSaving
@@ -214,9 +290,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
       height="750px"
     >
       <div className="flex gap-5 h-full min-h-0">
-        {/* ── Left: main content area ── */}
         <div className="flex-1 min-w-0 flex flex-col gap-5 overflow-auto">
-          {/* Timesheet Information — no header date; date is per-row now */}
           {!isEmployee && (
             <div className="bg-card border border-theme rounded-xl p-4 shrink-0">
               <div className="flex items-center justify-between pb-2 mb-3 border-b border-theme">
@@ -295,7 +369,6 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
             </div>
           )}
 
-          {/* Time entries */}
           <div className="flex-1 min-h-0 flex flex-col bg-card border border-theme rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-theme bg-app/50 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
@@ -308,18 +381,39 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
                   {form.lines.length === 1 ? "Entry" : "Entries"}
                 </span>
               </div>
-              <button
-                onClick={() => addLine()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:opacity-90 text-primary-foreground rounded-lg text-xs font-semibold transition-opacity"
-              >
-                <Plus size={12} /> Add Row
-              </button>
+              <div className="flex items-center gap-2">
+                {selectedIds.size > 0 && (
+                  <button
+                    onClick={handleBulkDelete}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    <Trash2 size={12} /> Delete ({selectedIds.size})
+                  </button>
+                )}
+                <button
+                  onClick={() => addLine(undefined, prefillDate)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:opacity-90 text-primary-foreground rounded-lg text-xs font-semibold transition-opacity"
+                >
+                  <Plus size={12} /> Add Row
+                </button>
+              </div>
             </div>
 
             <div className="overflow-auto flex-1">
               <table className="w-full text-left text-xs border-collapse">
                 <thead className="sticky top-0 bg-app z-10">
                   <tr className="border-b border-theme text-[10px] text-muted font-semibold uppercase tracking-wider">
+                    <th className="p-2.5 w-8 text-center">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someSelected;
+                        }}
+                        onChange={toggleAll}
+                        disabled={form.lines.length === 0}
+                      />
+                    </th>
                     {!hasHeaderProject && (
                       <th className="p-2.5 min-w-[140px]">Project</th>
                     )}
@@ -332,7 +426,22 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
                     </th>
                     <th className="p-2.5 min-w-[140px]">Summary</th>
                     <th className="p-2.5 min-w-[120px]">Activity Type</th>
-                    <th className="p-2.5 min-w-[220px]">Date &amp; Time</th>
+                    <th className="p-2.5 min-w-[220px]">
+                      <button
+                        onClick={handleSortByDate}
+                        className="inline-flex items-center gap-1 uppercase tracking-wider font-semibold hover:text-main transition-colors"
+                        title="Sort by date & time"
+                      >
+                        Date &amp; Time
+                        {sortDir === "asc" ? (
+                          <ArrowUp size={11} />
+                        ) : sortDir === "desc" ? (
+                          <ArrowDown size={11} />
+                        ) : (
+                          <ArrowUpDown size={11} />
+                        )}
+                      </button>
+                    </th>
                     <th className="p-2.5 text-right">Hours</th>
                     {!isEmployee && (
                       <th className="p-2.5 text-center">Billable</th>
@@ -345,7 +454,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
                   {form.lines.length === 0 && (
                     <tr>
                       <td
-                        colSpan={hasHeaderProject ? 8 : 9}
+                        colSpan={hasHeaderProject ? 9 : 10}
                         className="p-10 text-center text-muted italic"
                       >
                         <div className="flex flex-col items-center gap-1.5">
@@ -364,8 +473,17 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
                   {form.lines.map((l) => (
                     <tr
                       key={l.id}
-                      className="hover:bg-app/40 transition-colors"
+                      className={`hover:bg-app/40 transition-colors ${
+                        selectedIds.has(l.id) ? "bg-primary/5" : ""
+                      }`}
                     >
+                      <td className="p-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(l.id)}
+                          onChange={() => toggleRow(l.id)}
+                        />
+                      </td>
                       {!hasHeaderProject && (
                         <td className="p-2">
                           <SearchSelect2
@@ -403,11 +521,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
                           }
                           placeholder="What did you work on?"
                           rows={1}
-                          className="w-full min-w-[140px] min-h-[32px] max-h-[200px] resize
-               px-2 py-1.5 text-xs rounded-md border border-theme
-               bg-app text-main placeholder:text-muted
-               focus:outline-none focus:ring-1 focus:ring-primary
-               overflow-auto"
+                          className="w-full min-w-[140px] min-h-[32px] max-h-[200px] resize px-2 py-1.5 text-xs rounded-md border border-theme bg-app text-main placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary overflow-auto"
                         />
                       </td>
                       <td className="p-2">
@@ -422,16 +536,21 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
                         />
                       </td>
                       <td className="p-2">
-  <DateTimeRangePicker
-    date={l.date}
-    to_date={l.to_date}
-    from_time={l.from_time}
-    to_time={l.to_time}
-    onApply={(date, from, to, toDate) =>
-      updateLine(l.id, { date, to_date: toDate, from_time: from, to_time: to })
-    }
-  />
-</td>
+                        <DateTimeRangePicker
+                          date={l.date}
+                          to_date={l.to_date}
+                          from_time={l.from_time}
+                          to_time={l.to_time}
+                          onApply={(date, from, to, toDate) =>
+                            updateLine(l.id, {
+                              date,
+                              to_date: toDate,
+                              from_time: from,
+                              to_time: to,
+                            })
+                          }
+                        />
+                      </td>
                       <td className="p-2 text-right font-mono font-bold text-primary">
                         {l.hours.toFixed(1)}h
                       </td>
@@ -484,7 +603,6 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
           </div>
         </div>
 
-        {/* ── Right: billing summary sidebar (fixed, always visible) ── */}
         {!isEmployee && (
           <aside className="w-[240px] shrink-0 h-full overflow-auto">
             <TimesheetSummary totals={totals} currency={form.currency} />
@@ -492,8 +610,6 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
         )}
       </div>
 
-      {/* Single shared popover per row: shows the actions menu, or — once
-          "Update Rates" is picked — swaps in the rate editor in place. */}
       <Popover
         triggerRef={activeTriggerRef}
         open={openActionsId !== null}
@@ -515,13 +631,23 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
             )}
             <button
               onClick={() => {
-                duplicateLine(openActionsId);
+                duplicateLine(openActionsId, "after");
                 closeRowActions();
               }}
               className="w-full flex items-center gap-2 px-3 py-2 text-xs text-main hover:bg-app/60 transition-colors"
             >
               <Copy size={12} />
-              Duplicate Row
+              Duplicate Below
+            </button>
+            <button
+              onClick={() => {
+                duplicateLine(openActionsId, "end");
+                closeRowActions();
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-main hover:bg-app/60 transition-colors"
+            >
+              <CopyPlus size={12} />
+              Duplicate at End
             </button>
             <button
               onClick={() => {

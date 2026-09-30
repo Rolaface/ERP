@@ -1,17 +1,24 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Pencil, Plus, Search } from "lucide-react";
 import { showApiError } from "../../../../utils/alert";
 
-import SearchSelect2, { type Option } from "../../../../components/ui/modal/SearchSelect2";
+import SearchSelect2, {
+  type Option,
+} from "../../../../components/ui/modal/SearchSelect2";
 import { getAllProjects } from "../../../../api/project/projectapi/project.api";
 import { getAllActivityTypes } from "../../../../api/project/projectapi/Activity/activityType.api";
 import type { TimesheetHoursEntry } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
+import type { DayOffLookup } from "./dayOff.types";
+import DayOffChip, { DAY_OFF_TONE } from "./DayOffChip";
 
 interface Props {
   days: Date[];
   entries: TimesheetHoursEntry[];
   todayKey: string;
   granularity?: "day" | "month";
+  onCellClick?: (employee: string, dateKey: string) => void;
+  onEditDraft?: (timesheetId: string) => void;
+  dayOffs?: DayOffLookup;
 }
 
 interface Cell {
@@ -36,8 +43,8 @@ const TOTAL_COL_WIDTH = 96;
 const DAY_COL_MIN_WIDTH = 38;
 const MONTH_COL_MIN_WIDTH = 64;
 const COMPACT_MAX_DAYS = 7;
-const DAY_KEY_LENGTH = 10; // "YYYY-MM-DD"
-const MONTH_KEY_LENGTH = 7; // "YYYY-MM"
+const DAY_KEY_LENGTH = 10;
+const MONTH_KEY_LENGTH = 7;
 
 const AVATAR_COLORS = [
   { bg: "#1e3a8a", fg: "#ffffff" },
@@ -103,16 +110,18 @@ const TimesheetMatrix: React.FC<Props> = ({
   entries,
   todayKey,
   granularity = "day",
+  onCellClick,
+  onEditDraft,
+  dayOffs,
 }) => {
   const isMonthly = granularity === "month";
+  const clickable = Boolean(onCellClick) && !isMonthly;
   const [search, setSearch] = useState("");
-
-
   const [projectId, setProjectId] = useState("");
   const [projectLabel, setProjectLabel] = useState("");
   const [activityId, setActivityId] = useState("");
   const [activityLabel, setActivityLabel] = useState("");
-  const [status, setStatus] = useState(ALL); // ALL | draft | submitted
+  const [status, setStatus] = useState(ALL);
 
   const fetchProjects = useCallback(async (q: string): Promise<Option[]> => {
     try {
@@ -120,7 +129,8 @@ const TimesheetMatrix: React.FC<Props> = ({
       return list.map((p) => ({
         value: p.name,
         label: p.project_name || p.name,
-        subLabel: p.project_name && p.project_name !== p.name ? p.name : undefined,
+        subLabel:
+          p.project_name && p.project_name !== p.name ? p.name : undefined,
       }));
     } catch (err) {
       showApiError(err);
@@ -128,18 +138,21 @@ const TimesheetMatrix: React.FC<Props> = ({
     }
   }, []);
 
-  const fetchActivityTypes = useCallback(async (q: string): Promise<Option[]> => {
-    try {
-      const list = await getAllActivityTypes(q || undefined);
-      return list.map((a) => ({
-        value: a.name,
-        label: a.activity_type || a.name,
-      }));
-    } catch (err) {
-      showApiError(err);
-      return [];
-    }
-  }, []);
+  const fetchActivityTypes = useCallback(
+    async (q: string): Promise<Option[]> => {
+      try {
+        const list = await getAllActivityTypes(q || undefined);
+        return list.map((a) => ({
+          value: a.name,
+          label: a.activity_type || a.name,
+        }));
+      } catch (err) {
+        showApiError(err);
+        return [];
+      }
+    },
+    [],
+  );
 
   const rows = useMemo<Row[]>(() => {
     const columnKeys = new Set(days.map((d) => bucketKey(toYMD(d), isMonthly)));
@@ -161,7 +174,11 @@ const TimesheetMatrix: React.FC<Props> = ({
         cells: {},
         total: 0,
       };
-      const cell = (row.cells[bucket] ??= { hours: 0, draftHours: 0, items: [] });
+      const cell = (row.cells[bucket] ??= {
+        hours: 0,
+        draftHours: 0,
+        items: [],
+      });
       cell.hours += e.hours;
       if (isDraft) cell.draftHours += e.hours;
       cell.items.push(e);
@@ -194,9 +211,15 @@ const TimesheetMatrix: React.FC<Props> = ({
   const colMinWidth = isMonthly ? MONTH_COL_MIN_WIDTH : DAY_COL_MIN_WIDTH;
   const hasFilters = search || projectId || activityId || status !== ALL;
 
-  const stickyLeft = "sticky left-0 z-10 bg-card border-r border-[var(--border)]/40";
-  const stickyRight = "sticky right-0 z-10 bg-card border-l border-[var(--border)]/40";
+  const isCurrent = (key: string) =>
+    isMonthly ? key === todayKey.slice(0, MONTH_KEY_LENGTH) : key === todayKey;
+
+  const stickyLeft =
+    "sticky left-0 z-10 bg-card border-r border-[var(--border)]/40";
+  const stickyRight =
+    "sticky right-0 z-10 bg-card border-l border-[var(--border)]/40";
   const emptyChip = `mx-auto flex h-7 w-full ${chipWidth} items-center justify-center rounded-md bg-[var(--border)]/20 text-xs text-muted`;
+  const addableChip = "transition-colors group-hover/cell:bg-primary/10";
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -263,7 +286,8 @@ const TimesheetMatrix: React.FC<Props> = ({
         <table
           className="w-full table-fixed border-collapse text-center"
           style={{
-            minWidth: NAME_COL_WIDTH + TOTAL_COL_WIDTH + days.length * colMinWidth,
+            minWidth:
+              NAME_COL_WIDTH + TOTAL_COL_WIDTH + days.length * colMinWidth,
           }}
         >
           <colgroup>
@@ -282,28 +306,47 @@ const TimesheetMatrix: React.FC<Props> = ({
               </th>
               {days.map((d) => {
                 const key = bucketKey(toYMD(d), isMonthly);
-                const current = isMonthly
-                  ? key === todayKey.slice(0, MONTH_KEY_LENGTH)
-                  : key === todayKey;
+                const current = isCurrent(key);
+                const headerOff = isMonthly
+                  ? undefined
+                  : dayOffs?.holidayOn(key);
+                const holiday =
+                  headerOff?.kind === "company_holiday" ? headerOff : undefined;
+                const weeklyOff = headerOff?.kind === "weekly_off";
                 return (
-                  <th key={key} className="sticky top-0 z-20 bg-card px-0.5 py-3">
+                  <th
+                    key={key}
+                    className="sticky top-0 z-20 bg-card px-0.5 py-3"
+                  >
                     <div
                       className={[
-                        "text-sm font-bold",
-                        current ? "text-primary" : "text-main",
+                        "mx-auto flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold",
+                        current
+                          ? "bg-primary text-white"
+                          : weeklyOff
+                            ? "text-muted"
+                            : "text-main",
                       ].join(" ")}
                     >
                       {isMonthly
                         ? d.toLocaleDateString(undefined, { month: "short" })
                         : d.getDate()}
                     </div>
-                    <div className="text-[11px] font-medium text-muted">
+                    <div
+                      className={`mt-0.5 text-[11px] font-medium ${current ? "text-primary" : "text-muted"}`}
+                    >
                       {isMonthly
                         ? d.getFullYear()
                         : d.toLocaleDateString(undefined, { weekday: "short" })}
                     </div>
-                    {current && (
-                      <div className="mx-auto mt-1 h-0.5 w-4 rounded-full bg-primary" />
+                    {holiday && (
+                      <div
+                        title={holiday.label}
+                        className="mx-auto mt-1 h-1 w-4 rounded-full"
+                        style={{
+                          background: `var(${DAY_OFF_TONE.company_holiday})`,
+                        }}
+                      />
                     )}
                   </th>
                 );
@@ -335,7 +378,9 @@ const TimesheetMatrix: React.FC<Props> = ({
                   key={row.name}
                   className="group h-[52px] border-b border-[var(--border)]/40 hover:bg-row-hover"
                 >
-                  <td className={`${stickyLeft} px-4 text-left group-hover:bg-row-hover`}>
+                  <td
+                    className={`${stickyLeft} px-4 text-left group-hover:bg-row-hover`}
+                  >
                     <div className="flex items-center gap-3">
                       <span
                         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
@@ -352,27 +397,96 @@ const TimesheetMatrix: React.FC<Props> = ({
                     const key = bucketKey(toYMD(d), isMonthly);
                     const cell = row.cells[key];
                     const tone = cell?.draftHours ? DRAFT_TONE : APPROVED_TONE;
+                    const off = isMonthly
+                      ? undefined
+                      : (dayOffs?.holidayOn(key) ??
+                        dayOffs?.leaveOn(key, row.name));
+                    const showOffChip = off && off.kind !== "weekly_off";
+                    const canAdd = clickable && !(off && !off.halfDay);
+                    const columnTint = isCurrent(key)
+                      ? "bg-primary/5"
+                      : off?.kind === "weekly_off"
+                        ? "bg-[var(--border)]/15"
+                        : "";
+                    const draftIds = cell
+                      ? [
+                          ...new Set(
+                            cell.items
+                              .filter((e) => e.docstatus === DRAFT_DOCSTATUS)
+                              .map((e) => e.timesheet),
+                          ),
+                        ]
+                      : [];
+                    const editId =
+                      onEditDraft && draftIds.length === 1
+                        ? draftIds[0]
+                        : undefined;
                     return (
-                      <td key={key} className="px-[3px] py-1">
+                      <td
+                        key={key}
+                        onClick={
+                          canAdd ? () => onCellClick?.(row.name, key) : undefined
+                        }
+                        className={`group/cell px-[3px] py-1 ${columnTint} ${canAdd ? "cursor-pointer" : ""}`}
+                      >
                         {cell ? (
                           <div
                             title={cellTitle(cell)}
-                            className={`mx-auto flex h-7 w-full ${chipWidth} items-center justify-center rounded-md text-[11px] font-bold`}
+                            className={`relative mx-auto flex h-7 w-full ${chipWidth} items-center justify-center rounded-md text-[11px] font-bold`}
                             style={{
                               background: `color-mix(in srgb, var(${tone}) 18%, transparent)`,
                               color: `var(${tone})`,
                             }}
                           >
                             {formatHours(cell.hours)}
+                            {editId && (
+                              <button
+                                title="Edit draft"
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  onEditDraft?.(editId);
+                                }}
+                                className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-primary text-white shadow group-hover/cell:flex"
+                              >
+                                <Pencil size={9} />
+                              </button>
+                            )}
                           </div>
+                        ) : showOffChip ? (
+                          <DayOffChip
+                            off={off}
+                            compact={compact}
+                            className={chipWidth}
+                          />
                         ) : (
-                          <div className={emptyChip}>-</div>
+                          <div
+                            title={canAdd ? "Log time" : off?.label}
+                            className={`relative ${emptyChip} ${canAdd ? addableChip : ""}`}
+                          >
+                            <span
+                              className={
+                                canAdd
+                                  ? "transition-all duration-200 group-hover/cell:scale-50 group-hover/cell:opacity-0"
+                                  : ""
+                              }
+                            >
+                              -
+                            </span>
+                            {canAdd && (
+                              <span className="absolute inset-0 flex scale-50 items-center justify-center text-primary opacity-0 transition-all duration-300 ease-out group-hover/cell:scale-100 group-hover/cell:opacity-100">
+                                <Plus
+                                  size={16}
+                                  className="transition-transform duration-300 group-hover/cell:rotate-90"
+                                />
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
                     );
                   })}
                   <td className={`${stickyRight} px-2 group-hover:bg-row-hover`}>
-                    <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-lg bg-primary/10 px-2 text-xs font-bold text-primary">
+                    <span className="inline-flex h-8 min-w-[56px] items-center justify-center rounded-full bg-primary/10 px-2 text-xs font-bold text-primary">
                       {formatHours(row.total)}
                     </span>
                   </td>
@@ -407,7 +521,7 @@ const TimesheetMatrix: React.FC<Props> = ({
                   );
                 })}
                 <td className={`${stickyRight} sticky bottom-0 z-30 px-2`}>
-                  <span className="inline-flex h-10 min-w-[72px] items-center justify-center rounded-lg bg-primary/15 px-2 text-sm font-bold text-primary">
+                  <span className="inline-flex h-10 min-w-[72px] items-center justify-center rounded-full bg-primary/15 px-2 text-sm font-bold text-primary">
                     {formatHours(grandTotal)}
                   </span>
                 </td>

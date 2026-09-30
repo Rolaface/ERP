@@ -35,6 +35,7 @@ export async function fetchActivityTypeOptions(
       },
     }));
 }
+export type DuplicatePosition = "after" | "end";
 
 export async function fetchProjectOptions(
   search: string,
@@ -81,7 +82,12 @@ export async function fetchTaskOptions(
   }));
 }
 
-// ── helpers ──
+interface InitialTask {
+  project: string;
+  project_name: string;
+  task: string;
+  task_name: string;
+}
 
 function calcHours(
   date: string,
@@ -99,21 +105,27 @@ function calcHours(
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-function splitDateTime(dt: string | null | undefined): { date: string; time: string } {
+function splitDateTime(dt: string | null | undefined): {
+  date: string;
+  time: string;
+} {
   if (!dt) return { date: today(), time: "00:00" };
   const [date, time] = dt.split(" ");
   return { date: date || today(), time: time ? time.slice(0, 5) : "00:00" };
 }
+
 function emptyLine(
   headerProject?: { project: string; project_name: string },
-  initialTask?: { project: string; project_name: string; task: string; task_name: string },
+  initialTask?: InitialTask,
+  initialDate?: string,
 ): TimesheetLineDraft {
-  const date = today();
+  const date = initialDate || today();
   return {
     id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     isEditing: true,
     project: initialTask?.project ?? headerProject?.project ?? "",
-    project_name: initialTask?.project_name ?? headerProject?.project_name ?? "",
+    project_name:
+      initialTask?.project_name ?? headerProject?.project_name ?? "",
     projectManuallySet: Boolean(initialTask),
     task: initialTask?.task ?? "",
     task_name: initialTask?.task_name ?? "",
@@ -131,8 +143,9 @@ function emptyLine(
   };
 }
 
-
-function mapTimeLogToLine(log: TimesheetDetail["time_logs"][number]): TimesheetLineDraft {
+function mapTimeLogToLine(
+  log: TimesheetDetail["time_logs"][number],
+): TimesheetLineDraft {
   const from = splitDateTime(log.from_time);
   const to = splitDateTime(log.to_time);
   return {
@@ -140,7 +153,7 @@ function mapTimeLogToLine(log: TimesheetDetail["time_logs"][number]): TimesheetL
     isEditing: false,
     project: log.project,
     project_name: log.project_name ?? log.project,
-    projectManuallySet: true, 
+    projectManuallySet: true,
     task: log.task ?? "",
     task_name: log.task_name ?? log.task ?? "",
     activity_type: log.activity_type,
@@ -200,21 +213,20 @@ export function useTimesheetModal(
     emptyForm(restrictions),
   );
   const [isSaving, setIsSaving] = useState(false);
-
-  const [editingName, setEditingName] = useState<string | undefined>(undefined);
+  const [editingName, setEditingName] = useState<string | undefined>(
+    undefined,
+  );
 
   const reset = useCallback(() => {
     setForm(emptyForm(restrictions));
     setEditingName(undefined);
   }, [restrictions]);
 
- 
   const loadFromDetail = useCallback((detail: TimesheetDetail) => {
     setEditingName(detail.name);
     setForm({
       project: "",
       project_name: "",
-
       customer: detail.customer ?? "",
       customer_name: detail.customer ?? "",
       employee: detail.employee,
@@ -228,8 +240,6 @@ export function useTimesheetModal(
   }, []);
 
   const isEditMode = Boolean(editingName);
-
-  // ── header field setters ──
 
   const setProject = useCallback((value: string, opt: Option) => {
     setForm((f) => ({
@@ -305,47 +315,39 @@ export function useTimesheetModal(
     setForm((f) => ({ ...f, start_date: date }));
   }, []);
 
-  // ── line management ──
-
-const addLine = useCallback(
-  (initialTask?: {
-    project: string;
-    project_name: string;
-    task: string;
-    task_name: string;
-  }) => {
-    setForm((f) => ({
-      ...f,
-      lines: [
-        ...f.lines,
-        emptyLine(
-          f.project
-            ? { project: f.project, project_name: f.project_name }
-            : undefined,
-          initialTask,
-        ),
-      ],
-    }));
-  },
-  [],
-);
-  const addLines = useCallback(
-    (
-      tasks: {
-        project: string;
-        project_name: string;
-        task: string;
-        task_name: string;
-      }[],
-    ) => {
-      if (tasks.length === 0) return;
+  const addLine = useCallback(
+    (initialTask?: InitialTask, initialDate?: string) => {
       setForm((f) => ({
         ...f,
-        lines: [...f.lines, ...tasks.map((t) => emptyLine(undefined, t))],
+        lines: [
+          ...f.lines,
+          emptyLine(
+            f.project
+              ? { project: f.project, project_name: f.project_name }
+              : undefined,
+            initialTask,
+            initialDate,
+          ),
+        ],
       }));
     },
     [],
   );
+
+  const addLines = useCallback(
+    (tasks: InitialTask[], initialDate?: string) => {
+      if (tasks.length === 0) return;
+      setForm((f) => ({
+        ...f,
+        lines: [
+          ...f.lines,
+          ...tasks.map((t) => emptyLine(undefined, t, initialDate)),
+        ],
+      }));
+    },
+    [],
+  );
+
   const updateLine = useCallback(
     (id: string, patch: Partial<TimesheetLineDraft>) => {
       setForm((f) => ({
@@ -425,22 +427,42 @@ const addLine = useCallback(
     setForm((f) => ({ ...f, lines: f.lines.filter((l) => l.id !== id) }));
   }, []);
 
-  const duplicateLine = useCallback((id: string) => {
+  const removeLines = useCallback((ids: string[]) => {
+  if (ids.length === 0) return;
+  const idSet = new Set(ids);
+  setForm((f) => ({ ...f, lines: f.lines.filter((l) => !idSet.has(l.id)) }));
+}, []);
+
+
+
+const duplicateLine = useCallback(
+  (id: string, position: DuplicatePosition = "after") => {
     setForm((f) => {
       const idx = f.lines.findIndex((l) => l.id === id);
       if (idx === -1) return f;
       const copy: TimesheetLineDraft = {
         ...f.lines[idx],
         id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        // A duplicated row is a brand-new row on the server — it must not
-        // carry the original's logName, or the update would overwrite it.
         logName: undefined,
       };
       const lines = [...f.lines];
-      lines.splice(idx + 1, 0, copy);
+      lines.splice(position === "end" ? lines.length : idx + 1, 0, copy);
       return { ...f, lines };
     });
-  }, []);
+  },
+  [],
+);
+const sortLines = useCallback((direction: "asc" | "desc") => {
+  setForm((f) => {
+    const key = (l: TimesheetLineDraft) =>
+      `${l.date} ${l.from_time} ${l.to_date} ${l.to_time}`;
+    const lines = [...f.lines].sort((a, b) => {
+      const c = key(a).localeCompare(key(b));
+      return direction === "asc" ? c : -c;
+    });
+    return { ...f, lines };
+  });
+}, []);
 
   const updateLineRates = useCallback(
     (id: string, billingRate: number, costingRate: number) => {
@@ -448,8 +470,6 @@ const addLine = useCallback(
     },
     [updateLine],
   );
-
-  // ── totals ──
 
   const totals = useMemo(() => {
     let totalHours = 0;
@@ -475,8 +495,6 @@ const addLine = useCallback(
       percentBilled: 0,
     };
   }, [form.lines]);
-
-  // ── payload + save ──
 
   const buildPayload = useCallback(
     (exchangeRate: number): TimesheetCreatePayload => {
@@ -533,85 +551,85 @@ const addLine = useCallback(
     return null;
   }, [form]);
 
-const save = useCallback(async (): Promise<boolean> => {
-  const err = validate();
+  const save = useCallback(async (): Promise<boolean> => {
+    const err = validate();
 
-  if (err) {
-    showApiError(err);
-    return false;
-  }
+    if (err) {
+      showApiError(err);
+      return false;
+    }
 
-  let exchangeRate = form.exchange_rate;
+    let exchangeRate = form.exchange_rate;
 
- 
-  if (editingName) {
-    const companyCurrency =
-      useCompanyDefaultsStore.getState().defaults?.default_currency;
+    if (editingName) {
+      const companyCurrency =
+        useCompanyDefaultsStore.getState().defaults?.default_currency;
 
-    if (form.currency && companyCurrency && form.currency !== companyCurrency) {
-      const choice = await fireManagedSwal({
-        icon: "question",
-        title: "Exchange rate may be outdated",
-        text: `This timesheet's exchange rate (${form.exchange_rate}) was set earlier and you're editing it now. Keep the existing rate, or refetch today's rate?`,
-        showCancelButton: true,
-        showDenyButton: true,
-        confirmButtonText: "Refetch today's rate",
-        denyButtonText: "Keep existing rate",
-        cancelButtonText: "Cancel",
-        confirmButtonColor: "#2563eb",
-        denyButtonColor: "#6b7280",
-      });
+      if (
+        form.currency &&
+        companyCurrency &&
+        form.currency !== companyCurrency
+      ) {
+        const choice = await fireManagedSwal({
+          icon: "question",
+          title: "Exchange rate may be outdated",
+          text: `This timesheet's exchange rate (${form.exchange_rate}) was set earlier and you're editing it now. Keep the existing rate, or refetch today's rate?`,
+          showCancelButton: true,
+          showDenyButton: true,
+          confirmButtonText: "Refetch today's rate",
+          denyButtonText: "Keep existing rate",
+          cancelButtonText: "Cancel",
+          confirmButtonColor: "#2563eb",
+          denyButtonColor: "#6b7280",
+        });
 
-      if (choice.isDismissed) {
-       
-        return false;
-      }
-
-      if (choice.isConfirmed) {
-        // "Refetch today's rate"
-        const result = await getExchangeRate(
-          form.currency,
-          companyCurrency,
-          today(),
-          "for_selling",
-        );
-
-        if (result.error || result.rate == null) {
-          showApiError(result.error || "Failed to fetch exchange rate.");
+        if (choice.isDismissed) {
           return false;
         }
 
-        exchangeRate = result.rate;
-        setForm((f) => ({ ...f, exchange_rate: exchangeRate }));
+        if (choice.isConfirmed) {
+          const result = await getExchangeRate(
+            form.currency,
+            companyCurrency,
+            today(),
+            "for_selling",
+          );
+
+          if (result.error || result.rate == null) {
+            showApiError(result.error || "Failed to fetch exchange rate.");
+            return false;
+          }
+
+          exchangeRate = result.rate;
+          setForm((f) => ({ ...f, exchange_rate: exchangeRate }));
+        }
       }
-     
-    }
-  }
-
-  setIsSaving(true);
-
-  try {
-    const payload = buildPayload(exchangeRate);
-
-    if (editingName) {
-      await updateTimesheetById(payload);
-      showSuccess(`Timesheet ${editingName} updated successfully.`);
-    } else {
-      const response = await createTimesheet(payload);
-      showSuccess(`Timesheet ${response.data.name} created successfully.`);
     }
 
-    reset();
-    onSuccess?.();
+    setIsSaving(true);
 
-    return true;
-  } catch (e) {
-    showApiError(e);
-    return false;
-  } finally {
-    setIsSaving(false);
-  }
-}, [validate, buildPayload, reset, onSuccess, form, editingName]);
+    try {
+      const payload = buildPayload(exchangeRate);
+
+      if (editingName) {
+        await updateTimesheetById(payload);
+        showSuccess(`Timesheet ${editingName} updated successfully.`);
+      } else {
+        const response = await createTimesheet(payload);
+        showSuccess(`Timesheet ${response.data.name} created successfully.`);
+      }
+
+      reset();
+      onSuccess?.();
+
+      return true;
+    } catch (e) {
+      showApiError(e);
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [validate, buildPayload, reset, onSuccess, form, editingName]);
 
   return {
     form,
@@ -623,7 +641,8 @@ const save = useCallback(async (): Promise<boolean> => {
     setCustomer,
     setEmployee,
     setStartDate,
-    addLine,addLines,
+    addLine,
+    addLines,
     updateLine,
     setLineProject,
     setLineTask,
@@ -631,6 +650,7 @@ const save = useCallback(async (): Promise<boolean> => {
     confirmLine,
     editLine,
     removeLine,
+    removeLines, sortLines,
     duplicateLine,
     updateLineRates,
     loadFromDetail,
