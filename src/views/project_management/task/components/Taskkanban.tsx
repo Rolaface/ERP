@@ -47,6 +47,7 @@ interface Props {
   fetchUsers: (q: string) => Promise<Option[]>;
   getProjectName: (code: string | null) => string;
   canEdit: boolean;
+  canEditTask?: (task: TaskEntry) => boolean;
   onView: (name: string) => void;
   toolbarRight?: React.ReactNode;
 }
@@ -77,8 +78,8 @@ const AVATAR_COLORS = [
 
 const avatarColor = (s: string) =>
   AVATAR_COLORS[
-    Array.from(s).reduce((sum, c) => sum + c.charCodeAt(0), 0) %
-      AVATAR_COLORS.length
+  Array.from(s).reduce((sum, c) => sum + c.charCodeAt(0), 0) %
+  AVATAR_COLORS.length
   ];
 
 const TaskKanban: React.FC<Props> = ({
@@ -93,6 +94,7 @@ const TaskKanban: React.FC<Props> = ({
   fetchUsers,
   getProjectName,
   canEdit,
+  canEditTask,
   onView,
   toolbarRight,
 }) => {
@@ -111,6 +113,9 @@ const TaskKanban: React.FC<Props> = ({
 
   const reqRef = useRef(0);
   const dragRef = useRef<{ name: string; from: string } | null>(null);
+
+  const canMove = (t: TaskEntry) =>
+    canEdit && (canEditTask ? canEditTask(t) : true);
 
   useEffect(() => {
     if (!projectFilter.length) setProjectLabel("");
@@ -226,7 +231,7 @@ const TaskKanban: React.FC<Props> = ({
 
   const moveTask = async (name: string, from: string, to: string) => {
     const task = cols[from]?.items.find((t) => t.name === name);
-    if (!task || !cols[to]) return;
+    if (!task || !cols[to] || !canMove(task)) return;
 
     const nextProgress = to === DONE_STATUS ? DONE_PROGRESS : undefined;
     const moved: TaskEntry = {
@@ -282,11 +287,13 @@ const TaskKanban: React.FC<Props> = ({
   const renderCard = (t: TaskEntry, status: string) => {
     const emails = parseAssignedEmails(t._assign);
     const isGroup = t.is_group === 1;
+    const movable = canMove(t);
+
 
     return (
       <div
         key={t.name}
-        draggable={canEdit}
+        draggable={movable}
         onDragStart={(e) => {
           dragRef.current = { name: t.name, from: status };
           e.dataTransfer.effectAllowed = "move";
@@ -298,7 +305,7 @@ const TaskKanban: React.FC<Props> = ({
         onClick={() => onView(t.name)}
         className={[
           "rounded-xl border border-[var(--border)] bg-card p-3 shadow-sm transition-shadow hover:shadow-md",
-          canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+          movable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
         ].join(" ")}
       >
         <p className="flex items-start gap-1 text-xs font-bold text-main">
