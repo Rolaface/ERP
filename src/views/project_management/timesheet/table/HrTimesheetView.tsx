@@ -52,7 +52,7 @@ import ViewSelector from "../../../project_management/ViewSelector";
 const TS_MODULE = "Timesheet";
 const TITLE_MAX_LENGTH = 140;
 
-// Table and calendar share this height so switching views never shifts the page
+
 const CONTENT_HEIGHT = "calc(85.5vh - 100px)";
 
 const STATUS_OPTIONS = [
@@ -62,7 +62,7 @@ const STATUS_OPTIONS = [
   { label: "Cancelled", value: "Cancelled" },
 ];
 
-// StatusBadge's own VARIANT_MAP doesn't know "Billed" — force the right variant per status
+
 const STATUS_VARIANT: Record<
   TimesheetStatus,
   "draft" | "info" | "success" | "danger"
