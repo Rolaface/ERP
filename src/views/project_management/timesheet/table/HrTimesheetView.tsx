@@ -93,7 +93,9 @@ const EditableTitle: React.FC<EditableTitleProps> = ({
   // Not editable (e.g. Cancelled / no permission)
   if (!editable) {
     return hasTitle ? (
-      <span className="font-bold text-main text-xs">{safeValue}</span>
+      <span className="font-bold text-main text-xs whitespace-normal break-words">
+        {safeValue}
+      </span>
     ) : (
       <span className="text-xs text-muted italic">—</span>
     );
@@ -151,7 +153,7 @@ const EditableTitle: React.FC<EditableTitleProps> = ({
         <span
           title="Click to rename"
           onClick={startEdit}
-          className="font-bold text-main text-xs cursor-text hover:underline decoration-dotted underline-offset-2"
+          className="font-bold text-main text-xs cursor-text whitespace-normal break-words hover:underline decoration-dotted underline-offset-2"
         >
           {safeValue}
         </span>
@@ -443,12 +445,12 @@ const HrTimesheetView: React.FC = () => {
   };
 
   // ── Columns ──────────────────────────────────────────────────
-
   const columns: Column<TimesheetEntry>[] = [
     {
       key: "title",
       header: "Title",
       align: "left",
+      width: "360px",
       sortable: true,
       render: (t) => (
         <EditableTitle
@@ -462,6 +464,7 @@ const HrTimesheetView: React.FC = () => {
       key: "start_date",
       header: "Start Date",
       align: "left",
+      width: "140px",
       sortable: true,
       render: (t) => (
         <DateDisplay
@@ -474,6 +477,7 @@ const HrTimesheetView: React.FC = () => {
       key: "end_date",
       header: "End Date",
       align: "left",
+      width: "140px",
       sortable: true,
       render: (t) => (
         <DateDisplay
@@ -486,9 +490,10 @@ const HrTimesheetView: React.FC = () => {
       key: "total_hours",
       header: "Total Hours",
       align: "right",
+      width: "120px",
       sortable: true,
       render: (t) => (
-        <span className="font-mono font-bold text-main">
+        <span className="font-mono font-bold text-main whitespace-nowrap">
           {(t.total_hours || 0).toFixed(1)} hrs
         </span>
       ),
@@ -497,6 +502,7 @@ const HrTimesheetView: React.FC = () => {
       key: "status",
       header: "Status",
       align: "center",
+      width: "130px",
       sortable: true,
       render: (t) => (
         <StatusBadge status={t.status} variant={STATUS_VARIANT[t.status]} />
@@ -508,6 +514,7 @@ const HrTimesheetView: React.FC = () => {
             key: "per_billed",
             header: "Billing %",
             align: "left" as const,
+            width: "140px",
             render: (t: TimesheetEntry) => (
               <div className="flex items-center gap-2">
                 <div
@@ -531,6 +538,7 @@ const HrTimesheetView: React.FC = () => {
       key: "actions",
       header: "Actions",
       align: "center",
+      width: "120px",
       render: (t) => {
         const customActions = [];
 
