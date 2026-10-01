@@ -1,12 +1,12 @@
-// components/MetricsRow.tsx
 import { FaClock, FaPaperPlane, FaFilePen, FaCircleCheck, FaCoins } from "react-icons/fa6";
 import type { TimesheetEntry } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 
 interface Props {
   timesheets: TimesheetEntry[];
+  showFinancials?: boolean;
 }
 
-const MetricsRow: React.FC<Props> = ({ timesheets }) => {
+const MetricsRow: React.FC<Props> = ({ timesheets, showFinancials = true }) => {
   const totalHours = timesheets.reduce((s, t) => s + (t.total_hours || 0), 0);
   const submittedCount = timesheets.filter((t) => t.status === "Submitted").length;
   const draftCount = timesheets.filter((t) => t.status === "Draft").length;
@@ -21,11 +21,18 @@ const MetricsRow: React.FC<Props> = ({ timesheets }) => {
     { label: "Total Hours", value: `${totalHours.toFixed(1)} hrs`, icon: <FaClock size={12} />, tone: "text-primary" },
     { label: "Submitted", value: `${submittedCount} timesheets`, icon: <FaPaperPlane size={12} />, tone: "text-info" },
     { label: "Draft", value: `${draftCount} drafts`, icon: <FaFilePen size={12} />, tone: "text-warning" },
-    { label: "Billed", value: `${billedCount} (₹${billedRevenue.toLocaleString()})`, icon: <FaCircleCheck size={12} />, tone: "text-success" },
+  {
+      label: "Billed",
+      value: showFinancials
+        ? `${billedCount} (₹${billedRevenue.toLocaleString()})`
+        : `${billedCount} timesheets`,
+      icon: <FaCircleCheck size={12} />,
+      tone: "text-success",
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 ${showFinancials ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
       {cards.map((c) => (
         <div
           key={c.label}
@@ -53,7 +60,7 @@ const MetricsRow: React.FC<Props> = ({ timesheets }) => {
           <FaCoins size={12} />
         </div>
         <div className="min-w-0 flex-1 leading-tight">
-          <div className="text-[9px] font-semibold text-muted uppercase tracking-wide">Financial KPI</div>
+         {showFinancials &&  <div className="text-[9px] font-semibold text-muted uppercase tracking-wide">Financial KPI</div>}
           <div className="text-xs font-bold text-main truncate">
             ₹{totalBillable.toLocaleString()} <span className="text-[9px] text-muted font-normal">Billable</span>
           </div>
