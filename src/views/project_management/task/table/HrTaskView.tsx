@@ -134,6 +134,19 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
 
   const isEmployee = context === "employee";
 
+  const canCreateTask = can(TASK_MODULE, "create");
+  const canWriteTask = can(TASK_MODULE, "write");
+  const canLogTime = can("Timesheet", "create");
+
+  const isAssignedToMe = (assign: string | null | undefined) => {
+    if (!currentUserEmail) return false;
+    const me = currentUserEmail.toLowerCase();
+    return parseAssignedEmails(assign ?? null).some(
+      (e) => e.toLowerCase() === me,
+    );
+  };
+
+  const canEditStatusOf = (_assign?: string | null) => canWriteTask;
   const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
   const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
 
@@ -184,6 +197,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   }, []);
 
   useEffect(() => {
+    if (isEmployee) return;
     fetchUserOptions("")
       .then((list) => {
         if (!mountedRef.current) return;
@@ -192,7 +206,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
         );
       })
       .catch(showApiError);
-  }, []);
+  }, [isEmployee]);
 
   const projectFilterOptions = projectOptions.map((p) => ({
     label: p.project_name,
@@ -360,6 +374,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   }, [tasks, childrenMap, expanded, assigneeActive]);
 
   const handleAdd = () => {
+    if (!canCreateTask) return;
     console.warn("handleAdd: Task create modal not wired yet.");
   };
 
@@ -368,6 +383,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     nextStatus: string,
     nextProgress?: number,
   ) => {
+    if (!canEditStatusOf(findTask(taskName)?._assign)) return;
+
     try {
       await updateTaskStatus(taskName, nextStatus, nextProgress);
 
@@ -394,6 +411,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   };
 
   const handleLogTime = (task: TaskEntry) => {
+    if (!canLogTime) return;
     openEmployeeTimesheetFormModal({
       title: "Log Time",
       subtitle: `Logging time for ${task.subject}`,
@@ -406,7 +424,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     });
   };
 
-  const canLogTime = (t: TaskEntry) => t.is_group !== 1;
+  const canLogRow = (t: TaskEntry) => canLogTime && t.is_group !== 1;
 
   const handleRowSelect = (t: TaskEntry, checked: boolean) =>
     setSelected((prev) => {
@@ -427,14 +445,14 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     });
 
   const handleLogSelected = () => {
+    if (!canLogTime) return;
     const picked = Array.from(selected.values());
     if (picked.length === 0) return;
 
     openEmployeeTimesheetFormModal({
       title: "Log Time",
-      subtitle: `Logging time for ${picked.length} task${
-        picked.length > 1 ? "s" : ""
-      }`,
+      subtitle: `Logging time for ${picked.length} task${picked.length > 1 ? "s" : ""
+        }`,
       prefillTasks: picked.map((t) => ({
         project: t.project ?? "",
         projectName: getProjectDisplayName(t.project),
@@ -464,6 +482,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     taskName: string,
     nextStatus: string,
   ) => {
+    if (!canEditStatusOf(drawerData?._assign)) return;
+
     const nextProgress = nextStatus === "Completed" ? 100 : undefined;
 
     setDrawerActionLoading(true);
@@ -473,11 +493,11 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       setDrawerData((prev) =>
         prev
           ? {
-              ...prev,
-              status: nextStatus as TaskStatus,
-              progress:
-                nextProgress !== undefined ? nextProgress : prev.progress,
-            }
+            ...prev,
+            status: nextStatus as TaskStatus,
+            progress:
+              nextProgress !== undefined ? nextProgress : prev.progress,
+          }
           : prev,
       );
 
@@ -524,7 +544,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   };
 
   const handleTakeTask = async (taskName: string) => {
-    if (!currentUserEmail) return;
+    if (!canWriteTask || !currentUserEmail) return;
 
     const task = findTask(taskName);
     if (!task) return;
@@ -636,20 +656,17 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       header: "Status",
       align: "center",
       sortable: true,
-      render: (t) => {
-        const canEdit = can(TASK_MODULE, "write");
-        return (
-          <StatusCell
-            status={t.status}
-            progress={t.progress ?? 0}
-            options={STATUS_CELL_OPTIONS}
-            disabled={!canEdit}
-            onChange={(nextStatus, nextProgress) =>
-              handleStatusChange(t.name, nextStatus, nextProgress)
-            }
-          />
-        );
-      },
+      render: (t) => (
+        <StatusCell
+          status={t.status}
+          progress={t.progress ?? 0}
+          options={STATUS_CELL_OPTIONS}
+          disabled={!canEditStatusOf(t._assign)}
+          onChange={(nextStatus, nextProgress) =>
+            handleStatusChange(t.name, nextStatus, nextProgress)
+          }
+        />
+      ),
     },
     {
       key: "_assign",
@@ -657,21 +674,18 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       align: "left",
       render: (t) => {
         const emails = parseAssignedEmails(t._assign);
-        const canEdit = can(TASK_MODULE, "write");
 
         const canTake =
           isEmployee &&
+          canWriteTask &&
           Boolean(currentUserEmail) &&
           t.is_group !== 1 &&
-          !emails.some(
-            (e) =>
-              e.toLowerCase() === (currentUserEmail as string).toLowerCase(),
-          );
+          !isAssignedToMe(t._assign);
 
         return (
           <AssigneeCell
             emails={emails}
-            disabled={!canEdit || isEmployee}
+            disabled={!canWriteTask || isEmployee}
             fetchOptions={fetchUserOptions}
             onChange={(nextValues) => handleAssigneesChange(t.name, nextValues)}
             onTake={canTake ? () => handleTakeTask(t.name) : undefined}
@@ -704,22 +718,17 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       key: "actions",
       header: "Actions",
       align: "center",
-      render: (t) => {
-        const canEdit = can(TASK_MODULE, "write");
-        return (
-          <ActionGroup>
-            <ActionButton
-              type="view"
-              onClick={() => handleView(t.name)}
-              iconOnly
-            />
-            <ActionButton
-              type="edit"
-              onClick={() => handleEdit(t.name)}
-              iconOnly
-              disabled={!canEdit}
-              title={canEdit ? "Edit" : "You don't have permission to edit"}
-            />
+      render: (t) => (
+        <ActionGroup>
+          <ActionButton type="view" onClick={() => handleView(t.name)} iconOnly />
+          <ActionButton
+            type="edit"
+            onClick={() => handleEdit(t.name)}
+            iconOnly
+            disabled={!canWriteTask}
+            title={canWriteTask ? "Edit" : "You don't have permission to edit"}
+          />
+          {canLogTime && (
             <button
               onClick={() => handleLogTime(t)}
               disabled={t.is_group === 1}
@@ -732,14 +741,14 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
             >
               <Clock size={14} />
             </button>
-          </ActionGroup>
-        );
-      },
+          )}
+        </ActionGroup>
+      ),
     },
   ];
-const viewSelector = (
-  <ViewSelector value={view} options={VIEW_OPTIONS} onChange={setView} />
-);
+  const viewSelector = (
+    <ViewSelector value={view} options={VIEW_OPTIONS} onChange={setView} />
+  );
   return (
     <HrTableFrame>
       {view === "kanban" ? (
@@ -758,9 +767,10 @@ const viewSelector = (
             fetchProjects={fetchProjectOptions}
             fetchUsers={fetchUserOptions}
             getProjectName={getProjectDisplayName}
-            canEdit={can(TASK_MODULE, "write")}
+            canEdit={canWriteTask}
+            canEditTask={(t) => canEditStatusOf(t._assign)}
             onView={handleView}
-           toolbarRight={viewSelector}
+            toolbarRight={viewSelector}
           />
         </div>
       ) : (
@@ -792,16 +802,16 @@ const viewSelector = (
             },
             ...(!isEmployee
               ? [
-                  {
-                    key: "assignee",
-                    label: "Assigned To",
-                    options: userFilterOptions,
-                    values: assigneeFilter,
-                    onChange: setAssigneeFilter,
-                    searchPlaceholder: "Search employee...",
-                    onSearch: fetchUserOptions,
-                  },
-                ]
+                {
+                  key: "assignee",
+                  label: "Assigned To",
+                  options: userFilterOptions,
+                  values: assigneeFilter,
+                  onChange: setAssigneeFilter,
+                  searchPlaceholder: "Search employee...",
+                  onSearch: fetchUserOptions,
+                },
+              ]
               : []),
           ]}
           sortBy={sortBy}
@@ -811,17 +821,17 @@ const viewSelector = (
             setSortOrder(newSortOrder);
             setPage(1);
           }}
-          enableAdd={!isEmployee && can(TASK_MODULE, "create")}
+          enableAdd={canCreateTask}
           addLabel="+ Add Task"
           onAdd={handleAdd}
-          selectable
+          selectable={canLogTime}
           isRowSelected={(t) => selected.has(t.name)}
-          isRowSelectable={canLogTime}
+          isRowSelectable={canLogRow}
           onRowSelect={handleRowSelect}
           onSelectAll={handleSelectAll}
           primaryAction={
             <div className="flex items-center gap-2">
-              {selected.size > 0 && (
+              {canLogTime && selected.size > 0 && (
                 <>
                   <button
                     onClick={() => setSelected(new Map())}
@@ -840,7 +850,7 @@ const viewSelector = (
                 </>
               )}
 
-             {viewSelector}
+              {viewSelector}
             </div>
           }
           enableColumnSelector
@@ -862,7 +872,8 @@ const viewSelector = (
         open={drawerOpen}
         data={drawerData}
         loading={drawerLoading}
-        canEditStatus={can(TASK_MODULE, "write")}
+        canEditStatus={!!drawerData && canEditStatusOf(drawerData._assign)}
+        showFinancials={!isEmployee}
         actionLoading={drawerActionLoading}
         onClose={() => {
           setDrawerOpen(false);

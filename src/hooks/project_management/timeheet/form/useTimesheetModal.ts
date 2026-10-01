@@ -250,12 +250,12 @@ export function useTimesheetModal(
         l.projectManuallySet
           ? l
           : {
-              ...l,
-              project: value,
-              project_name: opt.label,
-              task: "",
-              task_name: "",
-            },
+            ...l,
+            project: value,
+            project_name: opt.label,
+            task: "",
+            task_name: "",
+          },
       ),
     }));
   }, []);
@@ -428,41 +428,41 @@ export function useTimesheetModal(
   }, []);
 
   const removeLines = useCallback((ids: string[]) => {
-  if (ids.length === 0) return;
-  const idSet = new Set(ids);
-  setForm((f) => ({ ...f, lines: f.lines.filter((l) => !idSet.has(l.id)) }));
-}, []);
+    if (ids.length === 0) return;
+    const idSet = new Set(ids);
+    setForm((f) => ({ ...f, lines: f.lines.filter((l) => !idSet.has(l.id)) }));
+  }, []);
 
 
 
-const duplicateLine = useCallback(
-  (id: string, position: DuplicatePosition = "after") => {
+  const duplicateLine = useCallback(
+    (id: string, position: DuplicatePosition = "after") => {
+      setForm((f) => {
+        const idx = f.lines.findIndex((l) => l.id === id);
+        if (idx === -1) return f;
+        const copy: TimesheetLineDraft = {
+          ...f.lines[idx],
+          id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          logName: undefined,
+        };
+        const lines = [...f.lines];
+        lines.splice(position === "end" ? lines.length : idx + 1, 0, copy);
+        return { ...f, lines };
+      });
+    },
+    [],
+  );
+  const sortLines = useCallback((direction: "asc" | "desc") => {
     setForm((f) => {
-      const idx = f.lines.findIndex((l) => l.id === id);
-      if (idx === -1) return f;
-      const copy: TimesheetLineDraft = {
-        ...f.lines[idx],
-        id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        logName: undefined,
-      };
-      const lines = [...f.lines];
-      lines.splice(position === "end" ? lines.length : idx + 1, 0, copy);
+      const key = (l: TimesheetLineDraft) =>
+        `${l.date} ${l.from_time} ${l.to_date} ${l.to_time}`;
+      const lines = [...f.lines].sort((a, b) => {
+        const c = key(a).localeCompare(key(b));
+        return direction === "asc" ? c : -c;
+      });
       return { ...f, lines };
     });
-  },
-  [],
-);
-const sortLines = useCallback((direction: "asc" | "desc") => {
-  setForm((f) => {
-    const key = (l: TimesheetLineDraft) =>
-      `${l.date} ${l.from_time} ${l.to_date} ${l.to_time}`;
-    const lines = [...f.lines].sort((a, b) => {
-      const c = key(a).localeCompare(key(b));
-      return direction === "asc" ? c : -c;
-    });
-    return { ...f, lines };
-  });
-}, []);
+  }, []);
 
   const updateLineRates = useCallback(
     (id: string, billingRate: number, costingRate: number) => {
@@ -512,8 +512,8 @@ const sortLines = useCallback((direction: "asc" | "desc") => {
       return {
         ...(editingName ? { name: editingName } : {}),
         doctype: "Timesheet",
-        employee: form.employee,
-        employee_name: form.employee_name,
+        employee: form.employee || restrictions?.employee?.id || "",
+        employee_name: form.employee_name || restrictions?.employee?.name || "",
         customer: form.customer || undefined,
         department: form.department || undefined,
         currency: form.currency,
@@ -541,7 +541,7 @@ const sortLines = useCallback((direction: "asc" | "desc") => {
         })),
       };
     },
-    [form, editingName],
+    [form, editingName, restrictions?.employee]
   );
 
   const validate = useCallback((): string | null => {

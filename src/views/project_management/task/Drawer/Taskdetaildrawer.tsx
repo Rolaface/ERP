@@ -44,6 +44,7 @@ interface Props {
   data: TaskDetail | null;
   loading?: boolean;
   canEditStatus?: boolean;
+  showFinancials?: boolean; // default true
   onClose: () => void;
   onStatusChange?: (taskName: string, nextStatus: string) => void;
   actionLoading?: boolean;
@@ -71,6 +72,7 @@ const TaskDetailDrawer: React.FC<Props> = ({
   data,
   loading,
   canEditStatus,
+  showFinancials = true,
   onClose,
   onStatusChange,
   actionLoading,
@@ -81,7 +83,7 @@ const TaskDetailDrawer: React.FC<Props> = ({
   const assignees = parseAssignedEmails(data?._assign ?? null);
   const dependencies = data?.depends_on ?? [];
 
-const renderFooter = () => {
+  const renderFooter = () => {
     if (!data) return null;
 
     const handleDrawerSelectChange = async (
@@ -104,7 +106,7 @@ const renderFooter = () => {
       if (result.isConfirmed) {
         onStatusChange(data.name, nextStatus);
       }
-  
+
     };
 
     if (canEditStatus && onStatusChange) {
@@ -122,21 +124,21 @@ const renderFooter = () => {
             Update Status
           </span>
           <select
-  value={data.status}
-  disabled={actionLoading}
-  onChange={handleDrawerSelectChange}
-  style={{
-    flex: 1,
-    maxWidth: 220,
-    fontSize: 13,
-    fontWeight: 600,
-    padding: "8px 10px",
-    borderRadius: 8,
-    border: "1px solid var(--border)",
-    background: "var(--card)",
-    color: "var(--text)",
-  }}
->
+            value={data.status}
+            disabled={actionLoading}
+            onChange={handleDrawerSelectChange}
+            style={{
+              flex: 1,
+              maxWidth: 220,
+              fontSize: 13,
+              fontWeight: 600,
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "var(--card)",
+              color: "var(--text)",
+            }}
+          >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -241,15 +243,19 @@ const renderFooter = () => {
                   label: "Actual Time",
                   value: `${(data.actual_time ?? 0).toFixed(1)} hrs`,
                 },
-                {
-                  label: "Costing Amount",
-                  value: formatCurrency(data.total_costing_amount),
-                },
-                {
-                  label: "Billing Amount",
-                  value: formatCurrency(data.total_billing_amount),
-                  emphasis: true,
-                },
+                ...(showFinancials
+                  ? [
+                    {
+                      label: "Costing Amount",
+                      value: formatCurrency(data.total_costing_amount),
+                    },
+                    {
+                      label: "Billing Amount",
+                      value: formatCurrency(data.total_billing_amount),
+                      emphasis: true,
+                    },
+                  ]
+                  : []),
               ]}
             />
 
@@ -273,14 +279,14 @@ const renderFooter = () => {
                 marginBottom: 7,
               }}
             >
-              <F
+              {/* <F
                 label="Assigned To"
                 value={
                   assignees.length > 0
                     ? assignees.map(getDisplayName).join(", ")
                     : "Unassigned"
                 }
-              />
+              /> */}
               <F label="Created By" value={data.owner} />
             </div>
 
@@ -397,175 +403,177 @@ const renderFooter = () => {
             </div>
           </div>
 
-          <div style={{ flexShrink: 0, marginTop: 12 }}>
-            <S title="Costing & Financial Summary" />
-            <div
-              style={{
-                background: "var(--bg)",
-                borderRadius: 10,
-                border: "1px solid var(--border)",
-                padding: "10px 12px",
-              }}
-            >
+          {showFinancials && (
+            <div style={{ flexShrink: 0, marginTop: 12 }}>
+              <S title="Costing & Financial Summary" />
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2,1fr)",
-                  gap: 8,
-                  marginBottom: 10,
+                  background: "var(--bg)",
+                  borderRadius: 10,
+                  border: "1px solid var(--border)",
+                  padding: "10px 12px",
                 }}
               >
                 <div
                   style={{
-                    background: "var(--card)",
-                    padding: "8px 10px",
-                    borderRadius: 7,
-                    border: "1px solid var(--border)",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: 9,
-                      color: "var(--muted)",
-                      textTransform: "uppercase",
-                      fontWeight: 700,
-                    }}
-                  >
-                    Costing Amount
-                  </p>
-                  <p
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 800,
-                      color: "var(--text)",
-                    }}
-                  >
-                    {formatCurrency(data.total_costing_amount)}
-                  </p>
-                </div>
-                <div
-                  style={{
-                    background: "var(--card)",
-                    padding: "8px 10px",
-                    borderRadius: 7,
-                    border: "1px solid var(--border)",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: 9,
-                      color: "var(--muted)",
-                      textTransform: "uppercase",
-                      fontWeight: 700,
-                    }}
-                  >
-                    Expense Claim
-                  </p>
-                  <p
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 800,
-                      color: "var(--text)",
-                    }}
-                  >
-                    {formatCurrency(data.total_expense_claim)}
-                  </p>
-                </div>
-                <div
-                  style={{
-                    background: "var(--card)",
-                    padding: "8px 10px",
-                    borderRadius: 7,
-                    border: "1px solid var(--border)",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: 9,
-                      color: "var(--muted)",
-                      textTransform: "uppercase",
-                      fontWeight: 700,
-                    }}
-                  >
-                    Billing Amount
-                  </p>
-                  <p
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 800,
-                      color: "var(--primary)",
-                    }}
-                  >
-                    {formatCurrency(data.total_billing_amount)}
-                  </p>
-                </div>
-                <div
-                  style={{
-                    background: "var(--card)",
-                    padding: "8px 10px",
-                    borderRadius: 7,
-                    border: "1px solid var(--border)",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: 9,
-                      color: "var(--muted)",
-                      textTransform: "uppercase",
-                      fontWeight: 700,
-                    }}
-                  >
-                    Actual Time
-                  </p>
-                  <p
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 800,
-                      color: "var(--text)",
-                    }}
-                  >
-                    {(data.actual_time ?? 0).toFixed(1)} hrs
-                  </p>
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: 11,
-                    marginBottom: 4,
-                  }}
-                >
-                  <span style={{ color: "var(--muted)", fontWeight: 600 }}>
-                    Progress
-                  </span>
-                  <span style={{ fontWeight: 800, fontFamily: "monospace" }}>
-                    {(data.progress ?? 0).toFixed(0)}%
-                  </span>
-                </div>
-                <div
-                  style={{
-                    width: "100%",
-                    background: "var(--border)",
-                    borderRadius: 20,
-                    height: 6,
-                    overflow: "hidden",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2,1fr)",
+                    gap: 8,
+                    marginBottom: 10,
                   }}
                 >
                   <div
                     style={{
-                      width: `${data.progress ?? 0}%`,
-                      background: "var(--success)",
-                      height: 6,
-                      borderRadius: 20,
-                      transition: "width .3s",
+                      background: "var(--card)",
+                      padding: "8px 10px",
+                      borderRadius: 7,
+                      border: "1px solid var(--border)",
                     }}
-                  />
+                  >
+                    <p
+                      style={{
+                        fontSize: 9,
+                        color: "var(--muted)",
+                        textTransform: "uppercase",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Costing Amount
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 800,
+                        color: "var(--text)",
+                      }}
+                    >
+                      {formatCurrency(data.total_costing_amount)}
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      background: "var(--card)",
+                      padding: "8px 10px",
+                      borderRadius: 7,
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: 9,
+                        color: "var(--muted)",
+                        textTransform: "uppercase",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Expense Claim
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 800,
+                        color: "var(--text)",
+                      }}
+                    >
+                      {formatCurrency(data.total_expense_claim)}
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      background: "var(--card)",
+                      padding: "8px 10px",
+                      borderRadius: 7,
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: 9,
+                        color: "var(--muted)",
+                        textTransform: "uppercase",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Billing Amount
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 800,
+                        color: "var(--primary)",
+                      }}
+                    >
+                      {formatCurrency(data.total_billing_amount)}
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      background: "var(--card)",
+                      padding: "8px 10px",
+                      borderRadius: 7,
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: 9,
+                        color: "var(--muted)",
+                        textTransform: "uppercase",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Actual Time
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 800,
+                        color: "var(--text)",
+                      }}
+                    >
+                      {(data.actual_time ?? 0).toFixed(1)} hrs
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: 11,
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span style={{ color: "var(--muted)", fontWeight: 600 }}>
+                      Progress
+                    </span>
+                    <span style={{ fontWeight: 800, fontFamily: "monospace" }}>
+                      {(data.progress ?? 0).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: "100%",
+                      background: "var(--border)",
+                      borderRadius: 20,
+                      height: 6,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${data.progress ?? 0}%`,
+                        background: "var(--success)",
+                        height: 6,
+                        borderRadius: 20,
+                        transition: "width .3s",
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {dependencies.length > 0 && (
             <div style={{ flexShrink: 0, marginTop: 12 }}>
