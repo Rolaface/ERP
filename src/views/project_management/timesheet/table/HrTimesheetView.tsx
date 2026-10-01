@@ -12,8 +12,9 @@ import {
   getAllTimesheets,
   submitTimesheet,
   cancelTimesheet,
-  getTimesheetById, deleteTimesheetById,
-
+  getTimesheetById,
+  deleteTimesheetById,
+  renameTimesheetTitle,
 } from "../../../../api/project/timesheet/timesheet.api";
 import Table from "../../../../components/ui/Table/Table";
 import ActionButton, {
@@ -30,7 +31,6 @@ import type {
   TimesheetEntry,
   TimesheetStatus,
   TimesheetDetail,
-
 } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import { HrTableFrame } from "../../../../views/hr/components/HrTabLayout";
 import StatusBadge from "../../../../components/ui/Table/StatusBadge";
@@ -50,6 +50,7 @@ import ViewSelector from "../../../project_management/ViewSelector";
 // ── Constants ────────────────────────────────────────────────────
 
 const TS_MODULE = "Timesheet";
+const TITLE_MAX_LENGTH = 140;
 
 // Table and calendar share this height so switching views never shifts the page
 const CONTENT_HEIGHT = "calc(85.5vh - 100px)";
@@ -70,6 +71,87 @@ const STATUS_VARIANT: Record<
   Submitted: "info",
   Billed: "success",
   Cancelled: "danger",
+};
+
+// ── Inline editable title ────────────────────────────────────────
+
+interface EditableTitleProps {
+  value: string;
+  editable: boolean;
+  onCommit: (next: string) => Promise<boolean>;
+}
+
+const EditableTitle: React.FC<EditableTitleProps> = ({
+  value,
+  editable,
+  onCommit,
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const busyRef = useRef(false);
+
+  if (!editable) {
+    return <span className="font-bold text-main text-xs">{value}</span>;
+  }
+
+  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
+
+  const startEdit = () => {
+    setDraft(value);
+    setEditing(true);
+  };
+
+  const commit = async () => {
+    if (busyRef.current) return;
+    const next = draft.trim();
+    if (!next || next === value) {
+      setEditing(false);
+      return;
+    }
+    busyRef.current = true;
+    try {
+      await onCommit(next);
+    } finally {
+      busyRef.current = false;
+      setEditing(false);
+    }
+  };
+
+  const cancel = () => {
+    busyRef.current = true;
+    setEditing(false);
+    setTimeout(() => {
+      busyRef.current = false;
+    }, 0);
+  };
+
+  return (
+    <div onClick={stop} onDoubleClick={stop}>
+      {editing ? (
+        <input
+          autoFocus
+          value={draft}
+          maxLength={TITLE_MAX_LENGTH}
+          onChange={(e) => setDraft(e.target.value)}
+          onFocus={(e) => e.target.select()}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+            if (e.key === "Escape") cancel();
+          }}
+          className="w-full bg-transparent text-xs font-bold text-main outline-none border-b border-primary"
+        />
+      ) : (
+        <span
+          title="Click to rename"
+          onClick={startEdit}
+          className="font-bold text-main text-xs cursor-text hover:underline decoration-dotted underline-offset-2"
+        >
+          {value}
+        </span>
+      )}
+    </div>
+  );
 };
 
 // ── Component ────────────────────────────────────────────────────
@@ -209,6 +291,37 @@ const HrTimesheetView: React.FC = () => {
       setDrawerLoading(false);
     }
   };
+
+  const handleRename = async (
+    t: TimesheetEntry,
+    next: string,
+  ): Promise<boolean> => {
+    if (!canWrite) return false;
+    const result = await fireManagedSwal({
+      icon: "question",
+      title: "Rename Timesheet?",
+      text: `"${t.title}" → "${next}"`,
+      showCancelButton: true,
+      confirmButtonText: "Yes, Rename",
+      cancelButtonText: "No",
+    });
+
+    if (!result.isConfirmed) return false;
+
+    try {
+      showLoading("Renaming timesheet...");
+      await renameTimesheetTitle(t.name, next);
+      closeSwal();
+      showSuccess("Timesheet renamed");
+      refreshList();
+      return true;
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+      return false;
+    }
+  };
+
   const handleDelete = async (id: string): Promise<boolean> => {
     if (!canDelete) return false;
     const result = await fireManagedSwal({
@@ -225,14 +338,10 @@ const HrTimesheetView: React.FC = () => {
 
     try {
       showLoading("Deleting timesheet...");
-
       await deleteTimesheetById(id);
-
       closeSwal();
       showSuccess("Timesheet deleted");
-
       refreshList();
-
       return true;
     } catch (error) {
       closeSwal();
@@ -261,7 +370,7 @@ const HrTimesheetView: React.FC = () => {
       await submitTimesheet(id);
       closeSwal();
       showSuccess("Timesheet approved");
-      refreshList(); // subscription khud fetch kar leta hai
+      refreshList();
       return true;
     } catch (error) {
       closeSwal();
@@ -319,29 +428,16 @@ const HrTimesheetView: React.FC = () => {
 
   const columns: Column<TimesheetEntry>[] = [
     {
-      key: "name",
-      header: "Timesheet ID",
-      align: "left",
-      sortable: true,
-      render: (t) => (
-        <span
-          className="font-mono font-bold text-primary text-xs hover:underline cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleView(t.name);
-          }}
-        >
-          {t.name}
-        </span>
-      ),
-    },
-    {
       key: "title",
       header: "Title",
       align: "left",
       sortable: true,
       render: (t) => (
-        <span className="font-bold text-main text-xs">{t.title}</span>
+        <EditableTitle
+          value={t.title}
+          editable={canWrite && t.status !== "Cancelled"}
+          onCommit={(next) => handleRename(t, next)}
+        />
       ),
     },
     {
@@ -390,20 +486,28 @@ const HrTimesheetView: React.FC = () => {
     },
     ...(showFinancials
       ? [
-        {
-          key: "per_billed",
-          header: "Billing %",
-          align: "left" as const,
-          render: (t: TimesheetEntry) => (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 rounded-full h-1.5 min-w-[50px]" style={{ background: "var(--border)" }}>
-                <div className="h-1.5 rounded-full bg-success" style={{ width: `${t.per_billed || 0}%` }} />
+          {
+            key: "per_billed",
+            header: "Billing %",
+            align: "left" as const,
+            render: (t: TimesheetEntry) => (
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex-1 rounded-full h-1.5 min-w-[50px]"
+                  style={{ background: "var(--border)" }}
+                >
+                  <div
+                    className="h-1.5 rounded-full bg-success"
+                    style={{ width: `${t.per_billed || 0}%` }}
+                  />
+                </div>
+                <span className="font-mono text-[10px] text-muted w-7 text-right">
+                  {t.per_billed || 0}%
+                </span>
               </div>
-              <span className="font-mono text-[10px] text-muted w-7 text-right">{t.per_billed || 0}%</span>
-            </div>
-          ),
-        },
-      ]
+            ),
+          },
+        ]
       : []),
     {
       key: "actions",
@@ -413,13 +517,27 @@ const HrTimesheetView: React.FC = () => {
         const customActions = [];
 
         if (t.status === "Draft" && canSubmit) {
-          customActions.push({ label: "Approve", icon: ACTION_ICONS.APPROVE, onClick: () => handleSubmit(t.name) });
+          customActions.push({
+            label: "Approve",
+            icon: ACTION_ICONS.APPROVE,
+            onClick: () => handleSubmit(t.name),
+          });
         }
         if (t.status === "Draft" && canDelete) {
-          customActions.push({ label: "Delete", icon: ACTION_ICONS.DELETE, danger: true, onClick: () => handleDelete(t.name) });
+          customActions.push({
+            label: "Delete",
+            icon: ACTION_ICONS.DELETE,
+            danger: true,
+            onClick: () => handleDelete(t.name),
+          });
         }
         if (t.status === "Submitted" && canCancel) {
-          customActions.push({ label: "Cancel", icon: ACTION_ICONS.CANCEL, danger: true, onClick: () => handleCancel(t.name) });
+          customActions.push({
+            label: "Cancel",
+            icon: ACTION_ICONS.CANCEL,
+            danger: true,
+            onClick: () => handleCancel(t.name),
+          });
         }
 
         const canEdit = t.status === "Draft" && canWrite;
@@ -461,7 +579,6 @@ const HrTimesheetView: React.FC = () => {
       {/* KPIs stay mounted in both views */}
       <div className="px-1 pt-1 pb-2">
         <MetricsRow timesheets={timesheets} showFinancials={showFinancials} />
-
       </div>
 
       {view === "calendar" ? (

@@ -792,6 +792,7 @@ export const API = {
       create:`${ERP_BASE}/api/resource/Timesheet`,
       update:`${ERP_BASE}/api/resource/Timesheet`,
       cancel:`${ERP_BASE}/api/resource/Timesheet`,
+      renametitle:`${ERP_BASE}/api/method/frappe.model.rename_doc.update_document_title`,
     },
     activityType:{ list: `${ERP_BASE}/api/resource/Activity Type`,
   }

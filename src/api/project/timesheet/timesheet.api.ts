@@ -217,3 +217,22 @@ export async function deleteTimesheetById(id: string): Promise<void> {
     name: id,
   });
 }
+
+
+export async function renameTimesheetTitle(
+  id: string,
+  title: string,
+): Promise<any> {
+  if (!id || !title?.trim()) {
+    throw new Error("renameTimesheetTitle: id and title are required.");
+  }
+
+  const resp: AxiosResponse = await api.post(TimesheetAPI.renametitle, {
+    doctype: "Timesheet",
+    docname: id,
+    title: title.trim(),
+    merge: false,
+    enqueue: false,
+  });
+  return resp.data;
+}
