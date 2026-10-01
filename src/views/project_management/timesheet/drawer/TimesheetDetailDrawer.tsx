@@ -24,6 +24,7 @@ const fmtTime = (t?: string) => {
 };
 
 const LOG_COLS = "minmax(0,1.3fr) minmax(0,1.6fr) 90px 60px 90px";
+const LOG_COLS_NO_AMOUNT = "minmax(0,1.3fr) minmax(0,1.6fr) 90px 60px";
 
 const labelStyle: React.CSSProperties = {
   fontSize: 9,
@@ -86,8 +87,11 @@ interface Props {
   data: TimesheetDetail | null;
   loading?: boolean;
   actionLoading?: boolean;
-  canWrite?: boolean;   // can(TS_MODULE, "write")
-  canDelete?: boolean;  // can(TS_MODULE, "delete")
+  canWrite?: boolean;       // Edit
+  canSubmit?: boolean;      // Approve
+  canCancel?: boolean;      // Cancel
+  showFinancials?: boolean; // default true
+  showEmployeeCard?: boolean;
   onClose: () => void;
   onApprove?: (id: string) => void;
   onEdit?: (id: string) => void;
@@ -95,7 +99,9 @@ interface Props {
 }
 
 const TimesheetDetailDrawer: React.FC<Props> = ({
-  open, data, loading, actionLoading, canWrite, canDelete,
+  open, data, loading, actionLoading, canWrite, canSubmit, canCancel,
+  showFinancials = true,
+  showEmployeeCard = true,
   onClose, onApprove, onEdit, onCancel,
 }) => {
   // Hooks hamesha early return se pehle
@@ -120,12 +126,14 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
   if (data) {
     if (data.status === "Draft" && canWrite) {
       actions.push({ key: "edit", label: "Edit", variant: "primary", icon: <Ico d={ICON.edit} />, onClick: () => onEdit?.(data.name) });
+    }
+    if (data.status === "Draft" && canSubmit) {
       actions.push({
         key: "approve", label: actionLoading ? "Approving..." : "Approve", icon: <Ico d={ICON.check} />,
         disabled: actionLoading, onClick: () => onApprove?.(data.name),
       });
     }
-    if (canDelete && (data.status === "Draft" || data.status === "Submitted")) {
+    if (data.status === "Submitted" && canCancel) {
       actions.push({ key: "cancel", label: "Cancel", icon: <Ico d={ICON.x} />, onClick: () => onCancel?.(data.name) });
     }
   }
@@ -140,8 +148,9 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
   const tabs: { id: Tab; label: string }[] = [
     { id: "overview", label: "Overview" },
     { id: "logs", label: `Time Logs (${logs.length})` },
-    { id: "billing", label: "Billing & Costing" },
+    ...(showFinancials ? [{ id: "billing" as Tab, label: "Billing & Costing" }] : []),
   ];
+  const logCols = showFinancials ? LOG_COLS : LOG_COLS_NO_AMOUNT;
 
   return (
     <Drawer
@@ -192,9 +201,13 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
             <DrawerSummaryCards
               items={[
                 { label: "Total Hours", value: `${(data.total_hours ?? 0).toFixed(1)} hrs` },
-                { label: "Billable Hours", value: `${(data.total_billable_hours ?? 0).toFixed(1)} hrs` },
-                { label: "Costing", value: money(data.total_costing_amount) },
-                { label: "Billed Amount", value: money(data.total_billed_amount), emphasis: true },
+                ...(showFinancials
+                  ? [
+                    { label: "Billable Hours", value: `${(data.total_billable_hours ?? 0).toFixed(1)} hrs` },
+                    { label: "Costing", value: money(data.total_costing_amount) },
+                    { label: "Billed Amount", value: money(data.total_billed_amount), emphasis: true },
+                  ]
+                  : []),
               ]}
             />
 
@@ -227,57 +240,64 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                   <Row label="Customer" value={data.customer} />
                   <Row label="Company" value={data.company} />
                   <Row label="Department" value={data.department} />
-                  <Row label="Currency" value={data.currency} />
-                  <Row label="Exchange Rate" value={data.exchange_rate} />
+                  {showFinancials && <Row label="Currency" value={data.currency} />}
+                  {showFinancials && <Row label="Exchange Rate" value={data.exchange_rate} />}
                   <Row label="Parent Project" value={data.parent_project} />
                   <Row label="Start Date" value={<DateDisplay date={data.start_date} />} />
                   <Row label="End Date" value={<DateDisplay date={data.end_date} />} />
                 </Card>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <Card title="Employee & Customer">
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <div style={{
-                        width: 40, height: 40, borderRadius: "50%", background: "var(--primary)", color: "#fff",
-                        display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14,
-                      }}>
-                        {(data.employee_name || data.title || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 13, fontWeight: 800, color: "var(--text)" }}>{data.employee_name || data.title}</p>
-                        <p style={{ fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>{data.employee}</p>
-                      </div>
-                    </div>
-                    <Row label="Customer" value={data.customer} />
-                    <Row label="Company" value={data.company} />
-                    <Row label="Department" value={data.department} />
-                  </Card>
-
-                  <Card title="Financial Summary">
-                    <Row label="Total Billable Amount" value={money(data.total_billable_amount)} strong />
-                    <Row label="Total Costing Amount" value={money(data.total_costing_amount)} strong />
-                    {rate > 0 && (
-                      <>
-                        <Row label="Base Billable Amount" value={(data.total_billable_amount * rate).toLocaleString(undefined, { maximumFractionDigits: 2 })} />
-                        <Row label="Base Costing Amount" value={(data.total_costing_amount * rate).toLocaleString(undefined, { maximumFractionDigits: 2 })} />
-                      </>
+                {(showEmployeeCard || showFinancials) && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {showEmployeeCard && (
+                      <Card title="Employee & Customer">
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                          <div style={{
+                            width: 40, height: 40, borderRadius: "50%", background: "var(--primary)", color: "#fff",
+                            display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14,
+                          }}>
+                            {(data.employee_name || data.title || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
+                          </div>
+                          <div>
+                            <p style={{ fontSize: 13, fontWeight: 800, color: "var(--text)" }}>{data.employee_name || data.title}</p>
+                            <p style={{ fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>{data.employee}</p>
+                          </div>
+                        </div>
+                        <Row label="Customer" value={data.customer} />
+                        <Row label="Company" value={data.company} />
+                        <Row label="Department" value={data.department} />
+                      </Card>
                     )}
-                    <Row label="Exchange Rate" value={data.exchange_rate} />
-                  </Card>
-                </div>
+
+                    {showFinancials && (
+                      <Card title="Financial Summary">
+                        <Row label="Total Billable Amount" value={money(data.total_billable_amount)} strong />
+                        <Row label="Total Costing Amount" value={money(data.total_costing_amount)} strong />
+                        {rate > 0 && (
+                          <>
+                            <Row label="Base Billable Amount" value={(data.total_billable_amount * rate).toLocaleString(undefined, { maximumFractionDigits: 2 })} />
+                            <Row label="Base Costing Amount" value={(data.total_costing_amount * rate).toLocaleString(undefined, { maximumFractionDigits: 2 })} />
+                          </>
+                        )}
+                        <Row label="Exchange Rate" value={data.exchange_rate} />
+                      </Card>
+                    )}
+                  </div>
+                )}
               </div>
             )}
+
 
             {tab === "logs" && (
               <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
                 <div style={{
-                  display: "grid", gridTemplateColumns: LOG_COLS, padding: "6px 10px", gap: 4,
+                  display: "grid", gridTemplateColumns: logCols, padding: "6px 10px", gap: 4,
                   background: "var(--table-head)", color: "var(--table-head-text)",
                   fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase",
                 }}>
                   <span>Activity</span><span>Description</span><span>Time</span>
                   <span style={{ textAlign: "right" }}>Hours</span>
-                  <span style={{ textAlign: "right" }}>Amount</span>
+                  {showFinancials && <span style={{ textAlign: "right" }}>Amount</span>}
                 </div>
 
                 {logs.length === 0 && (
@@ -287,7 +307,7 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                 {logs.map((log, i) => (
                   <div key={log.name ?? i} className="idm-irow"
                     style={{
-                      display: "grid", gridTemplateColumns: LOG_COLS, padding: "7px 10px", gap: 4,
+                      display: "grid", gridTemplateColumns: logCols, padding: "7px 10px", gap: 4,
                       borderTop: "1px solid var(--border)", alignItems: "start",
                     }}>
                     <div style={{ minWidth: 0 }}>
@@ -303,24 +323,26 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                       {fmtTime(log.from_time)} – {fmtTime(log.to_time)}
                     </p>
                     <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700 }}>{(log.hours ?? 0).toFixed(1)}h</p>
-                    <p style={{ fontSize: 12, textAlign: "right" }}>{log.is_billable ? money(log.billing_amount) : "—"}</p>
+                    {showFinancials && (
+                      <p style={{ fontSize: 12, textAlign: "right" }}>{log.is_billable ? money(log.billing_amount) : "—"}</p>
+                    )}
                   </div>
                 ))}
 
                 {logs.length > 0 && (
                   <div style={{
-                    display: "grid", gridTemplateColumns: LOG_COLS, padding: "8px 10px", gap: 4,
+                    display: "grid", gridTemplateColumns: logCols, padding: "8px 10px", gap: 4,
                     borderTop: "2px solid var(--border)", background: "var(--bg)", fontSize: 12, fontWeight: 800,
                   }}>
                     <span>Total</span><span /><span />
                     <span style={{ textAlign: "right" }}>{logHours.toFixed(1)}h</span>
-                    <span style={{ textAlign: "right" }}>{money(logAmount)}</span>
+                    {showFinancials && <span style={{ textAlign: "right" }}>{money(logAmount)}</span>}
                   </div>
                 )}
               </div>
             )}
 
-            {tab === "billing" && (
+            {tab === "billing" && showFinancials && (
               <div style={{ background: "var(--bg)", borderRadius: 10, border: "1px solid var(--border)", padding: 12 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginBottom: 12 }}>
                   <MoneyCell label="Billable Amount" value={money(data.total_billable_amount)} color="var(--primary)" />
