@@ -35,6 +35,7 @@ export async function fetchActivityTypeOptions(
       },
     }));
 }
+
 export type DuplicatePosition = "after" | "end";
 
 export async function fetchProjectOptions(
@@ -101,6 +102,120 @@ function calcHours(
   let diff = (end - start) / 60000;
   if (diff < 0 && toDate === date) diff += 24 * 60;
   return diff > 0 ? Math.round((diff / 60) * 100) / 100 : 0;
+}
+
+type SlotFields = Pick<
+  TimesheetLineDraft,
+  "date" | "to_date" | "from_time" | "to_time"
+>;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export const OVERLAP_MSG =
+  "This time slot overlaps with another entry. Please choose a different time.";
+
+function lineRange(l: SlotFields): { s: number; e: number } | null {
+  if (!l.date || !l.to_date || !l.from_time || !l.to_time) return null;
+  const s = new Date(`${l.date}T${l.from_time}:00`).getTime();
+  let e = new Date(`${l.to_date}T${l.to_time}:00`).getTime();
+  if (Number.isNaN(s) || Number.isNaN(e)) return null;
+  if (e <= s && l.to_date === l.date) e += DAY_MS;
+  return e > s ? { s, e } : null;
+}
+
+export function isSlotTaken(
+  lines: TimesheetLineDraft[],
+  excludeId: string,
+  candidate: SlotFields,
+): boolean {
+  const c = lineRange(candidate);
+  if (!c) return false;
+  return lines.some((o) => {
+    if (o.id === excludeId) return false;
+    const r = lineRange(o);
+    return r !== null && c.s < r.e && r.s < c.e;
+  });
+}
+
+export function getConflictingLineIds(
+  lines: TimesheetLineDraft[],
+): Set<string> {
+  const ids = new Set<string>();
+  lines.forEach((l) => {
+    if (isSlotTaken(lines, l.id, l)) ids.add(l.id);
+  });
+  return ids;
+}
+
+const DEFAULT_SLOT_MINUTES = 240;
+const PREFERRED_START_MINUTES = 9 * 60;
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+const toDateStr = (ms: number) => {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+const toTimeStr = (ms: number) => {
+  const d = new Date(ms);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+function slotDurationMs(l: SlotFields): number {
+  const r = lineRange(l);
+  return r ? r.e - r.s : DEFAULT_SLOT_MINUTES * 60000;
+}
+
+function findFreeSlot(
+  lines: TimesheetLineDraft[],
+  date: string,
+  durationMs: number,
+): SlotFields | null {
+  if (durationMs <= 0 || durationMs > DAY_MS) return null;
+  const busy = lines
+    .map(lineRange)
+    .filter((r): r is { s: number; e: number } => r !== null);
+  let dayStart = new Date(`${date}T00:00:00`).getTime();
+  if (Number.isNaN(dayStart)) return null;
+
+  for (let i = 0; i < 366; i++, dayStart += DAY_MS) {
+    const dayEnd = dayStart + DAY_MS;
+    const afterBusy = busy
+      .map((r) => r.e)
+      .filter((e) => e > dayStart && e < dayEnd)
+      .sort((a, b) => a - b);
+    const starts = [
+      dayStart + PREFERRED_START_MINUTES * 60000,
+      ...afterBusy,
+      dayStart,
+    ];
+    for (const s of starts) {
+      const e = s + durationMs;
+      if (busy.some((r) => s < r.e && r.s < e)) continue;
+      return {
+        date: toDateStr(s),
+        from_time: toTimeStr(s),
+        to_date: toDateStr(e),
+        to_time: toTimeStr(e),
+      };
+    }
+  }
+  return null;
+}
+
+function placeLine(
+  line: TimesheetLineDraft,
+  existing: TimesheetLineDraft[],
+  durationMs: number = DEFAULT_SLOT_MINUTES * 60000,
+): TimesheetLineDraft {
+  const slot = findFreeSlot(existing, line.date, durationMs);
+  if (!slot) return line;
+  return {
+    ...line,
+    ...slot,
+    hours: calcHours(slot.date, slot.from_time, slot.to_date, slot.to_time),
+  };
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -250,12 +365,12 @@ export function useTimesheetModal(
         l.projectManuallySet
           ? l
           : {
-            ...l,
-            project: value,
-            project_name: opt.label,
-            task: "",
-            task_name: "",
-          },
+              ...l,
+              project: value,
+              project_name: opt.label,
+              task: "",
+              task_name: "",
+            },
       ),
     }));
   }, []);
@@ -321,12 +436,15 @@ export function useTimesheetModal(
         ...f,
         lines: [
           ...f.lines,
-          emptyLine(
-            f.project
-              ? { project: f.project, project_name: f.project_name }
-              : undefined,
-            initialTask,
-            initialDate,
+          placeLine(
+            emptyLine(
+              f.project
+                ? { project: f.project, project_name: f.project_name }
+                : undefined,
+              initialTask,
+              initialDate,
+            ),
+            f.lines,
           ),
         ],
       }));
@@ -337,13 +455,13 @@ export function useTimesheetModal(
   const addLines = useCallback(
     (tasks: InitialTask[], initialDate?: string) => {
       if (tasks.length === 0) return;
-      setForm((f) => ({
-        ...f,
-        lines: [
-          ...f.lines,
-          ...tasks.map((t) => emptyLine(undefined, t, initialDate)),
-        ],
-      }));
+      setForm((f) => {
+        const lines = [...f.lines];
+        tasks.forEach((t) =>
+          lines.push(placeLine(emptyLine(undefined, t, initialDate), lines)),
+        );
+        return { ...f, lines };
+      });
     },
     [],
   );
@@ -433,18 +551,21 @@ export function useTimesheetModal(
     setForm((f) => ({ ...f, lines: f.lines.filter((l) => !idSet.has(l.id)) }));
   }, []);
 
-
-
   const duplicateLine = useCallback(
     (id: string, position: DuplicatePosition = "after") => {
       setForm((f) => {
         const idx = f.lines.findIndex((l) => l.id === id);
         if (idx === -1) return f;
-        const copy: TimesheetLineDraft = {
-          ...f.lines[idx],
-          id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          logName: undefined,
-        };
+        const src = f.lines[idx];
+        const copy = placeLine(
+          {
+            ...src,
+            id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            logName: undefined,
+          },
+          f.lines,
+          slotDurationMs(src),
+        );
         const lines = [...f.lines];
         lines.splice(position === "end" ? lines.length : idx + 1, 0, copy);
         return { ...f, lines };
@@ -452,6 +573,7 @@ export function useTimesheetModal(
     },
     [],
   );
+
   const sortLines = useCallback((direction: "asc" | "desc") => {
     setForm((f) => {
       const key = (l: TimesheetLineDraft) =>
@@ -495,6 +617,11 @@ export function useTimesheetModal(
       percentBilled: 0,
     };
   }, [form.lines]);
+
+  const conflictIds = useMemo(
+    () => getConflictingLineIds(form.lines),
+    [form.lines],
+  );
 
   const buildPayload = useCallback(
     (exchangeRate: number): TimesheetCreatePayload => {
@@ -541,13 +668,14 @@ export function useTimesheetModal(
         })),
       };
     },
-    [form, editingName, restrictions?.employee]
+    [form, editingName, restrictions?.employee],
   );
 
   const validate = useCallback((): string | null => {
     if (form.lines.length === 0) return "Add at least one time entry.";
     if (form.lines.some((l) => l.hours <= 0))
       return "Check from/to times — some rows compute to 0 hours.";
+    if (getConflictingLineIds(form.lines).size > 0) return OVERLAP_MSG;
     return null;
   }, [form]);
 
@@ -634,6 +762,7 @@ export function useTimesheetModal(
   return {
     form,
     totals,
+    conflictIds,
     isSaving,
     isEditMode,
     restrictions,
@@ -650,7 +779,8 @@ export function useTimesheetModal(
     confirmLine,
     editLine,
     removeLine,
-    removeLines, sortLines,
+    removeLines,
+    sortLines,
     duplicateLine,
     updateLineRates,
     loadFromDetail,

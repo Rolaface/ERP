@@ -26,6 +26,8 @@ import {
   fetchProjectOptions,
   fetchEmployeeOptions,
   fetchTaskOptions,
+  isSlotTaken,
+  OVERLAP_MSG,
   type TimesheetModalRestrictions,
 } from "../../../hooks/project_management/timeheet/form/useTimesheetModal";
 import CustomerSelect from "../../../../src/components/selects/CustomerSelect";
@@ -82,6 +84,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   const {
     form,
     totals,
+    conflictIds,
     isSaving,
     isEditMode,
     setProject,
@@ -244,6 +247,26 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   useEffect(() => {
     if (!isOpen) setSortDir(null);
   }, [isOpen]);
+
+  const handleApplyTime = (
+    id: string,
+    date: string,
+    from: string,
+    to: string,
+    toDate: string,
+  ) => {
+    const slot = {
+      date,
+      to_date: toDate,
+      from_time: from,
+      to_time: to,
+    };
+    if (isSlotTaken(form.lines, id, slot)) {
+      showApiError(OVERLAP_MSG);
+      return;
+    }
+    updateLine(id, slot);
+  };
 
   const handleSave = async () => {
     const ok = await save();
@@ -479,7 +502,11 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
                     <tr
                       key={l.id}
                       className={`hover:bg-app/40 transition-colors ${
-                        selectedIds.has(l.id) ? "bg-primary/5" : ""
+                        conflictIds.has(l.id)
+                          ? "bg-danger/10"
+                          : selectedIds.has(l.id)
+                            ? "bg-primary/5"
+                            : ""
                       }`}
                     >
                       <td className="p-2 text-center">
@@ -547,12 +574,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
                           from_time={l.from_time}
                           to_time={l.to_time}
                           onApply={(date, from, to, toDate) =>
-                            updateLine(l.id, {
-                              date,
-                              to_date: toDate,
-                              from_time: from,
-                              to_time: to,
-                            })
+                            handleApplyTime(l.id, date, from, to, toDate)
                           }
                         />
                       </td>

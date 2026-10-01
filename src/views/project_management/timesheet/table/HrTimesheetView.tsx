@@ -52,7 +52,6 @@ import ViewSelector from "../../../project_management/ViewSelector";
 const TS_MODULE = "Timesheet";
 const TITLE_MAX_LENGTH = 140;
 
-
 const CONTENT_HEIGHT = "calc(85.5vh - 100px)";
 
 const STATUS_OPTIONS = [
@@ -61,7 +60,6 @@ const STATUS_OPTIONS = [
   { label: "Billed", value: "Billed" },
   { label: "Cancelled", value: "Cancelled" },
 ];
-
 
 const STATUS_VARIANT: Record<
   TimesheetStatus,
@@ -87,24 +85,31 @@ const EditableTitle: React.FC<EditableTitleProps> = ({
   onCommit,
 }) => {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
+  const safeValue = value ?? "";
+  const hasTitle = safeValue.trim().length > 0;
+  const [draft, setDraft] = useState(safeValue);
   const busyRef = useRef(false);
 
+  // Not editable (e.g. Cancelled / no permission)
   if (!editable) {
-    return <span className="font-bold text-main text-xs">{value}</span>;
+    return hasTitle ? (
+      <span className="font-bold text-main text-xs">{safeValue}</span>
+    ) : (
+      <span className="text-xs text-muted italic">—</span>
+    );
   }
 
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
 
   const startEdit = () => {
-    setDraft(value);
+    setDraft(safeValue);
     setEditing(true);
   };
 
   const commit = async () => {
     if (busyRef.current) return;
     const next = draft.trim();
-    if (!next || next === value) {
+    if (!next || next === safeValue) {
       setEditing(false);
       return;
     }
@@ -132,6 +137,7 @@ const EditableTitle: React.FC<EditableTitleProps> = ({
           autoFocus
           value={draft}
           maxLength={TITLE_MAX_LENGTH}
+          placeholder="Enter title"
           onChange={(e) => setDraft(e.target.value)}
           onFocus={(e) => e.target.select()}
           onBlur={commit}
@@ -141,13 +147,21 @@ const EditableTitle: React.FC<EditableTitleProps> = ({
           }}
           className="w-full bg-transparent text-xs font-bold text-main outline-none border-b border-primary"
         />
-      ) : (
+      ) : hasTitle ? (
         <span
           title="Click to rename"
           onClick={startEdit}
           className="font-bold text-main text-xs cursor-text hover:underline decoration-dotted underline-offset-2"
         >
-          {value}
+          {safeValue}
+        </span>
+      ) : (
+        <span
+          title="Click to add a title"
+          onClick={startEdit}
+          className="text-xs italic text-muted cursor-text hover:underline decoration-dotted underline-offset-2"
+        >
+          + Add title
         </span>
       )}
     </div>
@@ -297,22 +311,27 @@ const HrTimesheetView: React.FC = () => {
     next: string,
   ): Promise<boolean> => {
     if (!canWrite) return false;
+
+    const hadTitle = !!t.title?.trim();
+
     const result = await fireManagedSwal({
       icon: "question",
-      title: "Rename Timesheet?",
-      text: `"${t.title}" → "${next}"`,
+      title: hadTitle ? "Rename Timesheet?" : "Add Title?",
+      text: hadTitle
+        ? `"${t.title}" → "${next}"`
+        : `Set the title of this timesheet to "${next}"?`,
       showCancelButton: true,
-      confirmButtonText: "Yes, Rename",
+      confirmButtonText: hadTitle ? "Yes, Rename" : "Yes, Add",
       cancelButtonText: "No",
     });
 
     if (!result.isConfirmed) return false;
 
     try {
-      showLoading("Renaming timesheet...");
-      await renameTimesheetTitle(t.name, next);
+      showLoading(hadTitle ? "Renaming timesheet..." : "Adding title...");
+      await renameTimesheetTitle(t.name, next); // same API
       closeSwal();
-      showSuccess("Timesheet renamed");
+      showSuccess(hadTitle ? "Timesheet renamed" : "Title added");
       refreshList();
       return true;
     } catch (error) {
@@ -321,7 +340,6 @@ const HrTimesheetView: React.FC = () => {
       return false;
     }
   };
-
   const handleDelete = async (id: string): Promise<boolean> => {
     if (!canDelete) return false;
     const result = await fireManagedSwal({
@@ -434,7 +452,7 @@ const HrTimesheetView: React.FC = () => {
       sortable: true,
       render: (t) => (
         <EditableTitle
-          value={t.title}
+          value={t.title ?? ""}
           editable={canWrite && t.status !== "Cancelled"}
           onCommit={(next) => handleRename(t, next)}
         />
