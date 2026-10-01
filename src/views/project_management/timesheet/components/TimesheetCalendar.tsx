@@ -16,6 +16,7 @@ import MonthView from "./Monthview";
 import WeekView from "./Weekview";
 import { AgendaList, DayView } from "./Dayview";
 import { LegendItem } from "./Calendarparts";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../../../store/dataRefreshStore";
 import {
   ADMIN_VIEWS,
   APPROVED_TONE,
@@ -57,7 +58,7 @@ const TimesheetCalendar: React.FC<Props> = ({
   const [entries, setEntries] = useState<TimesheetHoursEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-
+const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
   const openTimesheetForm = canViewAll
     ? openAdminTimesheetFormModal
     : openEmployeeTimesheetFormModal;
@@ -190,7 +191,11 @@ const TimesheetCalendar: React.FC<Props> = ({
     setAnchor(start);
   };
 
-  const reload = () => setReloadKey((k) => k + 1);
+ 
+  const reload = () => {
+  setReloadKey((k) => k + 1);
+  triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST);
+};
 
   const warnIfDayOff = (dateKey: string, employeeName?: string) => {
     const off = employeeName
