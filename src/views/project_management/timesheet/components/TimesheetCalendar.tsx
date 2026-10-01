@@ -131,14 +131,14 @@ const TimesheetCalendar: React.FC<Props> = ({
 
   const title = range
     ? [visibleDays[0], visibleDays[visibleDays.length - 1]]
-        .map((d) =>
-          d.toLocaleDateString(undefined, {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          }),
-        )
-        .join(" – ")
+      .map((d) =>
+        d.toLocaleDateString(undefined, {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }),
+      )
+      .join(" – ")
     : getTitle(view, visibleDays, anchor);
 
   const shift = (dir: 1 | -1) => {
@@ -211,8 +211,8 @@ const TimesheetCalendar: React.FC<Props> = ({
     });
   };
 
- const openLogModal = (date: string, employee?: { id: string; name: string }) => {
-  if (!canCreate) return;
+  const openLogModal = (date: string, employee?: { id: string; name: string }) => {
+    if (!canCreate) return;
     warnIfDayOff(date, employee?.name);
     openTimesheetForm({
       prefillDate: date,
