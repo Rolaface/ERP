@@ -17,14 +17,39 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
 
 type Tab = "overview" | "logs" | "billing";
 
-const fmtTime = (t?: string) => {
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const fmtDateTime = (t?: string) => {
   if (!t) return "—";
   const [d, tm] = t.split(" ");
-  return tm ? tm.slice(0, 5) : d;
+  const [y, m, day] = (d ?? "").split("-");
+  const month = MONTHS[Number(m) - 1];
+  const datePart = y && month && day ? `${day} ${month} ${y}` : d;
+  return tm ? `${datePart}, ${tm.slice(0, 5)}` : datePart;
 };
 
-const LOG_COLS = "minmax(0,1.3fr) minmax(0,1.6fr) 90px 60px 90px";
-const LOG_COLS_NO_AMOUNT = "minmax(0,1.3fr) minmax(0,1.6fr) 90px 60px";
+const LOG_COLS = "minmax(0,1.3fr) minmax(0,1.6fr) 150px 60px 90px";
+const LOG_COLS_NO_AMOUNT = "minmax(0,1.3fr) minmax(0,1.6fr) 150px 60px";
+
+const LOG_CSS = `
+.ts-log-grid { display: grid; grid-template-columns: var(--ts-cols); }
+@media (max-width: 780px) {
+  .ts-log-grid { grid-template-columns: minmax(0, 1fr); }
+  .ts-log-head { display: none !important; }
+  .ts-log-grid > * { text-align: left !important; }
+  .ts-log-grid > [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 1px;
+  }
+  .ts-log-grid > :empty { display: none; }
+}
+`;
 
 const labelStyle: React.CSSProperties = {
   fontSize: 9,
@@ -151,6 +176,7 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
     ...(showFinancials ? [{ id: "billing" as Tab, label: "Billing & Costing" }] : []),
   ];
   const logCols = showFinancials ? LOG_COLS : LOG_COLS_NO_AMOUNT;
+  const logGridVars = { "--ts-cols": logCols } as React.CSSProperties;
 
   return (
     <Drawer
@@ -290,8 +316,9 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
 
             {tab === "logs" && (
               <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-                <div style={{
-                  display: "grid", gridTemplateColumns: logCols, padding: "6px 10px", gap: 4,
+                <style>{LOG_CSS}</style>
+                <div className="ts-log-grid ts-log-head" style={{
+                  ...logGridVars, padding: "6px 10px", gap: 4,
                   background: "var(--table-head)", color: "var(--table-head-text)",
                   fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase",
                 }}>
@@ -304,39 +331,53 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                   <p style={{ padding: 16, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>No time logs</p>
                 )}
 
-                {logs.map((log, i) => (
-                  <div key={log.name ?? i} className="idm-irow"
-                    style={{
-                      display: "grid", gridTemplateColumns: logCols, padding: "7px 10px", gap: 4,
-                      borderTop: "1px solid var(--border)", alignItems: "start",
-                    }}>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{log.activity_type}</p>
-                      {(log.project_name || log.task_name) && (
-                        <p style={{ fontSize: 9, color: "var(--muted)", marginTop: 2 }}>
-                          {[log.project_name, log.task_name].filter(Boolean).join(" · ")}
+                {logs.map((log, i) => {
+                  const projectLabel = log.project_name || log.project;
+                  const taskLabel = log.task_name || log.task;
+                  return (
+                    <div key={log.name ?? i} className="idm-irow ts-log-grid"
+                      style={{
+                        ...logGridVars, padding: "7px 10px", gap: 6,
+                        borderTop: "1px solid var(--border)", alignItems: "start",
+                      }}>
+                      <div data-label="Activity" style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", wordBreak: "break-word" }}>{log.activity_type || "—"}</p>
+                        {projectLabel && (
+                          <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 2, wordBreak: "break-word", lineHeight: 1.4 }}>
+                            Project: {projectLabel}
+                          </p>
+                        )}
+                        {taskLabel && (
+                          <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 2, wordBreak: "break-word", lineHeight: 1.4 }}>
+                            Task: {taskLabel}
+                          </p>
+                        )}
+                      </div>
+                      <p data-label="Description" style={{ fontSize: 12, color: "var(--text)", wordBreak: "break-word", lineHeight: 1.4, minWidth: 0 }}>{log.description || "—"}</p>
+                      <div data-label="Time" style={{ minWidth: 0, fontSize: 11, color: "var(--text)", lineHeight: 1.5 }}>
+                        <p style={{ wordBreak: "break-word" }}>
+                          <span style={{ color: "var(--muted)" }}>Start: </span>{fmtDateTime(log.from_time)}
                         </p>
+                        <p style={{ wordBreak: "break-word" }}>
+                          <span style={{ color: "var(--muted)" }}>End: </span>{fmtDateTime(log.to_time)}
+                        </p>
+                      </div>
+                      <p data-label="Hours" style={{ fontSize: 12, textAlign: "right", fontWeight: 700 }}>{(log.hours ?? 0).toFixed(1)}h</p>
+                      {showFinancials && (
+                        <p data-label="Amount" style={{ fontSize: 12, textAlign: "right", wordBreak: "break-word" }}>{log.is_billable ? money(log.billing_amount) : "—"}</p>
                       )}
                     </div>
-                    <p style={{ fontSize: 12, color: "var(--text)", wordBreak: "break-word", lineHeight: 1.4 }}>{log.description || "—"}</p>
-                    <p style={{ fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>
-                      {fmtTime(log.from_time)} – {fmtTime(log.to_time)}
-                    </p>
-                    <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700 }}>{(log.hours ?? 0).toFixed(1)}h</p>
-                    {showFinancials && (
-                      <p style={{ fontSize: 12, textAlign: "right" }}>{log.is_billable ? money(log.billing_amount) : "—"}</p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
 
                 {logs.length > 0 && (
-                  <div style={{
-                    display: "grid", gridTemplateColumns: logCols, padding: "8px 10px", gap: 4,
+                  <div className="ts-log-grid" style={{
+                    ...logGridVars, padding: "8px 10px", gap: 4,
                     borderTop: "2px solid var(--border)", background: "var(--bg)", fontSize: 12, fontWeight: 800,
                   }}>
                     <span>Total</span><span /><span />
-                    <span style={{ textAlign: "right" }}>{logHours.toFixed(1)}h</span>
-                    {showFinancials && <span style={{ textAlign: "right" }}>{money(logAmount)}</span>}
+                    <span data-label="Hours" style={{ textAlign: "right" }}>{logHours.toFixed(1)}h</span>
+                    {showFinancials && <span data-label="Amount" style={{ textAlign: "right", wordBreak: "break-word" }}>{money(logAmount)}</span>}
                   </div>
                 )}
               </div>
