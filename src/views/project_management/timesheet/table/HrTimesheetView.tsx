@@ -12,7 +12,7 @@ import {
   getAllTimesheets,
   submitTimesheet,
   cancelTimesheet,
-  getTimesheetById,  deleteTimesheetById,
+  getTimesheetById, deleteTimesheetById,
 
 } from "../../../../api/project/timesheet/timesheet.api";
 import Table from "../../../../components/ui/Table/Table";
@@ -29,7 +29,7 @@ import type { Column } from "../../../../components/ui/Table/type";
 import type {
   TimesheetEntry,
   TimesheetStatus,
-  TimesheetDetail,  
+  TimesheetDetail,
 
 } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import { HrTableFrame } from "../../../../views/hr/components/HrTabLayout";
@@ -75,7 +75,7 @@ const STATUS_VARIANT: Record<
 // ── Component ────────────────────────────────────────────────────
 
 const HrTimesheetView: React.FC = () => {
- const { can } = usePermission();
+  const { can } = usePermission();
   const { viewMode } = useHRView();
   const isProfessional = viewMode === "professional";
 
@@ -175,8 +175,8 @@ const HrTimesheetView: React.FC = () => {
   // ── Handlers ─────────────────────────────────────────────────
 
   const openTimesheetForm = isProfessional
-  ? openAdminTimesheetFormModal
-  : openEmployeeTimesheetFormModal;
+    ? openAdminTimesheetFormModal
+    : openEmployeeTimesheetFormModal;
 
   const refreshList = () => triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST);
 
@@ -186,14 +186,14 @@ const HrTimesheetView: React.FC = () => {
   };
 
   const handleAdd = () => {
-  if (!canCreate) return;
-  openTimesheetForm({ onSuccess: refreshList });
-};
+    if (!canCreate) return;
+    openTimesheetForm({ onSuccess: refreshList });
+  };
 
-const handleEdit = (id: string) => {
-  if (!canWrite) return;
-  openTimesheetForm({ timesheetId: id, onSuccess: refreshList });
-};
+  const handleEdit = (id: string) => {
+    if (!canWrite) return;
+    openTimesheetForm({ timesheetId: id, onSuccess: refreshList });
+  };
 
   const handleView = async (id: string) => {
     setDrawerOpen(true);
@@ -209,40 +209,40 @@ const handleEdit = (id: string) => {
       setDrawerLoading(false);
     }
   };
- const handleDelete = async (id: string): Promise<boolean> => {
-  if (!canDelete) return false;
-  const result = await fireManagedSwal({
-    title: "Delete Timesheet?",
-    text: `Are you sure you want to permanently delete timesheet ${id}?`,
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    confirmButtonText: "Yes, Delete",
-    cancelButtonText: "No",
-  });
+  const handleDelete = async (id: string): Promise<boolean> => {
+    if (!canDelete) return false;
+    const result = await fireManagedSwal({
+      title: "Delete Timesheet?",
+      text: `Are you sure you want to permanently delete timesheet ${id}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      confirmButtonText: "Yes, Delete",
+      cancelButtonText: "No",
+    });
 
-  if (!result.isConfirmed) return false;
+    if (!result.isConfirmed) return false;
 
-  try {
-    showLoading("Deleting timesheet...");
+    try {
+      showLoading("Deleting timesheet...");
 
-    await deleteTimesheetById(id);
+      await deleteTimesheetById(id);
 
-    closeSwal();
-    showSuccess("Timesheet deleted");
+      closeSwal();
+      showSuccess("Timesheet deleted");
 
-    refreshList();
+      refreshList();
 
-    return true;
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-    return false;
-  }
-};
+      return true;
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+      return false;
+    }
+  };
 
   const handleSubmit = async (id: string): Promise<boolean> => {
-  if (!canSubmit) return false;
+    if (!canSubmit) return false;
     const result = await fireManagedSwal({
       icon: "warning",
       title: "Approve Timesheet?",
@@ -271,7 +271,7 @@ const handleEdit = (id: string) => {
   };
 
   const handleCancel = async (id: string): Promise<boolean> => {
-  if (!canCancel) return false;
+    if (!canCancel) return false;
     const result = await fireManagedSwal({
       title: "Cancel Timesheet?",
       text: "This timesheet will be marked as cancelled.",
@@ -388,42 +388,42 @@ const handleEdit = (id: string) => {
         <StatusBadge status={t.status} variant={STATUS_VARIANT[t.status]} />
       ),
     },
-   ...(showFinancials
-  ? [
-      {
-        key: "per_billed",
-        header: "Billing %",
-        align: "left" as const,
-        render: (t: TimesheetEntry) => (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 rounded-full h-1.5 min-w-[50px]" style={{ background: "var(--border)" }}>
-              <div className="h-1.5 rounded-full bg-success" style={{ width: `${t.per_billed || 0}%` }} />
+    ...(showFinancials
+      ? [
+        {
+          key: "per_billed",
+          header: "Billing %",
+          align: "left" as const,
+          render: (t: TimesheetEntry) => (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 rounded-full h-1.5 min-w-[50px]" style={{ background: "var(--border)" }}>
+                <div className="h-1.5 rounded-full bg-success" style={{ width: `${t.per_billed || 0}%` }} />
+              </div>
+              <span className="font-mono text-[10px] text-muted w-7 text-right">{t.per_billed || 0}%</span>
             </div>
-            <span className="font-mono text-[10px] text-muted w-7 text-right">{t.per_billed || 0}%</span>
-          </div>
-        ),
-      },
-    ]
-  : []),
+          ),
+        },
+      ]
+      : []),
     {
       key: "actions",
       header: "Actions",
       align: "center",
-    render: (t) => {
-  const customActions = [];
+      render: (t) => {
+        const customActions = [];
 
-  if (t.status === "Draft" && canSubmit) {
-    customActions.push({ label: "Approve", icon: ACTION_ICONS.APPROVE, onClick: () => handleSubmit(t.name) });
-  }
-  if (t.status === "Draft" && canDelete) {
-    customActions.push({ label: "Delete", icon: ACTION_ICONS.DELETE, danger: true, onClick: () => handleDelete(t.name) });
-  }
-  if (t.status === "Submitted" && canCancel) {
-    customActions.push({ label: "Cancel", icon: ACTION_ICONS.CANCEL, danger: true, onClick: () => handleCancel(t.name) });
-  }
+        if (t.status === "Draft" && canSubmit) {
+          customActions.push({ label: "Approve", icon: ACTION_ICONS.APPROVE, onClick: () => handleSubmit(t.name) });
+        }
+        if (t.status === "Draft" && canDelete) {
+          customActions.push({ label: "Delete", icon: ACTION_ICONS.DELETE, danger: true, onClick: () => handleDelete(t.name) });
+        }
+        if (t.status === "Submitted" && canCancel) {
+          customActions.push({ label: "Cancel", icon: ACTION_ICONS.CANCEL, danger: true, onClick: () => handleCancel(t.name) });
+        }
 
-         const canEdit = t.status === "Draft" && canWrite;
-  const isMenuEmpty = customActions.length === 0;
+        const canEdit = t.status === "Draft" && canWrite;
+        const isMenuEmpty = customActions.length === 0;
 
         return (
           <ActionGroup>
@@ -469,12 +469,12 @@ const handleEdit = (id: string) => {
           className="app-surface overflow-hidden"
           style={{ height: CONTENT_HEIGHT }}
         >
-     <TimesheetCalendar
-  canViewAll={isProfessional}
-  canEdit={canWrite}
-  canCreate={canCreate}
-  onSwitchToList={() => setView("table")}
-/>
+          <TimesheetCalendar
+            canViewAll={isProfessional}
+            canEdit={canWrite}
+            canCreate={canCreate}
+            onSwitchToList={() => setView("table")}
+          />
         </div>
       ) : (
         <Table
@@ -531,19 +531,20 @@ const handleEdit = (id: string) => {
       )}
 
       <TimesheetDetailDrawer
-  open={drawerOpen}
-  data={drawerData}
-  loading={drawerLoading}
-  actionLoading={approving}
-  canWrite={canWrite}
-  canSubmit={canSubmit}
-  canCancel={canCancel}
-  showFinancials={showFinancials}
-  onClose={closeDrawer}
-  onApprove={handleDrawerApprove}
-  onEdit={handleDrawerEdit}
-  onCancel={handleDrawerCancel}
-/>
+        open={drawerOpen}
+        data={drawerData}
+        loading={drawerLoading}
+        actionLoading={approving}
+        canWrite={canWrite}
+        canSubmit={canSubmit}
+        canCancel={canCancel}
+        showFinancials={showFinancials}
+        showEmployeeCard={isProfessional}
+        onClose={closeDrawer}
+        onApprove={handleDrawerApprove}
+        onEdit={handleDrawerEdit}
+        onCancel={handleDrawerCancel}
+      />
     </HrTableFrame>
   );
 };
