@@ -74,7 +74,10 @@ export async function fetchTaskOptions(
 ): Promise<Option[]> {
   if (!projectId) return [];
 
-  const tasks = await getAllTasks(projectId, search);
+  const tasks = await getAllTasks(projectId, search, {
+    excludeGroups: true,
+    excludeStatuses: ["Cancelled"],
+  });
 
   return tasks.map((task) => ({
     label: task.subject,
