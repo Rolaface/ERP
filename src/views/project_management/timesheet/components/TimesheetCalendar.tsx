@@ -41,6 +41,7 @@ import {
 interface Props {
   canViewAll: boolean;
   canEdit: boolean;
+  canCreate?: boolean; // default true
   onSwitchToList: () => void;
   restrictions?: TimesheetModalRestrictions;
 }
@@ -48,10 +49,7 @@ interface Props {
 const WEEKLY_OFF_LABEL = "Weekly Off";
 
 const TimesheetCalendar: React.FC<Props> = ({
-  canViewAll,
-  canEdit,
-  onSwitchToList,
-  restrictions,
+  canViewAll, canEdit, canCreate = true, onSwitchToList, restrictions,
 }) => {
   const [view, setView] = useState<ViewMode>("month");
   const [anchor, setAnchor] = useState(() => new Date());
@@ -213,10 +211,8 @@ const TimesheetCalendar: React.FC<Props> = ({
     });
   };
 
-  const openLogModal = (
-    date: string,
-    employee?: { id: string; name: string },
-  ) => {
+ const openLogModal = (date: string, employee?: { id: string; name: string }) => {
+  if (!canCreate) return;
     warnIfDayOff(date, employee?.name);
     openTimesheetForm({
       prefillDate: date,

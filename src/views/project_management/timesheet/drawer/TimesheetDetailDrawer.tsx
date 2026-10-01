@@ -24,6 +24,7 @@ const fmtTime = (t?: string) => {
 };
 
 const LOG_COLS = "minmax(0,1.3fr) minmax(0,1.6fr) 90px 60px 90px";
+const LOG_COLS_NO_AMOUNT = "minmax(0,1.3fr) minmax(0,1.6fr) 90px 60px";
 
 const labelStyle: React.CSSProperties = {
   fontSize: 9,
@@ -86,8 +87,10 @@ interface Props {
   data: TimesheetDetail | null;
   loading?: boolean;
   actionLoading?: boolean;
-  canWrite?: boolean;   // can(TS_MODULE, "write")
-  canDelete?: boolean;  // can(TS_MODULE, "delete")
+  canWrite?: boolean;       // Edit
+  canSubmit?: boolean;      // Approve
+  canCancel?: boolean;      // Cancel
+  showFinancials?: boolean; // default true
   onClose: () => void;
   onApprove?: (id: string) => void;
   onEdit?: (id: string) => void;
@@ -95,7 +98,8 @@ interface Props {
 }
 
 const TimesheetDetailDrawer: React.FC<Props> = ({
-  open, data, loading, actionLoading, canWrite, canDelete,
+  open, data, loading, actionLoading, canWrite, canSubmit, canCancel,
+  showFinancials = true,
   onClose, onApprove, onEdit, onCancel,
 }) => {
   // Hooks hamesha early return se pehle
@@ -117,18 +121,20 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
 
   // ── Header actions ──
   const actions: DrawerAction[] = [];
-  if (data) {
-    if (data.status === "Draft" && canWrite) {
-      actions.push({ key: "edit", label: "Edit", variant: "primary", icon: <Ico d={ICON.edit} />, onClick: () => onEdit?.(data.name) });
-      actions.push({
-        key: "approve", label: actionLoading ? "Approving..." : "Approve", icon: <Ico d={ICON.check} />,
-        disabled: actionLoading, onClick: () => onApprove?.(data.name),
-      });
-    }
-    if (canDelete && (data.status === "Draft" || data.status === "Submitted")) {
-      actions.push({ key: "cancel", label: "Cancel", icon: <Ico d={ICON.x} />, onClick: () => onCancel?.(data.name) });
-    }
+if (data) {
+  if (data.status === "Draft" && canWrite) {
+    actions.push({ key: "edit", label: "Edit", variant: "primary", icon: <Ico d={ICON.edit} />, onClick: () => onEdit?.(data.name) });
   }
+  if (data.status === "Draft" && canSubmit) {
+    actions.push({
+      key: "approve", label: actionLoading ? "Approving..." : "Approve", icon: <Ico d={ICON.check} />,
+      disabled: actionLoading, onClick: () => onApprove?.(data.name),
+    });
+  }
+  if (data.status === "Submitted" && canCancel) {
+    actions.push({ key: "cancel", label: "Cancel", icon: <Ico d={ICON.x} />, onClick: () => onCancel?.(data.name) });
+  }
+}
 
   const copyId = () => {
     if (!data) return;
@@ -138,10 +144,11 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
   };
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "overview", label: "Overview" },
-    { id: "logs", label: `Time Logs (${logs.length})` },
-    { id: "billing", label: "Billing & Costing" },
-  ];
+  { id: "overview", label: "Overview" },
+  { id: "logs", label: `Time Logs (${logs.length})` },
+  ...(showFinancials ? [{ id: "billing" as Tab, label: "Billing & Costing" }] : []),
+];
+const logCols = showFinancials ? LOG_COLS : LOG_COLS_NO_AMOUNT;
 
   return (
     <Drawer
@@ -190,12 +197,16 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
             </div>
 
             <DrawerSummaryCards
-              items={[
-                { label: "Total Hours", value: `${(data.total_hours ?? 0).toFixed(1)} hrs` },
-                { label: "Billable Hours", value: `${(data.total_billable_hours ?? 0).toFixed(1)} hrs` },
-                { label: "Costing", value: money(data.total_costing_amount) },
-                { label: "Billed Amount", value: money(data.total_billed_amount), emphasis: true },
-              ]}
+             items={[
+  { label: "Total Hours", value: `${(data.total_hours ?? 0).toFixed(1)} hrs` },
+  ...(showFinancials
+    ? [
+        { label: "Billable Hours", value: `${(data.total_billable_hours ?? 0).toFixed(1)} hrs` },
+        { label: "Costing", value: money(data.total_costing_amount) },
+        { label: "Billed Amount", value: money(data.total_billed_amount), emphasis: true },
+      ]
+    : []),
+]}
             />
 
             <div style={{ display: "flex", gap: 4, marginTop: 10, borderBottom: "1px solid var(--border)" }}>
@@ -227,8 +238,8 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                   <Row label="Customer" value={data.customer} />
                   <Row label="Company" value={data.company} />
                   <Row label="Department" value={data.department} />
-                  <Row label="Currency" value={data.currency} />
-                  <Row label="Exchange Rate" value={data.exchange_rate} />
+                 {showFinancials && <Row label="Currency" value={data.currency} />}
+{showFinancials && <Row label="Exchange Rate" value={data.exchange_rate} />}
                   <Row label="Parent Project" value={data.parent_project} />
                   <Row label="Start Date" value={<DateDisplay date={data.start_date} />} />
                   <Row label="End Date" value={<DateDisplay date={data.end_date} />} />
@@ -252,7 +263,8 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                     <Row label="Company" value={data.company} />
                     <Row label="Department" value={data.department} />
                   </Card>
-
+                
+                {showFinancials && (
                   <Card title="Financial Summary">
                     <Row label="Total Billable Amount" value={money(data.total_billable_amount)} strong />
                     <Row label="Total Costing Amount" value={money(data.total_costing_amount)} strong />
@@ -264,6 +276,7 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                     )}
                     <Row label="Exchange Rate" value={data.exchange_rate} />
                   </Card>
+                  )}
                 </div>
               </div>
             )}
@@ -271,14 +284,14 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
             {tab === "logs" && (
               <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
                 <div style={{
-                  display: "grid", gridTemplateColumns: LOG_COLS, padding: "6px 10px", gap: 4,
-                  background: "var(--table-head)", color: "var(--table-head-text)",
-                  fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase",
-                }}>
-                  <span>Activity</span><span>Description</span><span>Time</span>
-                  <span style={{ textAlign: "right" }}>Hours</span>
-                  <span style={{ textAlign: "right" }}>Amount</span>
-                </div>
+  display: "grid", gridTemplateColumns: logCols, padding: "6px 10px", gap: 4,
+  background: "var(--table-head)", color: "var(--table-head-text)",
+  fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase",
+}}>
+  <span>Activity</span><span>Description</span><span>Time</span>
+  <span style={{ textAlign: "right" }}>Hours</span>
+  {showFinancials && <span style={{ textAlign: "right" }}>Amount</span>}
+</div>
 
                 {logs.length === 0 && (
                   <p style={{ padding: 16, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>No time logs</p>
@@ -287,9 +300,9 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                 {logs.map((log, i) => (
                   <div key={log.name ?? i} className="idm-irow"
                     style={{
-                      display: "grid", gridTemplateColumns: LOG_COLS, padding: "7px 10px", gap: 4,
-                      borderTop: "1px solid var(--border)", alignItems: "start",
-                    }}>
+  display: "grid", gridTemplateColumns: logCols, padding: "7px 10px", gap: 4,
+  borderTop: "1px solid var(--border)", alignItems: "start",
+}}>
                     <div style={{ minWidth: 0 }}>
                       <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{log.activity_type}</p>
                       {(log.project_name || log.task_name) && (
@@ -302,25 +315,27 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                     <p style={{ fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>
                       {fmtTime(log.from_time)} – {fmtTime(log.to_time)}
                     </p>
-                    <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700 }}>{(log.hours ?? 0).toFixed(1)}h</p>
-                    <p style={{ fontSize: 12, textAlign: "right" }}>{log.is_billable ? money(log.billing_amount) : "—"}</p>
+                <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700 }}>{(log.hours ?? 0).toFixed(1)}h</p>
+{showFinancials && (
+  <p style={{ fontSize: 12, textAlign: "right" }}>{log.is_billable ? money(log.billing_amount) : "—"}</p>
+)}
                   </div>
                 ))}
 
                 {logs.length > 0 && (
-                  <div style={{
-                    display: "grid", gridTemplateColumns: LOG_COLS, padding: "8px 10px", gap: 4,
-                    borderTop: "2px solid var(--border)", background: "var(--bg)", fontSize: 12, fontWeight: 800,
-                  }}>
-                    <span>Total</span><span /><span />
-                    <span style={{ textAlign: "right" }}>{logHours.toFixed(1)}h</span>
-                    <span style={{ textAlign: "right" }}>{money(logAmount)}</span>
-                  </div>
+                 <div style={{
+  display: "grid", gridTemplateColumns: logCols, padding: "8px 10px", gap: 4,
+  borderTop: "2px solid var(--border)", background: "var(--bg)", fontSize: 12, fontWeight: 800,
+}}>
+  <span>Total</span><span /><span />
+  <span style={{ textAlign: "right" }}>{logHours.toFixed(1)}h</span>
+  {showFinancials && <span style={{ textAlign: "right" }}>{money(logAmount)}</span>}
+</div>
                 )}
               </div>
             )}
 
-            {tab === "billing" && (
+            {tab === "billing" && showFinancials && (
               <div style={{ background: "var(--bg)", borderRadius: 10, border: "1px solid var(--border)", padding: 12 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginBottom: 12 }}>
                   <MoneyCell label="Billable Amount" value={money(data.total_billable_amount)} color="var(--primary)" />
