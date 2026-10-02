@@ -32,6 +32,10 @@ import {
   updateTaskAssignees,
   updateTaskStatus,
 } from "../../../../api/project/task/taskapi";
+import {
+  getMyAssignedTasks,
+  closeMyTaskAssignment,
+} from "../../../../api/project/todo/todo.api";
 import { getAllProjects } from "../../../../api/project/projectapi/project.api";
 import { getalluser } from "../../../../api/utils/frappeUtilsApi";
 import { Option } from "../../../../components/selects/tabelselect/MultiSearchSelect";
@@ -55,7 +59,8 @@ import ViewSelector, {
 
 const TASK_MODULE = "Task";
 const TREE_INDENT_PX = 16;
-const DEFAULT_VIEW: TaskMode = "kanban";
+const ADMIN_DEFAULT_VIEW: TaskMode = "table";
+const EMPLOYEE_DEFAULT_VIEW: TaskMode = "kanban";
 const VIEW_OPTIONS: ViewOption<TaskMode>[] = [
   { value: "kanban", label: "Kanban" },
   { value: "table", label: "Table" },
@@ -138,14 +143,6 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   const canWriteTask = can(TASK_MODULE, "write");
   const canLogTime = can("Timesheet", "create");
 
-  const isAssignedToMe = (assign: string | null | undefined) => {
-    if (!currentUserEmail) return false;
-    const me = currentUserEmail.toLowerCase();
-    return parseAssignedEmails(assign ?? null).some(
-      (e) => e.toLowerCase() === me,
-    );
-  };
-
   const canEditStatusOf = (_assign?: string | null) => canWriteTask;
   const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
   const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
@@ -181,9 +178,16 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   const [loadingGroups, setLoadingGroups] = useState<Set<string>>(new Set());
 
   const [selected, setSelected] = useState<Map<string, TaskEntry>>(new Map());
-  const [view, setView] = useState<TaskMode>(DEFAULT_VIEW);
+  const [view, setView] = useState<TaskMode>(
+    isEmployee ? EMPLOYEE_DEFAULT_VIEW : ADMIN_DEFAULT_VIEW,
+  );
 
-  const assigneeActive = assigneeFilter.length > 0;
+  // Table: employee ke SAARE assigned tasks (ToDo status ka filter nahi)
+  const allAssignedNamesRef = useRef<string[] | undefined>(undefined);
+  // Kanban: sirf Open ToDo wale tasks
+  const [assignedNames, setAssignedNames] = useState<string[]>([]);
+
+  const assigneeActive = isEmployee || assigneeFilter.length > 0;
 
   useEffect(() => {
     getAllProjects()
@@ -219,6 +223,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
 
   const fetchTasks = useCallback(async () => {
     if (!mountedRef.current) return;
+    if (view !== "table") return;
+    if (isEmployee && allAssignedNamesRef.current === undefined) return;
+
     setIsFetching(true);
 
     try {
@@ -231,7 +238,10 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
         sortBy || undefined,
         sortOrder,
         assigneeFilter.length ? assigneeFilter : undefined,
+        isEmployee,
+        isEmployee ? allAssignedNamesRef.current : undefined,
       );
+
       if (!mountedRef.current) return;
 
       setTasks(res.data || []);
@@ -256,6 +266,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     assigneeFilter,
     sortBy,
     sortOrder,
+    isEmployee,
+    view,
   ]);
 
   const fetchTasksRef = useRef(fetchTasks);
@@ -263,9 +275,45 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     fetchTasksRef.current = fetchTasks;
   }, [fetchTasks]);
 
+  const viewInitRef = useRef(true);
+  useEffect(() => {
+    if (viewInitRef.current) {
+      viewInitRef.current = false;
+      return;
+    }
+    if (view === "table") fetchTasksRef.current();
+  }, [view]);
+
+  const loadAssignedNames = useCallback(async () => {
+    try {
+      const [names, allNames] = currentUserEmail
+        ? await Promise.all([
+            getMyAssignedTasks(currentUserEmail, true), // Kanban: Open only
+            getMyAssignedTasks(currentUserEmail, false), // Table: sab
+          ])
+        : [[], []];
+      if (!mountedRef.current) return;
+      allAssignedNamesRef.current = allNames;
+      setAssignedNames((prev) =>
+        prev.length === names.length && prev.every((n, i) => n === names[i])
+          ? prev
+          : names,
+      );
+      await fetchTasksRef.current();
+    } catch (error) {
+      showApiError(error);
+      if (mountedRef.current) setIsInitialLoad(false);
+    }
+  }, [currentUserEmail]);
+
+  const reloadRef = useRef<() => unknown>(fetchTasks);
+  useEffect(() => {
+    reloadRef.current = isEmployee ? loadAssignedNames : fetchTasks;
+  }, [isEmployee, loadAssignedNames, fetchTasks]);
+
   useEffect(() => {
     mountedRef.current = true;
-    fetchTasks();
+    reloadRef.current();
     return () => {
       mountedRef.current = false;
     };
@@ -287,7 +335,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
 
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(REFRESH_KEYS.TASK_LIST, () =>
-      fetchTasksRef.current(),
+      reloadRef.current(),
     );
     return unsubscribe;
   }, [subscribeToRefresh]);
@@ -378,6 +426,21 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     console.warn("handleAdd: Task create modal not wired yet.");
   };
 
+  // Task update has already succeeded when this runs.
+  // A ToDo failure must never undo it. Admin path returns immediately.
+  const finalizeEmployeeAssignment = async (
+    taskName: string,
+    nextStatus: string,
+  ) => {
+    if (nextStatus !== "Completed" || !isEmployee || !currentUserEmail) return;
+    try {
+      await closeMyTaskAssignment(taskName, currentUserEmail);
+    } catch (error) {
+      showApiError(error); // non-fatal: task is completed, assignment stays open
+    }
+    triggerRefresh(REFRESH_KEYS.TASK_LIST); // reloadRef → loadAssignedNames → refetch
+  };
+
   const handleStatusChange = async (
     taskName: string,
     nextStatus: string,
@@ -385,16 +448,19 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   ) => {
     if (!canEditStatusOf(findTask(taskName)?._assign)) return;
 
+    const progress = nextStatus === "Completed" ? 100 : nextProgress;
+
     try {
-      await updateTaskStatus(taskName, nextStatus, nextProgress);
+      await updateTaskStatus(taskName, nextStatus, progress); // throws → nothing below runs
 
       patchTask(taskName, {
         status: nextStatus as TaskStatus,
-        ...(nextProgress !== undefined ? { progress: nextProgress } : {}),
+        ...(progress !== undefined ? { progress } : {}),
       });
       refreshParents(taskName);
 
       showSuccess("Task status updated");
+      await finalizeEmployeeAssignment(taskName, nextStatus);
     } catch (error) {
       showApiError(error);
     }
@@ -508,7 +574,11 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       refreshParents(taskName);
 
       showSuccess("Task status updated");
-      if (view === "kanban") triggerRefresh(REFRESH_KEYS.TASK_LIST);
+
+      await finalizeEmployeeAssignment(taskName, nextStatus);
+      if (view === "kanban" && !(isEmployee && nextStatus === "Completed")) {
+        triggerRefresh(REFRESH_KEYS.TASK_LIST);
+      }
     } catch (error) {
       showApiError(error);
     } finally {
@@ -543,20 +613,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     }
   };
 
-  const handleTakeTask = async (taskName: string) => {
-    if (!canWriteTask || !currentUserEmail) return;
-
-    const task = findTask(taskName);
-    if (!task) return;
-
-    const current = parseAssignedEmails(task._assign);
-    const me = currentUserEmail.toLowerCase();
-    if (current.some((e) => e.toLowerCase() === me)) return;
-
-    await handleAssigneesChange(taskName, [...current, currentUserEmail]);
-  };
-
-  const columns: Column<TaskRow>[] = [
+  const allColumns: Column<TaskRow>[] = [
     {
       key: "subject",
       header: "Task ",
@@ -673,22 +730,19 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       header: "Assigned To",
       align: "left",
       render: (t) => {
-        const emails = parseAssignedEmails(t._assign);
+        // Completed / Cancelled task: assign nahi hoga, isliye column khali dikhao
+        if (t.status === "Completed" || t.status === "Cancelled") {
+          return <span className="text-xs text-muted">—</span>;
+        }
 
-        const canTake =
-          isEmployee &&
-          canWriteTask &&
-          Boolean(currentUserEmail) &&
-          t.is_group !== 1 &&
-          !isAssignedToMe(t._assign);
+        const emails = parseAssignedEmails(t._assign);
 
         return (
           <AssigneeCell
             emails={emails}
-            disabled={!canWriteTask || isEmployee}
+            disabled={!canWriteTask}
             fetchOptions={fetchUserOptions}
             onChange={(nextValues) => handleAssigneesChange(t.name, nextValues)}
-            onTake={canTake ? () => handleTakeTask(t.name) : undefined}
           />
         );
       },
@@ -746,6 +800,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       ),
     },
   ];
+  const columns = isEmployee
+    ? allColumns.filter((c) => c.key !== "progress")
+    : allColumns;
   const viewSelector = (
     <ViewSelector value={view} options={VIEW_OPTIONS} onChange={setView} />
   );
@@ -771,6 +828,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
             canEditTask={(t) => canEditStatusOf(t._assign)}
             onView={handleView}
             toolbarRight={viewSelector}
+            taskNames={isEmployee ? assignedNames : undefined}
+            showProgress={!isEmployee}
           />
         </div>
       ) : (

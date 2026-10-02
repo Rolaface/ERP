@@ -51,6 +51,8 @@ interface Props {
   canEditTask?: (task: TaskEntry) => boolean;
   onView: (name: string) => void;
   toolbarRight?: React.ReactNode;
+  taskNames?: string[];
+  showProgress?: boolean;
 }
 
 interface StatusMeta {
@@ -126,6 +128,7 @@ interface CardProps {
   highlight: Highlight;
   movable: boolean;
   hasFilters: boolean;
+  showProgress: boolean;
   metaMap: Map<string, StatusMeta>;
   onOpen: (name: string) => void;
   onHover: (key: string | null) => void;
@@ -143,6 +146,7 @@ const KanbanCard = memo(function KanbanCard({
   highlight,
   movable,
   hasFilters,
+  showProgress,
   metaMap,
   onOpen,
   onHover,
@@ -282,20 +286,22 @@ const KanbanCard = memo(function KanbanCard({
         </div>
       )}
 
-      <div className="mt-2 flex items-center gap-2">
-        <div
-          className="h-1.5 flex-1 rounded-full"
-          style={{ background: "var(--border)" }}
-        >
+      {showProgress && (
+        <div className="mt-2 flex items-center gap-2">
           <div
-            className="h-1.5 rounded-full bg-success"
-            style={{ width: `${progress}%` }}
-          />
+            className="h-1.5 flex-1 rounded-full"
+            style={{ background: "var(--border)" }}
+          >
+            <div
+              className="h-1.5 rounded-full bg-success"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="w-8 text-right font-mono text-[10px] text-muted">
+            {progress}%
+          </span>
         </div>
-        <span className="w-8 text-right font-mono text-[10px] text-muted">
-          {progress}%
-        </span>
-      </div>
+      )}
 
       <div className="mt-2 flex items-center justify-between gap-2">
         {task.exp_end_date ? (
@@ -351,6 +357,8 @@ const TaskKanban: React.FC<Props> = ({
   canEditTask,
   onView,
   toolbarRight,
+  taskNames,
+  showProgress = true,
 }) => {
   const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
 
@@ -428,6 +436,7 @@ const TaskKanban: React.FC<Props> = ({
         "desc",
         assigneeFilter.length ? assigneeFilter : undefined,
         true,
+        taskNames,
       );
       const items = Array.isArray(res?.data) ? (res.data as TaskEntry[]) : [];
       return {
@@ -435,7 +444,7 @@ const TaskKanban: React.FC<Props> = ({
         total: Number(res?.pagination?.total) || items.length,
       };
     },
-    [statuses, projectFilter, searchTerm, assigneeFilter],
+    [statuses, projectFilter, searchTerm, assigneeFilter, taskNames],
   );
 
   const loadAll = useCallback(
@@ -627,6 +636,7 @@ const TaskKanban: React.FC<Props> = ({
         highlight={highlightOf(t)}
         movable={isMovable(t)}
         hasFilters={hasFilters}
+        showProgress={showProgress}
         metaMap={metaMap}
         onOpen={handleOpen}
         onHover={handleHover}
