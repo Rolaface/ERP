@@ -47,9 +47,19 @@ import {
   Folder,
   Loader2,
 } from "lucide-react";
+import TaskKanban from "../components/Taskkanban";
+import type { TaskMode } from "../components/Taskviewtoggle";
+import ViewSelector, {
+  type ViewOption,
+} from "../../../project_management/ViewSelector";
 
 const TASK_MODULE = "Task";
 const TREE_INDENT_PX = 16;
+const DEFAULT_VIEW: TaskMode = "kanban";
+const VIEW_OPTIONS: ViewOption<TaskMode>[] = [
+  { value: "kanban", label: "Kanban" },
+  { value: "table", label: "Table" },
+];
 
 type TaskRow = TaskEntry & { _depth: number };
 
@@ -92,7 +102,23 @@ const fetchUserOptions = async (q: string): Promise<Option[]> => {
   }));
 };
 
+const fetchProjectOptions = async (q: string): Promise<Option[]> => {
+  try {
+    const list = await getAllProjects(q || undefined);
+    return list.map((p) => ({
+      label: p.project_name || p.name,
+      value: p.name,
+      subLabel:
+        p.project_name && p.project_name !== p.name ? p.name : undefined,
+    }));
+  } catch (error) {
+    showApiError(error);
+    return [];
+  }
+};
+
 type TaskViewContext = "admin" | "employee";
+const CONTENT_HEIGHT = "calc(95.5vh - 120px)";
 
 interface HrTaskViewProps {
   context?: TaskViewContext;
@@ -108,7 +134,21 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
 
   const isEmployee = context === "employee";
 
+  const canCreateTask = can(TASK_MODULE, "create");
+  const canWriteTask = can(TASK_MODULE, "write");
+  const canLogTime = can("Timesheet", "create");
+
+  const isAssignedToMe = (assign: string | null | undefined) => {
+    if (!currentUserEmail) return false;
+    const me = currentUserEmail.toLowerCase();
+    return parseAssignedEmails(assign ?? null).some(
+      (e) => e.toLowerCase() === me,
+    );
+  };
+
+  const canEditStatusOf = (_assign?: string | null) => canWriteTask;
   const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
+  const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
 
   const [tasks, setTasks] = useState<TaskEntry[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -141,6 +181,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   const [loadingGroups, setLoadingGroups] = useState<Set<string>>(new Set());
 
   const [selected, setSelected] = useState<Map<string, TaskEntry>>(new Map());
+  const [view, setView] = useState<TaskMode>(DEFAULT_VIEW);
 
   const assigneeActive = assigneeFilter.length > 0;
 
@@ -156,6 +197,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   }, []);
 
   useEffect(() => {
+    if (isEmployee) return;
     fetchUserOptions("")
       .then((list) => {
         if (!mountedRef.current) return;
@@ -164,7 +206,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
         );
       })
       .catch(showApiError);
-  }, []);
+  }, [isEmployee]);
 
   const projectFilterOptions = projectOptions.map((p) => ({
     label: p.project_name,
@@ -332,6 +374,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   }, [tasks, childrenMap, expanded, assigneeActive]);
 
   const handleAdd = () => {
+    if (!canCreateTask) return;
     console.warn("handleAdd: Task create modal not wired yet.");
   };
 
@@ -340,6 +383,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     nextStatus: string,
     nextProgress?: number,
   ) => {
+    if (!canEditStatusOf(findTask(taskName)?._assign)) return;
+
     try {
       await updateTaskStatus(taskName, nextStatus, nextProgress);
 
@@ -366,6 +411,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   };
 
   const handleLogTime = (task: TaskEntry) => {
+    if (!canLogTime) return;
     openEmployeeTimesheetFormModal({
       title: "Log Time",
       subtitle: `Logging time for ${task.subject}`,
@@ -378,7 +424,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     });
   };
 
-  const canLogTime = (t: TaskEntry) => t.is_group !== 1;
+  const canLogRow = (t: TaskEntry) => canLogTime && t.is_group !== 1;
 
   const handleRowSelect = (t: TaskEntry, checked: boolean) =>
     setSelected((prev) => {
@@ -399,14 +445,14 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     });
 
   const handleLogSelected = () => {
+    if (!canLogTime) return;
     const picked = Array.from(selected.values());
     if (picked.length === 0) return;
 
     openEmployeeTimesheetFormModal({
       title: "Log Time",
-      subtitle: `Logging time for ${picked.length} task${
-        picked.length > 1 ? "s" : ""
-      }`,
+      subtitle: `Logging time for ${picked.length} task${picked.length > 1 ? "s" : ""
+        }`,
       prefillTasks: picked.map((t) => ({
         project: t.project ?? "",
         projectName: getProjectDisplayName(t.project),
@@ -436,6 +482,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     taskName: string,
     nextStatus: string,
   ) => {
+    if (!canEditStatusOf(drawerData?._assign)) return;
+
     const nextProgress = nextStatus === "Completed" ? 100 : undefined;
 
     setDrawerActionLoading(true);
@@ -445,11 +493,11 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       setDrawerData((prev) =>
         prev
           ? {
-              ...prev,
-              status: nextStatus as TaskStatus,
-              progress:
-                nextProgress !== undefined ? nextProgress : prev.progress,
-            }
+            ...prev,
+            status: nextStatus as TaskStatus,
+            progress:
+              nextProgress !== undefined ? nextProgress : prev.progress,
+          }
           : prev,
       );
 
@@ -460,6 +508,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       refreshParents(taskName);
 
       showSuccess("Task status updated");
+      if (view === "kanban") triggerRefresh(REFRESH_KEYS.TASK_LIST);
     } catch (error) {
       showApiError(error);
     } finally {
@@ -495,7 +544,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   };
 
   const handleTakeTask = async (taskName: string) => {
-    if (!currentUserEmail) return;
+    if (!canWriteTask || !currentUserEmail) return;
 
     const task = findTask(taskName);
     if (!task) return;
@@ -607,20 +656,17 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       header: "Status",
       align: "center",
       sortable: true,
-      render: (t) => {
-        const canEdit = can(TASK_MODULE, "write");
-        return (
-          <StatusCell
-            status={t.status}
-            progress={t.progress ?? 0}
-            options={STATUS_CELL_OPTIONS}
-            disabled={!canEdit}
-            onChange={(nextStatus, nextProgress) =>
-              handleStatusChange(t.name, nextStatus, nextProgress)
-            }
-          />
-        );
-      },
+      render: (t) => (
+        <StatusCell
+          status={t.status}
+          progress={t.progress ?? 0}
+          options={STATUS_CELL_OPTIONS}
+          disabled={!canEditStatusOf(t._assign)}
+          onChange={(nextStatus, nextProgress) =>
+            handleStatusChange(t.name, nextStatus, nextProgress)
+          }
+        />
+      ),
     },
     {
       key: "_assign",
@@ -628,20 +674,18 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       align: "left",
       render: (t) => {
         const emails = parseAssignedEmails(t._assign);
-        const canEdit = can(TASK_MODULE, "write");
 
         const canTake =
-  isEmployee &&
-  Boolean(currentUserEmail) &&
-  t.is_group !== 1 &&
-  !emails.some(
-    (e) => e.toLowerCase() === (currentUserEmail as string).toLowerCase(),
-  );
+          isEmployee &&
+          canWriteTask &&
+          Boolean(currentUserEmail) &&
+          t.is_group !== 1 &&
+          !isAssignedToMe(t._assign);
 
         return (
           <AssigneeCell
             emails={emails}
-            disabled={!canEdit || isEmployee}
+            disabled={!canWriteTask || isEmployee}
             fetchOptions={fetchUserOptions}
             onChange={(nextValues) => handleAssigneesChange(t.name, nextValues)}
             onTake={canTake ? () => handleTakeTask(t.name) : undefined}
@@ -674,22 +718,17 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       key: "actions",
       header: "Actions",
       align: "center",
-      render: (t) => {
-        const canEdit = can(TASK_MODULE, "write");
-        return (
-          <ActionGroup>
-            <ActionButton
-              type="view"
-              onClick={() => handleView(t.name)}
-              iconOnly
-            />
-            <ActionButton
-              type="edit"
-              onClick={() => handleEdit(t.name)}
-              iconOnly
-              disabled={!canEdit}
-              title={canEdit ? "Edit" : "You don't have permission to edit"}
-            />
+      render: (t) => (
+        <ActionGroup>
+          <ActionButton type="view" onClick={() => handleView(t.name)} iconOnly />
+          <ActionButton
+            type="edit"
+            onClick={() => handleEdit(t.name)}
+            iconOnly
+            disabled={!canWriteTask}
+            title={canWriteTask ? "Edit" : "You don't have permission to edit"}
+          />
+          {canLogTime && (
             <button
               onClick={() => handleLogTime(t)}
               disabled={t.is_group === 1}
@@ -702,102 +741,139 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
             >
               <Clock size={14} />
             </button>
-          </ActionGroup>
-        );
-      },
+          )}
+        </ActionGroup>
+      ),
     },
   ];
-
+  const viewSelector = (
+    <ViewSelector value={view} options={VIEW_OPTIONS} onChange={setView} />
+  );
   return (
     <HrTableFrame>
-      <Table
-        tableId="hr-task"
-      
-        columns={columns}
-        data={rows}
-        rowKey={(row) => row.name}
-        loading={isInitialLoad}
-        isFetching={isFetching}
-        showToolbar
-        toolbarPlaceholder="Search tasks by subject, ID..."
-        searchValue={searchTerm}
-        onSearch={(q) => setSearchTerm(q)}
-        multiSelectFilters={[
-          {
-            key: "status",
-            label: "Status",
-            options: STATUS_OPTIONS,
-            values: statusFilter,
-            onChange: setStatusFilter,
-          },
-          {
-            key: "project",
-            label: "Project",
-            options: projectFilterOptions,
-            values: projectFilter,
-            onChange: setProjectFilter,
-          },
-          {
-            key: "assignee",
-            label: "Assigned To",
-            options: userFilterOptions,
-            values: assigneeFilter,
-            onChange: setAssigneeFilter,
-            searchPlaceholder: "Search employee...",
-            onSearch: fetchUserOptions,
-          },
-        ]}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {
-          setSortBy(newSortBy);
-          setSortOrder(newSortOrder);
-          setPage(1);
-        }}
-        enableAdd={can(TASK_MODULE, "create")}
-        addLabel="+ Add Task"
-        onAdd={handleAdd}
-        selectable
-        isRowSelected={(t) => selected.has(t.name)}
-        isRowSelectable={canLogTime}
-        onRowSelect={handleRowSelect}
-        onSelectAll={handleSelectAll}
-        primaryAction={
-          selected.size > 0 ? (
+      {view === "kanban" ? (
+        <div
+          className="app-surface overflow-hidden"
+          style={{ height: CONTENT_HEIGHT }}
+        >
+          <TaskKanban
+            statuses={STATUS_CELL_OPTIONS}
+            searchTerm={searchTerm}
+            onSearch={setSearchTerm}
+            projectFilter={projectFilter}
+            onProjectFilterChange={setProjectFilter}
+            assigneeFilter={isEmployee ? [] : assigneeFilter}
+            onAssigneeFilterChange={isEmployee ? undefined : setAssigneeFilter}
+            fetchProjects={fetchProjectOptions}
+            fetchUsers={fetchUserOptions}
+            getProjectName={getProjectDisplayName}
+            canEdit={canWriteTask}
+            canEditTask={(t) => canEditStatusOf(t._assign)}
+            onView={handleView}
+            toolbarRight={viewSelector}
+          />
+        </div>
+      ) : (
+        <Table
+          tableId="hr-task"
+          columns={columns}
+          data={rows}
+          rowKey={(row) => row.name}
+          loading={isInitialLoad}
+          isFetching={isFetching}
+          showToolbar
+          toolbarPlaceholder="Search tasks by subject, ID..."
+          searchValue={searchTerm}
+          onSearch={(q) => setSearchTerm(q)}
+          multiSelectFilters={[
+            {
+              key: "status",
+              label: "Status",
+              options: STATUS_OPTIONS,
+              values: statusFilter,
+              onChange: setStatusFilter,
+            },
+            {
+              key: "project",
+              label: "Project",
+              options: projectFilterOptions,
+              values: projectFilter,
+              onChange: setProjectFilter,
+            },
+            ...(!isEmployee
+              ? [
+                {
+                  key: "assignee",
+                  label: "Assigned To",
+                  options: userFilterOptions,
+                  values: assigneeFilter,
+                  onChange: setAssigneeFilter,
+                  searchPlaceholder: "Search employee...",
+                  onSearch: fetchUserOptions,
+                },
+              ]
+              : []),
+          ]}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {
+            setSortBy(newSortBy);
+            setSortOrder(newSortOrder);
+            setPage(1);
+          }}
+          enableAdd={canCreateTask}
+          addLabel="+ Add Task"
+          onAdd={handleAdd}
+          selectable={canLogTime}
+          isRowSelected={(t) => selected.has(t.name)}
+          isRowSelectable={canLogRow}
+          onRowSelect={handleRowSelect}
+          onSelectAll={handleSelectAll}
+          primaryAction={
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setSelected(new Map())}
-                className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-main transition-colors hover:bg-row-hover"
-              >
-                Clear
-              </button>
-              <button
-                onClick={handleLogSelected}
-                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              >
-                <Clock size={14} /> Log Time ({selected.size})
-              </button>
+              {canLogTime && selected.size > 0 && (
+                <>
+                  <button
+                    onClick={() => setSelected(new Map())}
+                    className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-main transition-colors hover:bg-row-hover"
+                  >
+                    Clear
+                  </button>
+
+                  <button
+                    onClick={handleLogSelected}
+                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    <Clock size={14} />
+                    Log Time ({selected.size})
+                  </button>
+                </>
+              )}
+
+              {viewSelector}
             </div>
-          ) : undefined
-        }
-        enableColumnSelector
-        currentPage={page}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        totalItems={totalItems}
-        pageSizeOptions={[20, 50, 100, 200]}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
-        onPageChange={setPage}
-        onRowDoubleClick={(t) => handleView(t.name)}
-      />
+          }
+          enableColumnSelector
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          pageSizeOptions={[20, 50, 100, 200]}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+          onPageChange={setPage}
+          onRowDoubleClick={(t) => handleView(t.name)}
+        />
+      )}
+
       <TaskDetailDrawer
         open={drawerOpen}
         data={drawerData}
         loading={drawerLoading}
-        canEditStatus={can(TASK_MODULE, "write")}
+        canEditStatus={!!drawerData && canEditStatusOf(drawerData._assign)}
+        showFinancials={!isEmployee}
         actionLoading={drawerActionLoading}
         onClose={() => {
           setDrawerOpen(false);

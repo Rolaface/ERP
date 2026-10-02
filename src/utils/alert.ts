@@ -1,10 +1,11 @@
 import Swal from "sweetalert2";
 import { closeManagedSwal, fireManagedSwal } from "./swalManager";
 
+const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
+
 const formatUserFriendlyMessage = (rawMsg: string): string => {
   if (!rawMsg || typeof rawMsg !== "string") return rawMsg;
 
-  // Handle "Row X: qty cannot exceed the remaining quantity 0."
   const matchZero = rawMsg.match(
     /Row\s+(\d+)(?:\s*\(([^)]+)\))?:\s*qty\s+cannot\s+exceed\s+the\s+remaining\s+quantity\s+0(?:\.0+)?/i
   );
@@ -14,7 +15,6 @@ const formatUserFriendlyMessage = (rawMsg: string): string => {
     return `Row ${rowNum}${itemCode}: This item has already been fully returned or adjusted (0 remaining). Please remove this item.`;
   }
 
-  // Handle "Row X: qty cannot exceed the remaining quantity Y."
   const matchQty = rawMsg.match(
     /Row\s+(\d+)(?:\s*\(([^)]+)\))?:\s*qty\s+cannot\s+exceed\s+the\s+remaining\s+quantity\s+([\d.]+)/i
   );
@@ -59,7 +59,7 @@ const extractErrorMessage = (error: any): string => {
     return formatUserFriendlyMessage(resolved);
   }
 
-  return "Something went wrong. Please try again.";
+  return DEFAULT_ERROR_MESSAGE;
 };
 
 const extractFieldErrors = (error: any): string | null => {
@@ -76,7 +76,7 @@ const extractFieldErrors = (error: any): string | null => {
 
 const toUserFriendlyMessage = (message: string): string => {
   const m = (message ?? "").trim();
-  if (!m) return "Something went wrong. Please try again.";
+  if (!m) return DEFAULT_ERROR_MESSAGE;
 
   const normalized = m.toLowerCase();
 
@@ -93,6 +93,7 @@ const toUserFriendlyMessage = (message: string): string => {
 
   return m;
 };
+
 export const showValidationError = (message: string) => {
   fireManagedSwal({
     icon: "warning",
@@ -124,7 +125,6 @@ export const showApiError = (error: any) => {
   });
 };
 
-/*  Success  */
 export const showSuccess = (message: string) => {
   fireManagedSwal({
     icon: "success",
@@ -134,7 +134,6 @@ export const showSuccess = (message: string) => {
   });
 };
 
-/*  Loading  */
 export const showLoading = (title = "Processing...") => {
   fireManagedSwal({
     title,
@@ -152,11 +151,9 @@ export const updateLoading = (html: string) => {
   Swal.update({ html });
 };
 
-/*  Close  */
 export const closeSwal = () => {
   closeManagedSwal();
 };
-
 
 export const showConfirm = async (
   message: string,
@@ -181,6 +178,7 @@ export const showConfirm = async (
 
   return result.isConfirmed;
 };
+
 export const showPOConflictDialog = async (
   existingCount: number,
   poNumber?: string
@@ -205,7 +203,6 @@ export const showPOConflictDialog = async (
   return "cancel";
 };
 
-
 export const showStepLoader = (title: string, html: string) => {
   fireManagedSwal({
     title,
@@ -217,50 +214,51 @@ export const showStepLoader = (title: string, html: string) => {
   });
 };
 
-// ── Final result after employee creation + photo upload ───────────────────────
-// Shows all collected info: success message, welcome email, warnings.
 export const showEmployeeCreationResult = async (options: {
   employeeId: string;
   successMessage: string;
-  welcomeMessage?: string;         // e.g. "Welcome email sent to..."
-  serverWarnings?: string[];       // e.g. username conflict notices
+  welcomeMessage?: string;
+  serverWarnings?: string[];
   photoUploaded: boolean;
   photoError?: string;
 }): Promise<void> => {
-  const { employeeId, successMessage, welcomeMessage, serverWarnings = [], photoUploaded, photoError } = options;
+  const {
+    employeeId,
+    successMessage,
+    welcomeMessage,
+    serverWarnings = [],
+    photoUploaded,
+    photoError,
+  } = options;
 
-  // ── Build HTML body ──────────────────────────────────────────────────────────
   const rows: string[] = [];
 
-  // Employee ID badge
   rows.push(`
     <div style="display:inline-flex;align-items:center;gap:6px;background:#f0f9ff;border:1px solid #bae6fd;
-      borderRadius:8px;padding:5px 12px;marginBottom:12px;">
+      border-radius:8px;padding:5px 12px;margin-bottom:12px;">
       <span style="font-size:11px;color:#0369a1;font-weight:600;letter-spacing:0.04em;font-family:monospace">
         ${employeeId}
       </span>
     </div>
   `);
 
-  // Main success row
   rows.push(`
-    <div style="display:flex;align-items:flex-start;gap:8px;marginBottom:8px;text-align:left;">
+    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;text-align:left;">
       <span style="color:#16a34a;font-size:15px;margin-top:1px;flex-shrink:0;">✓</span>
       <span style="font-size:13px;color:#15803d;font-weight:600;line-height:1.5">${successMessage}</span>
     </div>
   `);
 
-  // Photo upload row
   if (photoUploaded) {
     rows.push(`
-      <div style="display:flex;align-items:flex-start;gap:8px;marginBottom:8px;text-align:left;">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;text-align:left;">
         <span style="color:#16a34a;font-size:15px;margin-top:1px;flex-shrink:0;">✓</span>
         <span style="font-size:13px;color:#15803d;font-weight:600;line-height:1.5">Profile photo uploaded successfully.</span>
       </div>
     `);
   } else if (photoError) {
     rows.push(`
-      <div style="display:flex;align-items:flex-start;gap:8px;marginBottom:8px;text-align:left;">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;text-align:left;">
         <span style="color:#d97706;font-size:14px;margin-top:1px;flex-shrink:0;">⚠</span>
         <span style="font-size:12.5px;color:#92400e;line-height:1.5">
           Photo upload failed — you can add it later by editing the employee.
@@ -269,15 +267,15 @@ export const showEmployeeCreationResult = async (options: {
     `);
   }
 
-  // Divider before info items
   if (welcomeMessage || serverWarnings.length > 0) {
-    rows.push(`<hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0;" />`);
+    rows.push(
+      `<hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0;" />`
+    );
   }
 
-  // Welcome email notice
   if (welcomeMessage) {
     rows.push(`
-      <div style="display:flex;align-items:flex-start;gap:8px;marginBottom:7px;text-align:left;
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;text-align:left;
         background:#f0f9ff;border-radius:8px;padding:9px 11px;">
         <span style="color:#0284c7;font-size:13px;flex-shrink:0;margin-top:1px;">✉</span>
         <span style="font-size:12px;color:#0369a1;line-height:1.6">${welcomeMessage}</span>
@@ -285,10 +283,9 @@ export const showEmployeeCreationResult = async (options: {
     `);
   }
 
-  // Server warnings (username conflict, email config etc.)
   for (const w of serverWarnings) {
     rows.push(`
-      <div style="display:flex;align-items:flex-start;gap:8px;marginBottom:6px;text-align:left;
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;text-align:left;
         background:#fffbeb;border-radius:8px;padding:8px 11px;">
         <span style="color:#d97706;font-size:13px;flex-shrink:0;margin-top:1px;">⚠</span>
         <span style="font-size:12px;color:#78350f;line-height:1.55">${w}</span>
@@ -296,7 +293,7 @@ export const showEmployeeCreationResult = async (options: {
     `);
   }
 
-  const icon = photoUploaded ? "success" : (photoError ? "warning" : "success");
+  const icon = photoUploaded ? "success" : photoError ? "warning" : "success";
   const title = photoUploaded
     ? "Employee Profile Complete"
     : photoError
@@ -313,9 +310,6 @@ export const showEmployeeCreationResult = async (options: {
   });
 };
 
-
-
-// for naming series
 const formatWarning = (
   w: string | { field?: string; doctype?: string; reason?: string }
 ): string => {
@@ -327,7 +321,9 @@ const formatWarning = (
 
 export const showSuccessWithWarnings = async (
   message: string,
-  warnings?: Array<string | { field?: string; doctype?: string; reason?: string }>
+  warnings?: Array<
+    string | { field?: string; doctype?: string; reason?: string }
+  >
 ): Promise<void> => {
   const hasWarnings = Array.isArray(warnings) && warnings.length > 0;
   const rows: string[] = [];
@@ -340,7 +336,9 @@ export const showSuccessWithWarnings = async (
   `);
 
   if (hasWarnings) {
-    rows.push(`<hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0;" />`);
+    rows.push(
+      `<hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0;" />`
+    );
     for (const w of warnings!) {
       rows.push(`
         <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;text-align:left;
@@ -358,5 +356,74 @@ export const showSuccessWithWarnings = async (
     html: `<div style="margin-top:4px">${rows.join("")}</div>`,
     confirmButtonText: "OK",
     confirmButtonColor: hasWarnings ? "#f59e0b" : "#22c55e",
+  });
+};
+
+type DayOffToastKind = "leave" | "company_holiday" | "weekly_off";
+
+const DAY_OFF_TOAST_STYLE: Record<
+  DayOffToastKind,
+  { accent: string; bg: string; tag: string }
+> = {
+  leave: { accent: "#8b5cf6", bg: "#f5f3ff", tag: "Leave" },
+  company_holiday: { accent: "#f59e0b", bg: "#fffbeb", tag: "Holiday" },
+  weekly_off: { accent: "#64748b", bg: "#f1f5f9", tag: "Weekly Off" },
+};
+
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+const dayOffHeadline = (kind: DayOffToastKind, who?: string) => {
+  if (kind === "leave") return who ? `${who} is on leave` : "You're on leave";
+  if (kind === "weekly_off") return who ? `${who}'s weekly off` : "Weekly off";
+  return "Company holiday";
+};
+
+export const showDayOffToast = (opts: {
+  dateLabel: string;
+  kind: DayOffToastKind;
+  label: string;
+  halfDay?: boolean;
+  who?: string;
+}) => {
+  const { accent, bg, tag } = DAY_OFF_TOAST_STYLE[opts.kind];
+  const headline = dayOffHeadline(opts.kind, opts.who);
+  const showLabel = opts.kind !== "weekly_off" && Boolean(opts.label);
+
+  fireManagedSwal({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    showCloseButton: true,
+    timer: 6000,
+    timerProgressBar: true,
+    width: 360,
+    padding: "0.75rem 1rem",
+    html: `
+      <div style="display:flex;gap:10px;text-align:left;align-items:flex-start;">
+        <div style="width:4px;align-self:stretch;border-radius:4px;background:${accent};flex-shrink:0;"></div>
+        <div style="min-width:0;flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+            <span style="font-size:13px;font-weight:700;color:#111827;">${escapeHtml(headline)}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+              color:${accent};background:${bg};border-radius:4px;padding:2px 6px;">${tag}</span>
+            ${
+              opts.halfDay
+                ? `<span style="font-size:10px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb;
+                    border-radius:4px;padding:1px 6px;">Half day</span>`
+                : ""
+            }
+          </div>
+          <div style="font-size:12px;color:#374151;">
+            <strong style="font-family:monospace;">${escapeHtml(opts.dateLabel)}</strong>${
+              showLabel ? ` · ${escapeHtml(opts.label)}` : ""
+            }
+          </div>
+          <div style="font-size:11px;color:#6b7280;margin-top:4px;">
+            You can still log time if you worked that day.
+          </div>
+        </div>
+      </div>
+    `,
   });
 };

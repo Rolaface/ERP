@@ -78,6 +78,7 @@ export async function getTaskList(
   sortBy?: string,
   sortOrder?: "asc" | "desc",
   assignees?: string[],
+   flat: boolean = false,
 ): Promise<TaskListResponse> {
   const start = (page - 1) * pageSize;
 
@@ -108,7 +109,7 @@ export async function getTaskList(
       `%"${email}"%`,
     ]);
     url += `&or_filters=${encodeURIComponent(JSON.stringify(orFilters))}`;
-  } else {
+  } else if (!flat) {
     filters.push(["parent_task", "is", "not set"]);
   }
 

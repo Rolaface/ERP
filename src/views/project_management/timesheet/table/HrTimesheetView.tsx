@@ -13,6 +13,8 @@ import {
   submitTimesheet,
   cancelTimesheet,
   getTimesheetById,
+  deleteTimesheetById,
+  renameTimesheetTitle,
 } from "../../../../api/project/timesheet/timesheet.api";
 import Table from "../../../../components/ui/Table/Table";
 import ActionButton, {
@@ -34,21 +36,22 @@ import { HrTableFrame } from "../../../../views/hr/components/HrTabLayout";
 import StatusBadge from "../../../../components/ui/Table/StatusBadge";
 import MetricsRow from "../components/MetricsRow";
 import { ACTION_ICONS } from "../../../../components/UI_Utils/statusActionIcons";
-
+import { useHRView } from "../../../../hooks/permission/useHRView";
 import TimesheetDetailDrawer from "../drawer/TimesheetDetailDrawer";
-import { useCurrencySymbols } from "../../../../hooks/Usecurrencysymbols";
 import {
   openAdminTimesheetFormModal,
   openEmployeeTimesheetFormModal,
 } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
 import TimesheetCalendar from "../components/TimesheetCalendar";
-import ViewToggle, { type TimesheetMode } from "../components/Viewtoggle";
+import type { TimesheetMode } from "../components/Viewtoggle";
+import { TIMESHEET_VIEW_OPTIONS } from "../components/timesheetViews";
+import ViewSelector from "../../../project_management/ViewSelector";
 
 // ── Constants ────────────────────────────────────────────────────
 
 const TS_MODULE = "Timesheet";
+const TITLE_MAX_LENGTH = 140;
 
-// Table and calendar share this height so switching views never shifts the page
 const CONTENT_HEIGHT = "calc(85.5vh - 100px)";
 
 const STATUS_OPTIONS = [
@@ -58,7 +61,6 @@ const STATUS_OPTIONS = [
   { label: "Cancelled", value: "Cancelled" },
 ];
 
-// StatusBadge's own VARIANT_MAP doesn't know "Billed" — force the right variant per status
 const STATUS_VARIANT: Record<
   TimesheetStatus,
   "draft" | "info" | "success" | "danger"
@@ -69,10 +71,118 @@ const STATUS_VARIANT: Record<
   Cancelled: "danger",
 };
 
+// ── Inline editable title ────────────────────────────────────────
+
+interface EditableTitleProps {
+  value: string;
+  editable: boolean;
+  onCommit: (next: string) => Promise<boolean>;
+}
+
+const EditableTitle: React.FC<EditableTitleProps> = ({
+  value,
+  editable,
+  onCommit,
+}) => {
+  const [editing, setEditing] = useState(false);
+  const safeValue = value ?? "";
+  const hasTitle = safeValue.trim().length > 0;
+  const [draft, setDraft] = useState(safeValue);
+  const busyRef = useRef(false);
+
+  // Not editable (e.g. Cancelled / no permission)
+  if (!editable) {
+    return hasTitle ? (
+      <span className="font-bold text-main text-xs whitespace-normal break-words">
+        {safeValue}
+      </span>
+    ) : (
+      <span className="text-xs text-muted italic">—</span>
+    );
+  }
+
+  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
+
+  const startEdit = () => {
+    setDraft(safeValue);
+    setEditing(true);
+  };
+
+  const commit = async () => {
+    if (busyRef.current) return;
+    const next = draft.trim();
+    if (!next || next === safeValue) {
+      setEditing(false);
+      return;
+    }
+    busyRef.current = true;
+    try {
+      await onCommit(next);
+    } finally {
+      busyRef.current = false;
+      setEditing(false);
+    }
+  };
+
+  const cancel = () => {
+    busyRef.current = true;
+    setEditing(false);
+    setTimeout(() => {
+      busyRef.current = false;
+    }, 0);
+  };
+
+  return (
+    <div onClick={stop} onDoubleClick={stop}>
+      {editing ? (
+        <input
+          autoFocus
+          value={draft}
+          maxLength={TITLE_MAX_LENGTH}
+          placeholder="Enter title"
+          onChange={(e) => setDraft(e.target.value)}
+          onFocus={(e) => e.target.select()}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+            if (e.key === "Escape") cancel();
+          }}
+          className="w-full bg-transparent text-xs font-bold text-main outline-none border-b border-primary"
+        />
+      ) : hasTitle ? (
+        <span
+          title="Click to rename"
+          onClick={startEdit}
+          className="font-bold text-main text-xs cursor-text whitespace-normal break-words hover:underline decoration-dotted underline-offset-2"
+        >
+          {safeValue}
+        </span>
+      ) : (
+        <span
+          title="Click to add a title"
+          onClick={startEdit}
+          className="text-xs italic text-muted cursor-text hover:underline decoration-dotted underline-offset-2"
+        >
+          + Add title
+        </span>
+      )}
+    </div>
+  );
+};
+
 // ── Component ────────────────────────────────────────────────────
 
 const HrTimesheetView: React.FC = () => {
   const { can } = usePermission();
+  const { viewMode } = useHRView();
+  const isProfessional = viewMode === "professional";
+
+  const canCreate = can(TS_MODULE, "create");
+  const canWrite = can(TS_MODULE, "write");
+  const canSubmit = can(TS_MODULE, "submit");
+  const canCancel = can(TS_MODULE, "cancel");
+  const canDelete = can(TS_MODULE, "delete");
+  const showFinancials = isProfessional;
   const mountedRef = useRef(true);
 
   const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
@@ -95,6 +205,7 @@ const HrTimesheetView: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<TimesheetDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [view, setView] = useState<TimesheetMode>("calendar");
 
   // ── Reset page on search/filter change ────────────────────────
@@ -161,22 +272,26 @@ const HrTimesheetView: React.FC = () => {
 
   // ── Handlers ─────────────────────────────────────────────────
 
-const openTimesheetForm = can(TS_MODULE, "delete")
-  ? openAdminTimesheetFormModal
-  : openEmployeeTimesheetFormModal;
+  const openTimesheetForm = isProfessional
+    ? openAdminTimesheetFormModal
+    : openEmployeeTimesheetFormModal;
 
-const handleAdd = () => {
-  openTimesheetForm({
-    onSuccess: () => triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST),
-  });
-};
+  const refreshList = () => triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST);
 
-const handleEdit = (id: string) => {
-  openTimesheetForm({
-    timesheetId: id,
-    onSuccess: () => triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST),
-  });
-};
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    setDrawerData(null);
+  };
+
+  const handleAdd = () => {
+    if (!canCreate) return;
+    openTimesheetForm({ onSuccess: refreshList });
+  };
+
+  const handleEdit = (id: string) => {
+    if (!canWrite) return;
+    openTimesheetForm({ timesheetId: id, onSuccess: refreshList });
+  };
 
   const handleView = async (id: string) => {
     setDrawerOpen(true);
@@ -193,7 +308,70 @@ const handleEdit = (id: string) => {
     }
   };
 
-  const handleSubmit = async (id: string) => {
+  const handleRename = async (
+    t: TimesheetEntry,
+    next: string,
+  ): Promise<boolean> => {
+    if (!canWrite) return false;
+
+    const hadTitle = !!t.title?.trim();
+
+    const result = await fireManagedSwal({
+      icon: "question",
+      title: hadTitle ? "Rename Timesheet?" : "Add Title?",
+      text: hadTitle
+        ? `"${t.title}" → "${next}"`
+        : `Set the title of this timesheet to "${next}"?`,
+      showCancelButton: true,
+      confirmButtonText: hadTitle ? "Yes, Rename" : "Yes, Add",
+      cancelButtonText: "No",
+    });
+
+    if (!result.isConfirmed) return false;
+
+    try {
+      showLoading(hadTitle ? "Renaming timesheet..." : "Adding title...");
+      await renameTimesheetTitle(t.name, next); // same API
+      closeSwal();
+      showSuccess(hadTitle ? "Timesheet renamed" : "Title added");
+      refreshList();
+      return true;
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+      return false;
+    }
+  };
+  const handleDelete = async (id: string): Promise<boolean> => {
+    if (!canDelete) return false;
+    const result = await fireManagedSwal({
+      title: "Delete Timesheet?",
+      text: `Are you sure you want to permanently delete timesheet ${id}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      confirmButtonText: "Yes, Delete",
+      cancelButtonText: "No",
+    });
+
+    if (!result.isConfirmed) return false;
+
+    try {
+      showLoading("Deleting timesheet...");
+      await deleteTimesheetById(id);
+      closeSwal();
+      showSuccess("Timesheet deleted");
+      refreshList();
+      return true;
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+      return false;
+    }
+  };
+
+  const handleSubmit = async (id: string): Promise<boolean> => {
+    if (!canSubmit) return false;
     const result = await fireManagedSwal({
       icon: "warning",
       title: "Approve Timesheet?",
@@ -205,25 +383,24 @@ const handleEdit = (id: string) => {
       cancelButtonText: "No",
     });
 
-    if (!result.isConfirmed) return;
+    if (!result.isConfirmed) return false;
 
     try {
       showLoading("Approving timesheet...");
-
       await submitTimesheet(id);
-
       closeSwal();
       showSuccess("Timesheet approved");
-
-      await fetchTimesheets();
-      triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST);
+      refreshList();
+      return true;
     } catch (error) {
       closeSwal();
       showApiError(error);
+      return false;
     }
   };
 
-  const handleCancel = async (id: string) => {
+  const handleCancel = async (id: string): Promise<boolean> => {
+    if (!canCancel) return false;
     const result = await fireManagedSwal({
       title: "Cancel Timesheet?",
       text: "This timesheet will be marked as cancelled.",
@@ -232,53 +409,62 @@ const handleEdit = (id: string) => {
       confirmButtonColor: "#ef4444",
       confirmButtonText: "Yes, Cancel",
     });
-    if (!result.isConfirmed) return;
+    if (!result.isConfirmed) return false;
     try {
       showLoading("Cancelling...");
       await cancelTimesheet(id);
       closeSwal();
       showSuccess("Timesheet cancelled");
-      await fetchTimesheets();
-      triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST);
+      refreshList();
+      return true;
     } catch (error) {
       closeSwal();
       showApiError(error);
+      return false;
     }
   };
 
-  // ── Columns ──────────────────────────────────────────────────
+  const handleDrawerApprove = async (id: string) => {
+    setApproving(true);
+    try {
+      const ok = await handleSubmit(id);
+      if (ok) closeDrawer();
+    } finally {
+      setApproving(false);
+    }
+  };
 
+  const handleDrawerCancel = async (id: string) => {
+    const ok = await handleCancel(id);
+    if (ok) closeDrawer();
+  };
+
+  const handleDrawerEdit = (id: string) => {
+    closeDrawer();
+    handleEdit(id);
+  };
+
+  // ── Columns ──────────────────────────────────────────────────
   const columns: Column<TimesheetEntry>[] = [
-    {
-      key: "name",
-      header: "Timesheet ID",
-      align: "left",
-      sortable: true,
-      render: (t) => (
-        <span
-          className="font-mono font-bold text-primary text-xs hover:underline cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleView(t.name);
-          }}
-        >
-          {t.name}
-        </span>
-      ),
-    },
     {
       key: "title",
       header: "Title",
       align: "left",
+      width: "360px",
       sortable: true,
       render: (t) => (
-        <span className="font-bold text-main text-xs">{t.title}</span>
+        <EditableTitle
+          value={t.title ?? ""}
+          editable={canWrite && t.status !== "Cancelled"}
+          onCommit={(next) => handleRename(t, next)}
+        />
       ),
     },
     {
       key: "start_date",
       header: "Start Date",
       align: "left",
+      width: "140px",
       sortable: true,
       render: (t) => (
         <DateDisplay
@@ -291,6 +477,7 @@ const handleEdit = (id: string) => {
       key: "end_date",
       header: "End Date",
       align: "left",
+      width: "140px",
       sortable: true,
       render: (t) => (
         <DateDisplay
@@ -303,9 +490,10 @@ const handleEdit = (id: string) => {
       key: "total_hours",
       header: "Total Hours",
       align: "right",
+      width: "120px",
       sortable: true,
       render: (t) => (
-        <span className="font-mono font-bold text-main">
+        <span className="font-mono font-bold text-main whitespace-nowrap">
           {(t.total_hours || 0).toFixed(1)} hrs
         </span>
       ),
@@ -314,52 +502,62 @@ const handleEdit = (id: string) => {
       key: "status",
       header: "Status",
       align: "center",
+      width: "130px",
       sortable: true,
       render: (t) => (
         <StatusBadge status={t.status} variant={STATUS_VARIANT[t.status]} />
       ),
     },
-    {
-      key: "per_billed",
-      header: "Billing %",
-      align: "left",
-      render: (t) => (
-        <div className="flex items-center gap-2">
-          <div
-            className="flex-1 rounded-full h-1.5 min-w-[50px]"
-            style={{ background: "var(--border)" }}
-          >
-            <div
-              className="h-1.5 rounded-full bg-success"
-              style={{ width: `${t.per_billed || 0}%` }}
-            />
-          </div>
-          <span className="font-mono text-[10px] text-muted w-7 text-right">
-            {t.per_billed || 0}%
-          </span>
-        </div>
-      ),
-    },
+    ...(showFinancials
+      ? [
+          {
+            key: "per_billed",
+            header: "Billing %",
+            align: "left" as const,
+            width: "140px",
+            render: (t: TimesheetEntry) => (
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex-1 rounded-full h-1.5 min-w-[50px]"
+                  style={{ background: "var(--border)" }}
+                >
+                  <div
+                    className="h-1.5 rounded-full bg-success"
+                    style={{ width: `${t.per_billed || 0}%` }}
+                  />
+                </div>
+                <span className="font-mono text-[10px] text-muted w-7 text-right">
+                  {t.per_billed || 0}%
+                </span>
+              </div>
+            ),
+          },
+        ]
+      : []),
     {
       key: "actions",
       header: "Actions",
       align: "center",
+      width: "120px",
       render: (t) => {
         const customActions = [];
 
-        // Draft → Submitted: hits submitTimesheet, but UI always says "Approve".
-        if (t.status === "Draft" && can(TS_MODULE, "write")) {
+        if (t.status === "Draft" && canSubmit) {
           customActions.push({
             label: "Approve",
             icon: ACTION_ICONS.APPROVE,
             onClick: () => handleSubmit(t.name),
           });
         }
-
-        if (
-          can(TS_MODULE, "delete") &&
-          (t.status === "Draft" || t.status === "Submitted")
-        ) {
+        if (t.status === "Draft" && canDelete) {
+          customActions.push({
+            label: "Delete",
+            icon: ACTION_ICONS.DELETE,
+            danger: true,
+            onClick: () => handleDelete(t.name),
+          });
+        }
+        if (t.status === "Submitted" && canCancel) {
           customActions.push({
             label: "Cancel",
             icon: ACTION_ICONS.CANCEL,
@@ -368,7 +566,7 @@ const handleEdit = (id: string) => {
           });
         }
 
-        const canEdit = t.status === "Draft" && can(TS_MODULE, "write");
+        const canEdit = t.status === "Draft" && canWrite;
         const isMenuEmpty = customActions.length === 0;
 
         return (
@@ -406,7 +604,7 @@ const handleEdit = (id: string) => {
     <HrTableFrame>
       {/* KPIs stay mounted in both views */}
       <div className="px-1 pt-1 pb-2">
-        <MetricsRow timesheets={timesheets} />
+        <MetricsRow timesheets={timesheets} showFinancials={showFinancials} />
       </div>
 
       {view === "calendar" ? (
@@ -415,7 +613,9 @@ const handleEdit = (id: string) => {
           style={{ height: CONTENT_HEIGHT }}
         >
           <TimesheetCalendar
-            canViewAll={can(TS_MODULE, "delete")}
+            canViewAll={isProfessional}
+            canEdit={canWrite}
+            canCreate={canCreate}
             onSwitchToList={() => setView("table")}
           />
         </div>
@@ -427,6 +627,7 @@ const handleEdit = (id: string) => {
           data={timesheets}
           rowKey={(row) => row.name}
           loading={isInitialLoad}
+          enableAdd={canCreate}
           isFetching={isFetching}
           showToolbar
           toolbarPlaceholder="Search timesheet, employee..."
@@ -448,8 +649,13 @@ const handleEdit = (id: string) => {
             setSortOrder(newSortOrder);
             setPage(1);
           }}
-          enableAdd={can(TS_MODULE, "create")}
-          primaryAction={<ViewToggle mode="table" onChange={setView} />}
+          primaryAction={
+            <ViewSelector
+              value={view}
+              options={TIMESHEET_VIEW_OPTIONS}
+              onChange={setView}
+            />
+          }
           addLabel="+ Add Timesheet"
           onAdd={handleAdd}
           enableColumnSelector
@@ -466,22 +672,21 @@ const handleEdit = (id: string) => {
           onRowDoubleClick={(t) => handleView(t.name)}
         />
       )}
+
       <TimesheetDetailDrawer
         open={drawerOpen}
         data={drawerData}
         loading={drawerLoading}
-        onClose={() => {
-          setDrawerOpen(false);
-          setDrawerData(null);
-        }}
-        onApprove={async (id) => {
-          await handleSubmit(id);
-          setDrawerOpen(false);
-        }}
-        onSubmit={async (id) => {
-          await handleSubmit(id);
-          setDrawerOpen(false);
-        }}
+        actionLoading={approving}
+        canWrite={canWrite}
+        canSubmit={canSubmit}
+        canCancel={canCancel}
+        showFinancials={showFinancials}
+        showEmployeeCard={isProfessional}
+        onClose={closeDrawer}
+        onApprove={handleDrawerApprove}
+        onEdit={handleDrawerEdit}
+        onCancel={handleDrawerCancel}
       />
     </HrTableFrame>
   );

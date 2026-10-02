@@ -2,8 +2,12 @@ import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "../../axiosInstance";
 import { buildListParams } from "../../../api/utils/queryBuilder";
 import { API, ERP_BASE } from "../../../config/api";
-import type { TimesheetDetail, TimesheetListResponse ,TimesheetHoursEntry} from "../../../types/Project_Management/Timesheet/Table/timesheet.types";
-
+import type {
+  TimesheetDetail,
+  TimesheetListResponse,
+  TimesheetHoursEntry,
+} from "../../../types/Project_Management/Timesheet/Table/timesheet.types";
+import { frappeDelete } from "../../Delete/frappeDeleteApi";
 const api = createAxiosInstance(ERP_BASE);
 export const TimesheetAPI = API.project.timesheet;
 
@@ -27,6 +31,7 @@ const TIMESHEET_FIELDS = [
   "total_costing_amount",
   "total_billed_amount",
   "per_billed",
+  "parent_project",
 ];
 
 // ── Timesheets ───────────────────────────────────────────────────
@@ -59,7 +64,9 @@ export async function getAllTimesheets(
   return resp.data;
 }
 
-export async function getTimesheetById(id: string): Promise<TimesheetDetail | null> {
+export async function getTimesheetById(
+  id: string,
+): Promise<TimesheetDetail | null> {
   // Standard Frappe REST resource-by-name endpoint:
   // GET /api/resource/Timesheet/{name} → { data: { ...full doc incl. time_logs } }
   const resp: AxiosResponse = await api.get(
@@ -74,9 +81,10 @@ export async function createTimesheet(payload: any): Promise<any> {
 }
 
 export async function updateTimesheetById(payload: any): Promise<any> {
-
   if (!payload?.name) {
-    throw new Error("updateTimesheetById: payload.name is required to update a Timesheet.");
+    throw new Error(
+      "updateTimesheetById: payload.name is required to update a Timesheet.",
+    );
   }
 
   const resp: AxiosResponse = await api.put(
@@ -118,6 +126,7 @@ interface HoursDetailRow {
   hours: number;
   docstatus: number;
   project: string | null;
+  project_name: string | null;
   task: string | null;
   activity_type: string | null;
   description: string | null;
@@ -165,7 +174,9 @@ export async function getTimesheetHours(
         "hours",
         "docstatus",
         "project",
+        "project_name",
         "task",
+
         "activity_type",
         "description",
       ],
@@ -201,8 +212,38 @@ export async function getTimesheetHours(
     hours: d.hours,
     docstatus: d.docstatus,
     project: d.project,
+    project_name: d.project_name,
     task: d.task,
     activity_type: d.activity_type,
     description: d.description,
   }));
+}
+
+export async function deleteTimesheetById(id: string): Promise<void> {
+  if (!id) {
+    throw new Error("deleteTimesheetById: Timesheet ID is required.");
+  }
+
+  await frappeDelete({
+    doctype: "Timesheet",
+    name: id,
+  });
+}
+
+export async function renameTimesheetTitle(
+  id: string,
+  title: string,
+): Promise<any> {
+  if (!id || !title?.trim()) {
+    throw new Error("renameTimesheetTitle: id and title are required.");
+  }
+
+  const resp: AxiosResponse = await api.post(TimesheetAPI.renametitle, {
+    doctype: "Timesheet",
+    docname: id,
+    title: title.trim(),
+    merge: false,
+    enqueue: false,
+  });
+  return resp.data;
 }

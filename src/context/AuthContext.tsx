@@ -14,7 +14,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
-  refreshPermissions: () => Promise<void>; // ← manual trigger for role updates
+  refreshPermissions: () => Promise<void>; 
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
