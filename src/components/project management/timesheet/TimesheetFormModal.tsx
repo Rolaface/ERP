@@ -1,4 +1,10 @@
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import React, {
+  useCallback,
+  useRef,
+  useState,
+  useEffect,
+  useMemo,
+} from "react";
 import {
   Clock,
   Plus,
@@ -32,7 +38,11 @@ import {
 } from "../../../hooks/project_management/timeheet/form/useTimesheetModal";
 import CustomerSelect from "../../../../src/components/selects/CustomerSelect";
 import { getTimesheetById } from "../../../api/project/timesheet/timesheet.api";
-import { showApiError } from "../../../utils/alert";
+import { showApiError, showDayOffToast } from "../../../utils/alert";
+import { useDayOffs } from "../../../hooks/project_management/timeheet/useDayOffs";
+import { DAY_OFF_TONE } from "../../../views/project_management/timesheet/components/DayOffChip";
+import { WEEKLY_OFF_COLOR } from "../../../views/project_management/timesheet/components/Weeklyoff";
+import type { DayOff } from "../../../views/project_management/timesheet/components/dayOff.types";
 
 interface PrefillTask {
   project: string;
@@ -65,6 +75,23 @@ interface TimesheetFormModalProps {
 }
 
 type RowActionsView = "menu" | "rates";
+
+const WEEKLY_OFF_LABEL = "Weekly Off";
+
+const dayOffLabel = (off: DayOff) =>
+  off.kind === "weekly_off" ? WEEKLY_OFF_LABEL : off.label;
+
+const dayOffColor = (off: DayOff) =>
+  off.kind === "weekly_off"
+    ? WEEKLY_OFF_COLOR
+    : `var(${DAY_OFF_TONE[off.kind]})`;
+
+const formatDateLabel = (ymd: string) =>
+  new Date(`${ymd}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
 
 const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   isOpen,
@@ -107,6 +134,69 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   } = useTimesheetModal({ onSuccess, restrictions });
 
   const isEmployee = context === "employee";
+
+  // ---- Holiday / leave lookup (same source as the calendar) ----
+  // month currently open in the date picker, so its leaves get loaded too
+  const [pickerRange, setPickerRange] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
+
+  const handlePickerMonth = useCallback(
+    (from: string, to: string) =>
+      setPickerRange((p) =>
+        p && p.from === from && p.to === to ? p : { from, to },
+      ),
+    [],
+  );
+
+  const { rangeFrom, rangeTo } = useMemo(() => {
+    const starts = [...form.lines.map((l) => l.date), pickerRange?.from]
+      .filter(Boolean)
+      .sort() as string[];
+    const ends = [...form.lines.map((l) => l.to_date), pickerRange?.to]
+      .filter(Boolean)
+      .sort() as string[];
+    const t = new Date().toISOString().slice(0, 10);
+    return {
+      rangeFrom: starts[0] ?? prefillDate ?? t,
+      rangeTo: ends[ends.length - 1] ?? prefillDate ?? t,
+    };
+  }, [form.lines, prefillDate, pickerRange]);
+
+  const dayOffs = useDayOffs(rangeFrom, rangeTo, !isEmployee);
+
+  const getDayOff = useCallback(
+    (date: string): DayOff | undefined => {
+      if (!date) return undefined;
+      const holiday = dayOffs.holidayOn(date);
+      if (holiday) return holiday;
+      if (isEmployee) return dayOffs.leaveOn(date);
+      return (
+        (form.employee ? dayOffs.leaveOn(date, form.employee) : undefined) ??
+        (form.employee_name
+          ? dayOffs.leaveOn(date, form.employee_name)
+          : undefined)
+      );
+    },
+    [dayOffs, isEmployee, form.employee, form.employee_name],
+  );
+
+  const warnIfDayOff = useCallback(
+    (date: string, toDate: string) => {
+      const startOff = getDayOff(date);
+      const off = startOff ?? (toDate !== date ? getDayOff(toDate) : undefined);
+      if (!off) return;
+      showDayOffToast({
+        dateLabel: formatDateLabel(startOff ? date : toDate),
+        kind: off.kind,
+        label: dayOffLabel(off),
+        halfDay: off.halfDay,
+        who: isEmployee ? undefined : form.employee_name || undefined,
+      });
+    },
+    [getDayOff, isEmployee, form.employee_name],
+  );
 
   const [isLoadingTimesheet, setIsLoadingTimesheet] = useState(false);
 
@@ -183,7 +273,10 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   ]);
 
   useEffect(() => {
-    if (!isOpen) reset();
+    if (!isOpen) {
+      reset();
+      setPickerRange(null);
+    }
   }, [isOpen, reset]);
 
   const companyCurrency =
@@ -265,6 +358,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
       showApiError(OVERLAP_MSG);
       return;
     }
+    warnIfDayOff(date, toDate);
     updateLine(id, slot);
   };
 
@@ -498,132 +592,158 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
                       </td>
                     </tr>
                   )}
-                  {form.lines.map((l) => (
-                    <tr
-                      key={l.id}
-                      className={`hover:bg-app/40 transition-colors ${
-                        conflictIds.has(l.id)
-                          ? "bg-danger/10"
-                          : selectedIds.has(l.id)
-                            ? "bg-primary/5"
-                            : ""
-                      }`}
-                    >
-                      <td className="p-2 text-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(l.id)}
-                          onChange={() => toggleRow(l.id)}
-                        />
-                      </td>
-                      {!hasHeaderProject && (
-                        <td className="p-2">
-                          <SearchSelect2
-                            label=""
-                            value={l.project_name}
-                            fetchOptions={fetchProjectOptionsRestricted}
-                            onChange={(val, opt) =>
-                              setLineProject(l.id, val, opt)
-                            }
-                            placeholder="Project"
-                          />
-                        </td>
-                      )}
-                      <td
-                        className={`p-2 ${
-                          hasHeaderProject ? "min-w-[280px]" : ""
+                  {form.lines.map((l) => {
+                    const off = getDayOff(l.date) ?? getDayOff(l.to_date);
+                    return (
+                      <tr
+                        key={l.id}
+                        className={`hover:bg-app/40 transition-colors ${
+                          conflictIds.has(l.id)
+                            ? "bg-danger/10"
+                            : selectedIds.has(l.id)
+                              ? "bg-primary/5"
+                              : ""
                         }`}
                       >
-                        <SearchSelect2
-                          label=""
-                          value={l.task_name}
-                          disabled={!l.project}
-                          fetchOptions={(q) => fetchTaskOptions(l.project, q)}
-                          onChange={(val, opt) => setLineTask(l.id, val, opt)}
-                          placeholder={
-                            l.project ? "Task" : "Select project first"
-                          }
-                        />
-                      </td>
-                      <td className="p-2 align-top">
-                        <textarea
-                          value={l.description}
-                          onChange={(e) =>
-                            updateLine(l.id, { description: e.target.value })
-                          }
-                          placeholder="What did you work on?"
-                          rows={1}
-                          className="w-full min-w-[140px] min-h-[32px] max-h-[200px] resize px-2 py-1.5 text-xs rounded-md border border-theme bg-app text-main placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary overflow-auto"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <SearchSelect2
-                          label=""
-                          value={l.activity_type}
-                          fetchOptions={fetchActivityTypeOptions}
-                          onChange={(value, opt) =>
-                            setLineActivity(l.id, value, opt)
-                          }
-                          placeholder="Activity Type"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <DateTimeRangePicker
-                          date={l.date}
-                          to_date={l.to_date}
-                          from_time={l.from_time}
-                          to_time={l.to_time}
-                          onApply={(date, from, to, toDate) =>
-                            handleApplyTime(l.id, date, from, to, toDate)
-                          }
-                        />
-                      </td>
-                      <td className="p-2 text-right font-mono font-bold text-primary">
-                        {l.hours.toFixed(1)}h
-                      </td>
-                      {!isEmployee && (
                         <td className="p-2 text-center">
                           <input
                             type="checkbox"
-                            checked={l.is_billable}
+                            checked={selectedIds.has(l.id)}
+                            onChange={() => toggleRow(l.id)}
+                          />
+                        </td>
+                        {!hasHeaderProject && (
+                          <td className="p-2">
+                            <SearchSelect2
+                              label=""
+                              value={l.project_name}
+                              fetchOptions={fetchProjectOptionsRestricted}
+                              onChange={(val, opt) =>
+                                setLineProject(l.id, val, opt)
+                              }
+                              placeholder="Project"
+                            />
+                          </td>
+                        )}
+                        <td
+                          className={`p-2 ${
+                            hasHeaderProject ? "min-w-[280px]" : ""
+                          }`}
+                        >
+                          <SearchSelect2
+                            label=""
+                            value={l.task_name}
+                            disabled={!l.project}
+                            fetchOptions={(q) => fetchTaskOptions(l.project, q)}
+                            onChange={(val, opt) => setLineTask(l.id, val, opt)}
+                            placeholder={
+                              l.project ? "Task" : "Select project first"
+                            }
+                          />
+                        </td>
+                        <td className="p-2 align-top">
+                          <textarea
+                            value={l.description}
+                            onChange={(e) =>
+                              updateLine(l.id, { description: e.target.value })
+                            }
+                            placeholder="What did you work on?"
+                            rows={1}
+                            className="w-full min-w-[140px] min-h-[32px] max-h-[200px] resize px-2 py-1.5 text-xs rounded-md border border-theme bg-app text-main placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary overflow-auto"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <SearchSelect2
+                            label=""
+                            value={l.activity_type}
+                            fetchOptions={fetchActivityTypeOptions}
+                            onChange={(value, opt) =>
+                              setLineActivity(l.id, value, opt)
+                            }
+                            placeholder="Activity Type"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <DateTimeRangePicker
+                            date={l.date}
+                            to_date={l.to_date}
+                            from_time={l.from_time}
+                            to_time={l.to_time}
+                            getDayOff={getDayOff}
+                            onMonthChange={handlePickerMonth}
+                            onApply={(date, from, to, toDate) =>
+                              handleApplyTime(l.id, date, from, to, toDate)
+                            }
+                          />
+                          {off && (
+                            <div
+                              title={dayOffLabel(off)}
+                              className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-semibold"
+                              style={{
+                                color: dayOffColor(off),
+                                background: `color-mix(in srgb, ${dayOffColor(off)} 14%, transparent)`,
+                              }}
+                            >
+                              <span
+                                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                                style={{ background: dayOffColor(off) }}
+                              />
+                              <span className="truncate">
+                                {dayOffLabel(off)}
+                                {off.halfDay ? " (Half day)" : ""}
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-2 text-right font-mono font-bold text-primary">
+                          {l.hours.toFixed(1)}h
+                        </td>
+                        {!isEmployee && (
+                          <td className="p-2 text-center">
+                            <input
+                              type="checkbox"
+                              checked={l.is_billable}
+                              onChange={(e) =>
+                                updateLine(l.id, {
+                                  is_billable: e.target.checked,
+                                })
+                              }
+                            />
+                          </td>
+                        )}
+                        <td className="p-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={l.is_completed}
                             onChange={(e) =>
                               updateLine(l.id, {
-                                is_billable: e.target.checked,
+                                is_completed: e.target.checked,
                               })
                             }
                           />
                         </td>
-                      )}
-                      <td className="p-2 text-center">
-                        <input
-                          type="checkbox"
-                          checked={l.is_completed}
-                          onChange={(e) =>
-                            updateLine(l.id, { is_completed: e.target.checked })
-                          }
-                        />
-                      </td>
-                      <td className="p-2 text-center">
-                        <button
-                          ref={(el) => {
-                            triggerRefs.current[l.id] = el;
-                          }}
-                          onClick={() => {
-                            if (openActionsId === l.id) {
-                              closeRowActions();
-                            } else {
-                              setOpenActionsId(l.id);
-                              setActionsView("menu");
-                            }
-                          }}
-                          className="p-1.5 hover:bg-app rounded border border-theme text-muted hover:text-main transition-colors"
-                          title="Row actions"
-                        >
-                          <MoreVertical size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="p-2 text-center">
+                          <button
+                            ref={(el) => {
+                              triggerRefs.current[l.id] = el;
+                            }}
+                            onClick={() => {
+                              if (openActionsId === l.id) {
+                                closeRowActions();
+                              } else {
+                                setOpenActionsId(l.id);
+                                setActionsView("menu");
+                              }
+                            }}
+                            className="p-1.5 hover:bg-app rounded border border-theme text-muted hover:text-main transition-colors"
+                            title="Row actions"
+                          >
+                            <MoreVertical size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

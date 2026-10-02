@@ -6,6 +6,9 @@ import React, {
   useCallback,
 } from "react";
 import { createPortal } from "react-dom";
+import { DAY_OFF_TONE } from "../../views/project_management/timesheet/components/DayOffChip";
+import { WEEKLY_OFF_COLOR } from "../../views/project_management/timesheet/components/Weeklyoff";
+import type { DayOff } from "../../views/project_management/timesheet/components/dayOff.types";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -78,6 +81,14 @@ function buildTimeOptions(intervalMinutes: number): string[] {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   });
 }
+
+const dayOffColor = (off: DayOff) =>
+  off.kind === "weekly_off"
+    ? WEEKLY_OFF_COLOR
+    : `var(${DAY_OFF_TONE[off.kind]})`;
+
+const dayOffText = (off: DayOff) =>
+  `${off.kind === "weekly_off" ? "Weekly Off" : off.label}${off.halfDay ? " (Half day)" : ""}`;
 
 const DEFAULT_QUICK_DURATIONS = [
   { label: "0.5h", minutes: 30 },
@@ -195,10 +206,11 @@ interface MonthCalProps {
   onNext: () => void;
   disableFuture?: boolean;
   disablePast?: boolean;
+  getDayOff?: (ymd: string) => DayOff | undefined;
 }
 
 const MonthCal: React.FC<MonthCalProps> = ({
-  year, month, selected, selectedEnd, onDay, onPrev, onNext, disableFuture, disablePast,
+  year, month, selected, selectedEnd, onDay, onPrev, onNext, disableFuture, disablePast, getDayOff,
 }) => {
   const cells = calDays(year, month);
   const todayYMD = toYMD(new Date());
@@ -230,6 +242,8 @@ const MonthCal: React.FC<MonthCalProps> = ({
           const isToday = ymd === todayYMD;
           const disabled =
             (disableFuture && ymd > todayYMD) || (disablePast && ymd < todayYMD);
+          const off = getDayOff?.(ymd);
+          const offColor = off ? dayOffColor(off) : undefined;
 
           return (
             <button
@@ -237,14 +251,22 @@ const MonthCal: React.FC<MonthCalProps> = ({
               type="button"
               onClick={() => !disabled && onDay(ymd)}
               disabled={disabled}
+              title={off ? dayOffText(off) : undefined}
               style={{
+                position: "relative",
                 border: "none",
                 borderRadius: 8,
                 padding: "5px 0",
                 fontSize: 12,
                 fontWeight: isSelected ? 700 : 400,
                 cursor: disabled ? "not-allowed" : "pointer",
-                background: isSelected ? "var(--primary)" : inRange ? "var(--row-hover)" : "transparent",
+                background: isSelected
+                  ? "var(--primary)"
+                  : inRange
+                    ? "var(--row-hover)"
+                    : offColor
+                      ? `color-mix(in srgb, ${offColor} 14%, transparent)`
+                      : "transparent",
                 color: isSelected
                   ? "#fff"
                   : disabled
@@ -258,6 +280,20 @@ const MonthCal: React.FC<MonthCalProps> = ({
               }}
             >
               {day}
+              {off && (
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    bottom: 1,
+                    width: 4,
+                    height: 4,
+                    marginLeft: -2,
+                    borderRadius: "50%",
+                    background: isSelected ? "#fff" : offColor,
+                  }}
+                />
+              )}
             </button>
           );
         })}
@@ -281,6 +317,13 @@ const navBtn: React.CSSProperties = {
   lineHeight: 1,
 };
 
+const LegendDot: React.FC<{ color: string; label: string }> = ({ color, label }) => (
+  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+    <span style={{ width: 6, height: 6, borderRadius: "50%", background: color }} />
+    {label}
+  </span>
+);
+
 export interface DateTimeRangePickerProps {
   date: string;
   to_date?: string;
@@ -293,6 +336,10 @@ export interface DateTimeRangePickerProps {
   disableFuture?: boolean;
   disablePast?: boolean;
   placeholder?: string;
+  /** Optional: mark holidays / leaves / weekly off on the date grid. */
+  getDayOff?: (ymd: string) => DayOff | undefined;
+  /** Optional: called with first/last day of the month being viewed (YYYY-MM-DD). */
+  onMonthChange?: (from: string, to: string) => void;
 }
 
 const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
@@ -307,6 +354,8 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
   disableFuture,
   disablePast,
   placeholder = "Set time",
+  getDayOff,
+  onMonthChange,
 }) => {
   const [open, setOpen] = useState(false);
   const [draftDate, setDraftDate] = useState(date);
@@ -320,6 +369,8 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
+  const onMonthChangeRef = useRef(onMonthChange);
+  onMonthChangeRef.current = onMonthChange;
 
   const timeOptions = buildTimeOptions(intervalMinutes);
 
@@ -336,6 +387,14 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
     setDraftFrom(from_time);
     setDraftTo(to_time);
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // tell the parent which month is on screen so it can load leaves for it
+  useEffect(() => {
+    if (!open) return;
+    const first = toYMD(new Date(viewY, viewM, 1));
+    const last = toYMD(new Date(viewY, viewM + 1, 0));
+    onMonthChangeRef.current?.(first, last);
+  }, [open, viewY, viewM]);
 
   const place = useCallback(() => {
     const trigger = triggerRef.current?.getBoundingClientRect();
@@ -499,6 +558,7 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                 onNext={nextMonth}
                 disableFuture={disableFuture}
                 disablePast={disablePast}
+                getDayOff={getDayOff}
               />
               <div
                 style={{
@@ -513,6 +573,24 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                   ? "Now select end date"
                   : `${fmtDate(draftDate)}${draftToDate && draftToDate !== draftDate ? " → " + fmtDate(draftToDate) : ""}`}
               </div>
+              {getDayOff && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    display: "flex",
+                    flexWrap: "wrap",
+                    justifyContent: "center",
+                    gap: 10,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: "var(--muted)",
+                  }}
+                >
+                  <LegendDot color={`var(${DAY_OFF_TONE.company_holiday})`} label="Holiday" />
+                  <LegendDot color={`var(${DAY_OFF_TONE.leave})`} label="Leave" />
+                  <LegendDot color={WEEKLY_OFF_COLOR} label="Weekly Off" />
+                </div>
+              )}
             </div>
 
             <div style={{ padding: 16, width: 280, display: "flex", flexDirection: "column", gap: 12 }}>
