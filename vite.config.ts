@@ -7,12 +7,12 @@ export default defineConfig({
   server: {
    proxy: {
   "/api": {
-    // target: "https://api.erp.lms.rolaface.com",
+    target: "https://api.erp.demo.rolaface.com",
     // target: "http://lms.local:8000",
     // target: "http://zambia.local:8000",
-    target: "https://api.erp.demo.rolaface.com",
+    // target: "https://api.erp.demo.rolaface.com",
     changeOrigin: true,
-    secure: true,
+    secure: false,
   },
 }
 },
