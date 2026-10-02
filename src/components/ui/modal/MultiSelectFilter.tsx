@@ -144,6 +144,17 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
     onChange(next);
   };
 
+  const toggleSelectAll = () => {
+    const allSelected =
+      options.length > 0 && values.length === options.length;
+
+    if (allSelected) {
+      onChange([]);
+    } else {
+      onChange(options.map((option) => option.value));
+    }
+  };
+
   const clearAll = () => {
     onChange([]);
   };
@@ -156,8 +167,8 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
     const pinned: MultiSelectOption[] = q
       ? []
       : values
-          .filter((v) => !remoteOptions.some((o) => o.value === v))
-          .map((v) => ({ value: v, label: labelCacheRef.current.get(v) ?? v }));
+        .filter((v) => !remoteOptions.some((o) => o.value === v))
+        .map((v) => ({ value: v, label: labelCacheRef.current.get(v) ?? v }));
     visibleOptions = [...pinned, ...remoteOptions];
   } else if (searchable && q) {
     visibleOptions = options.filter(
@@ -172,83 +183,99 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   const dropdown =
     open && dropdownPos
       ? createPortal(
-          <div
-            id="multi-select-portal"
-            className="absolute z-[99999] flex flex-col overflow-hidden rounded-2xl border-[1.5px] border-[var(--border)] bg-card shadow-lg"
-            style={{
-              top: dropdownPos.top,
-              left: dropdownPos.left,
-              width: dropdownPos.width,
-            }}
-          >
-            <div className="flex items-center justify-between border-b-[1.5px] border-[var(--border)] bg-[var(--bg)] px-3.5 py-2.5">
+        <div
+          id="multi-select-portal"
+          className="absolute z-[99999] flex flex-col overflow-hidden rounded-2xl border-[1.5px] border-[var(--border)] bg-card shadow-lg"
+          style={{
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+          }}
+        >
+          <div className="border-b-[1.5px] border-[var(--border)] bg-[var(--bg)] px-3.5 py-2.5">
+            <div className="flex items-center justify-between">
               <p className="m-0 text-[10px] font-bold uppercase tracking-wide text-muted">
                 {panelTitle}
               </p>
-              {hasValue && (
-                <button
-                  onClick={clearAll}
-                  className="border-none bg-transparent p-0 text-[11px] font-bold text-primary cursor-pointer"
-                >
-                  Clear
-                </button>
-              )}
             </div>
 
-            {showSearch && (
-              <div className="border-b-[1.5px] border-[var(--border)] px-3 py-2">
+            <div className="mt-2 flex items-center justify-between gap-4">
+              <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] font-semibold text-main">
                 <input
-                  autoFocus
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={searchPlaceholder}
-                  className="w-full rounded-lg border border-[var(--border)] bg-card px-2.5 py-1.5 text-xs text-main outline-none placeholder:text-muted focus:border-primary"
+                  type="checkbox"
+                  checked={options.length > 0 && values.length === options.length}
+                  onChange={toggleSelectAll}
+                  className="h-[14px] w-[14px] cursor-pointer"
+                  style={{ accentColor: "var(--primary)" }}
                 />
-              </div>
-            )}
+                Select All
+              </label>
 
-            <div className="max-h-64 overflow-y-auto py-1.5">
-              {visibleOptions.map((opt) => {
-                const checked = values.includes(opt.value);
-                return (
-                  <label
-                    key={opt.value}
-                    className={[
-                      "flex items-center gap-2.5 px-3.5 py-2 text-[13px] cursor-pointer transition-colors duration-150",
-                      checked
-                        ? "bg-row-hover text-primary font-semibold"
-                        : "text-main font-medium hover:bg-row-hover",
-                    ].join(" ")}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleValue(opt.value)}
-                      className="h-[15px] w-[15px] cursor-pointer rounded"
-                      style={{ accentColor: "var(--primary)" }}
-                    />
-                    <span>{opt.label}</span>
-                  </label>
-                );
-              })}
-              {visibleOptions.length === 0 && (
-                <p className="m-0 px-3.5 py-3 text-xs text-muted">
-                  {searching ? "Searching..." : "No results found"}
-                </p>
-              )}
-            </div>
-
-            <div className="border-t-[1.5px] border-[var(--border)] px-3.5 py-2.5">
               <button
-                onClick={() => setOpen(false)}
-                className="w-full rounded-lg bg-primary py-[7px] text-center text-xs font-bold text-white transition-opacity hover:opacity-90"
+                type="button"
+                onClick={clearAll}
+                disabled={!hasValue}
+                className="text-[11px] font-semibold text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Done
+                Clear All
               </button>
             </div>
-          </div>,
-          document.body,
-        )
+          </div>
+
+          {showSearch && (
+            <div className="border-b-[1.5px] border-[var(--border)] px-3 py-2">
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="w-full rounded-lg border border-[var(--border)] bg-card px-2.5 py-1.5 text-xs text-main outline-none placeholder:text-muted focus:border-primary"
+              />
+            </div>
+          )}
+
+          <div className="max-h-64 overflow-y-auto py-1.5">
+            {visibleOptions.map((opt) => {
+              const checked = values.includes(opt.value);
+              return (
+                <label
+                  key={opt.value}
+                  className={[
+                    "flex items-center gap-2.5 px-3.5 py-2 text-[13px] cursor-pointer transition-colors duration-150",
+                    checked
+                      ? "bg-row-hover text-primary font-semibold"
+                      : "text-main font-medium hover:bg-row-hover",
+                  ].join(" ")}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleValue(opt.value)}
+                    className="h-[15px] w-[15px] cursor-pointer rounded"
+                    style={{ accentColor: "var(--primary)" }}
+                  />
+                  <span>{opt.label}</span>
+                </label>
+              );
+            })}
+            {visibleOptions.length === 0 && (
+              <p className="m-0 px-3.5 py-3 text-xs text-muted">
+                {searching ? "Searching..." : "No results found"}
+              </p>
+            )}
+          </div>
+
+          <div className="border-t-[1.5px] border-[var(--border)] px-3.5 py-2.5">
+            <button
+              onClick={() => setOpen(false)}
+              className="w-full rounded-lg bg-primary py-[7px] text-center text-xs font-bold text-white transition-opacity hover:opacity-90"
+            >
+              Done
+            </button>
+          </div>
+        </div>,
+        document.body,
+      )
       : null;
 
   return (
