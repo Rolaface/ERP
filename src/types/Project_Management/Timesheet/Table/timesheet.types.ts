@@ -103,6 +103,7 @@ export interface TimesheetHoursEntry {
   hours: number;
   docstatus: number;
   project: string | null;
+  project_name: string | null;
   task: string | null;
   activity_type: string | null;
   description: string | null;

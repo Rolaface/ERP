@@ -147,10 +147,10 @@ export const DayView: React.FC<DayViewProps> = ({
                   e={e}
                   title={
                     canViewAll
-                      ? projectTask(e) || e.activity_type || "—"
-                      : e.task || e.activity_type || "—"
+                      ? `${e.employee} · ${e.project_name || e.project || "No project"} · ${e.task || "No task"}`
+                      : `${e.project_name || e.project || "No project"} · ${e.task || "No task"}`
                   }
-                  meta={entryMeta(e)}
+                  meta={e.description || e.activity_type || "—"}
                   maxHours={maxHours}
                   onEdit={onEdit}
                 />
@@ -280,10 +280,10 @@ export const AgendaList: React.FC<AgendaProps> = ({
                   e={e}
                   title={
                     canViewAll
-                      ? `${e.employee} · ${projectTask(e)}`
-                      : projectTask(e) || e.activity_type || "—"
+                      ? `${e.employee} · ${e.project_name || e.project || "No project"} · ${e.task || "No task"}`
+                      : `${e.project_name || e.project || "No project"} · ${e.task || "No task"}`
                   }
-                  meta={entryMeta(e)}
+                  meta={e.description || e.activity_type || "—"}
                   maxHours={maxHours}
                   onEdit={onEdit}
                 />
