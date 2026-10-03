@@ -31,6 +31,9 @@ import { isMasterSite } from "../config/site";
 
 // ── Lazy Modules ──
 const Dashboard = lazy(() => import("../views/Dashboard"));
+const MasterSiteDashboard = lazy(
+  () => import("../views/MasterSiteDashboard/MasterSiteDashboard")
+);
 const SalesModule = lazy(() => import("../views/Sales/Sales"));
 const ProcurementModule = lazy(() => import("../views/Procurement/Procurement"));
 const InventoryModule = lazy(() => import("../views/Inventory/Inventory"));
@@ -165,9 +168,14 @@ const router = createBrowserRouter(
 
         {/* ── Protected Routes ── */}
         <Route element={<ProtectedRoute />}>
-        <Route path="/select-lms-mode" element={<SelectLmsMode />} />
+          <Route path="/select-lms-mode" element={<SelectLmsMode />} />
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardRedirect />} />
+
+            <Route
+              path="/master-site-dashboard"
+              element={<MasterSiteDashboard />}
+            />
 
             <Route
               path="/sales"
@@ -232,7 +240,7 @@ const router = createBrowserRouter(
             <Route
               path="/hr/*"
               element={
-                    <PermissionRoute
+                <PermissionRoute
                   modules={[
                     "Employee",
                     "Payroll Entry",
