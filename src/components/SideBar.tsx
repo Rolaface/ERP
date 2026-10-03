@@ -87,16 +87,16 @@ export const EMPLOYEE_HR_TABS: EmployeeTabItem[] = [
     label: "Leave",
     icon: <Calendar size={16} strokeWidth={1.75} />,
   },
-{
-  id: "emp-attendance",
-  label: "Attendance",
-  icon: <Calendar size={16} strokeWidth={1.75} />,
-},
-{
-  id: "emp-task-timesheet",
-  label: "Task & Timesheet",
-  icon: <Clock size={16} strokeWidth={1.75} />,
-},
+  {
+    id: "emp-attendance",
+    label: "Attendance",
+    icon: <Calendar size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "emp-task-timesheet",
+    label: "Task & Timesheet",
+    icon: <Clock size={16} strokeWidth={1.75} />,
+  },
   {
     id: "emp-financials",
     label: "Financials",
@@ -814,6 +814,43 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               )}
             </div>
           )}
+
+          {/* ── Master-site-dashboard ── */}
+          {!isEmployeeView && (
+            <NavLink
+              to="/master-site-dashboard"
+              className={({ isActive }) =>
+                `group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
+                ${isActive
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "text-muted hover:bg-row-hover hover:text-main"
+                }`
+              }
+            >
+              <span
+                className={`
+                  flex h-10 shrink-0 items-center justify-center text-[17px]
+                  transition-all duration-300
+                  ${open ? "w-10" : "w-full"}
+                `}
+              >
+                <BarChart2 {...iconProps} />
+              </span>
+
+              <span
+                className={`
+                  truncate text-[14px] font-semibold tracking-tight
+                  transition-all duration-200 pr-3
+                  ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
+                `}
+              >
+                Master Site Dashboard
+              </span>
+
+              {!open && <Tooltip label="Master Site Dashboard" />}
+            </NavLink>
+          )}
+
         </nav>
 
         {/* ── User footer ── */}
