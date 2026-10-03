@@ -3,7 +3,7 @@ export type TaskStatus =
   | "Working"
   | "Pending Review"
   | "Overdue"
-  | "Template"
+
   | "Completed"
   | "Cancelled";
 

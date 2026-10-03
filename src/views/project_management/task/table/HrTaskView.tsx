@@ -73,7 +73,6 @@ const STATUS_OPTIONS = [
   { label: "Working", value: "Working" },
   { label: "Pending Review", value: "Pending Review" },
   { label: "Overdue", value: "Overdue" },
-  { label: "Template", value: "Template" },
   { label: "Completed", value: "Completed" },
   { label: "Cancelled", value: "Cancelled" },
 ];
@@ -86,7 +85,7 @@ const STATUS_VARIANT: Record<
   Working: "info",
   "Pending Review": "info",
   Overdue: "danger",
-  Template: "draft",
+  
   Completed: "success",
   Cancelled: "danger",
 };
