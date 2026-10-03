@@ -182,9 +182,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     isEmployee ? EMPLOYEE_DEFAULT_VIEW : ADMIN_DEFAULT_VIEW,
   );
 
-  // Table: employee ke SAARE assigned tasks (ToDo status ka filter nahi)
+ 
   const allAssignedNamesRef = useRef<string[] | undefined>(undefined);
-  // Kanban: sirf Open ToDo wale tasks
+  
   const [assignedNames, setAssignedNames] = useState<string[]>([]);
 
   const assigneeActive = isEmployee || assigneeFilter.length > 0;
@@ -288,8 +288,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     try {
       const [names, allNames] = currentUserEmail
         ? await Promise.all([
-            getMyAssignedTasks(currentUserEmail, true), // Kanban: Open only
-            getMyAssignedTasks(currentUserEmail, false), // Table: sab
+            getMyAssignedTasks(currentUserEmail, true), 
+            getMyAssignedTasks(currentUserEmail, false), 
           ])
         : [[], []];
       if (!mountedRef.current) return;
@@ -426,8 +426,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     console.warn("handleAdd: Task create modal not wired yet.");
   };
 
-  // Task update has already succeeded when this runs.
-  // A ToDo failure must never undo it. Admin path returns immediately.
+
   const finalizeEmployeeAssignment = async (
     taskName: string,
     nextStatus: string,
@@ -436,9 +435,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     try {
       await closeMyTaskAssignment(taskName, currentUserEmail);
     } catch (error) {
-      showApiError(error); // non-fatal: task is completed, assignment stays open
+      showApiError(error); 
     }
-    triggerRefresh(REFRESH_KEYS.TASK_LIST); // reloadRef → loadAssignedNames → refetch
+    triggerRefresh(REFRESH_KEYS.TASK_LIST); 
   };
 
   const handleStatusChange = async (
@@ -451,7 +450,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     const progress = nextStatus === "Completed" ? 100 : nextProgress;
 
     try {
-      await updateTaskStatus(taskName, nextStatus, progress); // throws → nothing below runs
+      await updateTaskStatus(taskName, nextStatus, progress);
 
       patchTask(taskName, {
         status: nextStatus as TaskStatus,
@@ -730,7 +729,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       header: "Assigned To",
       align: "left",
       render: (t) => {
-        // Completed / Cancelled task: assign nahi hoga, isliye column khali dikhao
+      
         if (t.status === "Completed" || t.status === "Cancelled") {
           return <span className="text-xs text-muted">—</span>;
         }
