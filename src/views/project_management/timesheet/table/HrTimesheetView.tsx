@@ -44,8 +44,7 @@ import {
 } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
 import TimesheetCalendar from "../components/TimesheetCalendar";
 import type { TimesheetMode } from "../components/Viewtoggle";
-import { TIMESHEET_VIEW_OPTIONS } from "../components/timesheetViews";
-import ViewSelector from "../../../project_management/ViewSelector";
+import { openSendEmailModal } from "../../../../store/modalStore";
 
 // ── Constants ────────────────────────────────────────────────────
 
@@ -307,6 +306,23 @@ const HrTimesheetView: React.FC = () => {
       setDrawerLoading(false);
     }
   };
+  const handleComposeEmail = async (t: TimesheetEntry) => {
+    let contactEmail: string | null = null;
+    let invoiceAttachments: { name: string; file_name: string }[] = [];
+    try {
+      const detail = await getTimesheetById(t.name);
+      // TODO: confirm field names in TimesheetDetail
+      contactEmail = (detail as any)?.contact_email ?? null;
+      invoiceAttachments = (detail as any)?.attachments ?? [];
+    } catch {}
+
+    openSendEmailModal({
+      docType: "Timesheet",
+      invoiceNumber: t.name,
+      contactEmail,
+      invoiceAttachments,
+    });
+  };
 
   const handleRename = async (
     t: TimesheetEntry,
@@ -549,7 +565,7 @@ const HrTimesheetView: React.FC = () => {
             onClick: () => handleSubmit(t.name),
           });
         }
-        if (t.status === "Draft" && canDelete) {
+        if ((t.status === "Draft" || t.status === "Cancelled") && canDelete) {
           customActions.push({
             label: "Delete",
             icon: ACTION_ICONS.DELETE,
@@ -563,6 +579,13 @@ const HrTimesheetView: React.FC = () => {
             icon: ACTION_ICONS.CANCEL,
             danger: true,
             onClick: () => handleCancel(t.name),
+          });
+        }
+        if (t.status === "Submitted" || t.status === "Billed") {
+          customActions.push({
+            label: "Compose Email",
+            icon: ACTION_ICONS.EMAIL,
+            onClick: () => handleComposeEmail(t),
           });
         }
 
@@ -649,14 +672,7 @@ const HrTimesheetView: React.FC = () => {
             setSortOrder(newSortOrder);
             setPage(1);
           }}
-          primaryAction={
-            <ViewSelector
-              value={view}
-              options={TIMESHEET_VIEW_OPTIONS}
-              onChange={setView}
-            />
-          }
-          addLabel="+ Add Timesheet"
+          addLabel=" Add Timesheet"
           onAdd={handleAdd}
           enableColumnSelector
           currentPage={page}

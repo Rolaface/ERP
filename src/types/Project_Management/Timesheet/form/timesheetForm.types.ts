@@ -54,6 +54,7 @@ export interface TimesheetCreatePayload {
   doctype: "Timesheet";
   employee: string;
   employee_name: string;
+  title: string;
   customer?: string;
   department?: string;
   currency: string;

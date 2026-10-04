@@ -223,6 +223,13 @@ function placeLine(
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+const formatTitleDate = (ymd: string) =>
+  new Date(`${ymd}T00:00:00`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
 function splitDateTime(dt: string | null | undefined): {
   date: string;
   time: string;
@@ -334,14 +341,17 @@ export function useTimesheetModal(
   const [editingName, setEditingName] = useState<string | undefined>(
     undefined,
   );
+  const [customTitle, setCustomTitle] = useState<string | null>(null);
 
   const reset = useCallback(() => {
     setForm(emptyForm(restrictions));
     setEditingName(undefined);
+    setCustomTitle(null);
   }, [restrictions]);
 
   const loadFromDetail = useCallback((detail: TimesheetDetail) => {
     setEditingName(detail.name);
+    setCustomTitle(detail.title ?? null);
     setForm({
       project: "",
       project_name: "",
@@ -431,6 +441,10 @@ export function useTimesheetModal(
 
   const setStartDate = useCallback((date: string) => {
     setForm((f) => ({ ...f, start_date: date }));
+  }, []);
+
+  const setTitle = useCallback((value: string) => {
+    setCustomTitle(value);
   }, []);
 
   const addLine = useCallback(
@@ -626,6 +640,38 @@ export function useTimesheetModal(
     [form.lines],
   );
 
+  const derivedStartDate = useMemo(() => {
+    const starts = form.lines
+      .map((l) => l.date)
+      .filter(Boolean)
+      .sort();
+    return starts[0] || form.start_date || today();
+  }, [form.lines, form.start_date]);
+
+  const derivedEndDate = useMemo(() => {
+    const ends = form.lines
+      .map((l) => l.to_date)
+      .filter(Boolean)
+      .sort();
+    return ends[ends.length - 1] || derivedStartDate;
+  }, [form.lines, derivedStartDate]);
+
+  const autoTitle = useMemo(() => {
+    const name = form.employee_name || restrictions?.employee?.name || "";
+    const range =
+      derivedEndDate > derivedStartDate
+        ? `${formatTitleDate(derivedStartDate)} to ${formatTitleDate(derivedEndDate)}`
+        : formatTitleDate(derivedStartDate);
+    return [name, range].filter(Boolean).join(" - ");
+  }, [
+    form.employee_name,
+    restrictions?.employee?.name,
+    derivedStartDate,
+    derivedEndDate,
+  ]);
+
+  const title = customTitle ?? autoTitle;
+
   const buildPayload = useCallback(
     (exchangeRate: number): TimesheetCreatePayload => {
       const rowStarts = form.lines
@@ -644,6 +690,7 @@ export function useTimesheetModal(
         doctype: "Timesheet",
         employee: form.employee || restrictions?.employee?.id || "",
         employee_name: form.employee_name || restrictions?.employee?.name || "",
+        title: title.trim() || autoTitle,
         customer: form.customer || undefined,
         department: form.department || undefined,
         currency: form.currency,
@@ -671,7 +718,7 @@ export function useTimesheetModal(
         })),
       };
     },
-    [form, editingName, restrictions?.employee],
+    [form, editingName, restrictions?.employee, title, autoTitle],
   );
 
   const validate = useCallback((): string | null => {
@@ -764,11 +811,13 @@ export function useTimesheetModal(
 
   return {
     form,
+    title,
     totals,
     conflictIds,
     isSaving,
     isEditMode,
     restrictions,
+    setTitle,
     setProject,
     setCustomer,
     setEmployee,

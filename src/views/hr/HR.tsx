@@ -16,6 +16,7 @@ import {
   FaSlidersH,
   FaTasks,
   FaRegClock,
+  FaFileAlt,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import {
@@ -28,6 +29,7 @@ import { useUrlTab } from "../../hooks/useUrlTab";
 import { HrContentFrame, HrPrimaryTabs, HrSecondaryTabs } from "./components/HrTabLayout";
 import { usePermission } from "../../hooks/permission/usePermission";
 import { useHRView } from "../../hooks/permission/useHRView";
+import { usePermissionStore } from "../../store/permissionStore";
 
 interface LeaveProps {
   isEmployeeView?: boolean;
@@ -98,6 +100,9 @@ const TaskManagement = lazy(
 const EmployeeTaskTimesheet = lazy(
   () => import("./EmployeeView/project/EmployeeTaskTimesheet"),
 );
+const ReportsTab = lazy(
+  () => import("../../views/project_management/ReportsTab/ReportsHub"),
+);
 // ─── Employee tab IDs — must stay in sync with EMPLOYEE_HR_TABS in Sidebar.tsx
 
 const EMPLOYEE_TAB_IDS = [
@@ -131,6 +136,7 @@ const LEAVE_CHILD_MODULES = [
 // Each sub-tab is guarded by its OWN permission module/action, kept fully
 // separate from the other, so splitting them into independent primary tabs
 // later (if ever needed) requires no permission-logic rework.
+// Reports sub-tab is professional-view only (this list is only used there).
 const TASK_TIMESHEET_SUB_TABS = [
   {
     id: "task",
@@ -143,6 +149,13 @@ const TASK_TIMESHEET_SUB_TABS = [
     id: "timesheet",
     label: "Timesheet",
     icon: <FaRegClock size={14} />,
+    module: "Timesheet" as const,
+    action: "read" as const,
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: <FaFileAlt size={14} />,
     module: "Timesheet" as const,
     action: "read" as const,
   },
@@ -288,7 +301,7 @@ const HrPayrollModule: React.FC = () => {
         case "emp-attendance":
           return <EmployeeAttendanceTimesheet mode="attendance" />;
         case "emp-task-timesheet":
-  return <EmployeeTaskTimesheet />;
+          return <EmployeeTaskTimesheet />;
         case "emp-documents":
           return <EmployeeDocuments />;
         case "emp-reports":
@@ -332,6 +345,8 @@ const HrPayrollModule: React.FC = () => {
               can("Timesheet", "read") && (
                 <HrAttendanceTimesheet mode="timesheet" />
               )}
+            {taskTimesheetSubTab === "reports" &&
+              can("Timesheet", "read") && <ReportsTab />}
           </div>
         );
       case "performance-growth":

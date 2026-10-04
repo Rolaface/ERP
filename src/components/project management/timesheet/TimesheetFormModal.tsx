@@ -1,97 +1,47 @@
-import React, {
-  useCallback,
-  useRef,
-  useState,
-  useEffect,
-  useMemo,
-} from "react";
-import {
-  Clock,
-  Plus,
-  Calendar,
-  MoreVertical,
-  Pencil,
-  Copy,
-  CopyPlus,
-  Trash2,
-  ArrowUp,
-  ArrowDown,
-  ArrowUpDown,
-} from "lucide-react";
+import React, { useCallback, useEffect } from "react";
+import { Clock } from "lucide-react";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
-import { Popover } from "../../../components/common/Popover";
-import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
-import { ModalInput } from "../../../components/ui/modal/modalComponent";
-import { useCompanyDefaultsStore } from "../../../store/Companydefaultsstore";
-import DateTimeRangePicker from "../../calendar/DateTimeRangePicker";
-import TimesheetSummary from "./TimesheetSummary";
-import UpdateRatesPanel from "./UpdateRatesPanel";
 import {
   useTimesheetModal,
-  fetchActivityTypeOptions,
   fetchProjectOptions,
-  fetchEmployeeOptions,
-  fetchTaskOptions,
   isSlotTaken,
   OVERLAP_MSG,
-  type TimesheetModalRestrictions,
 } from "../../../hooks/project_management/timeheet/form/useTimesheetModal";
-import CustomerSelect from "../../../../src/components/selects/CustomerSelect";
-import { getTimesheetById } from "../../../api/project/timesheet/timesheet.api";
-import { showApiError, showDayOffToast } from "../../../utils/alert";
-import { useDayOffs } from "../../../hooks/project_management/timeheet/useDayOffs";
-import { DAY_OFF_TONE } from "../../../views/project_management/timesheet/components/DayOffChip";
-import { WEEKLY_OFF_COLOR } from "../../../views/project_management/timesheet/components/Weeklyoff";
-import type { DayOff } from "../../../views/project_management/timesheet/components/dayOff.types";
+import { showApiError } from "../../../utils/alert";
+import TimesheetSummary from "./TimesheetSummary";
+import EmployeeHeader from "./Employeeheader";
+import RowActionsPopover from "./Rowactionspopover";
+import TimesheetEntriesTable from "./Timesheetentriestable";
+import TimesheetFooter from "./Timesheetfooter";
+import TimesheetInfoCard from "./Timesheetinfocard";
+import type {
+  RowHandlers,
+  TimesheetFormModalProps,
+} from "../../../types/Project_Management/Timesheet/form/Timesheetformmodal";
+import {
+  MODAL_SIZE,
+  SUMMARY_WIDTH_CLASS,
+  TIMESHEET_FIELD_STYLES,
+} from "../../../utils/project_management/timehseet/Timesheetformmodal.utils";
+import { useTimesheetDayOffs } from "../../../hooks/project_management/timeheet/form/Usetimesheetdayoffs";
+import { useTimesheetDetail, useTimesheetPrefill } from "../../../hooks/project_management/timeheet/form/Usetimesheetinit";
+import {
+  useDateSort,
+  useLineSelection,
+  useRowActions,
+} from "../../../hooks/project_management/timeheet/form/Usetimesheettable";
 
-interface PrefillTask {
-  project: string;
-  projectName: string;
-  task: string;
-  taskName: string;
-}
-
-interface PrefillEmployee {
-  id: string;
-  name: string;
-}
-
-type TimesheetContext = "admin" | "employee";
-
-interface TimesheetFormModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  modalId?: string;
-  onSuccess?: () => void;
-  context?: TimesheetContext;
-  prefillTask?: PrefillTask;
-  prefillTasks?: PrefillTask[];
-  prefillDate?: string;
-  prefillEmployee?: PrefillEmployee;
-  restrictions?: TimesheetModalRestrictions;
-  title?: string;
-  subtitle?: string;
-  timesheetId?: string;
-}
-
-type RowActionsView = "menu" | "rates";
-
-const WEEKLY_OFF_LABEL = "Weekly Off";
-
-const dayOffLabel = (off: DayOff) =>
-  off.kind === "weekly_off" ? WEEKLY_OFF_LABEL : off.label;
-
-const dayOffColor = (off: DayOff) =>
-  off.kind === "weekly_off"
-    ? WEEKLY_OFF_COLOR
-    : `var(${DAY_OFF_TONE[off.kind]})`;
-
-const formatDateLabel = (ymd: string) =>
-  new Date(`${ymd}T00:00:00`).toLocaleDateString(undefined, {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
+const resolveSubtitle = (
+  isEditMode: boolean,
+  isEmployee: boolean,
+  subtitle?: string,
+) => {
+  if (isEditMode) return "Update time entries and billing details";
+  if (subtitle) return subtitle;
+  return isEmployee
+    ? "Log your work hours and track billable time"
+    : "Create employee timesheet allocation and track billable hours";
+};
 
 const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   isOpen,
@@ -105,15 +55,17 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   prefillEmployee,
   restrictions,
   title = "New Timesheet",
-  subtitle = "Create employee timesheet allocation and track billable hours",
+  subtitle,
   timesheetId,
 }) => {
   const {
     form,
+    title: timesheetTitle,
     totals,
     conflictIds,
     isSaving,
     isEditMode,
+    setTitle,
     setProject,
     setCustomer,
     setEmployee,
@@ -123,7 +75,6 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     setLineProject,
     setLineTask,
     setLineActivity,
-    removeLine,
     removeLines,
     duplicateLine,
     sortLines,
@@ -134,268 +85,84 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   } = useTimesheetModal({ onSuccess, restrictions });
 
   const isEmployee = context === "employee";
+  const hasHeaderProject = Boolean(form.project);
 
-  // ---- Holiday / leave lookup (same source as the calendar) ----
-  // month currently open in the date picker, so its leaves get loaded too
-  const [pickerRange, setPickerRange] = useState<{
-    from: string;
-    to: string;
-  } | null>(null);
+  const dayOffs = useTimesheetDayOffs({
+    lines: form.lines,
+    employee: form.employee,
+    employeeName: form.employee_name,
+    fallbackDate: prefillDate,
+    isEmployee,
+  });
 
-  const handlePickerMonth = useCallback(
-    (from: string, to: string) =>
-      setPickerRange((p) =>
-        p && p.from === from && p.to === to ? p : { from, to },
-      ),
-    [],
-  );
-
-  const { rangeFrom, rangeTo } = useMemo(() => {
-    const starts = [...form.lines.map((l) => l.date), pickerRange?.from]
-      .filter(Boolean)
-      .sort() as string[];
-    const ends = [...form.lines.map((l) => l.to_date), pickerRange?.to]
-      .filter(Boolean)
-      .sort() as string[];
-    const t = new Date().toISOString().slice(0, 10);
-    return {
-      rangeFrom: starts[0] ?? prefillDate ?? t,
-      rangeTo: ends[ends.length - 1] ?? prefillDate ?? t,
-    };
-  }, [form.lines, prefillDate, pickerRange]);
-
-  const dayOffs = useDayOffs(rangeFrom, rangeTo, !isEmployee);
-
-  const getDayOff = useCallback(
-    (date: string): DayOff | undefined => {
-      if (!date) return undefined;
-      const holiday = dayOffs.holidayOn(date);
-      if (holiday) return holiday;
-      if (isEmployee) return dayOffs.leaveOn(date);
-      return (
-        (form.employee ? dayOffs.leaveOn(date, form.employee) : undefined) ??
-        (form.employee_name
-          ? dayOffs.leaveOn(date, form.employee_name)
-          : undefined)
-      );
-    },
-    [dayOffs, isEmployee, form.employee, form.employee_name],
-  );
-
-  const warnIfDayOff = useCallback(
-    (date: string, toDate: string) => {
-      const startOff = getDayOff(date);
-      const off = startOff ?? (toDate !== date ? getDayOff(toDate) : undefined);
-      if (!off) return;
-      showDayOffToast({
-        dateLabel: formatDateLabel(startOff ? date : toDate),
-        kind: off.kind,
-        label: dayOffLabel(off),
-        halfDay: off.halfDay,
-        who: isEmployee ? undefined : form.employee_name || undefined,
-      });
-    },
-    [getDayOff, isEmployee, form.employee_name],
-  );
-
-  const [isLoadingTimesheet, setIsLoadingTimesheet] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen || !timesheetId) return;
-    let cancelled = false;
-
-    (async () => {
-      setIsLoadingTimesheet(true);
-      try {
-        const detail = await getTimesheetById(timesheetId);
-        if (!cancelled && detail) loadFromDetail(detail);
-      } catch (e) {
-        if (!cancelled) showApiError(e);
-      } finally {
-        if (!cancelled) setIsLoadingTimesheet(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, timesheetId, loadFromDetail]);
-
-  const prefillAppliedRef = useRef(false);
-
-  useEffect(() => {
-    if (!isOpen) {
-      prefillAppliedRef.current = false;
-      return;
-    }
-    if (timesheetId || prefillAppliedRef.current) return;
-
-    const items = prefillTasks?.length
-      ? prefillTasks
-      : prefillTask
-        ? [prefillTask]
-        : [];
-    if (items.length === 0 && !prefillDate) return;
-
-    prefillAppliedRef.current = true;
-
-    if (prefillEmployee) {
-      setEmployee(prefillEmployee.id, {
-        label: prefillEmployee.name,
-        value: prefillEmployee.id,
-      });
-    }
-
-    if (items.length === 0) {
-      addLine(undefined, prefillDate);
-      return;
-    }
-
-    addLines(
-      items.map((p) => ({
-        project: p.project,
-        project_name: p.projectName,
-        task: p.task,
-        task_name: p.taskName,
-      })),
-      prefillDate,
-    );
-  }, [
+  const isLoadingTimesheet = useTimesheetDetail(
     isOpen,
+    timesheetId,
+    loadFromDetail,
+  );
+
+  useTimesheetPrefill({
+    isOpen,
+    timesheetId,
     prefillTask,
     prefillTasks,
     prefillDate,
     prefillEmployee,
-    timesheetId,
     addLine,
     addLines,
     setEmployee,
-  ]);
+  });
+
+  const selection = useLineSelection(form.lines, removeLines);
+  const sort = useDateSort(sortLines, isOpen);
+  const rowActions = useRowActions();
+
+  const { resetPickerRange } = dayOffs;
 
   useEffect(() => {
     if (!isOpen) {
       reset();
-      setPickerRange(null);
+      resetPickerRange();
     }
-  }, [isOpen, reset]);
+  }, [isOpen, reset, resetPickerRange]);
 
-  const companyCurrency =
-    useCompanyDefaultsStore.getState().defaults?.default_currency;
-
-  const [openActionsId, setOpenActionsId] = useState<string | null>(null);
-  const [actionsView, setActionsView] = useState<RowActionsView>("menu");
-  const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-
-  const activeTriggerRef = {
-    current: openActionsId
-      ? (triggerRefs.current[openActionsId] ?? null)
-      : null,
-  };
-
-  const closeRowActions = useCallback(() => {
-    setOpenActionsId(null);
-    setActionsView("menu");
-  }, []);
-
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  const allSelected =
-    form.lines.length > 0 && selectedIds.size === form.lines.length;
-  const someSelected = selectedIds.size > 0 && !allSelected;
-
-  const toggleRow = (id: string) =>
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
-  const toggleAll = () =>
-    setSelectedIds(
-      allSelected ? new Set() : new Set(form.lines.map((l) => l.id)),
-    );
-
-  useEffect(() => {
-    setSelectedIds((prev) => {
-      const valid = new Set(form.lines.map((l) => l.id));
-      const next = new Set([...prev].filter((id) => valid.has(id)));
-      return next.size === prev.size ? prev : next;
-    });
-  }, [form.lines]);
-
-  const handleBulkDelete = () => {
-    removeLines([...selectedIds]);
-    setSelectedIds(new Set());
-  };
-
-  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
-
-  const handleSortByDate = () => {
-    const next = sortDir === "asc" ? "desc" : "asc";
-    sortLines(next);
-    setSortDir(next);
-  };
-
-  useEffect(() => {
-    if (!isOpen) setSortDir(null);
-  }, [isOpen]);
-
-  const handleApplyTime = (
-    id: string,
-    date: string,
-    from: string,
-    to: string,
-    toDate: string,
-  ) => {
-    const slot = {
-      date,
-      to_date: toDate,
-      from_time: from,
-      to_time: to,
-    };
-    if (isSlotTaken(form.lines, id, slot)) {
-      showApiError(OVERLAP_MSG);
-      return;
-    }
-    warnIfDayOff(date, toDate);
-    updateLine(id, slot);
-  };
-
-  const handleSave = async () => {
-    const ok = await save();
-    if (ok) onClose();
-  };
-
-  const fetchProjectOptionsRestricted = useCallback(
+  const fetchProjects = useCallback(
     (q: string) => fetchProjectOptions(q, restrictions?.allowedProjectIds),
     [restrictions?.allowedProjectIds],
   );
 
-  const hasHeaderProject = Boolean(form.project);
-  const activeLine = form.lines.find((l) => l.id === openActionsId) ?? null;
+  const handleApplyTime: RowHandlers["onApplyTime"] = (
+    id,
+    date,
+    from,
+    to,
+    toDate,
+  ) => {
+    const slot = { date, to_date: toDate, from_time: from, to_time: to };
+    if (isSlotTaken(form.lines, id, slot)) {
+      showApiError(OVERLAP_MSG);
+      return;
+    }
+    dayOffs.warnIfDayOff(date, toDate);
+    updateLine(id, slot);
+  };
 
-  const footer = (
-    <div className="flex items-center justify-end gap-3 w-full">
-      <button
-        onClick={onClose}
-        className="px-4 py-1.5 border border-theme text-main bg-app rounded-md text-xs font-medium hover:opacity-80 transition-opacity"
-      >
-        Cancel
-      </button>
-      <button
-        onClick={handleSave}
-        disabled={isSaving || isLoadingTimesheet}
-        className="inline-flex items-center gap-1.5 px-5 py-1.5 bg-primary hover:opacity-90 text-primary-foreground rounded-md text-xs font-semibold transition-opacity shadow-sm disabled:opacity-50"
-      >
-        {isSaving
-          ? "Saving..."
-          : isEditMode
-            ? "Update Timesheet"
-            : "Save Timesheet"}
-      </button>
-    </div>
-  );
+  const handleSave = async () => {
+    if (await save()) onClose();
+  };
+
+  const rowHandlers: RowHandlers = {
+    onUpdate: updateLine,
+    onProject: setLineProject,
+    onTask: setLineTask,
+    onActivity: setLineActivity,
+    onApplyTime: handleApplyTime,
+    onToggleActions: rowActions.toggle,
+    registerTrigger: rowActions.registerTrigger,
+  };
+
+  const activeLine =
+    form.lines.find((l) => l.id === rowActions.openId) ?? null;
 
   return (
     <MinimizableModal
@@ -403,424 +170,75 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isEditMode ? "Edit Timesheet" : title}
-      subtitle={
-        isEditMode ? "Update time entries and billing details" : subtitle
-      }
+      subtitle={resolveSubtitle(isEditMode, isEmployee, subtitle)}
       icon={Clock}
-      footer={footer}
-      customWidth="1400px"
-      height="750px"
+      footer={
+        <TimesheetFooter
+          isSaving={isSaving}
+          isLoading={isLoadingTimesheet}
+          isEditMode={isEditMode}
+          onClose={onClose}
+          onSave={handleSave}
+        />
+      }
+      customWidth={MODAL_SIZE.width}
+      height={MODAL_SIZE.height}
     >
       <div className="flex gap-5 h-full min-h-0">
+        <style>{TIMESHEET_FIELD_STYLES}</style>
+
         <div className="flex-1 min-w-0 flex flex-col gap-5 overflow-auto">
-          {!isEmployee && (
-            <div className="bg-card border border-theme rounded-xl p-4 shrink-0">
-              <div className="flex items-center justify-between pb-2 mb-3 border-b border-theme">
-                <span className="text-[11px] font-bold text-main uppercase tracking-wider">
-                  Timesheet Information
-                </span>
-              </div>
-
-              <div className="grid grid-cols-[1fr_1fr_1fr_110px_120px] gap-4 items-end">
-                <SearchSelect2
-                  label="Project"
-                  value={form.project_name}
-                  fetchOptions={fetchProjectOptionsRestricted}
-                  onChange={setProject}
-                  placeholder="Search project..."
-                />
-
-                {restrictions?.lockCustomer ? (
-                  <ModalInput
-                    label="Customer"
-                    value={form.customer_name}
-                    disabled
-                    name="customer"
-                  />
-                ) : (
-                  <CustomerSelect
-                    label="Customer"
-                    value={form.customer_name}
-                    selectedId={form.customer}
-                    onChange={(customer) => {
-                      setCustomer(customer.id, {
-                        label: customer.name,
-                        value: customer.id,
-                        meta: { currency: customer.currency },
-                      });
-                    }}
-                    placeholder="Search customer..."
-                  />
-                )}
-
-                {restrictions?.employee ? (
-                  <ModalInput
-                    label="Employee"
-                    value={form.employee_name}
-                    disabled
-                    name="employee"
-                  />
-                ) : (
-                  <SearchSelect2
-                    label="Employee"
-                    value={form.employee_name}
-                    fetchOptions={fetchEmployeeOptions}
-                    onChange={setEmployee}
-                    placeholder="Search employee..."
-                  />
-                )}
-
-                <ModalInput
-                  label="Currency"
-                  value={form.currency || ""}
-                  disabled
-                  name="currency"
-                  placeholder="—"
-                  className="text-center font-mono font-semibold"
-                />
-                {form.currency && form.currency !== companyCurrency && (
-                  <ModalInput
-                    label="Exchange Rate"
-                    value={form.exchange_rate?.toFixed(4) ?? "1.0000"}
-                    disabled
-                    name="exchange_rate"
-                    className="text-center font-mono font-semibold"
-                  />
-                )}
-              </div>
-            </div>
+          {isEmployee ? (
+            <EmployeeHeader
+              employeeName={form.employee_name}
+              lines={form.lines}
+              prefillDate={prefillDate}
+              title={timesheetTitle}
+              totalHours={totals.totalHours}
+              onTitleChange={setTitle}
+            />
+          ) : (
+            <TimesheetInfoCard
+              form={form}
+              title={timesheetTitle}
+              restrictions={restrictions}
+              fetchProjects={fetchProjects}
+              onTitleChange={setTitle}
+              onProject={setProject}
+              onCustomer={setCustomer}
+              onEmployee={setEmployee}
+            />
           )}
 
-          <div className="flex-1 min-h-0 flex flex-col bg-card border border-theme rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-theme bg-app/50 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Calendar size={13} className="text-primary" />
-                <span className="text-[11px] font-bold text-main uppercase tracking-wider">
-                  Time Entries
-                </span>
-                <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
-                  {form.lines.length}{" "}
-                  {form.lines.length === 1 ? "Entry" : "Entries"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {selectedIds.size > 0 && (
-                  <button
-                    onClick={handleBulkDelete}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 rounded-lg text-xs font-semibold transition-colors"
-                  >
-                    <Trash2 size={12} /> Delete ({selectedIds.size})
-                  </button>
-                )}
-                <button
-                  onClick={() => addLine(undefined, prefillDate)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:opacity-90 text-primary-foreground rounded-lg text-xs font-semibold transition-opacity"
-                >
-                  <Plus size={12} /> Add Row
-                </button>
-              </div>
-            </div>
-
-            <div className="overflow-auto flex-1">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="sticky top-0 bg-app z-10">
-                  <tr className="border-b border-theme text-[10px] text-muted font-semibold uppercase tracking-wider">
-                    <th className="p-2.5 w-8 text-center">
-                      <input
-                        type="checkbox"
-                        checked={allSelected}
-                        ref={(el) => {
-                          if (el) el.indeterminate = someSelected;
-                        }}
-                        onChange={toggleAll}
-                        disabled={form.lines.length === 0}
-                      />
-                    </th>
-                    {!hasHeaderProject && (
-                      <th className="p-2.5 min-w-[140px]">Project</th>
-                    )}
-                    <th
-                      className={`p-2.5 ${
-                        hasHeaderProject ? "min-w-[280px]" : "min-w-[150px]"
-                      }`}
-                    >
-                      Task
-                    </th>
-                    <th className="p-2.5 min-w-[140px]">Summary</th>
-                    <th className="p-2.5 min-w-[120px]">Activity Type</th>
-                    <th className="p-2.5 min-w-[220px]">
-                      <button
-                        onClick={handleSortByDate}
-                        className="inline-flex items-center gap-1 uppercase tracking-wider font-semibold hover:text-main transition-colors"
-                        title="Sort by date & time"
-                      >
-                        Date &amp; Time
-                        {sortDir === "asc" ? (
-                          <ArrowUp size={11} />
-                        ) : sortDir === "desc" ? (
-                          <ArrowDown size={11} />
-                        ) : (
-                          <ArrowUpDown size={11} />
-                        )}
-                      </button>
-                    </th>
-                    <th className="p-2.5 text-right">Hours</th>
-                    {!isEmployee && (
-                      <th className="p-2.5 text-center">Billable</th>
-                    )}
-                    <th className="p-2.5 text-center">Done</th>
-                    <th className="p-2.5 text-center w-16">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-theme">
-                  {form.lines.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={hasHeaderProject ? 9 : 10}
-                        className="p-10 text-center text-muted italic"
-                      >
-                        <div className="flex flex-col items-center gap-1.5">
-                          <span className="text-2xl">📁</span>
-                          <span className="font-medium text-xs not-italic">
-                            No time entries yet
-                          </span>
-                          <span className="text-[11px]">
-                            Click "+ Add Row" above to log task hours directly
-                            inline.
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  {form.lines.map((l) => {
-                    const off = getDayOff(l.date) ?? getDayOff(l.to_date);
-                    return (
-                      <tr
-                        key={l.id}
-                        className={`hover:bg-app/40 transition-colors ${
-                          conflictIds.has(l.id)
-                            ? "bg-danger/10"
-                            : selectedIds.has(l.id)
-                              ? "bg-primary/5"
-                              : ""
-                        }`}
-                      >
-                        <td className="p-2 text-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(l.id)}
-                            onChange={() => toggleRow(l.id)}
-                          />
-                        </td>
-                        {!hasHeaderProject && (
-                          <td className="p-2">
-                            <SearchSelect2
-                              label=""
-                              value={l.project_name}
-                              fetchOptions={fetchProjectOptionsRestricted}
-                              onChange={(val, opt) =>
-                                setLineProject(l.id, val, opt)
-                              }
-                              placeholder="Project"
-                            />
-                          </td>
-                        )}
-                        <td
-                          className={`p-2 ${
-                            hasHeaderProject ? "min-w-[280px]" : ""
-                          }`}
-                        >
-                          <SearchSelect2
-                            label=""
-                            value={l.task_name}
-                            disabled={!l.project}
-                            fetchOptions={(q) => fetchTaskOptions(l.project, q)}
-                            onChange={(val, opt) => setLineTask(l.id, val, opt)}
-                            placeholder={
-                              l.project ? "Task" : "Select project first"
-                            }
-                          />
-                        </td>
-                        <td className="p-2 align-top">
-                          <textarea
-                            value={l.description}
-                            onChange={(e) =>
-                              updateLine(l.id, { description: e.target.value })
-                            }
-                            placeholder="What did you work on?"
-                            rows={1}
-                            className="w-full min-w-[140px] min-h-[32px] max-h-[200px] resize px-2 py-1.5 text-xs rounded-md border border-theme bg-app text-main placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary overflow-auto"
-                          />
-                        </td>
-                        <td className="p-2">
-                          <SearchSelect2
-                            label=""
-                            value={l.activity_type}
-                            fetchOptions={fetchActivityTypeOptions}
-                            onChange={(value, opt) =>
-                              setLineActivity(l.id, value, opt)
-                            }
-                            placeholder="Activity Type"
-                          />
-                        </td>
-                        <td className="p-2">
-                          <DateTimeRangePicker
-                            date={l.date}
-                            to_date={l.to_date}
-                            from_time={l.from_time}
-                            to_time={l.to_time}
-                            getDayOff={getDayOff}
-                            onMonthChange={handlePickerMonth}
-                            onApply={(date, from, to, toDate) =>
-                              handleApplyTime(l.id, date, from, to, toDate)
-                            }
-                          />
-                          {off && (
-                            <div
-                              title={dayOffLabel(off)}
-                              className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-semibold"
-                              style={{
-                                color: dayOffColor(off),
-                                background: `color-mix(in srgb, ${dayOffColor(off)} 14%, transparent)`,
-                              }}
-                            >
-                              <span
-                                className="h-1.5 w-1.5 shrink-0 rounded-full"
-                                style={{ background: dayOffColor(off) }}
-                              />
-                              <span className="truncate">
-                                {dayOffLabel(off)}
-                                {off.halfDay ? " (Half day)" : ""}
-                              </span>
-                            </div>
-                          )}
-                        </td>
-                        <td className="p-2 text-right font-mono font-bold text-primary">
-                          {l.hours.toFixed(1)}h
-                        </td>
-                        {!isEmployee && (
-                          <td className="p-2 text-center">
-                            <input
-                              type="checkbox"
-                              checked={l.is_billable}
-                              onChange={(e) =>
-                                updateLine(l.id, {
-                                  is_billable: e.target.checked,
-                                })
-                              }
-                            />
-                          </td>
-                        )}
-                        <td className="p-2 text-center">
-                          <input
-                            type="checkbox"
-                            checked={l.is_completed}
-                            onChange={(e) =>
-                              updateLine(l.id, {
-                                is_completed: e.target.checked,
-                              })
-                            }
-                          />
-                        </td>
-                        <td className="p-2 text-center">
-                          <button
-                            ref={(el) => {
-                              triggerRefs.current[l.id] = el;
-                            }}
-                            onClick={() => {
-                              if (openActionsId === l.id) {
-                                closeRowActions();
-                              } else {
-                                setOpenActionsId(l.id);
-                                setActionsView("menu");
-                              }
-                            }}
-                            className="p-1.5 hover:bg-app rounded border border-theme text-muted hover:text-main transition-colors"
-                            title="Row actions"
-                          >
-                            <MoreVertical size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <TimesheetEntriesTable
+            lines={form.lines}
+            conflictIds={conflictIds}
+            isEmployee={isEmployee}
+            hasHeaderProject={hasHeaderProject}
+            selection={selection}
+            sort={sort}
+            dayOffs={dayOffs}
+            fetchProjects={fetchProjects}
+            handlers={rowHandlers}
+            onAddRow={() => addLine(undefined, prefillDate)}
+          />
         </div>
 
         {!isEmployee && (
-          <aside className="w-[240px] shrink-0 h-full overflow-auto">
+          <aside className={`${SUMMARY_WIDTH_CLASS} shrink-0 h-full overflow-auto`}>
             <TimesheetSummary totals={totals} currency={form.currency} />
           </aside>
         )}
       </div>
 
-      <Popover
-        triggerRef={activeTriggerRef}
-        open={openActionsId !== null}
-        onClose={closeRowActions}
-        placement="bottom-end"
-        width={actionsView === "rates" ? 190 : 176}
-        offset={4}
-      >
-        {openActionsId && actionsView === "menu" && (
-          <div className="py-1">
-            {!isEmployee && (
-              <button
-                onClick={() => setActionsView("rates")}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-main hover:bg-app/60 transition-colors"
-              >
-                <Pencil size={12} className="text-primary" />
-                Update Rates
-              </button>
-            )}
-            <button
-              onClick={() => {
-                duplicateLine(openActionsId, "after");
-                closeRowActions();
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-main hover:bg-app/60 transition-colors"
-            >
-              <Copy size={12} />
-              Duplicate Below
-            </button>
-            <button
-              onClick={() => {
-                duplicateLine(openActionsId, "end");
-                closeRowActions();
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-main hover:bg-app/60 transition-colors"
-            >
-              <CopyPlus size={12} />
-              Duplicate at End
-            </button>
-            <button
-              onClick={() => {
-                removeLine(openActionsId);
-                closeRowActions();
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-danger hover:bg-danger/10 transition-colors"
-            >
-              <Trash2 size={12} />
-              Delete Row
-            </button>
-          </div>
-        )}
-
-        {openActionsId && actionsView === "rates" && activeLine && (
-          <UpdateRatesPanel
-            line={activeLine}
-            currency={form.currency}
-            onCancel={() => setActionsView("menu")}
-            onSave={(billingRate, costingRate) => {
-              updateLineRates(openActionsId, billingRate, costingRate);
-              closeRowActions();
-            }}
-          />
-        )}
-      </Popover>
+      <RowActionsPopover
+        actions={rowActions}
+        activeLine={activeLine}
+        isEmployee={isEmployee}
+        currency={form.currency}
+        onDuplicate={duplicateLine}
+        onSaveRates={updateLineRates}
+      />
     </MinimizableModal>
   );
 };
