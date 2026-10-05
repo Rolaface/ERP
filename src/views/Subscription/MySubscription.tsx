@@ -97,7 +97,7 @@ const MySubscription: React.FC = () => {
           <Button
             variant="secondary"
             icon={<Eye className="h-4 w-4" />}
-            onClick={() => openExplorePlanModal()}
+            onClick={() => openExplorePlanModal({ currentPlanName: CURRENT_SUBSCRIPTION.planName })}
           >
             Explore Plans
           </Button>
