@@ -1,11 +1,17 @@
 import { DAY_OFF_TONE } from "../../../views/project_management/timesheet/components/DayOffChip";
 import { WEEKLY_OFF_COLOR } from "../../../views/project_management/timesheet/components/Weeklyoff";
 import type { DayOff } from "../../../views/project_management/timesheet/components/dayOff.types";
-import type { DateRange, TimesheetLine } from "../../../types/Project_Management/Timesheet/form/Timesheetformmodal";
+import type {
+  DateRange,
+  TimesheetLine,
+} from "../../../types/Project_Management/Timesheet/form/Timesheetformmodal";
 
-export const MODAL_SIZE = { width: "1400px", height: "750px" } as const;
+export const MODAL_SIZE = {
+  width: "min(1400px, 96vw)",
+  height: "min(750px, 92vh)",
+} as const;
 
-export const SUMMARY_WIDTH_CLASS = "w-[184px]";
+export const SUMMARY_WIDTH_CLASS = "w-full lg:w-[184px]";
 
 export const TIMESHEET_FIELD_STYLES = `.ts-field input,.ts-info input{height:36px !important;box-sizing:border-box !important;}.ts-picker > div > button{height:36px !important;box-sizing:border-box !important;}.ts-has-off > div > button{padding-right:36px !important;}`;
 

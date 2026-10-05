@@ -44,6 +44,9 @@ import PriorityChip from "../components/PriorityChip";
 import StatusCell from "../components/StatusCell";
 import TaskDetailDrawer from "../Drawer/Taskdetaildrawer";
 import { openEmployeeTimesheetFormModal } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
+import BulkActionsMenu, {
+  type BulkAssignMode,
+} from "../components/Bulkactionsmenu";
 import {
   Clock,
   ChevronDown,
@@ -146,6 +149,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   const canEditStatusOf = (_assign?: string | null) => canWriteTask;
   const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
   const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
+  const cascadeTokenRef = useRef<Map<string, number>>(new Map());
 
   const [tasks, setTasks] = useState<TaskEntry[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -182,9 +186,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     isEmployee ? EMPLOYEE_DEFAULT_VIEW : ADMIN_DEFAULT_VIEW,
   );
 
- 
   const allAssignedNamesRef = useRef<string[] | undefined>(undefined);
-  
+
   const [assignedNames, setAssignedNames] = useState<string[]>([]);
 
   const assigneeActive = isEmployee || assigneeFilter.length > 0;
@@ -288,8 +291,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     try {
       const [names, allNames] = currentUserEmail
         ? await Promise.all([
-            getMyAssignedTasks(currentUserEmail, true), 
-            getMyAssignedTasks(currentUserEmail, false), 
+            getMyAssignedTasks(currentUserEmail, true),
+            getMyAssignedTasks(currentUserEmail, false),
           ])
         : [[], []];
       if (!mountedRef.current) return;
@@ -426,7 +429,6 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     console.warn("handleAdd: Task create modal not wired yet.");
   };
 
-
   const finalizeEmployeeAssignment = async (
     taskName: string,
     nextStatus: string,
@@ -435,9 +437,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     try {
       await closeMyTaskAssignment(taskName, currentUserEmail);
     } catch (error) {
-      showApiError(error); 
+      showApiError(error);
     }
-    triggerRefresh(REFRESH_KEYS.TASK_LIST); 
+    triggerRefresh(REFRESH_KEYS.TASK_LIST);
   };
 
   const handleStatusChange = async (
@@ -489,17 +491,61 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     });
   };
 
-  const canLogRow = (t: TaskEntry) => canLogTime && t.is_group !== 1;
+  const canBulkSelect = canLogTime || canWriteTask;
+  const canSelectRow = () => canBulkSelect;
 
-  const handleRowSelect = (t: TaskEntry, checked: boolean) =>
+  const collectDescendants = async (
+    groupName: string,
+  ): Promise<TaskEntry[]> => {
+    const children = childrenMap[groupName] ?? (await getChildTasks(groupName));
+    const nested = await Promise.all(
+      children
+        .filter((c) => c.is_group === 1)
+        .map((c) => collectDescendants(c.name)),
+    );
+    return [...children, ...nested.flat()];
+  };
+
+  const cascadeGroup = async (group: TaskEntry, checked: boolean) => {
+    const token = (cascadeTokenRef.current.get(group.name) ?? 0) + 1;
+    cascadeTokenRef.current.set(group.name, token);
+    const isLatest = () => cascadeTokenRef.current.get(group.name) === token;
+
+    try {
+      const descendants = await collectDescendants(group.name);
+      if (!mountedRef.current || !isLatest()) return;
+      setSelected((prev) => {
+        const next = new Map(prev);
+        descendants.forEach((d) => {
+          if (checked) next.set(d.name, d);
+          else next.delete(d.name);
+        });
+        return next;
+      });
+    } catch (error) {
+      if (!mountedRef.current || !isLatest()) return;
+      showApiError(error);
+      if (checked) {
+        setSelected((prev) => {
+          const next = new Map(prev);
+          next.delete(group.name);
+          return next;
+        });
+      }
+    }
+  };
+
+  const handleRowSelect = (t: TaskEntry, checked: boolean) => {
     setSelected((prev) => {
       const next = new Map(prev);
       if (checked) next.set(t.name, t);
       else next.delete(t.name);
       return next;
     });
+    if (t.is_group === 1) cascadeGroup(t, checked);
+  };
 
-  const handleSelectAll = (list: TaskEntry[], checked: boolean) =>
+  const handleSelectAll = (list: TaskEntry[], checked: boolean) => {
     setSelected((prev) => {
       const next = new Map(prev);
       list.forEach((t) => {
@@ -508,16 +554,23 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       });
       return next;
     });
+    list
+      .filter((t) => t.is_group === 1)
+      .forEach((g) => cascadeGroup(g, checked));
+  };
 
   const handleLogSelected = () => {
     if (!canLogTime) return;
-    const picked = Array.from(selected.values());
+    const picked = Array.from(selected.values()).filter(
+      (t) => t.is_group !== 1,
+    );
     if (picked.length === 0) return;
 
     openEmployeeTimesheetFormModal({
       title: "Log Time",
-      subtitle: `Logging time for ${picked.length} task${picked.length > 1 ? "s" : ""
-        }`,
+      subtitle: `Logging time for ${picked.length} task${
+        picked.length > 1 ? "s" : ""
+      }`,
       prefillTasks: picked.map((t) => ({
         project: t.project ?? "",
         projectName: getProjectDisplayName(t.project),
@@ -527,7 +580,47 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       onSuccess: () => setSelected(new Map()),
     });
   };
+  const handleBulkAssign = async (
+    emails: string[],
+    mode: BulkAssignMode,
+  ): Promise<boolean> => {
+    if (!canWriteTask || emails.length === 0) return false;
 
+    const picked = Array.from(selected.values());
+    const results = await Promise.allSettled(
+      picked.map(async (t) => {
+        const previous = parseAssignedEmails(
+          findTask(t.name)?._assign ?? t._assign,
+        );
+        const next =
+          mode === "add"
+            ? Array.from(new Set([...previous, ...emails]))
+            : emails;
+        await updateTaskAssignees(t.name, previous, next);
+        patchTask(t.name, { _assign: JSON.stringify(next) });
+        setSelected((prev) => {
+          const current = prev.get(t.name);
+          if (!current) return prev;
+          const copy = new Map(prev);
+          copy.set(t.name, { ...current, _assign: JSON.stringify(next) });
+          return copy;
+        });
+      }),
+    );
+
+    const failed = results.filter(
+      (r): r is PromiseRejectedResult => r.status === "rejected",
+    );
+    const doneCount = results.length - failed.length;
+
+    if (doneCount > 0) {
+      showSuccess(`Assigned ${doneCount} task${doneCount > 1 ? "s" : ""}`);
+    }
+    if (failed.length > 0) showApiError(failed[0].reason);
+    if (failed.length === 0) setSelected(new Map());
+
+    return failed.length === 0;
+  };
   const handleView = async (id: string) => {
     setDrawerOpen(true);
     setDrawerLoading(true);
@@ -558,11 +651,11 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       setDrawerData((prev) =>
         prev
           ? {
-            ...prev,
-            status: nextStatus as TaskStatus,
-            progress:
-              nextProgress !== undefined ? nextProgress : prev.progress,
-          }
+              ...prev,
+              status: nextStatus as TaskStatus,
+              progress:
+                nextProgress !== undefined ? nextProgress : prev.progress,
+            }
           : prev,
       );
 
@@ -729,7 +822,6 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       header: "Assigned To",
       align: "left",
       render: (t) => {
-      
         if (t.status === "Completed" || t.status === "Cancelled") {
           return <span className="text-xs text-muted">—</span>;
         }
@@ -773,7 +865,11 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       align: "center",
       render: (t) => (
         <ActionGroup>
-          <ActionButton type="view" onClick={() => handleView(t.name)} iconOnly />
+          <ActionButton
+            type="view"
+            onClick={() => handleView(t.name)}
+            iconOnly
+          />
           <ActionButton
             type="edit"
             onClick={() => handleEdit(t.name)}
@@ -802,6 +898,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   const columns = isEmployee
     ? allColumns.filter((c) => c.key !== "progress")
     : allColumns;
+  const hasLoggable = Array.from(selected.values()).some(
+    (t) => t.is_group !== 1,
+  );
   const viewSelector = (
     <ViewSelector value={view} options={VIEW_OPTIONS} onChange={setView} />
   );
@@ -860,16 +959,16 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
             },
             ...(!isEmployee
               ? [
-                {
-                  key: "assignee",
-                  label: "Assigned To",
-                  options: userFilterOptions,
-                  values: assigneeFilter,
-                  onChange: setAssigneeFilter,
-                  searchPlaceholder: "Search employee...",
-                  onSearch: fetchUserOptions,
-                },
-              ]
+                  {
+                    key: "assignee",
+                    label: "Assigned To",
+                    options: userFilterOptions,
+                    values: assigneeFilter,
+                    onChange: setAssigneeFilter,
+                    searchPlaceholder: "Search employee...",
+                    onSearch: fetchUserOptions,
+                  },
+                ]
               : []),
           ]}
           sortBy={sortBy}
@@ -882,14 +981,14 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
           enableAdd={canCreateTask}
           addLabel="+ Add Task"
           onAdd={handleAdd}
-          selectable={canLogTime}
+          selectable={canBulkSelect}
           isRowSelected={(t) => selected.has(t.name)}
-          isRowSelectable={canLogRow}
+          isRowSelectable={canSelectRow}
           onRowSelect={handleRowSelect}
           onSelectAll={handleSelectAll}
           primaryAction={
             <div className="flex items-center gap-2">
-              {canLogTime && selected.size > 0 && (
+              {selected.size > 0 && (
                 <>
                   <button
                     onClick={() => setSelected(new Map())}
@@ -898,13 +997,20 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
                     Clear
                   </button>
 
-                  <button
-                    onClick={handleLogSelected}
-                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  >
-                    <Clock size={14} />
-                    Log Time ({selected.size})
-                  </button>
+                  <BulkActionsMenu
+                    count={selected.size}
+                    onAddLog={
+                      canLogTime && hasLoggable ? handleLogSelected : undefined
+                    }
+                    assign={
+                      canWriteTask
+                        ? {
+                            fetchOptions: fetchUserOptions,
+                            onSubmit: handleBulkAssign,
+                          }
+                        : undefined
+                    }
+                  />
                 </>
               )}
 

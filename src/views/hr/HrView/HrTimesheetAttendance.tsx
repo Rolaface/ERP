@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { AppSubTabs } from "../../../components/ui/app-shell";
 
-// Adjust these imports based on your actual file structure
 import HrAttendanceView from "./HrAttendanceView";
 import HrTimesheetView from "../../project_management/timesheet/table/HrTimesheetView";
 import HrTaskView from "../../project_management/task/table/HrTaskView";

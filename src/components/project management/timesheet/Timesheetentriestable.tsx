@@ -12,6 +12,14 @@ import type {
 
 const BASE_COLUMNS = 8;
 
+const COL_CHECKBOX = "w-9";
+const COL_TASK_WITH_HEADER_PROJECT = "w-[28%]";
+const COL_DATE_TIME = "w-[24%]";
+const COL_HOURS = "w-16";
+const COL_BILLABLE = "w-16";
+const COL_DONE = "w-14";
+const COL_ACTIONS = "w-16";
+
 interface SelectionState {
   selectedIds: Set<string>;
   allSelected: boolean;
@@ -95,11 +103,24 @@ const TimesheetEntriesTable: React.FC<TimesheetEntriesTableProps> = ({
     <div className="flex-1 min-h-0 flex flex-col bg-card border border-theme rounded-xl overflow-hidden">
       <EntriesToolbar count={lines.length} showLegend={dayOffs.anyDayOff} />
 
-      <div className="overflow-auto flex-1">
-        <table className="w-full text-left text-xs border-collapse">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        <table className="w-full table-fixed text-left text-xs border-collapse">
+          <colgroup>
+            <col className={COL_CHECKBOX} />
+            {!hasHeaderProject && <col />}
+            <col className={hasHeaderProject ? COL_TASK_WITH_HEADER_PROJECT : undefined} />
+            <col />
+            <col />
+            <col className={COL_DATE_TIME} />
+            <col className={COL_HOURS} />
+            {!isEmployee && <col className={COL_BILLABLE} />}
+            <col className={COL_DONE} />
+            <col className={COL_ACTIONS} />
+          </colgroup>
+
           <thead className="sticky top-0 bg-app z-10">
             <tr className="border-b border-theme text-xs text-muted font-semibold">
-              <th className="p-2.5 w-8 text-center">
+              <th className="p-2 text-center">
                 <input
                   type="checkbox"
                   checked={selection.allSelected}
@@ -110,17 +131,11 @@ const TimesheetEntriesTable: React.FC<TimesheetEntriesTableProps> = ({
                   disabled={lines.length === 0}
                 />
               </th>
-              {!hasHeaderProject && (
-                <th className="p-2.5 min-w-[140px]">Project</th>
-              )}
-              <th
-                className={`p-2.5 ${hasHeaderProject ? "min-w-[280px]" : "min-w-[150px]"}`}
-              >
-                Task
-              </th>
-              <th className="p-2.5 min-w-[140px]">Worked On</th>
-              <th className="p-2.5 min-w-[120px]">Activity Type</th>
-              <th className="p-2.5 w-[400px] min-w-[320px]">
+              {!hasHeaderProject && <th className="p-2">Project</th>}
+              <th className="p-2">Task</th>
+              <th className="p-2">Worked On</th>
+              <th className="p-2">Activity Type</th>
+              <th className="p-2">
                 <button
                   onClick={sort.toggleSort}
                   className="inline-flex items-center gap-1 font-semibold hover:text-main transition-colors"
@@ -130,10 +145,10 @@ const TimesheetEntriesTable: React.FC<TimesheetEntriesTableProps> = ({
                   <SortIcon size={11} />
                 </button>
               </th>
-              <th className="p-2.5">Hours</th>
-              {!isEmployee && <th className="p-2.5 text-center">Billable</th>}
-              <th className="p-2.5 text-center">Done</th>
-              <th className="p-2.5 text-center w-16">Actions</th>
+              <th className="p-2">Hours</th>
+              {!isEmployee && <th className="p-2 text-center">Billable</th>}
+              <th className="p-2 text-center">Done</th>
+              <th className="p-2 text-center">Actions</th>
             </tr>
           </thead>
 

@@ -24,7 +24,10 @@ import {
   TIMESHEET_FIELD_STYLES,
 } from "../../../utils/project_management/timehseet/Timesheetformmodal.utils";
 import { useTimesheetDayOffs } from "../../../hooks/project_management/timeheet/form/Usetimesheetdayoffs";
-import { useTimesheetDetail, useTimesheetPrefill } from "../../../hooks/project_management/timeheet/form/Usetimesheetinit";
+import {
+  useTimesheetDetail,
+  useTimesheetPrefill,
+} from "../../../hooks/project_management/timeheet/form/Usetimesheetinit";
 import {
   useDateSort,
   useLineSelection,
@@ -184,48 +187,54 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
       customWidth={MODAL_SIZE.width}
       height={MODAL_SIZE.height}
     >
-      <div className="flex gap-5 h-full min-h-0">
+      <div className="flex h-full min-h-0 flex-col gap-5 lg:flex-row">
         <style>{TIMESHEET_FIELD_STYLES}</style>
 
-        <div className="flex-1 min-w-0 flex flex-col gap-5 overflow-auto">
-          {isEmployee ? (
-            <EmployeeHeader
-              employeeName={form.employee_name}
-              lines={form.lines}
-              prefillDate={prefillDate}
-              title={timesheetTitle}
-              totalHours={totals.totalHours}
-              onTitleChange={setTitle}
-            />
-          ) : (
-            <TimesheetInfoCard
-              form={form}
-              title={timesheetTitle}
-              restrictions={restrictions}
-              fetchProjects={fetchProjects}
-              onTitleChange={setTitle}
-              onProject={setProject}
-              onCustomer={setCustomer}
-              onEmployee={setEmployee}
-            />
-          )}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-5">
+          <div className="shrink-0">
+            {isEmployee ? (
+              <EmployeeHeader
+                employeeName={form.employee_name}
+                lines={form.lines}
+                prefillDate={prefillDate}
+                title={timesheetTitle}
+                totalHours={totals.totalHours}
+                onTitleChange={setTitle}
+              />
+            ) : (
+              <TimesheetInfoCard
+                form={form}
+                title={timesheetTitle}
+                restrictions={restrictions}
+                fetchProjects={fetchProjects}
+                onTitleChange={setTitle}
+                onProject={setProject}
+                onCustomer={setCustomer}
+                onEmployee={setEmployee}
+              />
+            )}
+          </div>
 
-          <TimesheetEntriesTable
-            lines={form.lines}
-            conflictIds={conflictIds}
-            isEmployee={isEmployee}
-            hasHeaderProject={hasHeaderProject}
-            selection={selection}
-            sort={sort}
-            dayOffs={dayOffs}
-            fetchProjects={fetchProjects}
-            handlers={rowHandlers}
-            onAddRow={() => addLine(undefined, prefillDate)}
-          />
+          <div className="flex min-h-0 flex-1 flex-col">
+            <TimesheetEntriesTable
+              lines={form.lines}
+              conflictIds={conflictIds}
+              isEmployee={isEmployee}
+              hasHeaderProject={hasHeaderProject}
+              selection={selection}
+              sort={sort}
+              dayOffs={dayOffs}
+              fetchProjects={fetchProjects}
+              handlers={rowHandlers}
+              onAddRow={() => addLine(undefined, prefillDate)}
+            />
+          </div>
         </div>
 
         {!isEmployee && (
-          <aside className={`${SUMMARY_WIDTH_CLASS} shrink-0 h-full overflow-auto`}>
+          <aside
+            className={`${SUMMARY_WIDTH_CLASS} shrink-0 lg:h-full lg:overflow-auto`}
+          >
             <TimesheetSummary totals={totals} currency={form.currency} />
           </aside>
         )}
