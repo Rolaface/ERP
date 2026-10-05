@@ -8,10 +8,16 @@ import type {
   TimesheetHoursEntry,
 } from "../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import { frappeDelete } from "../../Delete/frappeDeleteApi";
+
 const api = createAxiosInstance(ERP_BASE);
 export const TimesheetAPI = API.project.timesheet;
 
-// ── Fields ───────────────────────────────────────────────────────
+const HOURS_PAGE_SIZE = 200;
+const EMPLOYEE_FILTER_FIELD = "employee";
+const CANCELLED_DOCSTATUS = 2;
+const UNASSIGNED_LABEL = "Unassigned";
+const PENDING_APPROVAL_STATUS = "Pending For Approval";
+const DRAFT_STATUS = "Draft";
 
 const TIMESHEET_FIELDS = [
   "name",
@@ -34,7 +40,23 @@ const TIMESHEET_FIELDS = [
   "parent_project",
 ];
 
-// ── Timesheets ───────────────────────────────────────────────────
+interface HoursDetailRow {
+  parent: string;
+  from_time: string;
+  hours: number;
+  docstatus: number;
+  project: string | null;
+  project_name: string | null;
+  task: string | null;
+  activity_type: string | null;
+  description: string | null;
+}
+
+interface HoursSheetRow {
+  name: string;
+  employee: string | null;
+  employee_name: string | null;
+}
 
 export async function getAllTimesheets(
   page: number = 1,
@@ -43,6 +65,8 @@ export async function getAllTimesheets(
   search?: string,
   sortBy?: string,
   sortOrder?: "asc" | "desc",
+  employees?: string[],
+  excludeDraft: boolean = false,
 ): Promise<TimesheetListResponse> {
   const query = buildListParams({
     fields: TIMESHEET_FIELDS,
@@ -54,10 +78,20 @@ export async function getAllTimesheets(
     sortOrder,
   });
 
-  let url = `${TimesheetAPI.list}?${query}`;
-
+  const filters: unknown[] = [];
   if (statuses && statuses.length > 0) {
-    url += `&filters=${encodeURIComponent(JSON.stringify([["status", "in", statuses]]))}`;
+    filters.push(["status", "in", statuses]);
+  }
+  if (employees && employees.length > 0) {
+    filters.push([EMPLOYEE_FILTER_FIELD, "in", employees]);
+  }
+  if (excludeDraft) {
+    filters.push(["status", "!=", DRAFT_STATUS]);
+  }
+
+  let url = `${TimesheetAPI.list}?${query}`;
+  if (filters.length > 0) {
+    url += `&filters=${encodeURIComponent(JSON.stringify(filters))}`;
   }
 
   const resp: AxiosResponse<TimesheetListResponse> = await api.get(url);
@@ -67,8 +101,6 @@ export async function getAllTimesheets(
 export async function getTimesheetById(
   id: string,
 ): Promise<TimesheetDetail | null> {
-  // Standard Frappe REST resource-by-name endpoint:
-  // GET /api/resource/Timesheet/{name} → { data: { ...full doc incl. time_logs } }
   const resp: AxiosResponse = await api.get(
     `${TimesheetAPI.list}/${encodeURIComponent(id)}`,
   );
@@ -97,45 +129,25 @@ export async function updateTimesheetById(payload: any): Promise<any> {
 export async function submitTimesheet(id: string): Promise<any> {
   const resp: AxiosResponse = await api.put(
     `${TimesheetAPI.list}/${encodeURIComponent(id)}`,
-    {
-      docstatus: 1,
-    },
+    { docstatus: 1 },
   );
-
   return resp.data;
 }
 
 export async function cancelTimesheet(id: string): Promise<any> {
   const resp: AxiosResponse = await api.put(
     `${TimesheetAPI.list}/${encodeURIComponent(id)}`,
-    {
-      docstatus: 2,
-    },
+    { docstatus: 2 },
   );
-
   return resp.data;
 }
-const GET_LIST_PATH = "/api/method/frappe.client.get_list";
-const HOURS_PAGE_SIZE = 200;
-const CANCELLED_DOCSTATUS = 2;
-const UNASSIGNED_LABEL = "Unassigned";
 
-interface HoursDetailRow {
-  parent: string;
-  from_time: string;
-  hours: number;
-  docstatus: number;
-  project: string | null;
-  project_name: string | null;
-  task: string | null;
-  activity_type: string | null;
-  description: string | null;
-}
-
-interface HoursSheetRow {
-  name: string;
-  employee: string | null;
-  employee_name: string | null;
+export async function sendTimesheetForApproval(id: string): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    `${TimesheetAPI.list}/${encodeURIComponent(id)}`,
+    { status: PENDING_APPROVAL_STATUS },
+  );
+  return resp.data;
 }
 
 async function getAllPages<T>(params: Record<string, unknown>): Promise<T[]> {
@@ -153,7 +165,9 @@ async function getAllPages<T>(params: Record<string, unknown>): Promise<T[]> {
       limit_start: String(start),
       limit_page_length: String(HOURS_PAGE_SIZE),
     });
-    const resp: AxiosResponse = await api.get(`${GET_LIST_PATH}?${query}`);
+    const resp: AxiosResponse = await api.get(
+      `${TimesheetAPI.getList}?${query}`,
+    );
     const page: T[] = resp.data?.message ?? [];
     rows.push(...page);
     if (page.length < HOURS_PAGE_SIZE) return rows;
@@ -163,7 +177,21 @@ async function getAllPages<T>(params: Record<string, unknown>): Promise<T[]> {
 export async function getTimesheetHours(
   fromDate: string,
   toDate: string,
+  employees?: string[],
+  excludeDraft: boolean = false,
 ): Promise<TimesheetHoursEntry[]> {
+  const sheetFilters: unknown[] = [
+    ["start_date", "<=", toDate],
+    ["end_date", ">=", fromDate],
+    ["docstatus", "!=", CANCELLED_DOCSTATUS],
+  ];
+  if (employees && employees.length > 0) {
+    sheetFilters.push([EMPLOYEE_FILTER_FIELD, "in", employees]);
+  }
+  if (excludeDraft) {
+    sheetFilters.push(["status", "!=", DRAFT_STATUS]);
+  }
+
   const [details, sheets] = await Promise.all([
     getAllPages<HoursDetailRow>({
       doctype: "Timesheet Detail",
@@ -176,7 +204,6 @@ export async function getTimesheetHours(
         "project",
         "project_name",
         "task",
-
         "activity_type",
         "description",
       ],
@@ -189,11 +216,7 @@ export async function getTimesheetHours(
     getAllPages<HoursSheetRow>({
       doctype: "Timesheet",
       fields: ["name", "employee", "employee_name"],
-      filters: [
-        ["start_date", "<=", toDate],
-        ["end_date", ">=", fromDate],
-        ["docstatus", "!=", CANCELLED_DOCSTATUS],
-      ],
+      filters: sheetFilters,
       order_by: "creation asc",
     }),
   ]);
@@ -205,7 +228,13 @@ export async function getTimesheetHours(
     ]),
   );
 
-  return details.map((d) => ({
+  const restrictToSheets =
+    excludeDraft || (!!employees && employees.length > 0);
+  const visibleDetails = restrictToSheets
+    ? details.filter((d) => employeeBySheet.has(d.parent))
+    : details;
+
+  return visibleDetails.map((d) => ({
     timesheet: d.parent,
     employee: employeeBySheet.get(d.parent) ?? UNASSIGNED_LABEL,
     date: d.from_time.slice(0, 10),
@@ -217,6 +246,31 @@ export async function getTimesheetHours(
     activity_type: d.activity_type,
     description: d.description,
   }));
+}
+
+export async function searchEmployees(
+  q: string,
+): Promise<{ label: string; value: string }[]> {
+  const params = new URLSearchParams({ page: "1", page_size: "100" });
+  if (q) params.set("search", q);
+
+  const resp: AxiosResponse = await api.get(
+    `${API.frappeUtilsAPI.employeesearch}?${params}`,
+  );
+  const list: { value: string; label: string }[] = resp.data?.data ?? [];
+
+  const term = q.trim().toLowerCase();
+  return list
+    .filter(
+      (e) =>
+        !term ||
+        e.label.toLowerCase().includes(term) ||
+        e.value.toLowerCase().includes(term),
+    )
+    .map((e) => ({
+      value: e.value,
+      label: e.label,
+    }));
 }
 
 export async function deleteTimesheetById(id: string): Promise<void> {
