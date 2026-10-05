@@ -794,6 +794,7 @@ export const API = {
   },
     timesheet: {
       list: `${ERP_BASE}/api/resource/Timesheet`,
+      getList: `${ERP_BASE}/api/method/frappe.client.get_list`,
       create:`${ERP_BASE}/api/resource/Timesheet`,
       update:`${ERP_BASE}/api/resource/Timesheet`,
       cancel:`${ERP_BASE}/api/resource/Timesheet`,

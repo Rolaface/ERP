@@ -1,4 +1,9 @@
-export type TimesheetStatus = "Draft" | "Submitted" | "Billed" | "Cancelled";
+export type TimesheetStatus =
+  | "Draft"
+  | "Pending For Approval"
+  | "Submitted"
+  | "Billed"
+  | "Cancelled";
 
 export interface TimesheetEntry {
   name: string;

@@ -961,7 +961,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
               ? [
                   {
                     key: "assignee",
-                    label: "Assigned To",
+                    label: "Assignee",
                     options: userFilterOptions,
                     values: assigneeFilter,
                     onChange: setAssigneeFilter,
