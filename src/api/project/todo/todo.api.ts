@@ -2,8 +2,7 @@ import type { AxiosResponse } from "axios";
 
 import { createAxiosInstance } from "../../axiosInstance";
 import { buildListParams } from "../../../api/utils/queryBuilder";
-import { ERP_BASE } from "../../../config/api";
-
+import { API } from "../../../config/api";
 
 export interface TodoEntry {
   name: string;
@@ -24,9 +23,7 @@ export interface TodoAssignment extends TodoEntry {
   modified_by?: string;
 }
 
-const api = createAxiosInstance(ERP_BASE);
-
-const TODO_PATH = "/api/resource/ToDo";
+const api = createAxiosInstance(API.project.todo.list);
 
 const TODO_FIELDS = [
   "name",
@@ -48,10 +45,6 @@ const ASSIGNMENT_FIELDS = [
   "modified_by",
 ];
 
-/**
- * onlyOpen = true  → sirf Open ToDo (Kanban / active tasks)
- * onlyOpen = false → ToDo ka koi bhi status (Table: saare assigned tasks)
- */
 export async function getMyAssignedTasks(
   userEmail: string,
   onlyOpen: boolean = true,
@@ -67,33 +60,36 @@ export async function getMyAssignedTasks(
     ["allocated_to", "=", userEmail],
     ["reference_type", "=", "Task"],
   ];
-  if (onlyOpen) filters.push(["status", "=", "Open"]);
+
+  if (onlyOpen) {
+    filters.push(["status", "=", "Open"]);
+  }
 
   const resp: AxiosResponse<{ data: TodoEntry[] }> = await api.get(
-    `${TODO_PATH}?${query}&filters=${encodeURIComponent(
-      JSON.stringify(filters),
-    )}`,
+    `?${query}&filters=${encodeURIComponent(JSON.stringify(filters))}`,
   );
 
   const names = (resp.data?.data ?? [])
     .map((todo) => todo.reference_name)
     .filter(Boolean);
 
-  return Array.from(new Set(names)); // same task ke multiple ToDo ho to duplicate nahi
+  return Array.from(new Set(names));
 }
 
-/**
- * Ends ONLY the given user's Open assignment for ONE task.
- * Never throws for "nothing to close". Returns number of ToDos updated.
- */
 export async function closeMyTaskAssignment(
   taskName: string,
   userEmail: string,
   targetStatus: "Closed" | "Cancelled" = "Closed",
 ): Promise<number> {
-  if (!taskName || !userEmail) return 0;
+  if (!taskName || !userEmail) {
+    return 0;
+  }
 
-  const query = buildListParams({ fields: ["name"], pageSize: 20 });
+  const query = buildListParams({
+    fields: ["name"],
+    pageSize: 20,
+  });
+
   const filters = [
     ["allocated_to", "=", userEmail],
     ["reference_type", "=", "Task"],
@@ -102,21 +98,20 @@ export async function closeMyTaskAssignment(
   ];
 
   const resp: AxiosResponse<{ data: { name: string }[] }> = await api.get(
-    `${TODO_PATH}?${query}&filters=${encodeURIComponent(
-      JSON.stringify(filters),
-    )}`,
+    `?${query}&filters=${encodeURIComponent(JSON.stringify(filters))}`,
   );
+
   const open = resp.data?.data ?? [];
 
   for (const todo of open) {
-    await api.put(`${TODO_PATH}/${encodeURIComponent(todo.name)}`, {
+    await api.put(`/${encodeURIComponent(todo.name)}`, {
       status: targetStatus,
     });
   }
+
   return open.length;
 }
 
-/** All assignments the current user is allowed to see for a task (Frappe filters by permission). */
 export async function getTaskAssignments(
   taskName: string,
 ): Promise<TodoAssignment[]> {
@@ -126,14 +121,15 @@ export async function getTaskAssignments(
     sortBy: "creation",
     sortOrder: "desc",
   });
+
   const filters = [
     ["reference_type", "=", "Task"],
     ["reference_name", "=", taskName],
   ];
+
   const resp: AxiosResponse<{ data: TodoAssignment[] }> = await api.get(
-    `${TODO_PATH}?${query}&filters=${encodeURIComponent(
-      JSON.stringify(filters),
-    )}`,
+    `?${query}&filters=${encodeURIComponent(JSON.stringify(filters))}`,
   );
+
   return resp.data?.data ?? [];
 }

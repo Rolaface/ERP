@@ -22,7 +22,7 @@ import { useUrlTab } from "../../hooks/useUrlTab";
 import BasicDetails from "./BasicDetails";
 import AccountingDetails from "./AccountingDetails";
 import BuyingSelling from "./BuyingSelling";
-import SubscribedModules from "./subscribedmodule";
+// import SubscribedModules from "./subscribedmodule";
 import BankDetails from "./BankDetails";
 import Upload from "./upload";
 import NamingSeries from "./NamingSeries";
@@ -58,7 +58,7 @@ const navTabs = [
   { id: "bank", label: "Bank Details", icon: <Landmark {...iconProps} /> },
   { id: "accounting", label: "Accounting Details", icon: <Wallet {...iconProps} /> },
   { id: "buyingSelling", label: "Buying & Selling", icon: <Repeat {...iconProps} /> },
-  { id: "subscribed", label: "Subscription", icon: <Layers {...iconProps} /> },
+  // { id: "subscribed", label: "Subscription", icon: <Layers {...iconProps} /> },
   { id: "Templates", label: "Templates", icon: <FileText {...iconProps} /> },
   { id: "logo", label: "Logo & Signature", icon: <UploadCloud {...iconProps} /> },
   { id: "naming", label: "Naming Series", icon: <Hash {...iconProps} /> },
@@ -326,7 +326,7 @@ const CompanySetup: React.FC = () => {
           onSaveSuccess={fetchCompanyDetail}
         />
       ),
-      subscribed: <SubscribedModules />,
+      // subscribed: <SubscribedModules />,
       Templates: <Templates templates={companytemplates} />,
       logo: (
         <Upload COMPANY_ID={COMPANY_ID} onUploadSuccess={fetchCompanyDetail} />

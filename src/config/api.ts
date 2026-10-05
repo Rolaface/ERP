@@ -787,6 +787,10 @@ export const API = {
     project: {
       list: `${ERP_BASE}/api/resource/Project`,
     },
+     todo: {
+    list: `${ERP_BASE}/api/resource/ToDo`,
+    update: `${ERP_BASE}/api/resource/ToDo`,
+  },
     timesheet: {
       list: `${ERP_BASE}/api/resource/Timesheet`,
       create:`${ERP_BASE}/api/resource/Timesheet`,
