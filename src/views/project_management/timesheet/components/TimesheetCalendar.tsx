@@ -4,6 +4,7 @@ import { getTimesheetHours } from "../../../../api/project/timesheet/timesheet.a
 import type { TimesheetHoursEntry } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import type { TimesheetModalRestrictions } from "../../../../hooks/project_management/timeheet/form/useTimesheetModal";
 import { useDayOffs } from "../../../../hooks/project_management/timeheet/useDayOffs";
+import type { MultiSelectOption } from "../../../../components/ui/modal/MultiSelectFilter";
 import TimesheetMatrix from "./Timesheetmatrix";
 import { DAY_OFF_TONE } from "./DayOffChip";
 import { WEEKLY_OFF_COLOR } from "./Weeklyoff";
@@ -16,7 +17,10 @@ import MonthView from "./Monthview";
 import WeekView from "./Weekview";
 import { AgendaList, DayView } from "./Dayview";
 import { LegendItem } from "./Calendarparts";
-import { REFRESH_KEYS, useDataRefreshStore } from "../../../../store/dataRefreshStore";
+import {
+  REFRESH_KEYS,
+  useDataRefreshStore,
+} from "../../../../store/dataRefreshStore";
 import {
   ADMIN_VIEWS,
   APPROVED_TONE,
@@ -42,15 +46,26 @@ import {
 interface Props {
   canViewAll: boolean;
   canEdit: boolean;
-  canCreate?: boolean; // default true
+  canCreate?: boolean;
   onSwitchToList: () => void;
   restrictions?: TimesheetModalRestrictions;
+  employeeFilter?: string[];
+  onEmployeeFilterChange?: (values: string[]) => void;
+  fetchEmployees?: (q: string) => Promise<MultiSelectOption[]>;
 }
 
 const WEEKLY_OFF_LABEL = "Weekly Off";
+const NO_EMPLOYEES: string[] = [];
 
 const TimesheetCalendar: React.FC<Props> = ({
-  canViewAll, canEdit, canCreate = true, onSwitchToList, restrictions,
+  canViewAll,
+  canEdit,
+  canCreate = true,
+  onSwitchToList,
+  restrictions,
+  employeeFilter = NO_EMPLOYEES,
+  onEmployeeFilterChange,
+  fetchEmployees,
 }) => {
   const [view, setView] = useState<ViewMode>("month");
   const [anchor, setAnchor] = useState(() => new Date());
@@ -58,10 +73,13 @@ const TimesheetCalendar: React.FC<Props> = ({
   const [entries, setEntries] = useState<TimesheetHoursEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
+  const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
   const openTimesheetForm = canViewAll
     ? openAdminTimesheetFormModal
     : openEmployeeTimesheetFormModal;
+
+  const activeEmployees = canViewAll ? employeeFilter : NO_EMPLOYEES;
+  const employeeKey = activeEmployees.join(",");
 
   const visibleDays = useMemo(
     () =>
@@ -96,7 +114,12 @@ const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    getTimesheetHours(fromDate, toDate)
+    getTimesheetHours(
+      fromDate,
+      toDate,
+      activeEmployees.length ? activeEmployees : undefined,
+      canViewAll,
+    )
       .then((data) => {
         if (!cancelled) setEntries(data);
       })
@@ -107,7 +130,7 @@ const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
     return () => {
       cancelled = true;
     };
-  }, [fromDate, toDate, reloadKey]);
+  }, [fromDate, toDate, reloadKey, employeeKey, canViewAll]);
 
   const eventsByDay = useMemo(
     () => buildEventsByDay(entries, canViewAll),
@@ -132,14 +155,14 @@ const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
 
   const title = range
     ? [visibleDays[0], visibleDays[visibleDays.length - 1]]
-      .map((d) =>
-        d.toLocaleDateString(undefined, {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        }),
-      )
-      .join(" – ")
+        .map((d) =>
+          d.toLocaleDateString(undefined, {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }),
+        )
+        .join(" – ")
     : getTitle(view, visibleDays, anchor);
 
   const shift = (dir: 1 | -1) => {
@@ -191,11 +214,10 @@ const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
     setAnchor(start);
   };
 
- 
   const reload = () => {
-  setReloadKey((k) => k + 1);
-  triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST);
-};
+    setReloadKey((k) => k + 1);
+    triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST);
+  };
 
   const warnIfDayOff = (dateKey: string, employeeName?: string) => {
     const off = employeeName
@@ -216,7 +238,10 @@ const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
     });
   };
 
-  const openLogModal = (date: string, employee?: { id: string; name: string }) => {
+  const openLogModal = (
+    date: string,
+    employee?: { id: string; name: string },
+  ) => {
     if (!canCreate) return;
     warnIfDayOff(date, employee?.name);
     openTimesheetForm({
@@ -316,6 +341,9 @@ const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
         views={canViewAll ? ADMIN_VIEWS : VIEWS}
         range={range}
         canViewAll={canViewAll}
+        employeeFilter={activeEmployees}
+        onEmployeeFilterChange={canViewAll ? onEmployeeFilterChange : undefined}
+        fetchEmployees={fetchEmployees}
         onToday={goToday}
         onPrev={() => shift(-1)}
         onNext={() => shift(1)}

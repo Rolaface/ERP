@@ -56,13 +56,7 @@ export async function fetchProjectOptions(
   }));
 }
 
-export async function fetchCustomerOptions(_q: string): Promise<Option[]> {
-  return [
-    { label: "Rolaface Corp", value: "CUST-001", meta: { currency: "INR" } },
-    { label: "Apex Health UK", value: "CUST-004", meta: { currency: "GBP" } },
-    { label: "Global Academy", value: "CUST-002", meta: { currency: "USD" } },
-  ];
-}
+
 
 export async function fetchEmployeeOptions(search: string): Promise<Option[]> {
   return getEmployees(search);
@@ -150,7 +144,7 @@ export function getConflictingLineIds(
   return ids;
 }
 
-const DEFAULT_SLOT_MINUTES = 240;
+const DEFAULT_SLOT_MINUTES = 480;
 const PREFERRED_START_MINUTES = 9 * 60;
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -175,38 +169,24 @@ function findFreeSlot(
   date: string,
   durationMs: number,
 ): SlotFields | null {
-  if (durationMs <= 0 || durationMs > DAY_MS) return null;
-  const busy = lines
+  if (durationMs <= 0) return null;
+
+  const preferredStart =
+    new Date(`${date}T00:00:00`).getTime() + PREFERRED_START_MINUTES * 60000;
+  if (Number.isNaN(preferredStart)) return null;
+
+  const start = lines
     .map(lineRange)
-    .filter((r): r is { s: number; e: number } => r !== null);
-  let dayStart = new Date(`${date}T00:00:00`).getTime();
-  if (Number.isNaN(dayStart)) return null;
+    .reduce((latest, r) => (r ? Math.max(latest, r.e) : latest), preferredStart);
+  const end = start + durationMs;
 
-  for (let i = 0; i < 366; i++, dayStart += DAY_MS) {
-    const dayEnd = dayStart + DAY_MS;
-    const afterBusy = busy
-      .map((r) => r.e)
-      .filter((e) => e > dayStart && e < dayEnd)
-      .sort((a, b) => a - b);
-    const starts = [
-      dayStart + PREFERRED_START_MINUTES * 60000,
-      ...afterBusy,
-      dayStart,
-    ];
-    for (const s of starts) {
-      const e = s + durationMs;
-      if (busy.some((r) => s < r.e && r.s < e)) continue;
-      return {
-        date: toDateStr(s),
-        from_time: toTimeStr(s),
-        to_date: toDateStr(e),
-        to_time: toTimeStr(e),
-      };
-    }
-  }
-  return null;
+  return {
+    date: toDateStr(start),
+    from_time: toTimeStr(start),
+    to_date: toDateStr(end),
+    to_time: toTimeStr(end),
+  };
 }
-
 function placeLine(
   line: TimesheetLineDraft,
   existing: TimesheetLineDraft[],
@@ -222,6 +202,13 @@ function placeLine(
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+const formatTitleDate = (ymd: string) =>
+  new Date(`${ymd}T00:00:00`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
 function splitDateTime(dt: string | null | undefined): {
   date: string;
@@ -252,8 +239,8 @@ function emptyLine(
     date,
     to_date: date,
     from_time: "09:00",
-    to_time: "13:00",
-    hours: calcHours(date, "09:00", date, "13:00"),
+    to_time: "17:00",
+    hours: calcHours(date, "09:00", date, "17:00"),
     is_completed: false,
     is_billable: true,
     billing_rate: 0,
@@ -334,14 +321,17 @@ export function useTimesheetModal(
   const [editingName, setEditingName] = useState<string | undefined>(
     undefined,
   );
+  const [customTitle, setCustomTitle] = useState<string | null>(null);
 
   const reset = useCallback(() => {
     setForm(emptyForm(restrictions));
     setEditingName(undefined);
+    setCustomTitle(null);
   }, [restrictions]);
 
   const loadFromDetail = useCallback((detail: TimesheetDetail) => {
     setEditingName(detail.name);
+    setCustomTitle(detail.title ?? null);
     setForm({
       project: "",
       project_name: "",
@@ -431,6 +421,10 @@ export function useTimesheetModal(
 
   const setStartDate = useCallback((date: string) => {
     setForm((f) => ({ ...f, start_date: date }));
+  }, []);
+
+  const setTitle = useCallback((value: string) => {
+    setCustomTitle(value);
   }, []);
 
   const addLine = useCallback(
@@ -626,6 +620,38 @@ export function useTimesheetModal(
     [form.lines],
   );
 
+  const derivedStartDate = useMemo(() => {
+    const starts = form.lines
+      .map((l) => l.date)
+      .filter(Boolean)
+      .sort();
+    return starts[0] || form.start_date || today();
+  }, [form.lines, form.start_date]);
+
+  const derivedEndDate = useMemo(() => {
+    const ends = form.lines
+      .map((l) => l.to_date)
+      .filter(Boolean)
+      .sort();
+    return ends[ends.length - 1] || derivedStartDate;
+  }, [form.lines, derivedStartDate]);
+
+  const autoTitle = useMemo(() => {
+    const name = form.employee_name || restrictions?.employee?.name || "";
+    const range =
+      derivedEndDate > derivedStartDate
+        ? `${formatTitleDate(derivedStartDate)} to ${formatTitleDate(derivedEndDate)}`
+        : formatTitleDate(derivedStartDate);
+    return [name, range].filter(Boolean).join(" - ");
+  }, [
+    form.employee_name,
+    restrictions?.employee?.name,
+    derivedStartDate,
+    derivedEndDate,
+  ]);
+
+  const title = customTitle ?? autoTitle;
+
   const buildPayload = useCallback(
     (exchangeRate: number): TimesheetCreatePayload => {
       const rowStarts = form.lines
@@ -644,6 +670,7 @@ export function useTimesheetModal(
         doctype: "Timesheet",
         employee: form.employee || restrictions?.employee?.id || "",
         employee_name: form.employee_name || restrictions?.employee?.name || "",
+        title: title.trim() || autoTitle,
         customer: form.customer || undefined,
         department: form.department || undefined,
         currency: form.currency,
@@ -671,7 +698,7 @@ export function useTimesheetModal(
         })),
       };
     },
-    [form, editingName, restrictions?.employee],
+    [form, editingName, restrictions?.employee, title, autoTitle],
   );
 
   const validate = useCallback((): string | null => {
@@ -764,11 +791,13 @@ export function useTimesheetModal(
 
   return {
     form,
+    title,
     totals,
     conflictIds,
     isSaving,
     isEditMode,
     restrictions,
+    setTitle,
     setProject,
     setCustomer,
     setEmployee,

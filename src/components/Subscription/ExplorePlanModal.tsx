@@ -56,15 +56,21 @@ const TIERS: PlanTier[] = [
 ];
 
 interface ExplorePlansModalProps {
+  modalId: string;
   isOpen: boolean;
   onClose: () => void;
-  currentPlanName: string;
+  currentPlanName?: string;
 }
 
-const ExplorePlansModal: React.FC<ExplorePlansModalProps> = ({ isOpen, onClose, currentPlanName }) => {
+const ExplorePlansModal: React.FC<ExplorePlansModalProps> = ({
+  modalId,
+  isOpen,
+  onClose,
+  currentPlanName,
+}) => {
   return (
     <MinimizableModal
-      modalId="explore-plans-modal"
+      modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
       title="Explore Subscription Tiers"
@@ -106,7 +112,6 @@ const ExplorePlansModal: React.FC<ExplorePlansModalProps> = ({ isOpen, onClose, 
                   </li>
                 ))}
               </ul>
-
             </div>
           );
         })}

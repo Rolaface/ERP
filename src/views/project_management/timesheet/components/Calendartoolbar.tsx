@@ -1,6 +1,9 @@
 import React from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import DateRangeFilter from "../../../../components/ui/modal/DateRangeFilter";
+import MultiSelectFilter, {
+  type MultiSelectOption,
+} from "../../../../components/ui/modal/MultiSelectFilter";
 import ViewSelector from "../../../project_management/ViewSelector";
 import { TIMESHEET_VIEW_OPTIONS } from "./timesheetViews";
 import { formatHours, type DateRange, type ViewMode } from "./Calendarutils";
@@ -13,6 +16,9 @@ interface Props {
   views: { label: string; value: ViewMode }[];
   range: DateRange | null;
   canViewAll: boolean;
+  employeeFilter?: string[];
+  onEmployeeFilterChange?: (values: string[]) => void;
+  fetchEmployees?: (q: string) => Promise<MultiSelectOption[]>;
   onToday: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -21,6 +27,8 @@ interface Props {
   onLog: () => void;
   onSwitchToList: () => void;
 }
+
+const EMPTY_OPTIONS: MultiSelectOption[] = [];
 
 const ghostButton =
   "whitespace-nowrap rounded-lg border border-[var(--border)] px-4 py-2 text-xs font-semibold text-main transition-colors hover:bg-row-hover";
@@ -37,6 +45,9 @@ const CalendarToolbar: React.FC<Props> = ({
   views,
   range,
   canViewAll,
+  employeeFilter = [],
+  onEmployeeFilterChange,
+  fetchEmployees,
   onToday,
   onPrev,
   onNext,
@@ -81,6 +92,17 @@ const CalendarToolbar: React.FC<Props> = ({
           </button>
         ))}
       </div>
+      {canViewAll && onEmployeeFilterChange && fetchEmployees && (
+        <MultiSelectFilter
+          options={EMPTY_OPTIONS}
+          values={employeeFilter}
+          onChange={onEmployeeFilterChange}
+          placeholder="Employee"
+          panelTitle="Employee"
+          searchPlaceholder="Search employee..."
+          onSearch={fetchEmployees}
+        />
+      )}
       {canViewAll && (
         <DateRangeFilter
           from={range?.from}

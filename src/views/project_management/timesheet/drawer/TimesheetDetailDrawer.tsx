@@ -10,7 +10,8 @@ import { useCurrencySymbols } from "../../../../hooks/Usecurrencysymbols";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   Draft: { label: "Draft", cls: "bg-draft" },
-  Submitted: { label: "Approved", cls: "bg-info" },
+  "Pending For Approval": { label: "Pending Approval", cls: "bg-info" },
+  Submitted: { label: "Approved", cls: "bg-success" },
   Billed: { label: "Billed", cls: "bg-success" },
   Cancelled: { label: "Cancelled", cls: "bg-danger" },
 };
@@ -59,7 +60,6 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: "0.06em",
 };
 
-// ── Small helpers ────────────────────────────────────────────
 const Ico: React.FC<{ d: string }> = ({ d }) => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -70,6 +70,7 @@ const ICON = {
   edit: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z",
   check: "M20 6 9 17l-5-5",
   x: "M18 6 6 18M6 6l12 12",
+  send: "M22 2 11 13M22 2l-7 20-4-9-9-4Z",
 };
 
 const Card: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -106,18 +107,18 @@ const MoneyCell: React.FC<{ label: string; value: string; color?: string }> = ({
   </div>
 );
 
-// ── Props ────────────────────────────────────────────────────
 interface Props {
   open: boolean;
   data: TimesheetDetail | null;
   loading?: boolean;
   actionLoading?: boolean;
-  canWrite?: boolean;       // Edit
-  canSubmit?: boolean;      // Approve
-  canCancel?: boolean;      // Cancel
-  showFinancials?: boolean; // default true
+  canWrite?: boolean;
+  canSubmit?: boolean;
+  canCancel?: boolean;
+  showFinancials?: boolean;
   showEmployeeCard?: boolean;
   onClose: () => void;
+  onSendForApproval?: (id: string) => void;
   onApprove?: (id: string) => void;
   onEdit?: (id: string) => void;
   onCancel?: (id: string) => void;
@@ -127,9 +128,8 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
   open, data, loading, actionLoading, canWrite, canSubmit, canCancel,
   showFinancials = true,
   showEmployeeCard = true,
-  onClose, onApprove, onEdit, onCancel,
+  onClose, onSendForApproval, onApprove, onEdit, onCancel,
 }) => {
-  // Hooks hamesha early return se pehle
   const { formatAmount } = useCurrencySymbols(data?.currency ? [data.currency] : []);
   const [tab, setTab] = useState<Tab>("overview");
   const [copied, setCopied] = useState(false);
@@ -146,20 +146,31 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
   const logAmount = logs.reduce((a, l) => a + (l.is_billable ? l.billing_amount ?? 0 : 0), 0);
   const logCost = logs.reduce((a, l) => a + (l.costing_amount ?? 0), 0);
 
-  // ── Header actions ──
   const actions: DrawerAction[] = [];
   if (data) {
     if (data.status === "Draft" && canWrite) {
-      actions.push({ key: "edit", label: "Edit", variant: "primary", icon: <Ico d={ICON.edit} />, onClick: () => onEdit?.(data.name) });
-    }
-    if (data.status === "Draft" && canSubmit) {
       actions.push({
-        key: "approve", label: actionLoading ? "Approving..." : "Approve", icon: <Ico d={ICON.check} />,
+        key: "edit", label: "Edit", variant: "primary",
+        icon: <Ico d={ICON.edit} />, onClick: () => onEdit?.(data.name),
+      });
+      actions.push({
+        key: "send", label: actionLoading ? "Submitting..." : "Submit for Approval",
+        icon: <Ico d={ICON.send} />, disabled: actionLoading,
+        onClick: () => onSendForApproval?.(data.name),
+      });
+    }
+    if (data.status === "Pending For Approval" && canSubmit) {
+      actions.push({
+        key: "approve", label: actionLoading ? "Approving..." : "Approve",
+        variant: "primary", icon: <Ico d={ICON.check} />,
         disabled: actionLoading, onClick: () => onApprove?.(data.name),
       });
     }
     if (data.status === "Submitted" && canCancel) {
-      actions.push({ key: "cancel", label: "Cancel", icon: <Ico d={ICON.x} />, onClick: () => onCancel?.(data.name) });
+      actions.push({
+        key: "cancel", label: "Cancel",
+        icon: <Ico d={ICON.x} />, onClick: () => onCancel?.(data.name),
+      });
     }
   }
 
@@ -208,7 +219,6 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
     >
       {data && (
         <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-          {/* ── Fixed top: title, chips, KPIs, tabs ── */}
           <div style={{ flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
               <span style={{ fontSize: 16, fontWeight: 800, color: "var(--text)" }}>{data.title}</span>
@@ -253,7 +263,6 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* ── Tab content (yahi scroll hota hai) ── */}
           <div style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingTop: 12 }}>
             {tab === "overview" && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 10, alignItems: "start" }}>
@@ -312,7 +321,6 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                 )}
               </div>
             )}
-
 
             {tab === "logs" && (
               <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
