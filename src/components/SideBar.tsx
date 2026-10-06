@@ -26,7 +26,7 @@ import {
   Star,
   Mail,
   User,
-  CreditCard,
+  CreditCard,Layers,
   FileUp, Coins
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
@@ -210,6 +210,13 @@ const settingsItems: SettingsItem[] = [
     icon: <Building2 {...iconProps} />,
     modules: ["Company"],
     subscriptionCheck: (a) => a.settingsAccess("company"),
+    hideInEmployeeView: true,
+  },
+  {
+    to: "/subscribe",
+    label: "Subscription",
+    icon: <Layers {...iconProps} />,
+    modules: [""],
     hideInEmployeeView: true,
   },
   {

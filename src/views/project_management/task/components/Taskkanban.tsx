@@ -1,5 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Folder, Search } from "lucide-react";
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { CornerDownRight, Folder, Search } from "lucide-react";
 import { showApiError, showSuccess } from "../../../../utils/alert";
 import DateDisplay from "../../../../components/UI_Utils/Datedisplay";
 import SearchSelect2, {
@@ -21,18 +28,12 @@ import {
 import PriorityChip from "./PriorityChip";
 
 type Variant = "draft" | "info" | "success" | "danger";
+type Highlight = "none" | "on" | "dim";
 
 export interface KanbanStatus {
   label: string;
   value: string;
   variant: Variant;
-}
-
-interface ColState {
-  items: TaskEntry[];
-  total: number;
-  page: number;
-  loading: boolean;
 }
 
 interface Props {
@@ -50,13 +51,22 @@ interface Props {
   canEditTask?: (task: TaskEntry) => boolean;
   onView: (name: string) => void;
   toolbarRight?: React.ReactNode;
+  taskNames?: string[];
+  showProgress?: boolean;
 }
 
-const PAGE_SIZE = 25;
+interface StatusMeta {
+  label: string;
+  color: string;
+}
+
+const KANBAN_LIMIT = 500;
 const DONE_STATUS = "Completed";
 const DONE_PROGRESS = 100;
 const SEARCH_DEBOUNCE_MS = 400;
 const MAX_AVATARS = 3;
+const FALLBACK_COLOR = "var(--muted, #94a3b8)";
+const EMPTY_TASKS: TaskEntry[] = [];
 
 const VARIANT_COLOR: Record<Variant, string> = {
   draft: "var(--muted, #94a3b8)",
@@ -76,11 +86,261 @@ const AVATAR_COLORS = [
   { bg: "#bbf7d0", fg: "#166534" },
 ];
 
-const avatarColor = (s: string) =>
-  AVATAR_COLORS[
-  Array.from(s).reduce((sum, c) => sum + c.charCodeAt(0), 0) %
-  AVATAR_COLORS.length
-  ];
+const FAMILY_COLORS = [
+  "#6366f1",
+  "#d97706",
+  "#059669",
+  "#db2777",
+  "#0284c7",
+  "#7c3aed",
+  "#dc2626",
+  "#0d9488",
+];
+
+const hashOf = (s: string) =>
+  Array.from(s).reduce((sum, c) => (sum * 31 + c.charCodeAt(0)) >>> 0, 7);
+
+const avatarColor = (s: string) => AVATAR_COLORS[hashOf(s) % AVATAR_COLORS.length];
+
+const familyColor = (s: string) => FAMILY_COLORS[hashOf(s) % FAMILY_COLORS.length];
+
+const clampProgress = (v: unknown) => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(100, Math.max(0, Math.round(n)));
+};
+
+const isGroupTask = (t: TaskEntry) => Boolean(t.is_group);
+
+const familyKeyOf = (t: TaskEntry): string | null => {
+  if (t.parent_task) return t.parent_task;
+  if (isGroupTask(t)) return t.name;
+  return null;
+};
+
+interface CardProps {
+  task: TaskEntry;
+  status: string;
+  kids: TaskEntry[];
+  parentLabel: string | null;
+  projectName: string;
+  accent: string | null;
+  highlight: Highlight;
+  movable: boolean;
+  hasFilters: boolean;
+  showProgress: boolean;
+  metaMap: Map<string, StatusMeta>;
+  onOpen: (name: string) => void;
+  onHover: (key: string | null) => void;
+  onDragBegin: (name: string, from: string) => void;
+  onDragFinish: () => void;
+}
+
+const KanbanCard = memo(function KanbanCard({
+  task,
+  status,
+  kids,
+  parentLabel,
+  projectName,
+  accent,
+  highlight,
+  movable,
+  hasFilters,
+  showProgress,
+  metaMap,
+  onOpen,
+  onHover,
+  onDragBegin,
+  onDragFinish,
+}: CardProps) {
+  const isGroup = isGroupTask(task);
+  const emails = useMemo(() => parseAssignedEmails(task._assign), [task._assign]);
+  const progress = clampProgress(task.progress);
+
+  const kidCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    kids.forEach((k) => map.set(k.status, (map.get(k.status) ?? 0) + 1));
+    return Array.from(map);
+  }, [kids]);
+
+  const kidsLabel = hasFilters
+    ? `${kids.length} shown`
+    : `${kids.length} child ${kids.length === 1 ? "task" : "tasks"}`;
+
+  const familyKey = familyKeyOf(task);
+
+  const open = () => onOpen(task.name);
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      draggable={movable}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", task.name);
+        onHover(null);
+        onDragBegin(task.name, status);
+      }}
+      onDragEnd={onDragFinish}
+      onMouseEnter={() => onHover(familyKey)}
+      onMouseLeave={() => onHover(null)}
+      onFocus={() => onHover(familyKey)}
+      onBlur={() => onHover(null)}
+      onClick={open}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          open();
+        }
+      }}
+      style={{
+        contentVisibility: "auto",
+        containIntrinsicSize: "0 150px",
+        ...(highlight === "on" && accent
+          ? { outline: `2px solid ${accent}`, outlineOffset: 0 }
+          : {}),
+      }}
+      className={[
+        "relative overflow-hidden rounded-xl border border-[var(--border)] bg-card py-3 pl-4 pr-3 shadow-sm transition-[opacity,box-shadow] hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary",
+        highlight === "dim" ? "opacity-40" : "",
+        movable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+      ].join(" ")}
+    >
+      {accent && (
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 w-1"
+          style={{ background: accent }}
+        />
+      )}
+
+      {parentLabel && task.parent_task && (
+        <span
+          role="link"
+          tabIndex={-1}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen(task.parent_task as string);
+          }}
+          className="mb-1.5 inline-flex max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold hover:underline"
+          style={{
+            background: accent ? `${accent}24` : "transparent",
+            color: accent ?? "inherit",
+          }}
+        >
+          <CornerDownRight size={10} className="shrink-0" />
+          <span className="truncate">{parentLabel}</span>
+        </span>
+      )}
+
+      <p className="flex items-start gap-1 text-xs font-bold text-main">
+        {isGroup && (
+          <Folder
+            size={13}
+            className="mt-0.5 shrink-0"
+            style={{ color: accent ?? undefined }}
+          />
+        )}
+        <span className="min-w-0 break-words">{task.subject}</span>
+      </p>
+
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <span className="font-mono text-[10px] text-muted">{task.name}</span>
+        {isGroup && (
+          <span
+            className="rounded border px-1 text-[9px] font-bold uppercase tracking-wide"
+            style={{
+              borderColor: accent ?? "var(--border)",
+              color: accent ?? undefined,
+            }}
+          >
+            Group
+          </span>
+        )}
+        <PriorityChip priority={task.priority} />
+      </div>
+
+      {projectName && (
+        <p className="mt-1.5 truncate text-[11px] font-medium text-muted">
+          {projectName}
+        </p>
+      )}
+
+      {isGroup && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted">
+          <span className="font-semibold">{kidsLabel}</span>
+          {kidCounts.map(([st, n]) => {
+            const meta = metaMap.get(st);
+            return (
+              <span key={st} className="flex items-center gap-1">
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ background: meta?.color ?? FALLBACK_COLOR }}
+                />
+                {n} {meta?.label ?? st}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {showProgress && (
+        <div className="mt-2 flex items-center gap-2">
+          <div
+            className="h-1.5 flex-1 rounded-full"
+            style={{ background: "var(--border)" }}
+          >
+            <div
+              className="h-1.5 rounded-full bg-success"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="w-8 text-right font-mono text-[10px] text-muted">
+            {progress}%
+          </span>
+        </div>
+      )}
+
+      <div className="mt-2 flex items-center justify-between gap-2">
+        {task.exp_end_date ? (
+          <DateDisplay
+            date={task.exp_end_date}
+            className="whitespace-nowrap text-[10px] text-muted"
+          />
+        ) : (
+          <span className="text-[10px] text-muted">—</span>
+        )}
+
+        <div className="flex items-center">
+          {emails.slice(0, MAX_AVATARS).map((email, i) => {
+            const av = avatarColor(email);
+            return (
+              <span
+                key={email}
+                title={email}
+                className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--card,#fff)] text-[10px] font-bold"
+                style={{
+                  background: av.bg,
+                  color: av.fg,
+                  marginLeft: i === 0 ? 0 : -6,
+                }}
+              >
+                {email.charAt(0).toUpperCase()}
+              </span>
+            );
+          })}
+          {emails.length > MAX_AVATARS && (
+            <span className="ml-1 text-[10px] font-semibold text-muted">
+              +{emails.length - MAX_AVATARS}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
 
 const TaskKanban: React.FC<Props> = ({
   statuses,
@@ -97,13 +357,19 @@ const TaskKanban: React.FC<Props> = ({
   canEditTask,
   onView,
   toolbarRight,
+  taskNames,
+  showProgress = true,
 }) => {
   const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
 
-  const [cols, setCols] = useState<Record<string, ColState>>({});
+  const [tasks, setTasks] = useState<TaskEntry[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchInput, setSearchInput] = useState(searchTerm);
   const [dragOver, setDragOver] = useState<string | null>(null);
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
   const [projectLabel, setProjectLabel] = useState(
     projectFilter.length === 1 ? getProjectName(projectFilter[0]) : "",
   );
@@ -112,10 +378,27 @@ const TaskKanban: React.FC<Props> = ({
   );
 
   const reqRef = useRef(0);
+  const mountedRef = useRef(true);
   const dragRef = useRef<{ name: string; from: string } | null>(null);
+  const onViewRef = useRef(onView);
+  const canEditRef = useRef(canEdit);
+  const canEditTaskRef = useRef(canEditTask);
+  const getProjectNameRef = useRef(getProjectName);
 
-  const canMove = (t: TaskEntry) =>
-    canEdit && (canEditTask ? canEditTask(t) : true);
+  useEffect(() => {
+    onViewRef.current = onView;
+    canEditRef.current = canEdit;
+    canEditTaskRef.current = canEditTask;
+    getProjectNameRef.current = getProjectName;
+  });
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      reqRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     if (!projectFilter.length) setProjectLabel("");
@@ -125,25 +408,43 @@ const TaskKanban: React.FC<Props> = ({
     if (!assigneeFilter.length) setAssigneeLabel("");
   }, [assigneeFilter]);
 
-  const fetchColumn = useCallback(
-    async (status: string, page: number) => {
+  const hasFilters =
+    Boolean(searchInput) ||
+    projectFilter.length > 0 ||
+    assigneeFilter.length > 0;
+
+  const metaMap = useMemo(() => {
+    const map = new Map<string, StatusMeta>();
+    statuses.forEach((s) =>
+      map.set(s.value, {
+        label: s.label,
+        color: VARIANT_COLOR[s.variant] ?? FALLBACK_COLOR,
+      }),
+    );
+    return map;
+  }, [statuses]);
+
+  const fetchTasks = useCallback(
+    async (pageNo: number) => {
       const res = await getTaskList(
-        page,
-        PAGE_SIZE,
-        [status],
+        pageNo,
+        KANBAN_LIMIT,
+        statuses.map((s) => s.value),
         projectFilter.length ? projectFilter : undefined,
         searchTerm || undefined,
         undefined,
         "desc",
         assigneeFilter.length ? assigneeFilter : undefined,
         true,
+        taskNames,
       );
+      const items = Array.isArray(res?.data) ? (res.data as TaskEntry[]) : [];
       return {
-        items: (res.data || []) as TaskEntry[],
-        total: res.pagination?.total ?? res.data?.length ?? 0,
+        items,
+        total: Number(res?.pagination?.total) || items.length,
       };
     },
-    [projectFilter, searchTerm, assigneeFilter],
+    [statuses, projectFilter, searchTerm, assigneeFilter, taskNames],
   );
 
   const loadAll = useCallback(
@@ -151,27 +452,25 @@ const TaskKanban: React.FC<Props> = ({
       const id = ++reqRef.current;
       if (!silent) setLoading(true);
       try {
-        const results = await Promise.all(
-          statuses.map((s) => fetchColumn(s.value, 1)),
+        const { items, total: count } = await fetchTasks(1);
+        if (id !== reqRef.current || !mountedRef.current) return;
+        const seen = new Set<string>();
+        setTasks(
+          items.filter((t) => {
+            if (!t?.name || seen.has(t.name)) return false;
+            seen.add(t.name);
+            return true;
+          }),
         );
-        if (id !== reqRef.current) return;
-        const next: Record<string, ColState> = {};
-        statuses.forEach((s, i) => {
-          next[s.value] = {
-            items: results[i].items,
-            total: results[i].total,
-            page: 1,
-            loading: false,
-          };
-        });
-        setCols(next);
+        setTotal(count);
+        setPage(1);
       } catch (error) {
-        if (id === reqRef.current) showApiError(error);
+        if (id === reqRef.current && mountedRef.current) showApiError(error);
       } finally {
-        if (id === reqRef.current) setLoading(false);
+        if (id === reqRef.current && mountedRef.current) setLoading(false);
       }
     },
-    [fetchColumn, statuses],
+    [fetchTasks],
   );
 
   useEffect(() => {
@@ -196,86 +495,117 @@ const TaskKanban: React.FC<Props> = ({
     return () => clearTimeout(t);
   }, [searchInput, searchTerm, onSearch]);
 
-  const loadMore = async (status: string) => {
-    const col = cols[status];
-    if (!col || col.loading) return;
-    const nextPage = col.page + 1;
-
-    setCols((prev) => ({
-      ...prev,
-      [status]: { ...prev[status], loading: true },
-    }));
+  const loadMore = async () => {
+    if (loadingMore) return;
+    const id = reqRef.current;
+    const nextPage = page + 1;
+    setLoadingMore(true);
     try {
-      const { items, total } = await fetchColumn(status, nextPage);
-      setCols((prev) => {
-        const cur = prev[status];
-        const seen = new Set(cur.items.map((t) => t.name));
-        return {
-          ...prev,
-          [status]: {
-            items: [...cur.items, ...items.filter((t) => !seen.has(t.name))],
-            total,
-            page: nextPage,
-            loading: false,
-          },
-        };
+      const { items, total: count } = await fetchTasks(nextPage);
+      if (id !== reqRef.current || !mountedRef.current) return;
+      setTasks((prev) => {
+        const seen = new Set(prev.map((t) => t.name));
+        return [...prev, ...items.filter((t) => t?.name && !seen.has(t.name))];
       });
+      setTotal(count);
+      setPage(nextPage);
     } catch (error) {
-      showApiError(error);
-      setCols((prev) => ({
-        ...prev,
-        [status]: { ...prev[status], loading: false },
-      }));
+      if (mountedRef.current) showApiError(error);
+    } finally {
+      if (mountedRef.current) setLoadingMore(false);
     }
   };
 
-  const moveTask = async (name: string, from: string, to: string) => {
-    const task = cols[from]?.items.find((t) => t.name === name);
-    if (!task || !cols[to] || !canMove(task)) return;
+  const { byStatus, childrenOf, byName } = useMemo(() => {
+    const byStatus = new Map<string, TaskEntry[]>();
+    const childrenOf = new Map<string, TaskEntry[]>();
+    const byName = new Map<string, TaskEntry>();
 
-    const nextProgress = to === DONE_STATUS ? DONE_PROGRESS : undefined;
-    const moved: TaskEntry = {
-      ...task,
-      status: to as TaskStatus,
-      ...(nextProgress !== undefined ? { progress: nextProgress } : {}),
-    };
+    tasks.forEach((t) => byName.set(t.name, t));
 
-    setCols((prev) => ({
-      ...prev,
-      [from]: {
-        ...prev[from],
-        items: prev[from].items.filter((t) => t.name !== name),
-        total: Math.max(0, prev[from].total - 1),
-      },
-      [to]: {
-        ...prev[to],
-        items: [moved, ...prev[to].items],
-        total: prev[to].total + 1,
-      },
-    }));
+    tasks.forEach((t) => {
+      const column = byStatus.get(t.status);
+      if (column) column.push(t);
+      else byStatus.set(t.status, [t]);
 
-    try {
-      await updateTaskStatus(name, to, nextProgress);
-      showSuccess("Task status updated");
-      loadAll(true);
-    } catch (error) {
-      showApiError(error);
-      loadAll(true);
-    }
-  };
+      if (t.parent_task && t.parent_task !== t.name) {
+        const siblings = childrenOf.get(t.parent_task);
+        if (siblings) siblings.push(t);
+        else childrenOf.set(t.parent_task, [t]);
+      }
+    });
+
+    return { byStatus, childrenOf, byName };
+  }, [tasks]);
+
+  const byNameRef = useRef(byName);
+  useEffect(() => {
+    byNameRef.current = byName;
+  }, [byName]);
+
+  const isMovable = useCallback((t: TaskEntry) => {
+    if (!canEditRef.current) return false;
+    const check = canEditTaskRef.current;
+    return check ? check(t) : true;
+  }, []);
+
+  const moveTask = useCallback(
+    async (name: string, to: string) => {
+      const task = byNameRef.current.get(name);
+      if (!task || task.status === to || !isMovable(task)) return;
+
+      const nextProgress =
+        to === DONE_STATUS && !isGroupTask(task) ? DONE_PROGRESS : undefined;
+
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.name === name
+            ? {
+                ...t,
+                status: to as TaskStatus,
+                ...(nextProgress !== undefined ? { progress: nextProgress } : {}),
+              }
+            : t,
+        ),
+      );
+
+      try {
+        await updateTaskStatus(name, to, nextProgress);
+        if (!mountedRef.current) return;
+        showSuccess("Task status updated");
+      } catch (error) {
+        if (mountedRef.current) showApiError(error);
+      } finally {
+        if (mountedRef.current) loadAllRef.current(true);
+      }
+    },
+    [isMovable],
+  );
 
   const handleDrop = (status: string) => {
     const drag = dragRef.current;
     dragRef.current = null;
     setDragOver(null);
     if (!drag || drag.from === status || !canEdit) return;
-    moveTask(drag.name, drag.from, status);
+    moveTask(drag.name, status);
   };
 
-  const hasFilters =
-    Boolean(searchInput) ||
-    projectFilter.length > 0 ||
-    assigneeFilter.length > 0;
+  const handleOpen = useCallback((name: string) => {
+    onViewRef.current(name);
+  }, []);
+
+  const handleHover = useCallback((key: string | null) => {
+    setHoverKey((prev) => (prev === key ? prev : key));
+  }, []);
+
+  const handleDragBegin = useCallback((name: string, from: string) => {
+    dragRef.current = { name, from };
+  }, []);
+
+  const handleDragFinish = useCallback(() => {
+    dragRef.current = null;
+    setDragOver(null);
+  }, []);
 
   const clearFilters = () => {
     setSearchInput("");
@@ -284,106 +614,39 @@ const TaskKanban: React.FC<Props> = ({
     onAssigneeFilterChange?.([]);
   };
 
-  const renderCard = (t: TaskEntry, status: string) => {
-    const emails = parseAssignedEmails(t._assign);
-    const isGroup = t.is_group === 1;
-    const movable = canMove(t);
+  const highlightOf = (t: TaskEntry): Highlight => {
+    if (!hoverKey) return "none";
+    return t.name === hoverKey || t.parent_task === hoverKey ? "on" : "dim";
+  };
 
+  const renderCard = (t: TaskEntry, status: string) => {
+    const familyKey = familyKeyOf(t);
+    const parent = t.parent_task ? byName.get(t.parent_task) : undefined;
+    const parentLabel = t.parent_task ? (parent?.subject || t.parent_task) : null;
 
     return (
-      <div
+      <KanbanCard
         key={t.name}
-        draggable={movable}
-        onDragStart={(e) => {
-          dragRef.current = { name: t.name, from: status };
-          e.dataTransfer.effectAllowed = "move";
-        }}
-        onDragEnd={() => {
-          dragRef.current = null;
-          setDragOver(null);
-        }}
-        onClick={() => onView(t.name)}
-        className={[
-          "rounded-xl border border-[var(--border)] bg-card p-3 shadow-sm transition-shadow hover:shadow-md",
-          movable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
-        ].join(" ")}
-      >
-        <p className="flex items-start gap-1 text-xs font-bold text-main">
-          {isGroup && (
-            <Folder size={13} className="mt-0.5 shrink-0 text-muted" />
-          )}
-          <span className="min-w-0 break-words">{t.subject}</span>
-        </p>
-
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <span className="font-mono text-[10px] text-muted">{t.name}</span>
-          {isGroup && (
-            <span className="rounded border border-theme px-1 text-[9px] font-bold uppercase tracking-wide text-muted">
-              Group
-            </span>
-          )}
-          <PriorityChip priority={t.priority} />
-        </div>
-
-        {t.project && (
-          <p className="mt-1.5 truncate text-[11px] font-medium text-muted">
-            {getProjectName(t.project)}
-          </p>
-        )}
-
-        <div className="mt-2 flex items-center gap-2">
-          <div
-            className="h-1.5 flex-1 rounded-full"
-            style={{ background: "var(--border)" }}
-          >
-            <div
-              className="h-1.5 rounded-full bg-success"
-              style={{ width: `${t.progress || 0}%` }}
-            />
-          </div>
-          <span className="w-8 text-right font-mono text-[10px] text-muted">
-            {t.progress || 0}%
-          </span>
-        </div>
-
-        <div className="mt-2 flex items-center justify-between gap-2">
-          {t.exp_end_date ? (
-            <DateDisplay
-              date={t.exp_end_date}
-              className="whitespace-nowrap text-[10px] text-muted"
-            />
-          ) : (
-            <span className="text-[10px] text-muted">—</span>
-          )}
-
-          <div className="flex items-center">
-            {emails.slice(0, MAX_AVATARS).map((email, i) => {
-              const av = avatarColor(email);
-              return (
-                <span
-                  key={email}
-                  title={email}
-                  className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--card,#fff)] text-[10px] font-bold"
-                  style={{
-                    background: av.bg,
-                    color: av.fg,
-                    marginLeft: i === 0 ? 0 : -6,
-                  }}
-                >
-                  {email.charAt(0).toUpperCase()}
-                </span>
-              );
-            })}
-            {emails.length > MAX_AVATARS && (
-              <span className="ml-1 text-[10px] font-semibold text-muted">
-                +{emails.length - MAX_AVATARS}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+        task={t}
+        status={status}
+        kids={isGroupTask(t) ? (childrenOf.get(t.name) ?? EMPTY_TASKS) : EMPTY_TASKS}
+        parentLabel={parentLabel}
+        projectName={t.project ? getProjectNameRef.current(t.project) : ""}
+        accent={familyKey ? familyColor(familyKey) : null}
+        highlight={highlightOf(t)}
+        movable={isMovable(t)}
+        hasFilters={hasFilters}
+        showProgress={showProgress}
+        metaMap={metaMap}
+        onOpen={handleOpen}
+        onHover={handleHover}
+        onDragBegin={handleDragBegin}
+        onDragFinish={handleDragFinish}
+      />
     );
   };
+
+  const hasMore = tasks.length < total;
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-hidden p-3">
@@ -408,7 +671,7 @@ const TaskKanban: React.FC<Props> = ({
             value={projectLabel}
             fetchOptions={fetchProjects}
             onChange={(val, opt) => {
-              setProjectLabel(opt.label);
+              setProjectLabel(opt?.label ?? "");
               onProjectFilterChange(val ? [val] : []);
             }}
           />
@@ -422,7 +685,7 @@ const TaskKanban: React.FC<Props> = ({
               value={assigneeLabel}
               fetchOptions={fetchUsers}
               onChange={(val, opt) => {
-                setAssigneeLabel(opt.label);
+                setAssigneeLabel(opt?.label ?? "");
                 onAssigneeFilterChange(val ? [val] : []);
               }}
             />
@@ -448,9 +711,7 @@ const TaskKanban: React.FC<Props> = ({
         ].join(" ")}
       >
         {statuses.map((s) => {
-          const col = cols[s.value];
-          const items = col?.items ?? [];
-          const total = col?.total ?? 0;
+          const items = byStatus.get(s.value) ?? EMPTY_TASKS;
           const isOver = dragOver === s.value;
 
           return (
@@ -459,10 +720,11 @@ const TaskKanban: React.FC<Props> = ({
               onDragOver={(e) => {
                 if (!canEdit) return;
                 e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
                 if (dragOver !== s.value) setDragOver(s.value);
               }}
               onDragLeave={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
                   setDragOver(null);
                 }
               }}
@@ -476,15 +738,18 @@ const TaskKanban: React.FC<Props> = ({
               ].join(" ")}
             >
               <div className="flex items-center justify-between px-3 py-3">
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ background: VARIANT_COLOR[s.variant] }}
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ background: VARIANT_COLOR[s.variant] ?? FALLBACK_COLOR }}
                   />
-                  <span className="text-sm font-bold text-main">{s.label}</span>
+                  <span className="truncate text-sm font-bold text-main">
+                    {s.label}
+                  </span>
                 </div>
                 <span className="rounded-full bg-card px-2 py-0.5 font-mono text-[10px] font-bold text-muted">
-                  {total}
+                  {items.length}
+                  {hasMore ? "+" : ""}
                 </span>
               </div>
 
@@ -496,23 +761,25 @@ const TaskKanban: React.FC<Props> = ({
                     No tasks
                   </p>
                 )}
-
-                {items.length < total && (
-                  <button
-                    onClick={() => loadMore(s.value)}
-                    disabled={col?.loading}
-                    className="w-full rounded-lg border border-[var(--border)] bg-card py-2 text-xs font-semibold text-main transition-colors hover:bg-row-hover disabled:opacity-50"
-                  >
-                    {col?.loading
-                      ? "Loading..."
-                      : `Load more (${total - items.length})`}
-                  </button>
-                )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {hasMore && (
+        <div className="flex shrink-0 justify-center">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="rounded-lg border border-[var(--border)] bg-card px-4 py-2 text-xs font-semibold text-main transition-colors hover:bg-row-hover disabled:opacity-50"
+          >
+            {loadingMore
+              ? "Loading..."
+              : `Load more tasks (${Math.max(0, total - tasks.length)} remaining)`}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -235,10 +235,14 @@ const TaskDetailDrawer: React.FC<Props> = ({
 
             <DrawerSummaryCards
               items={[
-                {
-                  label: "Progress",
-                  value: `${(data.progress ?? 0).toFixed(0)}%`,
-                },
+                ...(showFinancials
+                  ? [
+                    {
+                      label: "Progress",
+                      value: `${(data.progress ?? 0).toFixed(0)}%`,
+                    },
+                  ]
+                  : []),
                 {
                   label: "Actual Time",
                   value: `${(data.actual_time ?? 0).toFixed(1)} hrs`,

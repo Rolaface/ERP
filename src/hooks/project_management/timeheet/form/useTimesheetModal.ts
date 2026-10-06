@@ -41,8 +41,9 @@ export type DuplicatePosition = "after" | "end";
 export async function fetchProjectOptions(
   search: string,
   allowedProjectIds?: string[],
+  customer?: string,
 ): Promise<Option[]> {
-  const projects = await getAllProjects(search);
+  const projects = await getAllProjects(search, customer);
 
   const filtered =
     allowedProjectIds && allowedProjectIds.length > 0
@@ -55,15 +56,6 @@ export async function fetchProjectOptions(
     subLabel: project.name,
   }));
 }
-
-export async function fetchCustomerOptions(_q: string): Promise<Option[]> {
-  return [
-    { label: "Rolaface Corp", value: "CUST-001", meta: { currency: "INR" } },
-    { label: "Apex Health UK", value: "CUST-004", meta: { currency: "GBP" } },
-    { label: "Global Academy", value: "CUST-002", meta: { currency: "USD" } },
-  ];
-}
-
 export async function fetchEmployeeOptions(search: string): Promise<Option[]> {
   return getEmployees(search);
 }
@@ -74,7 +66,10 @@ export async function fetchTaskOptions(
 ): Promise<Option[]> {
   if (!projectId) return [];
 
-  const tasks = await getAllTasks(projectId, search);
+  const tasks = await getAllTasks(projectId, search, {
+    excludeGroups: true,
+    excludeStatuses: ["Cancelled"],
+  });
 
   return tasks.map((task) => ({
     label: task.subject,
@@ -147,7 +142,7 @@ export function getConflictingLineIds(
   return ids;
 }
 
-const DEFAULT_SLOT_MINUTES = 240;
+const DEFAULT_SLOT_MINUTES = 480;
 const PREFERRED_START_MINUTES = 9 * 60;
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -172,38 +167,27 @@ function findFreeSlot(
   date: string,
   durationMs: number,
 ): SlotFields | null {
-  if (durationMs <= 0 || durationMs > DAY_MS) return null;
-  const busy = lines
+  if (durationMs <= 0) return null;
+
+  const preferredStart =
+    new Date(`${date}T00:00:00`).getTime() + PREFERRED_START_MINUTES * 60000;
+  if (Number.isNaN(preferredStart)) return null;
+
+  const start = lines
     .map(lineRange)
-    .filter((r): r is { s: number; e: number } => r !== null);
-  let dayStart = new Date(`${date}T00:00:00`).getTime();
-  if (Number.isNaN(dayStart)) return null;
+    .reduce(
+      (latest, r) => (r ? Math.max(latest, r.e) : latest),
+      preferredStart,
+    );
+  const end = start + durationMs;
 
-  for (let i = 0; i < 366; i++, dayStart += DAY_MS) {
-    const dayEnd = dayStart + DAY_MS;
-    const afterBusy = busy
-      .map((r) => r.e)
-      .filter((e) => e > dayStart && e < dayEnd)
-      .sort((a, b) => a - b);
-    const starts = [
-      dayStart + PREFERRED_START_MINUTES * 60000,
-      ...afterBusy,
-      dayStart,
-    ];
-    for (const s of starts) {
-      const e = s + durationMs;
-      if (busy.some((r) => s < r.e && r.s < e)) continue;
-      return {
-        date: toDateStr(s),
-        from_time: toTimeStr(s),
-        to_date: toDateStr(e),
-        to_time: toTimeStr(e),
-      };
-    }
-  }
-  return null;
+  return {
+    date: toDateStr(start),
+    from_time: toTimeStr(start),
+    to_date: toDateStr(end),
+    to_time: toTimeStr(end),
+  };
 }
-
 function placeLine(
   line: TimesheetLineDraft,
   existing: TimesheetLineDraft[],
@@ -220,6 +204,26 @@ function placeLine(
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+const TITLE_SUFFIX = "Timesheet";
+const TITLE_SEPARATOR = " — ";
+const RANGE_DASH = "–";
+
+const monthName = (ymd: string) =>
+  new Date(`${ymd}T00:00:00`).toLocaleDateString("en-US", { month: "long" });
+
+const formatTitlePeriod = (start: string, end: string) => {
+  const startMonth = monthName(start);
+  const endMonth = monthName(end);
+  const startYear = start.slice(0, 4);
+  const endYear = end.slice(0, 4);
+
+  if (startYear !== endYear) {
+    return `${startMonth} ${startYear}${RANGE_DASH}${endMonth} ${endYear}`;
+  }
+  return startMonth === endMonth
+    ? `${startMonth} ${startYear}`
+    : `${startMonth}${RANGE_DASH}${endMonth} ${startYear}`;
+};
 function splitDateTime(dt: string | null | undefined): {
   date: string;
   time: string;
@@ -249,8 +253,8 @@ function emptyLine(
     date,
     to_date: date,
     from_time: "09:00",
-    to_time: "13:00",
-    hours: calcHours(date, "09:00", date, "13:00"),
+    to_time: "17:00",
+    hours: calcHours(date, "09:00", date, "17:00"),
     is_completed: false,
     is_billable: true,
     billing_rate: 0,
@@ -311,6 +315,8 @@ function emptyForm(
     currency: restrictions?.lockCustomer?.currency ?? "",
     exchange_rate: 1,
     start_date: today(),
+    custom_timesheet_start_date: today(),
+    custom_timesheet_end_date: today(),
     lines: [],
   };
 }
@@ -328,17 +334,18 @@ export function useTimesheetModal(
     emptyForm(restrictions),
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [editingName, setEditingName] = useState<string | undefined>(
-    undefined,
-  );
+  const [editingName, setEditingName] = useState<string | undefined>(undefined);
+  const [customTitle, setCustomTitle] = useState<string | null>(null);
 
   const reset = useCallback(() => {
     setForm(emptyForm(restrictions));
     setEditingName(undefined);
+    setCustomTitle(null);
   }, [restrictions]);
 
   const loadFromDetail = useCallback((detail: TimesheetDetail) => {
     setEditingName(detail.name);
+    setCustomTitle(detail.title ?? null);
     setForm({
       project: "",
       project_name: "",
@@ -350,6 +357,8 @@ export function useTimesheetModal(
       currency: detail.currency,
       exchange_rate: detail.exchange_rate ?? 1,
       start_date: detail.start_date,
+      custom_timesheet_start_date: detail.custom_timesheet_start_date ?? "",
+      custom_timesheet_end_date: detail.custom_timesheet_end_date ?? "",
       lines: detail.time_logs.map(mapTimeLogToLine),
     });
   }, []);
@@ -430,6 +439,18 @@ export function useTimesheetModal(
     setForm((f) => ({ ...f, start_date: date }));
   }, []);
 
+  const setTimesheetRange = useCallback((start: string, end: string) => {
+    setForm((f) => ({
+      ...f,
+      custom_timesheet_start_date: start,
+      custom_timesheet_end_date: end,
+    }));
+  }, []);
+
+  const setTitle = useCallback((value: string) => {
+    setCustomTitle(value);
+  }, []);
+
   const addLine = useCallback(
     (initialTask?: InitialTask, initialDate?: string) => {
       setForm((f) => ({
@@ -452,19 +473,16 @@ export function useTimesheetModal(
     [],
   );
 
-  const addLines = useCallback(
-    (tasks: InitialTask[], initialDate?: string) => {
-      if (tasks.length === 0) return;
-      setForm((f) => {
-        const lines = [...f.lines];
-        tasks.forEach((t) =>
-          lines.push(placeLine(emptyLine(undefined, t, initialDate), lines)),
-        );
-        return { ...f, lines };
-      });
-    },
-    [],
-  );
+  const addLines = useCallback((tasks: InitialTask[], initialDate?: string) => {
+    if (tasks.length === 0) return;
+    setForm((f) => {
+      const lines = [...f.lines];
+      tasks.forEach((t) =>
+        lines.push(placeLine(emptyLine(undefined, t, initialDate), lines)),
+      );
+      return { ...f, lines };
+    });
+  }, []);
 
   const updateLine = useCallback(
     (id: string, patch: Partial<TimesheetLineDraft>) => {
@@ -623,6 +641,42 @@ export function useTimesheetModal(
     [form.lines],
   );
 
+  const derivedStartDate = useMemo(() => {
+    const starts = form.lines
+      .map((l) => l.date)
+      .filter(Boolean)
+      .sort();
+    return starts[0] || form.start_date || today();
+  }, [form.lines, form.start_date]);
+
+  const derivedEndDate = useMemo(() => {
+    const ends = form.lines
+      .map((l) => l.to_date)
+      .filter(Boolean)
+      .sort();
+    return ends[ends.length - 1] || derivedStartDate;
+  }, [form.lines, derivedStartDate]);
+
+    const autoTitle = useMemo(() => {
+    const name = form.employee_name || restrictions?.employee?.name || "";
+    const start = form.custom_timesheet_start_date || derivedStartDate;
+    const end =
+      form.custom_timesheet_end_date ||
+      form.custom_timesheet_start_date ||
+      derivedEndDate;
+    const label = `${formatTitlePeriod(start, end)} ${TITLE_SUFFIX}`;
+    return name ? `${name}${TITLE_SEPARATOR}${label}` : label;
+  }, [
+    form.employee_name,
+    form.custom_timesheet_start_date,
+    form.custom_timesheet_end_date,
+    restrictions?.employee?.name,
+    derivedStartDate,
+    derivedEndDate,
+  ]);
+
+  const title = customTitle ?? autoTitle;
+
   const buildPayload = useCallback(
     (exchangeRate: number): TimesheetCreatePayload => {
       const rowStarts = form.lines
@@ -641,12 +695,15 @@ export function useTimesheetModal(
         doctype: "Timesheet",
         employee: form.employee || restrictions?.employee?.id || "",
         employee_name: form.employee_name || restrictions?.employee?.name || "",
+        title: title.trim() || autoTitle,
         customer: form.customer || undefined,
         department: form.department || undefined,
         currency: form.currency,
         exchange_rate: exchangeRate,
         start_date: derivedStart,
         end_date: derivedEnd,
+        custom_timesheet_start_date: form.custom_timesheet_start_date || null,
+        custom_timesheet_end_date: form.custom_timesheet_end_date || null,
         time_logs: form.lines.map((l) => ({
           ...(l.logName ? { name: l.logName } : {}),
           doctype: "Timesheet Detail",
@@ -668,7 +725,7 @@ export function useTimesheetModal(
         })),
       };
     },
-    [form, editingName, restrictions?.employee],
+    [form, editingName, restrictions?.employee, title, autoTitle],
   );
 
   const validate = useCallback((): string | null => {
@@ -761,15 +818,18 @@ export function useTimesheetModal(
 
   return {
     form,
+    title,
     totals,
     conflictIds,
     isSaving,
     isEditMode,
     restrictions,
+    setTitle,
     setProject,
     setCustomer,
     setEmployee,
     setStartDate,
+    setTimesheetRange,
     addLine,
     addLines,
     updateLine,

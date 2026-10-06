@@ -1,4 +1,9 @@
-export type TimesheetStatus = "Draft" | "Submitted" | "Billed" | "Cancelled";
+export type TimesheetStatus =
+  | "Draft"
+  | "Pending For Approval"
+  | "Submitted"
+  | "Billed"
+  | "Cancelled";
 
 export interface TimesheetEntry {
   name: string;
@@ -11,6 +16,8 @@ export interface TimesheetEntry {
   status: TimesheetStatus;
   start_date: string;
   end_date: string;
+    custom_timesheet_start_date?: string | null;
+  custom_timesheet_end_date?: string | null;
   title: string; // employee display name
   total_hours: number;
   currency: string;
@@ -77,6 +84,8 @@ export interface TimesheetDetail {
   parent_project?: string;
   start_date: string;
   end_date: string;
+  custom_timesheet_start_date: string | null;
+  custom_timesheet_end_date: string | null;
   total_hours: number;
   total_billable_hours?: number;
   total_billable_amount: number;
@@ -103,6 +112,7 @@ export interface TimesheetHoursEntry {
   hours: number;
   docstatus: number;
   project: string | null;
+  project_name: string | null;
   task: string | null;
   activity_type: string | null;
   description: string | null;

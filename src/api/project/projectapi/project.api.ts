@@ -23,6 +23,7 @@ const PROJECT_FIELDS = [
 
 export async function getAllProjects(
   search?: string,
+    customer?: string,
 ): Promise<any[]> {
   const query = buildListParams({
     fields: PROJECT_FIELDS,
@@ -30,9 +31,14 @@ export async function getAllProjects(
     searchFields: ["name", "project_name"],
   });
 
-  const resp: AxiosResponse = await api.get(
-    `${ProjectAPI.list}?${query}`,
-  );
+  let url = `${ProjectAPI.list}?${query}`;
+  if (customer) {
+    url += `&filters=${encodeURIComponent(
+      JSON.stringify([["customer", "=", customer]]),
+    )}`;
+  }
+
+  const resp: AxiosResponse = await api.get(url);
 
   return resp.data?.data ?? [];
 }

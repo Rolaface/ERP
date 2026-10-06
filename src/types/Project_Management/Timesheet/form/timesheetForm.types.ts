@@ -35,6 +35,8 @@ export interface TimesheetFormState {
   department: string;
   currency: string;
   start_date: string; 
+  custom_timesheet_start_date: string;
+  custom_timesheet_end_date: string;
 
   lines: TimesheetLineDraft[];
 }
@@ -54,12 +56,15 @@ export interface TimesheetCreatePayload {
   doctype: "Timesheet";
   employee: string;
   employee_name: string;
+  title: string;
   customer?: string;
   department?: string;
   currency: string;
   exchange_rate: number;
   start_date: string;
   end_date: string;
+ custom_timesheet_start_date: string | null;
+  custom_timesheet_end_date: string | null;
   time_logs: {
   
     name?: string;

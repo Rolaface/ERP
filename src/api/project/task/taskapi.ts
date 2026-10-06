@@ -78,7 +78,8 @@ export async function getTaskList(
   sortBy?: string,
   sortOrder?: "asc" | "desc",
   assignees?: string[],
-   flat: boolean = false,
+  flat: boolean = false,
+  taskNames?: string[],
 ): Promise<TaskListResponse> {
   const start = (page - 1) * pageSize;
 
@@ -95,6 +96,25 @@ export async function getTaskList(
   let url = `${TaskAPI.list}?${query}`;
 
   const filters: unknown[] = [];
+
+  if (taskNames !== undefined) {
+    if (taskNames.length === 0) {
+      return {
+        data: [],
+        pagination: {
+          page,
+          page_size: pageSize,
+          total: 0,
+          total_pages: 0,
+          has_next: false,
+          has_prev: false,
+        },
+      };
+    }
+
+    filters.push(["name", "in", taskNames]);
+  }
+
   if (statuses && statuses.length > 0) {
     filters.push(["status", "in", statuses]);
   }

@@ -158,9 +158,9 @@ export const buildEventsByDay = (
 ): Record<string, DayEvent[]> => {
   const grouped: Record<string, Record<string, DayEvent>> = {};
   entries.forEach((e) => {
-    const label = canViewAll
-      ? e.employee
-      : projectTask(e) || e.activity_type || EMPTY_LABEL;
+ const label = canViewAll
+  ? e.employee
+  : e.description || e.activity_type || EMPTY_LABEL;
     const day = (grouped[e.date] ??= {});
     const ev = (day[label] ??= {
       id: label,

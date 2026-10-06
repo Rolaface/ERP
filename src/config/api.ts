@@ -786,16 +786,27 @@ export const API = {
     },
     project: {
       list: `${ERP_BASE}/api/resource/Project`,
+      projectType: `${ERP_BASE}/api/resource/Project Type`,
     },
+     todo: {
+    list: `${ERP_BASE}/api/resource/ToDo`,
+    update: `${ERP_BASE}/api/resource/ToDo`,
+  },
     timesheet: {
       list: `${ERP_BASE}/api/resource/Timesheet`,
+      getList: `${ERP_BASE}/api/method/frappe.client.get_list`,
       create:`${ERP_BASE}/api/resource/Timesheet`,
       update:`${ERP_BASE}/api/resource/Timesheet`,
       cancel:`${ERP_BASE}/api/resource/Timesheet`,
       renametitle:`${ERP_BASE}/api/method/frappe.model.rename_doc.update_document_title`,
     },
     activityType:{ list: `${ERP_BASE}/api/resource/Activity Type`,
-  }
+  },
+  report: {
+  run: `${ERP_BASE}/api/method/frappe.desk.query_report.run`,
+  DOCTYPE_META_URL: `${ERP_BASE}/api/method/frappe.desk.form.load.getdoctype`,
+  CUSTOM_FIELD_DATA_URL: `${ERP_BASE}/api/method/frappe.desk.query_report.get_data_for_custom_field`,
+},
   },
 
   /* =========================
