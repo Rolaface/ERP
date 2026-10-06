@@ -361,10 +361,10 @@ addressBoxes.forEach((box, index) => {
     theme: "grid",
     head: [],
     body: [
-      [`${fmt2(subTotal)} ${cur}`],
-      [`${fmt2(taxTotal)} ${cur}`],
-      [`${fmt2(rounding)} ${cur}`],
-      [`${fmt2(grandTotal)} ${cur}`],
+      [`${fmt2(po.grandTotal)} ${cur}`],
+      [`${fmt2(po.totalTaxes)} ${cur}`],
+      [`${fmt2(po.roundingAdjustment)} ${cur}`],
+      [`${fmt2(po.grandTotal)} ${cur}`],
     ],
 
     styles: {
