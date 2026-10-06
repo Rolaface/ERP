@@ -38,9 +38,8 @@ export interface DocFieldMeta {
   hidden?: 0 | 1;
 }
 
-const DOCTYPE_META_URL = "/api/method/frappe.desk.form.load.getdoctype";
-const CUSTOM_FIELD_DATA_URL =
-  "/api/method/frappe.desk.query_report.get_data_for_custom_field";
+const DOCTYPE_META_URL = API.project.report.DOCTYPE_META_URL;
+const CUSTOM_FIELD_DATA_URL = API.project.report.CUSTOM_FIELD_DATA_URL
 
 export const NAME_FIELD = "name";
 export const AMOUNT_FIELD_TYPES = ["Currency", "Float", "Int", "Percent"];

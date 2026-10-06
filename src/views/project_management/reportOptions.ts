@@ -81,6 +81,28 @@ export const PROJECT_REPORT_OPTIONS: ReportOption[] = [
     key: "delayed-tasks-summary",
     label: "Delayed Tasks Summary",
     reportName: "Delayed Tasks Summary",
-    filters: [],
+    filters: [
+    { type: "link", key: "project", label: "Project", source: "project" },
+    DATE_RANGE,
+    {
+      type: "select",
+      key: "priority",
+      label: "Priority",
+      options: toOptions("Low", "Medium", "High", "Urgent"),
+    },
+    {
+      type: "select",
+      key: "status",
+      label: "Status",
+      options: toOptions(
+        "Open",
+        "Working",
+        "Pending Review",
+        "Overdue",
+        "Completed",
+        "Cancelled",
+      ),
+    },
+  ],
   },
 ];
