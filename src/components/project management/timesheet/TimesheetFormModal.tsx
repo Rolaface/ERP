@@ -14,6 +14,7 @@ import RowActionsPopover from "./Rowactionspopover";
 import TimesheetEntriesTable from "./Timesheetentriestable";
 import TimesheetFooter from "./Timesheetfooter";
 import TimesheetInfoCard from "./Timesheetinfocard";
+import { DateRangePicker } from "../../../components/calendar/DateTimeRangePicker";
 import type {
   RowHandlers,
   TimesheetFormModalProps,
@@ -72,6 +73,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     setProject,
     setCustomer,
     setEmployee,
+    setTimesheetRange,
     addLine,
     addLines,
     updateLine,
@@ -130,8 +132,13 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
   }, [isOpen, reset, resetPickerRange]);
 
   const fetchProjects = useCallback(
-    (q: string) => fetchProjectOptions(q, restrictions?.allowedProjectIds),
-    [restrictions?.allowedProjectIds],
+    (q: string) =>
+      fetchProjectOptions(
+        q,
+        restrictions?.allowedProjectIds,
+        form.customer || undefined,
+      ),
+    [restrictions?.allowedProjectIds, form.customer],
   );
 
   const handleApplyTime: RowHandlers["onApplyTime"] = (
@@ -164,8 +171,20 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     registerTrigger: rowActions.registerTrigger,
   };
 
-  const activeLine =
-    form.lines.find((l) => l.id === rowActions.openId) ?? null;
+  const activeLine = form.lines.find((l) => l.id === rowActions.openId) ?? null;
+
+  const periodField = (
+    <div className="min-w-0">
+      <span className="mb-1 block text-[10px] font-medium text-main">
+        Timesheet Period
+      </span>
+      <DateRangePicker
+        start={form.custom_timesheet_start_date}
+        end={form.custom_timesheet_end_date}
+        onChange={setTimesheetRange}
+      />
+    </div>
+  );
 
   return (
     <MinimizableModal
@@ -200,6 +219,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
                 title={timesheetTitle}
                 totalHours={totals.totalHours}
                 onTitleChange={setTitle}
+                periodField={periodField}
               />
             ) : (
               <TimesheetInfoCard
@@ -211,6 +231,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
                 onProject={setProject}
                 onCustomer={setCustomer}
                 onEmployee={setEmployee}
+                periodField={periodField}
               />
             )}
           </div>

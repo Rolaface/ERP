@@ -11,8 +11,9 @@ import type {
   TimesheetModalState,
 } from "../../../types/Project_Management/Timesheet/form/Timesheetformmodal";
 
-const GRID_COLUMNS = "grid-cols-[1.2fr_1fr_1fr_1fr_96px]";
-const GRID_COLUMNS_WITH_RATE = "grid-cols-[1.2fr_1fr_1fr_1fr_96px_112px]";
+const GRID_COLUMNS = "grid-cols-[1.2fr_1.2fr_1fr_1fr_1fr_96px]";
+const GRID_COLUMNS_WITH_RATE =
+  "grid-cols-[1.2fr_1.2fr_1fr_1fr_1fr_96px_112px]";
 
 interface TimesheetInfoCardProps {
   form: TimesheetForm;
@@ -23,6 +24,7 @@ interface TimesheetInfoCardProps {
   onProject: TimesheetModalState["setProject"];
   onCustomer: TimesheetModalState["setCustomer"];
   onEmployee: TimesheetModalState["setEmployee"];
+  periodField?: React.ReactNode;
 }
 
 const TimesheetInfoCard: React.FC<TimesheetInfoCardProps> = ({
@@ -34,6 +36,7 @@ const TimesheetInfoCard: React.FC<TimesheetInfoCardProps> = ({
   onProject,
   onCustomer,
   onEmployee,
+  periodField,
 }) => {
   const companyCurrency =
     useCompanyDefaultsStore.getState().defaults?.default_currency;
@@ -60,15 +63,7 @@ const TimesheetInfoCard: React.FC<TimesheetInfoCardProps> = ({
           />
         </div>
 
-        <div>
-          <SearchSelect2
-            label="Project"
-            value={form.project_name}
-            fetchOptions={fetchProjects}
-            onChange={onProject}
-            placeholder="Search project..."
-          />
-        </div>
+        {periodField && <div>{periodField}</div>}
 
         <div>
           {restrictions?.lockCustomer ? (
@@ -93,6 +88,16 @@ const TimesheetInfoCard: React.FC<TimesheetInfoCardProps> = ({
               placeholder="Search customer..."
             />
           )}
+        </div>
+
+        <div>
+          <SearchSelect2
+            label="Project"
+            value={form.project_name}
+            fetchOptions={fetchProjects}
+            onChange={onProject}
+            placeholder="Search project..."
+          />
         </div>
 
         <div>

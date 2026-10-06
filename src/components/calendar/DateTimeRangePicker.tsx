@@ -952,4 +952,252 @@ const ChevronIcon = () => (
   </svg>
 );
 
+export interface DateRangePickerProps {
+  start: string;
+  end: string;
+  onChange: (start: string, end: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+}
+
+export const DateRangePicker: React.FC<DateRangePickerProps> = ({
+  start,
+  end,
+  onChange,
+  disabled,
+  placeholder = "Select date range",
+}) => {
+  const [open, setOpen] = useState(false);
+  const [draftStart, setDraftStart] = useState(start);
+  const [draftEnd, setDraftEnd] = useState(end);
+  const [pickingEnd, setPickingEnd] = useState(false);
+  const [viewY, setViewY] = useState(() =>
+    (start ? parseYMD(start) : new Date()).getFullYear(),
+  );
+  const [viewM, setViewM] = useState(() =>
+    (start ? parseYMD(start) : new Date()).getMonth(),
+  );
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const d = start ? parseYMD(start) : new Date();
+    setDraftStart(start);
+    setDraftEnd(end);
+    setPickingEnd(false);
+    setViewY(d.getFullYear());
+    setViewM(d.getMonth());
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const place = useCallback(() => {
+    const trigger = triggerRef.current?.getBoundingClientRect();
+    const pop = popRef.current;
+    if (!trigger || !pop) return;
+    const { offsetWidth: w, offsetHeight: h } = pop;
+    const spaceBelow = window.innerHeight - trigger.bottom - VIEWPORT_MARGIN;
+    const spaceAbove = trigger.top - VIEWPORT_MARGIN;
+    const openUp = h > spaceBelow && spaceAbove > spaceBelow;
+    const rawTop = openUp
+      ? trigger.top - h - POPOVER_GAP
+      : trigger.bottom + POPOVER_GAP;
+    const top = Math.max(
+      VIEWPORT_MARGIN,
+      Math.min(rawTop, window.innerHeight - h - VIEWPORT_MARGIN),
+    );
+    const left = Math.max(
+      VIEWPORT_MARGIN,
+      Math.min(trigger.left, window.innerWidth - w - VIEWPORT_MARGIN),
+    );
+    setPos((prev) =>
+      prev && prev.top === top && prev.left === left ? prev : { top, left },
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPos(null);
+      return;
+    }
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, viewY, viewM, place]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        triggerRef.current?.contains(target) ||
+        popRef.current?.contains(target)
+      )
+        return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleDayClick = (ymd: string) => {
+    if (!pickingEnd) {
+      setDraftStart(ymd);
+      setDraftEnd(ymd);
+      setPickingEnd(true);
+      return;
+    }
+    const [s, e] = ymd < draftStart ? [ymd, draftStart] : [draftStart, ymd];
+    onChange(s, e);
+    setOpen(false);
+  };
+
+  const handleClear = () => {
+    onChange("", "");
+    setOpen(false);
+  };
+
+  const prevMonth = () => {
+    if (viewM === 0) {
+      setViewM(11);
+      setViewY((y) => y - 1);
+    } else setViewM((m) => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewM === 11) {
+      setViewM(0);
+      setViewY((y) => y + 1);
+    } else setViewM((m) => m + 1);
+  };
+
+  const label = start
+    ? end && end !== start
+      ? `${fmtDate(start)} → ${fmtDate(end)}`
+      : fmtDate(start)
+    : placeholder;
+
+  return (
+    <div style={{ position: "relative", width: "100%", minWidth: 0 }}>
+      <button
+        ref={triggerRef}
+        type="button"
+        disabled={disabled}
+        title={label}
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          width: "100%",
+          minWidth: 0,
+          height: TRIGGER_HEIGHT,
+          boxSizing: "border-box",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 6,
+          padding: "0 8px",
+          background: "var(--card)",
+          border: "1.5px solid var(--border)",
+          borderRadius: 8,
+          fontSize: 12,
+          color: start ? "var(--text)" : "var(--muted)",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+        }}
+      >
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          <ClockIcon />
+          <span
+            style={{
+              minWidth: 0,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {label}
+          </span>
+        </span>
+        <ChevronIcon />
+      </button>
+
+      {open &&
+        createPortal(
+          <div
+            ref={popRef}
+            style={{
+              position: "fixed",
+              top: pos?.top ?? 0,
+              left: pos?.left ?? 0,
+              visibility: pos ? "visible" : "hidden",
+              zIndex: 99999,
+              padding: 16,
+              background: "var(--card)",
+              border: "1.5px solid var(--border)",
+              borderRadius: 14,
+              boxShadow: "var(--shadow-lg)",
+            }}
+          >
+            <MonthCal
+              year={viewY}
+              month={viewM}
+              selected={draftStart}
+              selectedEnd={draftEnd}
+              onDay={handleDayClick}
+              onPrev={prevMonth}
+              onNext={nextMonth}
+            />
+            <div
+              style={{
+                marginTop: 10,
+                fontSize: 11,
+                fontWeight: 600,
+                textAlign: "center",
+                color: pickingEnd ? "var(--primary)" : "var(--muted)",
+              }}
+            >
+              {pickingEnd ? "Now select end date" : "Select start date"}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 8,
+                borderTop: "1.5px solid var(--border)",
+                paddingTop: 10,
+                marginTop: 10,
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleClear}
+                style={footerBtn("ghost")}
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                style={footerBtn("ghost")}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+};
 export default DateTimeRangePicker;

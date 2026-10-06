@@ -48,12 +48,19 @@ import TimesheetCalendar from "../components/TimesheetCalendar";
 import type { TimesheetMode } from "../components/Viewtoggle";
 import { openSendEmailModal } from "../../../../store/modalStore";
 import type { MultiSelectOption } from "../../../../components/ui/modal/MultiSelectFilter";
+import ViewSelector, {
+  type ViewOption,
+} from "../../../project_management/ViewSelector";
 
 const TS_MODULE = "Timesheet";
 const TITLE_MAX_LENGTH = 140;
 const DRAFT_STATUS = "Draft";
 
 const CONTENT_HEIGHT = "calc(85.5vh - 100px)";
+const VIEW_OPTIONS: ViewOption<TimesheetMode>[] = [
+  { value: "calendar", label: "Calendar" },
+  { value: "table", label: "Table" },
+];
 
 const fetchUserOptions = (q: string): Promise<MultiSelectOption[]> =>
   searchEmployees(q);
@@ -186,6 +193,7 @@ const HrTimesheetView: React.FC = () => {
   const canSubmit = can(TS_MODULE, "submit");
   const canCancel = can(TS_MODULE, "cancel");
   const canDelete = can(TS_MODULE, "delete");
+ 
   const showFinancials = isProfessional;
   const mountedRef = useRef(true);
 
@@ -222,7 +230,9 @@ const HrTimesheetView: React.FC = () => {
       return;
     }
     setStatusFilter((prev) =>
-      prev.includes(DRAFT_STATUS) ? prev.filter((s) => s !== DRAFT_STATUS) : prev,
+      prev.includes(DRAFT_STATUS)
+        ? prev.filter((s) => s !== DRAFT_STATUS)
+        : prev,
     );
     fetchUserOptions("")
       .then((list) => {
@@ -552,30 +562,27 @@ const HrTimesheetView: React.FC = () => {
       ),
     },
     {
-      key: "start_date",
-      header: "Start Date",
+      key: "custom_timesheet_start_date",
+      header: "Timesheet Period",
       align: "left",
-      width: "140px",
+      width: "280px",
       sortable: true,
-      render: (t) => (
-        <DateDisplay
-          date={t.start_date}
-          className="text-xs text-muted whitespace-nowrap"
-        />
-      ),
-    },
-    {
-      key: "end_date",
-      header: "End Date",
-      align: "left",
-      width: "140px",
-      sortable: true,
-      render: (t) => (
-        <DateDisplay
-          date={t.end_date}
-          className="text-xs text-muted whitespace-nowrap"
-        />
-      ),
+      render: (t) => {
+        const start = t.custom_timesheet_start_date;
+        const end = t.custom_timesheet_end_date;
+        if (!start) return <span className="text-xs text-muted">—</span>;
+        return (
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <DateDisplay date={start} className="text-xs text-muted" />
+            {end && end !== start && (
+              <>
+                <span className="text-xs text-muted">→</span>
+                <DateDisplay date={end} className="text-xs text-muted" />
+              </>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "total_hours",
@@ -671,9 +678,9 @@ const HrTimesheetView: React.FC = () => {
           });
         }
 
-       const canEdit =
-  (t.status === "Draft" || t.status === "Pending For Approval") &&
-  canWrite;
+        const canEdit =
+          (t.status === "Draft" || t.status === "Pending For Approval") &&
+          canWrite;
         const isMenuEmpty = customActions.length === 0;
 
         return (
@@ -704,6 +711,9 @@ const HrTimesheetView: React.FC = () => {
       },
     },
   ];
+  const viewSelector = (
+    <ViewSelector value={view} options={VIEW_OPTIONS} onChange={setView} />
+  );
 
   return (
     <HrTableFrame>
@@ -774,6 +784,7 @@ const HrTimesheetView: React.FC = () => {
             setPage(1);
           }}
           addLabel=" Add Timesheet"
+          primaryAction={viewSelector}
           onAdd={handleAdd}
           enableColumnSelector
           currentPage={page}

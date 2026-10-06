@@ -1,7 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   fetchReport,
   getProjectTypeOptions,
+  type ReportColumn,
 } from "../../../api/project/report/report.api";
 
 import FilterBar from "./components/Filterbar";
@@ -9,8 +16,11 @@ import KpiCards from "./components/Kpicards";
 import ProjectCompletionChart from "./components/Projectcompletionchart";
 import TasksByProjectChart from "./components/Tasksbyprojectchart";
 import ProjectsTable from "./components/Projectstable";
+import AddColumnModal from "../../../components/report/AddColumnModal";
+import { useCustomColumns } from "../../../hooks/report/useCustomColumns";
 
 import { computeKpis, toApiFilters } from "./Utils";
+import { useAuth } from "../../../context/AuthContext";
 import type { ProjectSummaryRow, SelectOption, SummaryFilters } from "./Types";
 import type {
   LinkSource,
@@ -18,27 +28,49 @@ import type {
   ReportViewProps,
 } from "../reportOptions";
 
-// Filter key -> default value (baaki sab "All")
 const DEFAULT_VALUES: SummaryFilters = { status: "Open" };
 
 const initialValues = (defs: ReportFilter[]): SummaryFilters =>
   Object.fromEntries(
-    defs.flatMap((f) => ("key" in f ? [[f.key, DEFAULT_VALUES[f.key] ?? ""]] : [])),
+    defs.flatMap((f) =>
+      "key" in f ? [[f.key, DEFAULT_VALUES[f.key] ?? ""]] : [],
+    ),
   );
 
 interface Props extends ReportViewProps {
   onViewProject?: (projectName: string) => void;
 }
 
-const ProjectSummaryView: React.FC<Props> = ({ report, leading, onViewProject }) => {
-  const [values, setValues] = useState<SummaryFilters>(() => initialValues(report.filters));
+const ProjectSummaryView: React.FC<Props> = ({
+  report,
+  leading,
+  onViewProject,
+}) => {
+  const { user } = useAuth();
+  const storageKey = `${user?.username ?? "guest"}:${report.key}`;
+
+  const [values, setValues] = useState<SummaryFilters>(() =>
+    initialValues(report.filters),
+  );
   const [linkOptions, setLinkOptions] = useState<
     Partial<Record<LinkSource, SelectOption[]>>
   >({});
+  const [columns, setColumns] = useState<ReportColumn[]>([]);
   const [rows, setRows] = useState<ProjectSummaryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addColOpen, setAddColOpen] = useState(false);
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+
+  const visibleColumns = useMemo(
+    () => columns.filter((c) => !c.hidden),
+    [columns],
+  );
+
+const custom = useCustomColumns(visibleColumns, rows, storageKey);
+  const tableRows = custom.data as ProjectSummaryRow[];
 
   const load = useCallback(
     async (v: SummaryFilters) => {
@@ -48,11 +80,14 @@ const ProjectSummaryView: React.FC<Props> = ({ report, leading, onViewProject })
         const res = await fetchReport(report.reportName, toApiFilters(v), {
           isTree: report.isTree,
         });
+        setColumns(res?.columns ?? []);
         setRows((res?.data ?? []) as ProjectSummaryRow[]);
       } catch (err: any) {
         setRows([]);
         setError(
-          err?.response?.data?.exception || err?.message || "Failed to fetch report.",
+          err?.response?.data?.exception ||
+            err?.message ||
+            "Failed to fetch report.",
         );
       } finally {
         setLoading(false);
@@ -63,18 +98,21 @@ const ProjectSummaryView: React.FC<Props> = ({ report, leading, onViewProject })
   );
 
   useEffect(() => {
-    load(values);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    load(valuesRef.current);
   }, [load]);
 
-  // Link filters (abhi sirf project_type use hota hai Project Summary me)
   useEffect(() => {
-    if (!report.filters.some((f) => f.type === "link" && f.source === "project_type")) return;
+    if (
+      !report.filters.some(
+        (f) => f.type === "link" && f.source === "project_type",
+      )
+    )
+      return;
     getProjectTypeOptions()
-      .then((rows) =>
+      .then((options) =>
         setLinkOptions((p) => ({
           ...p,
-          project_type: rows.map((r) => ({
+          project_type: options.map((r) => ({
             value: r.name,
             label: r.title ? `${r.name}: ${r.title}` : r.name,
           })),
@@ -90,6 +128,7 @@ const ProjectSummaryView: React.FC<Props> = ({ report, leading, onViewProject })
   };
 
   const kpis = useMemo(() => computeKpis(rows), [rows]);
+  const shownError = error || custom.error;
 
   return (
     <div className="custom-scrollbar h-full min-h-0 space-y-3 overflow-y-auto p-1">
@@ -104,9 +143,9 @@ const ProjectSummaryView: React.FC<Props> = ({ report, leading, onViewProject })
         onReset={handleReset}
       />
 
-      {error && (
+      {shownError && (
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-500">
-          {error}
+          {shownError}
         </div>
       )}
 
@@ -118,10 +157,22 @@ const ProjectSummaryView: React.FC<Props> = ({ report, leading, onViewProject })
       </div>
 
       <ProjectsTable
-        rows={rows}
+        rows={tableRows}
         loading={loading}
         isInitialLoad={isInitialLoad}
         onView={onViewProject}
+        customDefs={custom.defs}
+        onAddColumn={() => setAddColOpen(true)}
+        addColumnDisabled={loading || custom.linkColumns.length === 0}
+      />
+
+      <AddColumnModal
+        open={addColOpen}
+        onClose={() => setAddColOpen(false)}
+        linkColumns={custom.linkColumns}
+        columns={custom.allColumns}
+        existingKeys={custom.defs.map((d) => d.key)}
+        onSubmit={custom.addDefs}
       />
     </div>
   );
