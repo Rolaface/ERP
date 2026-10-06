@@ -1,36 +1,15 @@
-import React, { useState } from "react";
-import Drawer, { type DrawerAction } from "../../../../components/ui/Drawer/Drawer";
-import {
-  DrawerField as F,
-  DrawerSummaryCards,
-} from "../../../../components/ui/Drawer/DrawerPrimitives";
+import React from "react";
+import Drawer, {
+  type DrawerAction,
+} from "../../../../components/ui/Drawer/Drawer";
+import { DrawerSummaryCards } from "../../../../components/ui/Drawer/DrawerPrimitives";
 import type { TimesheetDetail } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import DateDisplay from "../../../../components/UI_Utils/Datedisplay";
-import { useCurrencySymbols } from "../../../../hooks/Usecurrencysymbols";
-
-const STATUS_META: Record<string, { label: string; cls: string }> = {
-  Draft: { label: "Draft", cls: "bg-draft" },
-  "Pending For Approval": { label: "Pending Approval", cls: "bg-info" },
-  Submitted: { label: "Approved", cls: "bg-success" },
-  Billed: { label: "Billed", cls: "bg-success" },
-  Cancelled: { label: "Cancelled", cls: "bg-danger" },
-};
-
-type Tab = "overview" | "logs" | "billing";
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-const fmtDateTime = (t?: string) => {
-  if (!t) return "—";
-  const [d, tm] = t.split(" ");
-  const [y, m, day] = (d ?? "").split("-");
-  const month = MONTHS[Number(m) - 1];
-  const datePart = y && month && day ? `${day} ${month} ${y}` : d;
-  return tm ? `${datePart}, ${tm.slice(0, 5)}` : datePart;
-};
-
-const LOG_COLS = "minmax(0,1.3fr) minmax(0,1.6fr) 150px 60px 90px";
-const LOG_COLS_NO_AMOUNT = "minmax(0,1.3fr) minmax(0,1.6fr) 150px 60px";
+import {
+  fmtDateTime,
+  useTimesheetDrawer,
+  type ActionIcon,
+} from "../../../../hooks/project_management/timeheet/drawer/useTimesheetDrawer";
 
 const LOG_CSS = `
 .ts-log-grid { display: grid; grid-template-columns: var(--ts-cols); }
@@ -60,48 +39,123 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: "0.06em",
 };
 
-const Ico: React.FC<{ d: string }> = ({ d }) => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d={d} />
-  </svg>
-);
-const ICON = {
+const ICON_PATH: Record<ActionIcon, string> = {
   edit: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z",
   check: "M20 6 9 17l-5-5",
   x: "M18 6 6 18M6 6l12 12",
   send: "M22 2 11 13M22 2l-7 20-4-9-9-4Z",
+  download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
 };
 
-const Card: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div style={{ border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", background: "var(--card)" }}>
-    <p style={{ ...labelStyle, fontSize: 10, marginBottom: 8, color: "var(--text)" }}>{title}</p>
+const Ico: React.FC<{ name: ActionIcon }> = ({ name }) => (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d={ICON_PATH[name]} />
+  </svg>
+);
+
+const Card: React.FC<{ title: string; children: React.ReactNode }> = ({
+  title,
+  children,
+}) => (
+  <div
+    style={{
+      border: "1px solid var(--border)",
+      borderRadius: 10,
+      padding: "10px 12px",
+      background: "var(--card)",
+    }}
+  >
+    <p
+      style={{
+        ...labelStyle,
+        fontSize: 10,
+        marginBottom: 8,
+        color: "var(--text)",
+      }}
+    >
+      {title}
+    </p>
     {children}
   </div>
 );
 
-const Row: React.FC<{ label: string; value: React.ReactNode; strong?: boolean }> = ({ label, value, strong }) => (
-  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "3px 0", fontSize: 12 }}>
+const Row: React.FC<{
+  label: string;
+  value: React.ReactNode;
+  strong?: boolean;
+}> = ({ label, value, strong }) => (
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 12,
+      padding: "3px 0",
+      fontSize: 12,
+    }}
+  >
     <span style={{ color: "var(--muted)" }}>{label}</span>
-    <span style={{ color: "var(--text)", fontWeight: strong ? 800 : 600, textAlign: "right" }}>{value || "—"}</span>
+    <span
+      style={{
+        color: "var(--text)",
+        fontWeight: strong ? 800 : 600,
+        textAlign: "right",
+      }}
+    >
+      {value || "—"}
+    </span>
   </div>
 );
 
 const Chip: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span style={{
-    fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 6,
-    border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)",
-  }}>
+  <span
+    style={{
+      fontSize: 11,
+      fontWeight: 600,
+      padding: "3px 9px",
+      borderRadius: 6,
+      border: "1px solid var(--border)",
+      background: "var(--bg)",
+      color: "var(--text)",
+    }}
+  >
     {children}
   </span>
 );
 
-const MoneyCell: React.FC<{ label: string; value: string; color?: string }> = ({
-  label, value, color = "var(--text)",
-}) => (
-  <div style={{ background: "var(--card)", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", minWidth: 0 }}>
+const MoneyCell: React.FC<{
+  label: string;
+  value: string;
+  color?: string;
+}> = ({ label, value, color = "var(--text)" }) => (
+  <div
+    style={{
+      background: "var(--card)",
+      padding: "8px 10px",
+      borderRadius: 8,
+      border: "1px solid var(--border)",
+      minWidth: 0,
+    }}
+  >
     <p style={labelStyle}>{label}</p>
-    <p style={{ fontSize: 14, fontWeight: 800, color, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+    <p
+      style={{
+        fontSize: 14,
+        fontWeight: 800,
+        color,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      }}
+    >
       {value}
     </p>
   </div>
@@ -125,69 +179,54 @@ interface Props {
 }
 
 const TimesheetDetailDrawer: React.FC<Props> = ({
-  open, data, loading, actionLoading, canWrite, canSubmit, canCancel,
+  open,
+  data,
+  loading,
+  actionLoading,
+  canWrite,
+  canSubmit,
+  canCancel,
   showFinancials = true,
   showEmployeeCard = true,
-  onClose, onSendForApproval, onApprove, onEdit, onCancel,
+  onClose,
+  onSendForApproval,
+  onApprove,
+  onEdit,
+  onCancel,
 }) => {
-  const { formatAmount } = useCurrencySymbols(data?.currency ? [data.currency] : []);
-  const [tab, setTab] = useState<Tab>("overview");
-  const [copied, setCopied] = useState(false);
+  const d = useTimesheetDrawer({
+    data,
+    actionLoading,
+    canWrite,
+    canSubmit,
+    canCancel,
+    showFinancials,
+    onSendForApproval,
+    onApprove,
+    onEdit,
+    onCancel,
+  });
 
   if (!open) return null;
 
-  const currency = data?.currency ?? "";
-  const meta = STATUS_META[data?.status ?? "Draft"] ?? STATUS_META.Draft;
-  const logs = data?.time_logs ?? [];
-  const money = (v?: number) => formatAmount(currency, v ?? 0, { withSymbol: true });
-  const rate = data?.exchange_rate ?? 0;
-  const billedPct = Math.min(100, Math.max(0, data?.per_billed ?? 0));
-  const logHours = logs.reduce((a, l) => a + (l.hours ?? 0), 0);
-  const logAmount = logs.reduce((a, l) => a + (l.is_billable ? l.billing_amount ?? 0 : 0), 0);
-  const logCost = logs.reduce((a, l) => a + (l.costing_amount ?? 0), 0);
+  const logGridVars = { "--ts-cols": d.logCols } as React.CSSProperties;
 
-  const actions: DrawerAction[] = [];
-  if (data) {
-    if (data.status === "Draft" && canWrite) {
-      actions.push({
-        key: "edit", label: "Edit", variant: "primary",
-        icon: <Ico d={ICON.edit} />, onClick: () => onEdit?.(data.name),
-      });
-      actions.push({
-        key: "send", label: actionLoading ? "Submitting..." : "Submit for Approval",
-        icon: <Ico d={ICON.send} />, disabled: actionLoading,
-        onClick: () => onSendForApproval?.(data.name),
-      });
-    }
-    if (data.status === "Pending For Approval" && canSubmit) {
-      actions.push({
-        key: "approve", label: actionLoading ? "Approving..." : "Approve",
-        variant: "primary", icon: <Ico d={ICON.check} />,
-        disabled: actionLoading, onClick: () => onApprove?.(data.name),
-      });
-    }
-    if (data.status === "Submitted" && canCancel) {
-      actions.push({
-        key: "cancel", label: "Cancel",
-        icon: <Ico d={ICON.x} />, onClick: () => onCancel?.(data.name),
-      });
-    }
-  }
+  const headerActions: DrawerAction[] = d.actions.map(({ icon, ...a }) => ({
+    ...a,
+    icon: <Ico name={icon} />,
+  }));
 
-  const copyId = () => {
-    if (!data) return;
-    navigator.clipboard?.writeText(data.name);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
-  };
-
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "overview", label: "Overview" },
-    { id: "logs", label: `Time Logs (${logs.length})` },
-    ...(showFinancials ? [{ id: "billing" as Tab, label: "Billing & Costing" }] : []),
-  ];
-  const logCols = showFinancials ? LOG_COLS : LOG_COLS_NO_AMOUNT;
-  const logGridVars = { "--ts-cols": logCols } as React.CSSProperties;
+  const periodNode = d.periodStart ? (
+    <>
+      <DateDisplay date={d.periodStart} />
+      {d.periodEnd && d.periodEnd !== d.periodStart && (
+        <>
+          {" – "}
+          <DateDisplay date={d.periodEnd} />
+        </>
+      )}
+    </>
+  ) : null;
 
   return (
     <Drawer
@@ -196,8 +235,18 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
       width="min(760px, 100vw)"
       scrollBody={false}
       icon={
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
         </svg>
       }
       kicker="Timesheet Details"
@@ -205,29 +254,72 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           {data?.name ?? "—"}
           {data && (
-            <button onClick={copyId} title="Copy ID"
-              style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--muted)", fontSize: 11 }}>
-              {copied ? "✓" : "⧉"}
+            <button
+              onClick={d.copyId}
+              title="Copy ID"
+              style={{
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                color: "var(--muted)",
+                fontSize: 11,
+              }}
+            >
+              {d.copied ? "✓" : "⧉"}
             </button>
           )}
         </span>
       }
-      statusLabel={meta.label}
-      statusClassName={meta.cls}
-      headerActions={actions}
+      statusLabel={d.meta.label}
+      statusClassName={d.meta.cls}
+      headerActions={headerActions}
       loading={loading}
     >
       {data && (
-        <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            minHeight: 0,
+          }}
+        >
           <div style={{ flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: "var(--text)" }}>{data.title}</span>
-              <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>
-                <DateDisplay date={data.start_date} /> – <DateDisplay date={data.end_date} />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 4,
+                marginBottom: 6,
+              }}
+            >
+              <span
+                style={{ fontSize: 16, fontWeight: 800, color: "var(--text)" }}
+              >
+                {data.title}
+              </span>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: "var(--muted)",
+                  fontFamily: "monospace",
+                }}
+              >
+                <DateDisplay date={d.periodStart ?? data.start_date} /> –{" "}
+                <DateDisplay date={d.periodEnd ?? data.end_date} />
               </span>
             </div>
 
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 6,
+                marginBottom: 10,
+              }}
+            >
               <Chip>{data.employee}</Chip>
               {data.employee_name && <Chip>{data.employee_name}</Chip>}
               {data.customer && <Chip>{data.customer}</Chip>}
@@ -236,66 +328,160 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
 
             <DrawerSummaryCards
               items={[
-                { label: "Total Hours", value: `${(data.total_hours ?? 0).toFixed(1)} hrs` },
+                {
+                  label: "Total Hours",
+                  value: `${(data.total_hours ?? 0).toFixed(1)} hrs`,
+                },
                 ...(showFinancials
                   ? [
-                    { label: "Billable Hours", value: `${(data.total_billable_hours ?? 0).toFixed(1)} hrs` },
-                    { label: "Costing", value: money(data.total_costing_amount) },
-                    { label: "Billed Amount", value: money(data.total_billed_amount), emphasis: true },
-                  ]
+                      {
+                        label: "Billable Hours",
+                        value: `${(data.total_billable_hours ?? 0).toFixed(1)} hrs`,
+                      },
+                      {
+                        label: "Costing",
+                        value: d.money(data.total_costing_amount),
+                      },
+                      {
+                        label: "Billed Amount",
+                        value: d.money(data.total_billed_amount),
+                        emphasis: true,
+                      },
+                    ]
                   : []),
               ]}
             />
 
-            <div style={{ display: "flex", gap: 4, marginTop: 10, borderBottom: "1px solid var(--border)" }}>
-              {tabs.map((t) => (
-                <button key={t.id} onClick={() => setTab(t.id)}
+            <div
+              style={{
+                display: "flex",
+                gap: 4,
+                marginTop: 10,
+                borderBottom: "1px solid var(--border)",
+              }}
+            >
+              {d.tabs.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => d.setTab(t.id)}
                   style={{
-                    padding: "8px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    background: "transparent", border: "none",
-                    color: tab === t.id ? "var(--primary)" : "var(--muted)",
-                    borderBottom: tab === t.id ? "2px solid var(--primary)" : "2px solid transparent",
+                    padding: "8px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    background: "transparent",
+                    border: "none",
+                    color: d.tab === t.id ? "var(--primary)" : "var(--muted)",
+                    borderBottom:
+                      d.tab === t.id
+                        ? "2px solid var(--primary)"
+                        : "2px solid transparent",
                     marginBottom: -1,
-                  }}>
+                  }}
+                >
                   {t.label}
                 </button>
               ))}
             </div>
           </div>
 
-          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingTop: 12 }}>
-            {tab === "overview" && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 10, alignItems: "start" }}>
+          <div
+            style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingTop: 12 }}
+          >
+            {d.tab === "overview" && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                  gap: 10,
+                  alignItems: "start",
+                }}
+              >
                 <Card title="Timesheet Information">
                   <Row label="Timesheet ID" value={data.name} />
                   <Row label="Title" value={data.title} />
-                  <Row label="Status" value={meta.label} />
+                  <Row label="Status" value={d.meta.label} />
                   <Row label="Employee" value={data.employee} />
                   <Row label="Employee Name" value={data.employee_name} />
                   <Row label="Customer" value={data.customer} />
                   <Row label="Company" value={data.company} />
                   <Row label="Department" value={data.department} />
-                  {showFinancials && <Row label="Currency" value={data.currency} />}
-                  {showFinancials && <Row label="Exchange Rate" value={data.exchange_rate} />}
+                  {showFinancials && (
+                    <Row label="Currency" value={data.currency} />
+                  )}
+                  {showFinancials && (
+                    <Row label="Exchange Rate" value={data.exchange_rate} />
+                  )}
                   <Row label="Parent Project" value={data.parent_project} />
-                  <Row label="Start Date" value={<DateDisplay date={data.start_date} />} />
-                  <Row label="End Date" value={<DateDisplay date={data.end_date} />} />
+                  <Row label="Timesheet Period" value={periodNode} />
+                  {/* <Row
+                    label="First Entry"
+                    value={<DateDisplay date={data.start_date} />}
+                  />
+                  <Row
+                    label="Last Entry"
+                    value={<DateDisplay date={data.end_date} />}
+                  /> */}
                 </Card>
 
                 {(showEmployeeCard || showFinancials) && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                    }}
+                  >
                     {showEmployeeCard && (
                       <Card title="Employee & Customer">
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                          <div style={{
-                            width: 40, height: 40, borderRadius: "50%", background: "var(--primary)", color: "#fff",
-                            display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14,
-                          }}>
-                            {(data.employee_name || data.title || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            marginBottom: 8,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: "50%",
+                              background: "var(--primary)",
+                              color: "#fff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 800,
+                              fontSize: 14,
+                            }}
+                          >
+                            {(data.employee_name || data.title || "?")
+                              .split(" ")
+                              .map((w) => w[0])
+                              .slice(0, 2)
+                              .join("")
+                              .toUpperCase()}
                           </div>
                           <div>
-                            <p style={{ fontSize: 13, fontWeight: 800, color: "var(--text)" }}>{data.employee_name || data.title}</p>
-                            <p style={{ fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>{data.employee}</p>
+                            <p
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 800,
+                                color: "var(--text)",
+                              }}
+                            >
+                              {data.employee_name || data.title}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: 11,
+                                color: "var(--muted)",
+                                fontFamily: "monospace",
+                              }}
+                            >
+                              {data.employee}
+                            </p>
                           </div>
                         </div>
                         <Row label="Customer" value={data.customer} />
@@ -306,12 +492,34 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
 
                     {showFinancials && (
                       <Card title="Financial Summary">
-                        <Row label="Total Billable Amount" value={money(data.total_billable_amount)} strong />
-                        <Row label="Total Costing Amount" value={money(data.total_costing_amount)} strong />
-                        {rate > 0 && (
+                        <Row
+                          label="Total Billable Amount"
+                          value={d.money(data.total_billable_amount)}
+                          strong
+                        />
+                        <Row
+                          label="Total Costing Amount"
+                          value={d.money(data.total_costing_amount)}
+                          strong
+                        />
+                        {d.rate > 0 && (
                           <>
-                            <Row label="Base Billable Amount" value={(data.total_billable_amount * rate).toLocaleString(undefined, { maximumFractionDigits: 2 })} />
-                            <Row label="Base Costing Amount" value={(data.total_costing_amount * rate).toLocaleString(undefined, { maximumFractionDigits: 2 })} />
+                            <Row
+                              label="Base Billable Amount"
+                              value={(
+                                data.total_billable_amount * d.rate
+                              ).toLocaleString(undefined, {
+                                maximumFractionDigits: 2,
+                              })}
+                            />
+                            <Row
+                              label="Base Costing Amount"
+                              value={(
+                                data.total_costing_amount * d.rate
+                              ).toLocaleString(undefined, {
+                                maximumFractionDigits: 2,
+                              })}
+                            />
                           </>
                         )}
                         <Row label="Exchange Rate" value={data.exchange_rate} />
@@ -322,95 +530,277 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
               </div>
             )}
 
-            {tab === "logs" && (
-              <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+            {d.tab === "logs" && (
+              <div
+                style={{
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  overflow: "hidden",
+                }}
+              >
                 <style>{LOG_CSS}</style>
-                <div className="ts-log-grid ts-log-head" style={{
-                  ...logGridVars, padding: "6px 10px", gap: 4,
-                  background: "var(--table-head)", color: "var(--table-head-text)",
-                  fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase",
-                }}>
-                  <span>Activity</span><span>Description</span><span>Time</span>
+                <div
+                  className="ts-log-grid ts-log-head"
+                  style={{
+                    ...logGridVars,
+                    padding: "6px 10px",
+                    gap: 4,
+                    background: "var(--table-head)",
+                    color: "var(--table-head-text)",
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  <span>Activity</span>
+                  <span>Description</span>
+                  <span>Time</span>
                   <span style={{ textAlign: "right" }}>Hours</span>
-                  {showFinancials && <span style={{ textAlign: "right" }}>Amount</span>}
+                  {showFinancials && (
+                    <span style={{ textAlign: "right" }}>Amount</span>
+                  )}
                 </div>
 
-                {logs.length === 0 && (
-                  <p style={{ padding: 16, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>No time logs</p>
+                {d.logs.length === 0 && (
+                  <p
+                    style={{
+                      padding: 16,
+                      fontSize: 12,
+                      color: "var(--muted)",
+                      textAlign: "center",
+                    }}
+                  >
+                    No time logs
+                  </p>
                 )}
 
-                {logs.map((log, i) => {
+                {d.logs.map((log, i) => {
                   const projectLabel = log.project_name || log.project;
                   const taskLabel = log.task_name || log.task;
                   return (
-                    <div key={log.name ?? i} className="idm-irow ts-log-grid"
+                    <div
+                      key={log.name ?? i}
+                      className="idm-irow ts-log-grid"
                       style={{
-                        ...logGridVars, padding: "7px 10px", gap: 6,
-                        borderTop: "1px solid var(--border)", alignItems: "start",
-                      }}>
+                        ...logGridVars,
+                        padding: "7px 10px",
+                        gap: 6,
+                        borderTop: "1px solid var(--border)",
+                        alignItems: "start",
+                      }}
+                    >
                       <div data-label="Activity" style={{ minWidth: 0 }}>
-                        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", wordBreak: "break-word" }}>{log.activity_type || "—"}</p>
+                        <p
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "var(--text)",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {log.activity_type || "—"}
+                        </p>
                         {projectLabel && (
-                          <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 2, wordBreak: "break-word", lineHeight: 1.4 }}>
+                          <p
+                            style={{
+                              fontSize: 10,
+                              color: "var(--muted)",
+                              marginTop: 2,
+                              wordBreak: "break-word",
+                              lineHeight: 1.4,
+                            }}
+                          >
                             Project: {projectLabel}
                           </p>
                         )}
                         {taskLabel && (
-                          <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 2, wordBreak: "break-word", lineHeight: 1.4 }}>
+                          <p
+                            style={{
+                              fontSize: 10,
+                              color: "var(--muted)",
+                              marginTop: 2,
+                              wordBreak: "break-word",
+                              lineHeight: 1.4,
+                            }}
+                          >
                             Task: {taskLabel}
                           </p>
                         )}
                       </div>
-                      <p data-label="Description" style={{ fontSize: 12, color: "var(--text)", wordBreak: "break-word", lineHeight: 1.4, minWidth: 0 }}>{log.description || "—"}</p>
-                      <div data-label="Time" style={{ minWidth: 0, fontSize: 11, color: "var(--text)", lineHeight: 1.5 }}>
+                      <p
+                        data-label="Description"
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text)",
+                          wordBreak: "break-word",
+                          lineHeight: 1.4,
+                          minWidth: 0,
+                        }}
+                      >
+                        {log.description || "—"}
+                      </p>
+                      <div
+                        data-label="Time"
+                        style={{
+                          minWidth: 0,
+                          fontSize: 11,
+                          color: "var(--text)",
+                          lineHeight: 1.5,
+                        }}
+                      >
                         <p style={{ wordBreak: "break-word" }}>
-                          <span style={{ color: "var(--muted)" }}>Start: </span>{fmtDateTime(log.from_time)}
+                          <span style={{ color: "var(--muted)" }}>Start: </span>
+                          {fmtDateTime(log.from_time)}
                         </p>
                         <p style={{ wordBreak: "break-word" }}>
-                          <span style={{ color: "var(--muted)" }}>End: </span>{fmtDateTime(log.to_time)}
+                          <span style={{ color: "var(--muted)" }}>End: </span>
+                          {fmtDateTime(log.to_time)}
                         </p>
                       </div>
-                      <p data-label="Hours" style={{ fontSize: 12, textAlign: "right", fontWeight: 700 }}>{(log.hours ?? 0).toFixed(1)}h</p>
+                      <p
+                        data-label="Hours"
+                        style={{
+                          fontSize: 12,
+                          textAlign: "right",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {(log.hours ?? 0).toFixed(1)}h
+                      </p>
                       {showFinancials && (
-                        <p data-label="Amount" style={{ fontSize: 12, textAlign: "right", wordBreak: "break-word" }}>{log.is_billable ? money(log.billing_amount) : "—"}</p>
+                        <p
+                          data-label="Amount"
+                          style={{
+                            fontSize: 12,
+                            textAlign: "right",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {log.is_billable ? d.money(log.billing_amount) : "—"}
+                        </p>
                       )}
                     </div>
                   );
                 })}
 
-                {logs.length > 0 && (
-                  <div className="ts-log-grid" style={{
-                    ...logGridVars, padding: "8px 10px", gap: 4,
-                    borderTop: "2px solid var(--border)", background: "var(--bg)", fontSize: 12, fontWeight: 800,
-                  }}>
-                    <span>Total</span><span /><span />
-                    <span data-label="Hours" style={{ textAlign: "right" }}>{logHours.toFixed(1)}h</span>
-                    {showFinancials && <span data-label="Amount" style={{ textAlign: "right", wordBreak: "break-word" }}>{money(logAmount)}</span>}
+                {d.logs.length > 0 && (
+                  <div
+                    className="ts-log-grid"
+                    style={{
+                      ...logGridVars,
+                      padding: "8px 10px",
+                      gap: 4,
+                      borderTop: "2px solid var(--border)",
+                      background: "var(--bg)",
+                      fontSize: 12,
+                      fontWeight: 800,
+                    }}
+                  >
+                    <span>Total</span>
+                    <span />
+                    <span />
+                    <span data-label="Hours" style={{ textAlign: "right" }}>
+                      {d.logHours.toFixed(1)}h
+                    </span>
+                    {showFinancials && (
+                      <span
+                        data-label="Amount"
+                        style={{ textAlign: "right", wordBreak: "break-word" }}
+                      >
+                        {d.money(d.logAmount)}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
             )}
 
-            {tab === "billing" && showFinancials && (
-              <div style={{ background: "var(--bg)", borderRadius: 10, border: "1px solid var(--border)", padding: 12 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginBottom: 12 }}>
-                  <MoneyCell label="Billable Amount" value={money(data.total_billable_amount)} color="var(--primary)" />
-                  <MoneyCell label="Costing Amount" value={money(data.total_costing_amount)} />
-                  <MoneyCell label="Billed Amount" value={money(data.total_billed_amount)} color="var(--success)" />
-                  <MoneyCell label="Billable Hours" value={`${(data.total_billable_hours ?? 0).toFixed(1)} hrs`} />
-                  <MoneyCell label="Billed Hours" value={`${(data.total_billed_hours ?? 0).toFixed(1)} hrs`} />
-                  <MoneyCell label="Margin" value={money(data.total_billable_amount - data.total_costing_amount)} color="var(--success)" />
+            {d.tab === "billing" && showFinancials && (
+              <div
+                style={{
+                  background: "var(--bg)",
+                  borderRadius: 10,
+                  border: "1px solid var(--border)",
+                  padding: 12,
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                    gap: 8,
+                    marginBottom: 12,
+                  }}
+                >
+                  <MoneyCell
+                    label="Billable Amount"
+                    value={d.money(data.total_billable_amount)}
+                    color="var(--primary)"
+                  />
+                  <MoneyCell
+                    label="Costing Amount"
+                    value={d.money(data.total_costing_amount)}
+                  />
+                  <MoneyCell
+                    label="Billed Amount"
+                    value={d.money(data.total_billed_amount)}
+                    color="var(--success)"
+                  />
+                  <MoneyCell
+                    label="Billable Hours"
+                    value={`${(data.total_billable_hours ?? 0).toFixed(1)} hrs`}
+                  />
+                  <MoneyCell
+                    label="Billed Hours"
+                    value={`${(data.total_billed_hours ?? 0).toFixed(1)} hrs`}
+                  />
+                  <MoneyCell
+                    label="Margin"
+                    value={d.money(d.margin)}
+                    color="var(--success)"
+                  />
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ ...labelStyle, flexShrink: 0 }}>% Billed</span>
-                  <div style={{ flex: 1, background: "var(--border)", borderRadius: 20, height: 6, overflow: "hidden" }}>
-                    <div style={{ width: `${billedPct}%`, background: "var(--success)", height: 6, borderRadius: 20, transition: "width .3s" }} />
+                  <div
+                    style={{
+                      flex: 1,
+                      background: "var(--border)",
+                      borderRadius: 20,
+                      height: 6,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${d.billedPct}%`,
+                        background: "var(--success)",
+                        height: 6,
+                        borderRadius: 20,
+                        transition: "width .3s",
+                      }}
+                    />
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 800, fontFamily: "monospace" }}>{billedPct}%</span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {d.billedPct}%
+                  </span>
                 </div>
-                {logs.length > 0 && (
-                  <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 8 }}>
-                    Logs costing total: {money(logCost)}
+                {d.logs.length > 0 && (
+                  <p
+                    style={{
+                      fontSize: 10,
+                      color: "var(--muted)",
+                      marginTop: 8,
+                    }}
+                  >
+                    Logs costing total: {d.money(d.logCost)}
                   </p>
                 )}
               </div>

@@ -2,7 +2,10 @@ import React, { useMemo } from "react";
 import { Clock, ClipboardList } from "lucide-react";
 import { ModalInput } from "../../../components/ui/modal/modalComponent";
 import type { TimesheetLine } from "../../../types/Project_Management/Timesheet/form/Timesheetformmodal";
-import { formatRangeLabel, getInitials } from "../../../utils/project_management/timehseet/Timesheetformmodal.utils";
+import {
+  formatRangeLabel,
+  getInitials,
+} from "../../../utils/project_management/timehseet/Timesheetformmodal.utils";
 
 interface EmployeeHeaderProps {
   employeeName: string;
@@ -11,6 +14,7 @@ interface EmployeeHeaderProps {
   title: string;
   totalHours: number;
   onTitleChange: (value: string) => void;
+  periodField?: React.ReactNode;
 }
 
 const STAT_TONE = "bg-primary/10 text-primary";
@@ -22,6 +26,7 @@ const EmployeeHeader: React.FC<EmployeeHeaderProps> = ({
   title,
   totalHours,
   onTitleChange,
+  periodField,
 }) => {
   const rangeLabel = useMemo(
     () => formatRangeLabel(lines, prefillDate),
@@ -47,14 +52,20 @@ const EmployeeHeader: React.FC<EmployeeHeaderProps> = ({
         </div>
       </div>
 
-      <div className="min-w-[220px] max-w-md flex-1">
-        <ModalInput
-          label="Title"
-          name="title"
-          value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
-          placeholder="Timesheet title"
-        />
+      <div className="ts-info flex min-w-[220px] flex-1 flex-wrap items-end gap-4">
+        <div className="min-w-[220px] max-w-md flex-1">
+          <ModalInput
+            label="Title"
+            name="title"
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            placeholder="Timesheet title"
+          />
+        </div>
+
+        {periodField && (
+          <div className="w-[240px] shrink-0">{periodField}</div>
+        )}
       </div>
 
       <div className="ml-auto flex items-center divide-x divide-theme">
