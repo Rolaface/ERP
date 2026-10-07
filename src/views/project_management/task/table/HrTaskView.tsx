@@ -287,6 +287,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   }, [view]);
 
   const loadAssignedNames = useCallback(async () => {
+      if (!currentUserEmail) return; 
     try {
       const [names, allNames] = currentUserEmail
         ? await Promise.all([
@@ -313,13 +314,18 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     reloadRef.current = isEmployee ? loadAssignedNames : fetchTasks;
   }, [isEmployee, loadAssignedNames, fetchTasks]);
 
-  useEffect(() => {
-    mountedRef.current = true;
-    reloadRef.current();
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+useEffect(() => {
+  mountedRef.current = true;
+  if (!isEmployee) reloadRef.current();
+  return () => {
+    mountedRef.current = false;
+  };
+}, []);
+
+useEffect(() => {
+  if (!isEmployee || !currentUserEmail) return;
+  reloadRef.current();
+}, [isEmployee, currentUserEmail]);
 
   useEffect(() => {
     if (isInitialLoad) return;
