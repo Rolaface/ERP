@@ -193,7 +193,7 @@ const HrTimesheetView: React.FC = () => {
   const canSubmit = can(TS_MODULE, "submit");
   const canCancel = can(TS_MODULE, "cancel");
   const canDelete = can(TS_MODULE, "delete");
- 
+
   const showFinancials = isProfessional;
   const mountedRef = useRef(true);
 
@@ -216,7 +216,7 @@ const HrTimesheetView: React.FC = () => {
     MultiSelectOption[]
   >([]);
   const [sortBy, setSortBy] = useState<string>("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<TimesheetDetail | null>(null);
@@ -258,7 +258,6 @@ const HrTimesheetView: React.FC = () => {
         sortBy || undefined,
         sortOrder,
         employeeFilter.length ? employeeFilter : undefined,
-        isProfessional,
       );
       if (!mountedRef.current) return;
 
@@ -279,7 +278,7 @@ const HrTimesheetView: React.FC = () => {
     searchTerm,
     statusFilter,
     employeeFilter,
-    isProfessional,
+    ,
     sortBy,
     sortOrder,
   ]);

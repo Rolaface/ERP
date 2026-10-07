@@ -368,7 +368,7 @@ export function useTimesheetModal(
       project: "",
       project_name: "",
       customer: detail.customer ?? "",
-      customer_name: detail.customer ?? "",
+      customer_name: detail.customer_name ?? detail.customer ?? "",
       employee: detail.employee,
       employee_name: detail.employee_name,
       department: detail.department ?? "",

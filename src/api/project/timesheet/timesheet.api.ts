@@ -19,6 +19,8 @@ const UNASSIGNED_LABEL = "Unassigned";
 const PENDING_APPROVAL_STATUS = "Pending For Approval";
 const DRAFT_STATUS = "Draft";
 
+
+
 const TIMESHEET_FIELDS = [
   "name",
   "owner",
@@ -33,15 +35,17 @@ const TIMESHEET_FIELDS = [
   "custom_timesheet_start_date",
   "custom_timesheet_end_date",
   "title",
-  "total_hours",
+  "employee",
+  "employee_name",
+  "customer",
   "currency",
+  "total_hours",
   "total_billable_amount",
   "total_costing_amount",
   "total_billed_amount",
   "per_billed",
   "parent_project",
 ];
-
 interface HoursDetailRow {
   parent: string;
   from_time: string;
@@ -65,10 +69,9 @@ export async function getAllTimesheets(
   pageSize: number = 20,
   statuses?: string[],
   search?: string,
-  sortBy?: string,
-  sortOrder?: "asc" | "desc",
+  sortBy: string = "creation",
+  sortOrder: "asc" | "desc" = "desc",
   employees?: string[],
-  excludeDraft: boolean = false,
 ): Promise<TimesheetListResponse> {
   const query = buildListParams({
     fields: TIMESHEET_FIELDS,
@@ -81,25 +84,60 @@ export async function getAllTimesheets(
   });
 
   const filters: unknown[] = [];
+
   if (statuses && statuses.length > 0) {
     filters.push(["status", "in", statuses]);
   }
+
   if (employees && employees.length > 0) {
-    filters.push([EMPLOYEE_FILTER_FIELD, "in", employees]);
-  }
-  if (excludeDraft) {
-    filters.push(["status", "!=", DRAFT_STATUS]);
+    filters.push(["employee", "in", employees]);
   }
 
   let url = `${TimesheetAPI.list}?${query}`;
+
   if (filters.length > 0) {
-    url += `&filters=${encodeURIComponent(JSON.stringify(filters))}`;
+    url += `&filters=${encodeURIComponent(
+      JSON.stringify(filters),
+    )}`;
   }
 
-  const resp: AxiosResponse<TimesheetListResponse> = await api.get(url);
+  const storedUser = localStorage.getItem("auth_user");
+
+  if (storedUser) {
+    try {
+      const currentUser = JSON.parse(storedUser);
+
+      const username = currentUser?.username ?? "";
+      const roles: string[] = currentUser?.roles ?? [];
+
+      const isAdministrator =
+        username === "Administrator" ||
+        roles.includes("Administrator");
+
+      const owner = isAdministrator
+        ? "Administrator"
+        : currentUser?.email;
+
+      if (owner) {
+        const orFilters = [
+          ["status", "!=", "Draft"],
+          ["owner", "=", owner],
+        ];
+
+        url += `&or_filters=${encodeURIComponent(
+          JSON.stringify(orFilters),
+        )}`;
+      }
+    } catch {
+    
+    }
+  }
+
+  const resp: AxiosResponse<TimesheetListResponse> =
+    await api.get(url);
+
   return resp.data;
 }
-
 export async function getTimesheetById(
   id: string,
 ): Promise<TimesheetDetail | null> {

@@ -32,6 +32,7 @@ import {
   parseAssignedEmails,
   updateTaskAssignees,
   updateTaskStatus,
+  getProjectAssignees,
 } from "../../../../api/project/task/taskapi";
 import {
   getMyAssignedTasks,
@@ -170,6 +171,50 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
   const [userFilterOptions, setUserFilterOptions] = useState<
     { label: string; value: string }[]
   >([]);
+  const loadAssigneeFilterOptions = useCallback(async () => {
+    try {
+      // No project selected: show all users
+      if (projectFilter.length === 0) {
+        const users = await fetchUserOptions("");
+
+        if (!mountedRef.current) return;
+
+        setUserFilterOptions(
+          users.map((u) => ({
+            label: u.label,
+            value: u.value,
+          })),
+        );
+
+        return;
+      }
+
+      // Load users from all selected projects
+      const projectUsers = await Promise.all(
+        projectFilter.map((project) => getProjectAssignees(project)),
+      );
+
+      const uniqueUsers = new Map<string, { label: string; value: string }>();
+
+      projectUsers.flat().forEach((user) => {
+        const value = user.email || user.user;
+
+        if (!value) return;
+
+        uniqueUsers.set(value, {
+          label: user.full_name || value,
+          value,
+        });
+      });
+
+      if (!mountedRef.current) return;
+
+      setUserFilterOptions(Array.from(uniqueUsers.values()));
+    } catch (error) {
+      showApiError(error);
+      setUserFilterOptions([]);
+    }
+  }, [projectFilter]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<TaskDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
@@ -204,15 +249,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
 
   useEffect(() => {
     if (isEmployee) return;
-    fetchUserOptions("")
-      .then((list) => {
-        if (!mountedRef.current) return;
-        setUserFilterOptions(
-          list.map((u) => ({ label: u.label, value: u.value })),
-        );
-      })
-      .catch(showApiError);
-  }, [isEmployee]);
+
+    loadAssigneeFilterOptions();
+  }, [isEmployee, loadAssigneeFilterOptions]);
 
   const projectFilterOptions = projectOptions.map((p) => ({
     label: p.project_name,
@@ -271,6 +310,38 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     isEmployee,
     view,
   ]);
+
+  const fetchProjectAssigneeOptions = async (
+    project: string,
+    q: string,
+  ): Promise<Option[]> => {
+    if (!project) return [];
+
+    try {
+      const users = await getProjectAssignees(project);
+
+      const search = q.trim().toLowerCase();
+
+      return users
+        .filter((u) => {
+          if (!search) return true;
+
+          return (
+            u.full_name?.toLowerCase().includes(search) ||
+            u.email?.toLowerCase().includes(search) ||
+            u.user?.toLowerCase().includes(search)
+          );
+        })
+        .map((u) => ({
+          label: u.full_name || u.email || u.user,
+          value: u.email || u.user,
+          subLabel: u.email || u.user,
+        }));
+    } catch (error) {
+      showApiError(error);
+      return [];
+    }
+  };
 
   const fetchTasksRef = useRef(fetchTasks);
   useEffect(() => {
@@ -492,7 +563,6 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     const match = projectOptions.find((p) => p.name === code);
     return match?.project_name || code;
   };
-
 
   const openTimesheetForm = isProfessional
     ? openAdminTimesheetFormModal
@@ -862,8 +932,10 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
         return (
           <AssigneeCell
             emails={emails}
-            disabled={!canWriteTask}
-            fetchOptions={fetchUserOptions}
+            disabled={!canWriteTask || !t.project}
+            fetchOptions={(q) =>
+              fetchProjectAssigneeOptions(t.project ?? "", q)
+            }
             onChange={(nextValues) => handleAssigneesChange(t.name, nextValues)}
           />
         );
@@ -901,13 +973,13 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
             onClick={() => handleView(t.name)}
             iconOnly
           />
-          <ActionButton
+          {/* <ActionButton
             type="edit"
             onClick={() => handleEdit(t.name)}
             iconOnly
             disabled={!canWriteTask}
             title={canWriteTask ? "Edit" : "You don't have permission to edit"}
-          />
+          /> */}
           {canLogTime && (
             <button
               onClick={() => handleLogTime(t)}
@@ -997,7 +1069,13 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
                     values: assigneeFilter,
                     onChange: setAssigneeFilter,
                     searchPlaceholder: "Search employee...",
-                    onSearch: fetchUserOptions,
+                    onSearch: async (q: string) => {
+                      const search = q.trim().toLowerCase();
+
+                      return userFilterOptions.filter((user) =>
+                        user.label.toLowerCase().includes(search),
+                      );
+                    },
                   },
                 ]
               : []),
@@ -1009,8 +1087,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
             setSortOrder(newSortOrder);
             setPage(1);
           }}
-          enableAdd={canCreateTask}
-          addLabel="+ Add Task"
+          // enableAdd={canCreateTask}
+          // addLabel="+ Add Task"
           onAdd={handleAdd}
           selectable={canBulkSelect}
           isRowSelected={(t) => selected.has(t.name)}

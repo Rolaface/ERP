@@ -21,6 +21,11 @@ const TASK_FIELDS = [
   "is_group",
   "custom_activity_type",
 ];
+export interface ProjectAssignee {
+  user: string;
+  email: string;
+  full_name: string;
+}
 
 export interface GetAllTasksOptions {
   pageSize?: number;
@@ -54,6 +59,24 @@ export async function getAllTasks(
 
   const resp: AxiosResponse = await api.get(url);
   return resp.data?.data ?? [];
+}
+
+
+export async function getProjectAssignees(
+  project: string,
+): Promise<ProjectAssignee[]> {
+  if (!project) return [];
+
+  const resp: AxiosResponse = await api.get(
+    `/api/method/custom_hrms.api.task.api.get_project_assignees`,
+    {
+      params: {
+        project,
+      },
+    },
+  );
+
+  return resp.data?.message ?? [];
 }
 
 const CHILD_TASK_LIMIT = 500;
