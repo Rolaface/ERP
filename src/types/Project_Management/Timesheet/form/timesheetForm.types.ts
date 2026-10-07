@@ -21,6 +21,7 @@ export interface TimesheetLineDraft {
   billing_rate: number;
   costing_rate: number;
    logName?: string;
+   activityFromTask?: boolean;
 }
 
 export interface TimesheetFormState {

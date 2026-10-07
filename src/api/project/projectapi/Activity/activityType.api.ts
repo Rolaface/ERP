@@ -14,6 +14,7 @@ const ACTIVITY_TYPE_FIELDS = [
   "costing_rate",
   "billing_rate",
   "disabled",
+ 
 ];
 
 export async function getAllActivityTypes(
