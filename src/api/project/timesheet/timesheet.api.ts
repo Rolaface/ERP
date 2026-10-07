@@ -103,9 +103,9 @@ export async function getAllTimesheets(
 export async function getTimesheetById(
   id: string,
 ): Promise<TimesheetDetail | null> {
-  const resp: AxiosResponse = await api.get(
-    `${TimesheetAPI.list}/${encodeURIComponent(id)}`,
-  );
+  const resp: AxiosResponse = await api.get(TimesheetAPI.getbyid, {
+    params: { name: id },
+  });
   return resp.data?.data ?? null;
 }
 

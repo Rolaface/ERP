@@ -73,7 +73,7 @@ const EmptyState: React.FC<{ colSpan: number; onAddRow: () => void }> = ({
     <td colSpan={colSpan} className="p-10 text-center text-muted">
       <div className="flex flex-col items-center gap-2">
         <span className="text-2xl">📁</span>
-        <span className="font-medium text-xs">No time entries yet</span>
+        <span className="font-medium text-xs">No time entries yet </span>
         <span className="text-[11px] mb-1">
           Add your first row to start logging task hours.
         </span>

@@ -78,10 +78,13 @@ export interface TimesheetDetail {
   department?: string;
   company?: string;
   customer?: string;
+   customer_name?: string;          
+  parent_project?: string;
+  parent_project_name?: string; 
   currency: string;
   exchange_rate?: number;
   status: TimesheetStatus;
-  parent_project?: string;
+
   start_date: string;
   end_date: string;
   custom_timesheet_start_date: string | null;
