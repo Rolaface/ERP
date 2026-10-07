@@ -91,16 +91,16 @@ export const useTimesheetPrefill = ({
       return;
     }
 
-   addLines(
-  items.map((p) => ({
-    project: p.project,
-    project_name: p.projectName,
-    task: p.task,
-    task_name: p.taskName,
-    activity_type: p.activityType,
-  })),
-  prefillDate,
-);
+    addLines(
+      items.map((p) => ({
+        project: p.project,
+        project_name: p.projectName,
+        task: p.task,
+        task_name: p.taskName,
+        activity_type: p.activityType,
+      })),
+      prefillDate,
+    );
   }, [
     isOpen,
     prefillTask,

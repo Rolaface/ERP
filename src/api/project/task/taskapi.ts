@@ -75,6 +75,7 @@ const TASK_LIST_FIELDS = [
   "is_milestone",
   "_assign",
   "parent_task",
+  "custom_activity_type",
 ];
 
 export async function getTaskList(

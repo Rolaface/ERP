@@ -88,7 +88,7 @@ const STATUS_VARIANT: Record<
   Working: "info",
   "Pending Review": "info",
   Overdue: "danger",
-  
+
   Completed: "success",
   Cancelled: "danger",
 };
@@ -486,6 +486,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
         projectName: getProjectDisplayName(task.project),
         task: task.name,
         taskName: task.subject,
+        activityType: task.custom_activity_type || undefined,
       },
     });
   };
@@ -575,6 +576,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
         projectName: getProjectDisplayName(t.project),
         task: t.name,
         taskName: t.subject,
+        activityType: t.custom_activity_type || undefined,
       })),
       onSuccess: () => setSelected(new Map()),
     });
