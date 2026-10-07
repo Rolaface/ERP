@@ -1,9 +1,9 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Clock, ClipboardList } from "lucide-react";
 import { ModalInput } from "../../../components/ui/modal/modalComponent";
 import type { TimesheetLine } from "../../../types/Project_Management/Timesheet/form/Timesheetformmodal";
 import {
-  formatRangeLabel,
+
   getInitials,
 } from "../../../utils/project_management/timehseet/Timesheetformmodal.utils";
 
@@ -22,17 +22,13 @@ const STAT_TONE = "bg-primary/10 text-primary";
 const EmployeeHeader: React.FC<EmployeeHeaderProps> = ({
   employeeName,
   lines,
-  prefillDate,
+  
   title,
   totalHours,
   onTitleChange,
   periodField,
 }) => {
-  const rangeLabel = useMemo(
-    () => formatRangeLabel(lines, prefillDate),
-    [lines, prefillDate],
-  );
-
+  
   const stats = [
     { icon: ClipboardList, value: String(lines.length), label: "Entries" },
     { icon: Clock, value: `${totalHours.toFixed(1)}h`, label: "Total Hours" },
@@ -48,7 +44,7 @@ const EmployeeHeader: React.FC<EmployeeHeaderProps> = ({
           <div className="truncate text-base font-bold text-main">
             {employeeName || "Employee"}
           </div>
-          <div className="text-xs text-muted">{rangeLabel}</div>
+        
         </div>
       </div>
 
