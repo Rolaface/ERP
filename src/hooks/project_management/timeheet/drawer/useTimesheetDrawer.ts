@@ -149,12 +149,12 @@ export function useTimesheetDrawer({
         onClick: () => onCancel?.(data.name),
       });
     }
-    actions.push({
-      key: "export",
-      label: "Export",
-      icon: "download",
-      onClick: () => exportTimesheetToExcel(data, showFinancials),
-    });
+   actions.push({
+  key: "export",
+  label: "Export",
+  icon: "download",
+  onClick: () => exportTimesheetToExcel(data, false).catch(),
+});
   }
 
   const copyId = () => {
