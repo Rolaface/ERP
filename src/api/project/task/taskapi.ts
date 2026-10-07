@@ -12,7 +12,15 @@ import type {
 const api = createAxiosInstance(ERP_BASE);
 
 export const TaskAPI = API.project.task;
-const TASK_FIELDS = ["name", "project", "subject", "status", "priority", "is_group"];
+const TASK_FIELDS = [
+  "name",
+  "project",
+  "subject",
+  "status",
+  "priority",
+  "is_group",
+  "custom_activity_type",
+];
 
 export interface GetAllTasksOptions {
   pageSize?: number;
@@ -67,6 +75,7 @@ const TASK_LIST_FIELDS = [
   "is_milestone",
   "_assign",
   "parent_task",
+  "custom_activity_type",
 ];
 
 export async function getTaskList(
@@ -167,7 +176,9 @@ export async function createTask(payload: any): Promise<any> {
 
 export async function updateTaskById(payload: any): Promise<any> {
   if (!payload?.name) {
-    throw new Error("updateTaskById: payload.name is required to update a Task.");
+    throw new Error(
+      "updateTaskById: payload.name is required to update a Task.",
+    );
   }
 
   const resp: AxiosResponse = await api.put(

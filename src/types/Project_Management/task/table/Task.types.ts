@@ -3,7 +3,6 @@ export type TaskStatus =
   | "Working"
   | "Pending Review"
   | "Overdue"
-
   | "Completed"
   | "Cancelled";
 
@@ -16,9 +15,10 @@ export interface TaskEntry {
   priority: TaskPriority;
   project: string | null;
   exp_start_date: string | null;
+  custom_activity_type?: string | null;
   exp_end_date: string | null;
   progress: number;
-   parent_task?: string | null;
+  parent_task?: string | null;
   is_group: 0 | 1;
   is_milestone: 0 | 1;
   owner: string;

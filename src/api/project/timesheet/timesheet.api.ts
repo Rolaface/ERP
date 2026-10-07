@@ -30,6 +30,8 @@ const TIMESHEET_FIELDS = [
   "status",
   "start_date",
   "end_date",
+  "custom_timesheet_start_date",
+  "custom_timesheet_end_date",
   "title",
   "total_hours",
   "currency",

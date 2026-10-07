@@ -110,14 +110,14 @@ const CalendarToolbar: React.FC<Props> = ({
           onChange={onRangeChange}
         />
       )}
+        <button className={primaryButton} onClick={onLog}>
+        <Plus size={12} /> Log Time
+      </button>
       <ViewSelector
         value="calendar"
         options={TIMESHEET_VIEW_OPTIONS}
         onChange={(m) => m === "table" && onSwitchToList()}
       />
-      <button className={primaryButton} onClick={onLog}>
-        <Plus size={12} /> Log Time
-      </button>
     </div>
   </div>
 );

@@ -97,6 +97,7 @@ export const useTimesheetPrefill = ({
         project_name: p.projectName,
         task: p.task,
         task_name: p.taskName,
+        activity_type: p.activityType,
       })),
       prefillDate,
     );

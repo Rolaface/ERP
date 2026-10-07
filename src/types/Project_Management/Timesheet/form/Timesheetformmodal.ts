@@ -23,6 +23,7 @@ export interface PrefillTask {
   projectName: string;
   task: string;
   taskName: string;
+  activityType?: string;
 }
 
 export interface PrefillEmployee {

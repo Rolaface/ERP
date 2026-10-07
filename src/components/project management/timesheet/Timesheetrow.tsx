@@ -71,7 +71,7 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
       <CheckboxCell checked={isSelected} onChange={() => onToggle(line.id)} />
 
       {!hasHeaderProject && (
-        <td className="p-2 ts-field">
+        <td className="p-2 ts-field min-w-0">
           <SearchSelect2
             label=""
             value={line.project_name}
@@ -82,7 +82,7 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
         </td>
       )}
 
-      <td className={`p-2 ts-field ${hasHeaderProject ? "min-w-[280px]" : ""}`}>
+      <td className="p-2 ts-field min-w-0">
         <SearchSelect2
           label=""
           value={line.task_name}
@@ -93,7 +93,7 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
         />
       </td>
 
-      <td className="p-2 align-top">
+      <td className="p-2 align-top min-w-0">
         <textarea
           value={line.description}
           onChange={(e) =>
@@ -101,21 +101,22 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
           }
           placeholder="What did you work on?"
           rows={1}
-          className="w-full min-w-[140px] h-9 min-h-[36px] max-h-[200px] resize-y px-2 py-2 leading-tight text-xs rounded-md border border-theme bg-app text-main placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary overflow-auto"
+          className="block w-full min-w-0 max-w-full h-9 min-h-[36px] max-h-[200px] resize-y box-border px-2 py-2 leading-tight text-xs rounded-md border border-theme bg-app text-main placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary overflow-auto"
         />
       </td>
 
-      <td className="p-2 ts-field">
+      <td className="p-2 ts-field min-w-0">
         <SearchSelect2
           label=""
           value={line.activity_type}
+          disabled={isEmployee}
           fetchOptions={fetchActivityTypeOptions}
           onChange={(value, opt) => handlers.onActivity(line.id, value, opt)}
-          placeholder="Activity Type"
+          placeholder={isEmployee ? "Auto from task" : "Activity Type"}
         />
       </td>
 
-      <td className="p-2">
+      <td className="p-2 min-w-0">
         <div className={`relative ts-picker ${off ? "ts-has-off" : ""}`}>
           <DateTimeRangePicker
             date={line.date}

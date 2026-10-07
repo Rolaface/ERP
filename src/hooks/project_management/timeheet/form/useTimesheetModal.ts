@@ -41,8 +41,9 @@ export type DuplicatePosition = "after" | "end";
 export async function fetchProjectOptions(
   search: string,
   allowedProjectIds?: string[],
+  customer?: string,
 ): Promise<Option[]> {
-  const projects = await getAllProjects(search);
+  const projects = await getAllProjects(search, customer);
 
   const filtered =
     allowedProjectIds && allowedProjectIds.length > 0
@@ -55,8 +56,6 @@ export async function fetchProjectOptions(
     subLabel: project.name,
   }));
 }
-
-
 
 export async function fetchEmployeeOptions(search: string): Promise<Option[]> {
   return getEmployees(search);
@@ -77,6 +76,7 @@ export async function fetchTaskOptions(
     label: task.subject,
     value: task.name,
     subLabel: task.name,
+    meta: { activity_type: task.custom_activity_type ?? "" },
   }));
 }
 
@@ -85,6 +85,7 @@ interface InitialTask {
   project_name: string;
   task: string;
   task_name: string;
+  activity_type?: string;
 }
 
 function calcHours(
@@ -177,7 +178,10 @@ function findFreeSlot(
 
   const start = lines
     .map(lineRange)
-    .reduce((latest, r) => (r ? Math.max(latest, r.e) : latest), preferredStart);
+    .reduce(
+      (latest, r) => (r ? Math.max(latest, r.e) : latest),
+      preferredStart,
+    );
   const end = start + durationMs;
 
   return {
@@ -187,6 +191,7 @@ function findFreeSlot(
     to_time: toTimeStr(end),
   };
 }
+
 function placeLine(
   line: TimesheetLineDraft,
   existing: TimesheetLineDraft[],
@@ -203,12 +208,26 @@ function placeLine(
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-const formatTitleDate = (ymd: string) =>
-  new Date(`${ymd}T00:00:00`).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+const TITLE_SUFFIX = "Timesheet";
+const TITLE_SEPARATOR = " — ";
+const RANGE_DASH = "–";
+
+const monthName = (ymd: string) =>
+  new Date(`${ymd}T00:00:00`).toLocaleDateString("en-US", { month: "long" });
+
+const formatTitlePeriod = (start: string, end: string) => {
+  const startMonth = monthName(start);
+  const endMonth = monthName(end);
+  const startYear = start.slice(0, 4);
+  const endYear = end.slice(0, 4);
+
+  if (startYear !== endYear) {
+    return `${startMonth} ${startYear}${RANGE_DASH}${endMonth} ${endYear}`;
+  }
+  return startMonth === endMonth
+    ? `${startMonth} ${startYear}`
+    : `${startMonth}${RANGE_DASH}${endMonth} ${startYear}`;
+};
 
 function splitDateTime(dt: string | null | undefined): {
   date: string;
@@ -234,7 +253,8 @@ function emptyLine(
     projectManuallySet: Boolean(initialTask),
     task: initialTask?.task ?? "",
     task_name: initialTask?.task_name ?? "",
-    activity_type: "",
+    activity_type: initialTask?.activity_type ?? "",
+    activityFromTask: Boolean(initialTask?.activity_type),
     description: "",
     date,
     to_date: date,
@@ -245,6 +265,18 @@ function emptyLine(
     is_billable: true,
     billing_rate: 0,
     costing_rate: 0,
+  };
+}
+
+function clearTaskFields(l: TimesheetLineDraft): TimesheetLineDraft {
+  return {
+    ...l,
+    task: "",
+    task_name: "",
+    ...(l.activityFromTask
+      ? { activity_type: "", billing_rate: 0, costing_rate: 0 }
+      : {}),
+    activityFromTask: false,
   };
 }
 
@@ -301,6 +333,8 @@ function emptyForm(
     currency: restrictions?.lockCustomer?.currency ?? "",
     exchange_rate: 1,
     start_date: today(),
+    custom_timesheet_start_date: today(),
+    custom_timesheet_end_date: today(),
     lines: [],
   };
 }
@@ -318,9 +352,7 @@ export function useTimesheetModal(
     emptyForm(restrictions),
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [editingName, setEditingName] = useState<string | undefined>(
-    undefined,
-  );
+  const [editingName, setEditingName] = useState<string | undefined>(undefined);
   const [customTitle, setCustomTitle] = useState<string | null>(null);
 
   const reset = useCallback(() => {
@@ -343,11 +375,51 @@ export function useTimesheetModal(
       currency: detail.currency,
       exchange_rate: detail.exchange_rate ?? 1,
       start_date: detail.start_date,
+      custom_timesheet_start_date: detail.custom_timesheet_start_date ?? "",
+      custom_timesheet_end_date: detail.custom_timesheet_end_date ?? "",
       lines: detail.time_logs.map(mapTimeLogToLine),
     });
   }, []);
 
   const isEditMode = Boolean(editingName);
+
+  const syncActivityRates = useCallback(async (activities: string[]) => {
+    const unique = [...new Set(activities.filter(Boolean))];
+    if (unique.length === 0) return;
+
+    try {
+      const entries = await Promise.all(
+        unique.map(async (activity) => {
+          const options = await fetchActivityTypeOptions(activity);
+          const match = options.find((o) => o.value === activity);
+          return match
+            ? ([
+                activity,
+                {
+                  billing: Number(match.meta?.billing_rate ?? 0),
+                  costing: Number(match.meta?.costing_rate ?? 0),
+                },
+              ] as const)
+            : null;
+        }),
+      );
+
+      const rates = new Map(entries.filter((e) => e !== null));
+      if (rates.size === 0) return;
+
+      setForm((f) => ({
+        ...f,
+        lines: f.lines.map((l) => {
+          const r = l.activityFromTask ? rates.get(l.activity_type) : undefined;
+          return r
+            ? { ...l, billing_rate: r.billing, costing_rate: r.costing }
+            : l;
+        }),
+      }));
+    } catch (e) {
+      showApiError(e);
+    }
+  }, []);
 
   const setProject = useCallback((value: string, opt: Option) => {
     setForm((f) => ({
@@ -358,11 +430,9 @@ export function useTimesheetModal(
         l.projectManuallySet
           ? l
           : {
-              ...l,
+              ...clearTaskFields(l),
               project: value,
               project_name: opt.label,
-              task: "",
-              task_name: "",
             },
       ),
     }));
@@ -423,6 +493,14 @@ export function useTimesheetModal(
     setForm((f) => ({ ...f, start_date: date }));
   }, []);
 
+  const setTimesheetRange = useCallback((start: string, end: string) => {
+    setForm((f) => ({
+      ...f,
+      custom_timesheet_start_date: start,
+      custom_timesheet_end_date: end,
+    }));
+  }, []);
+
   const setTitle = useCallback((value: string) => {
     setCustomTitle(value);
   }, []);
@@ -445,8 +523,11 @@ export function useTimesheetModal(
           ),
         ],
       }));
+      if (initialTask?.activity_type) {
+        void syncActivityRates([initialTask.activity_type]);
+      }
     },
-    [],
+    [syncActivityRates],
   );
 
   const addLines = useCallback(
@@ -459,8 +540,9 @@ export function useTimesheetModal(
         );
         return { ...f, lines };
       });
+      void syncActivityRates(tasks.map((t) => t.activity_type ?? ""));
     },
-    [],
+    [syncActivityRates],
   );
 
   const updateLine = useCallback(
@@ -495,28 +577,54 @@ export function useTimesheetModal(
 
   const setLineProject = useCallback(
     (id: string, value: string, opt: Option) => {
-      updateLine(id, {
-        project: value,
-        project_name: opt.label,
-        projectManuallySet: true,
-        task: "",
-        task_name: "",
-      });
+      setForm((f) => ({
+        ...f,
+        lines: f.lines.map((l) =>
+          l.id === id
+            ? {
+                ...clearTaskFields(l),
+                project: value,
+                project_name: opt.label,
+                projectManuallySet: true,
+              }
+            : l,
+        ),
+      }));
     },
-    [updateLine],
+    [],
   );
 
   const setLineTask = useCallback(
-    (id: string, value: string, opt: Option) => {
-      updateLine(id, { task: value, task_name: opt.label });
+    async (id: string, value: string, opt: Option) => {
+      const activity = String(opt.meta?.activity_type ?? "");
+
+      setForm((f) => ({
+        ...f,
+        lines: f.lines.map((l) => {
+          if (l.id !== id) return l;
+          const base = {
+            ...l,
+            task: value,
+            task_name: opt.label,
+            activityFromTask: Boolean(activity),
+          };
+          if (activity) return { ...base, activity_type: activity };
+          return l.activityFromTask
+            ? { ...base, activity_type: "", billing_rate: 0, costing_rate: 0 }
+            : base;
+        }),
+      }));
+
+      await syncActivityRates([activity]);
     },
-    [updateLine],
+    [syncActivityRates],
   );
 
   const setLineActivity = useCallback(
     (id: string, value: string, opt: Option) => {
       updateLine(id, {
         activity_type: value,
+        activityFromTask: false,
         billing_rate: Number(opt.meta?.billing_rate ?? 0),
         costing_rate: Number(opt.meta?.costing_rate ?? 0),
       });
@@ -638,13 +746,17 @@ export function useTimesheetModal(
 
   const autoTitle = useMemo(() => {
     const name = form.employee_name || restrictions?.employee?.name || "";
-    const range =
-      derivedEndDate > derivedStartDate
-        ? `${formatTitleDate(derivedStartDate)} to ${formatTitleDate(derivedEndDate)}`
-        : formatTitleDate(derivedStartDate);
-    return [name, range].filter(Boolean).join(" - ");
+    const start = form.custom_timesheet_start_date || derivedStartDate;
+    const end =
+      form.custom_timesheet_end_date ||
+      form.custom_timesheet_start_date ||
+      derivedEndDate;
+    const label = `${formatTitlePeriod(start, end)} ${TITLE_SUFFIX}`;
+    return name ? `${name}${TITLE_SEPARATOR}${label}` : label;
   }, [
     form.employee_name,
+    form.custom_timesheet_start_date,
+    form.custom_timesheet_end_date,
     restrictions?.employee?.name,
     derivedStartDate,
     derivedEndDate,
@@ -677,6 +789,8 @@ export function useTimesheetModal(
         exchange_rate: exchangeRate,
         start_date: derivedStart,
         end_date: derivedEnd,
+        custom_timesheet_start_date: form.custom_timesheet_start_date || null,
+        custom_timesheet_end_date: form.custom_timesheet_end_date || null,
         time_logs: form.lines.map((l) => ({
           ...(l.logName ? { name: l.logName } : {}),
           doctype: "Timesheet Detail",
@@ -802,6 +916,7 @@ export function useTimesheetModal(
     setCustomer,
     setEmployee,
     setStartDate,
+    setTimesheetRange,
     addLine,
     addLines,
     updateLine,
