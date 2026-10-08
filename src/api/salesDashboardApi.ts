@@ -27,6 +27,7 @@ export interface MonthlySalesPoint {
   month: string;
   received: number;
   receivable: number;
+  total: number;
 }
 
 export interface QuotationConversion {
