@@ -70,6 +70,25 @@ export interface TaskDetail {
   old_parent?: string;
   doctype?: string;
 }
+export function taskDetailToEntry(task: TaskDetail): TaskEntry {
+  return {
+    name: task.name,
+    subject: task.subject,
+    status: task.status,
+    priority: task.priority,
+    project: task.project,
+    exp_start_date: task.exp_start_date ?? null,
+    exp_end_date: task.exp_end_date ?? null,
+    progress: task.progress,
+    parent_task: task.old_parent ?? null,
+    is_group: task.is_group,
+    is_milestone: task.is_milestone,
+    owner: task.owner,
+    creation: task.creation,
+    modified: task.modified,
+    _assign: task._assign ?? null,
+  };
+}
 
 export interface TaskPagination {
   page: number;

@@ -12,6 +12,7 @@ import type {
 const api = createAxiosInstance(ERP_BASE);
 
 export const TaskAPI = API.project.task;
+
 const TASK_FIELDS = [
   "name",
   "project",
@@ -21,6 +22,7 @@ const TASK_FIELDS = [
   "is_group",
   "custom_activity_type",
 ];
+
 export interface ProjectAssignee {
   user: string;
   email: string;
@@ -52,13 +54,10 @@ export async function getAllTasks(
   if (options.excludeStatuses?.length) {
     filters.push(["status", "not in", options.excludeStatuses]);
   }
-if (options.assignee) {
-  filters.push([
-    "_assign",
-    "like",
-    `%"${options.assignee}"%`,
-  ]);
-}
+  if (options.assignee) {
+    filters.push(["_assign", "like", `%"${options.assignee}"%`]);
+  }
+
   let url = `${TaskAPI.list}?${query}`;
   if (filters.length) {
     url += `&filters=${encodeURIComponent(JSON.stringify(filters))}`;
@@ -67,7 +66,6 @@ if (options.assignee) {
   const resp: AxiosResponse = await api.get(url);
   return resp.data?.data ?? [];
 }
-
 
 export async function getProjectAssignees(
   project: string,
@@ -108,6 +106,23 @@ const TASK_LIST_FIELDS = [
   "custom_activity_type",
 ];
 
+const DEFAULT_ORDER_BY = "priority desc, modified desc";
+
+const resolveOrderBy = (
+  sortBy?: string,
+  sortOrder: "asc" | "desc" = "desc",
+): string => {
+  if (!sortBy) return DEFAULT_ORDER_BY;
+  if (sortBy === "priority") return `priority ${sortOrder}, modified desc`;
+  return `${sortBy} ${sortOrder}, priority desc`;
+};
+
+const withOrderBy = (query: string, orderBy: string): string => {
+  const params = new URLSearchParams(query);
+  params.set("order_by", orderBy);
+  return params.toString();
+};
+
 export async function getTaskList(
   page = 1,
   pageSize = 20,
@@ -119,21 +134,22 @@ export async function getTaskList(
   assignees?: string[],
   flat = false,
   taskNames?: string[],
-  currentUserEmail?: string,
+  _currentUserEmail?: string,
 ): Promise<TaskListResponse> {
   const start = (page - 1) * pageSize;
+
+  const hasMultipleAssignees = !!assignees && assignees.length > 1;
+  const splitSearch = hasMultipleAssignees && !!search;
 
   const query = buildListParams({
     fields: TASK_LIST_FIELDS,
     start,
     pageSize,
-    search,
+    search: splitSearch ? undefined : search,
     searchFields: ["name", "subject"],
-    sortBy,
-    sortOrder,
   });
 
-  let url = `${TaskAPI.list}?${query}`;
+  let url = `${TaskAPI.list}?${withOrderBy(query, resolveOrderBy(sortBy, sortOrder))}`;
 
   const filters: unknown[] = [];
 
@@ -162,7 +178,13 @@ export async function getTaskList(
     filters.push(["project", "in", projects]);
   }
 
-  if (assignees && assignees.length > 0) {
+  if (splitSearch) {
+    filters.push(["subject", "like", `%${search}%`]);
+  }
+
+  if (assignees && assignees.length === 1) {
+    filters.push(["_assign", "like", `%"${assignees[0]}"%`]);
+  } else if (assignees && assignees.length > 1) {
     const orFilters = assignees.map((email) => [
       "_assign",
       "like",
@@ -182,13 +204,11 @@ export async function getChildTasks(parentTask: string): Promise<TaskEntry[]> {
   const query = buildListParams({
     fields: TASK_LIST_FIELDS,
     pageSize: CHILD_TASK_LIMIT,
-    sortBy: "lft",
-    sortOrder: "asc",
   });
 
   const filters = [["parent_task", "=", parentTask]];
   const resp: AxiosResponse = await api.get(
-    `${TaskAPI.list}?${query}&filters=${encodeURIComponent(JSON.stringify(filters))}`,
+    `${TaskAPI.list}?${withOrderBy(query, DEFAULT_ORDER_BY)}&filters=${encodeURIComponent(JSON.stringify(filters))}`,
   );
   return resp.data?.data ?? [];
 }
