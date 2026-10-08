@@ -28,15 +28,6 @@ const formatMoney = (amount: number, currency: string) =>
   }).format(amount);
 
 
-const ProgressBar: React.FC<{ value: number; total: number }> = ({ value, total }) => {
-  const pct = total > 0 ? Math.min(100, Math.round((value / total) * 100)) : 0;
-  return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-app">
-      <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-    </div>
-  );
-};
-
 const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
   <div className={`animate-pulse rounded-md bg-app ${className}`} />
 );
@@ -64,7 +55,7 @@ const LoadingState: React.FC = () => (
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="min-w-0">
-    <p className="text-[11px] font-medium text-muted">{label}</p>
+    <p className="text-[11px] font-medium text-white/70">{label}</p>
     {children}
   </div>
 );
@@ -153,35 +144,34 @@ const MySubscription: React.FC = () => {
         )}
 
         {!loading && !error && data && d && (
-          <>
-            {/* Current plan */}
-            <div>
+          <div className="shrink-0 rounded-2xl border border-theme bg-card shadow-sm">
+            <div className="rounded-t-2xl bg-primary p-6 text-white">
               <div className="flex flex-wrap items-start justify-between gap-1">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
                     <Award className="h-3.5 w-3.5" /> Current Plan
                   </span>
-                  <h3 className="mt-2 text-2xl font-bold text-main">{d.plan_name}</h3>
+                  <h3 className="mt-2 text-2xl font-bold text-white">{d.plan_name}</h3>
                 </div>
                 <div className="text-right">
-                  <span className="text-3xl font-bold text-main">
+                  <span className="text-3xl font-bold text-white">
                     {formatMoney(d.plan_price, d.currency)}
                   </span>
-                  <span className="ml-1 text-sm text-muted">{d.billing_frequency}</span>
+                  <span className="ml-1 text-sm text-white/70">/ {d.billing_frequency}</span>
                 </div>
               </div>
 
               {/* All details in one row */}
-              <div className="mt-5 grid grid-cols-2 gap-4 border-t border-theme pt-4 md:grid-cols-3 lg:grid-cols-6">
+              <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/20 pt-4 md:grid-cols-3 lg:grid-cols-6">
                 <Field label="Subscription ID">
                   <div className="mt-1 flex items-center gap-1.5">
-                    <span className="truncate rounded border border-theme bg-app px-2 py-1 font-mono text-xs text-main">
+                    <span className="truncate rounded border border-white/25 bg-white/10 px-2 py-1 font-mono text-xs text-white">
                       {data.name}
                     </span>
                     <button
                       type="button"
                       onClick={handleCopyId}
-                      className="shrink-0 rounded p-1 text-muted transition-colors hover:bg-row-hover hover:text-main"
+                      className="shrink-0 rounded p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
                       aria-label="Copy subscription ID"
                     >
                       <Copy className="h-3.5 w-3.5" />
@@ -190,14 +180,14 @@ const MySubscription: React.FC = () => {
                 </Field>
 
                 <Field label="Start Date">
-                  <p className="mt-1.5 text-sm font-semibold text-main">{formatDate(d.start_date)}</p>
+                  <p className="mt-1.5 text-sm font-semibold text-white">{formatDate(d.start_date)}</p>
                 </Field>
 
                 {d.trial_end_date && (
                   <Field label="Next Renewal">
-                    <p className="mt-1.5 text-sm font-semibold text-main">{formatDate(d.trial_end_date)}</p>
+                    <p className="mt-1.5 text-sm font-semibold text-white">{formatDate(d.trial_end_date)}</p>
                     {daysToRenewal !== null && (
-                      <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted">
+                      <p className="mt-0.5 flex items-center gap-1 text-[11px] text-white/70">
                         <Clock className="h-3 w-3" />
                         {daysToRenewal >= 0
                           ? `(in ${daysToRenewal} days)`
@@ -207,16 +197,14 @@ const MySubscription: React.FC = () => {
                   </Field>
                 )}
 
-    
-
                 {d.trial_enabled ? (
                   <Field label="Free Trial">
-                    <p className="mt-1.5 text-sm font-semibold text-main">{d.trial_days} days</p>
+                    <p className="mt-1.5 text-sm font-semibold text-white">{d.trial_days} days</p>
                   </Field>
                 ) : null}
 
                 <Field label="Setup Fee">
-                  <p className="mt-1.5 text-sm font-semibold text-main">
+                  <p className="mt-1.5 text-sm font-semibold text-white">
                     {formatMoney(d.setup_fee, d.currency)}
                   </p>
                 </Field>
@@ -224,7 +212,7 @@ const MySubscription: React.FC = () => {
             </div>
 
             {/* Products */}
-            <div>
+            <div className="p-6">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <h3 className="text-lg font-bold text-main">Products</h3>
@@ -232,9 +220,6 @@ const MySubscription: React.FC = () => {
                     Detailed view of products activated under your account,and sub-modules.
                   </p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-app px-3 py-1 text-xs font-medium text-primary">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Total {activeCount} Core Products Configured
-                </span>
               </div>
 
               <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -246,7 +231,6 @@ const MySubscription: React.FC = () => {
                       </span>
                       <span className="text-sm font-semibold text-main">{product.code}</span>
                     </div>
-
 
                     {product.subFeatures.length > 0 && (
                       <div className="mt-0">
@@ -269,7 +253,7 @@ const MySubscription: React.FC = () => {
                 ))}
               </div>
             </div>
-          </>
+          </div>
         )}
       </AppPageBody>
     </AppPage>
