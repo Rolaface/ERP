@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+
 import { useAuth } from "../../context/AuthContext";
 import { useHRViewStore } from "../../store/hrViewStore";
 import { usePermissionStore } from "../../store/permissionStore";
@@ -26,7 +26,7 @@ export function useHRView(): HRViewContext {
   const hasEmployeeRole = roles.includes("Employee");
   const hasOtherRoles   = roles.some((r) => r !== "Employee");
 
-  // ── Admin: always professional, no switching ──────────────────────────────
+
   if (isAdmin) {
     return {
       viewMode:             "professional",
@@ -38,9 +38,7 @@ export function useHRView(): HRViewContext {
     };
   }
 
-  // ── Pure professional (no Employee role at all) ───────────────────────────
-  // e.g. PROCUREMENT-only, HR Manager-only, etc.
-  // Always professional view, no switch button, ignore persisted viewMode.
+
   if (!hasEmployeeRole) {
     return {
       viewMode:             "professional",
@@ -52,8 +50,7 @@ export function useHRView(): HRViewContext {
     };
   }
 
-  // ── Pure employee (Employee role only, no other roles) ───────────────────
-  // Always employee view, no switch button.
+
   const isPureEmployee = hasEmployeeRole && !hasOtherRoles;
   if (isPureEmployee) {
     return {
@@ -66,9 +63,7 @@ export function useHRView(): HRViewContext {
     };
   }
 
-  // ── Dual role (Employee + other roles) ───────────────────────────────────
-  // Has switch button. Persisted viewMode applies, default to "employee"
-  // since they have the Employee role and that's the safer starting point.
+
   const canSwitchView = true;
   const viewMode: HRViewMode = viewModes[username] ?? "employee";
 

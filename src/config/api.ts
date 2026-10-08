@@ -799,6 +799,7 @@ export const API = {
       update:`${ERP_BASE}/api/resource/Timesheet`,
       cancel:`${ERP_BASE}/api/resource/Timesheet`,
       renametitle:`${ERP_BASE}/api/method/frappe.model.rename_doc.update_document_title`,
+      getbyid:`${ERP_BASE}/api/method/custom_hrms.api.timesheet.api.get_timesheet`,
     },
     activityType:{ list: `${ERP_BASE}/api/resource/Activity Type`,
   },

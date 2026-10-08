@@ -6,7 +6,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  LabelList,
   ResponsiveContainer,
 } from "recharts";
 
@@ -70,12 +69,8 @@ interface ChartPoint {
   month: string;
   received: number; 
   receivable: number;
-  receivedActual: number;
-  receivableActual: number;
+  total: number;
 }
-
-
-const MIN_BAR_HEIGHT_RATIO = 0.03;
 
 const ChartTooltip: React.FC<{
   active?: boolean;
@@ -84,40 +79,22 @@ const ChartTooltip: React.FC<{
   currencyFormatter: CurrencyFormatter;
 }> = ({ active, label, payload, currencyFormatter }) => {
   if (!active || !payload?.length) return null;
-  const row = payload[0]?.payload;
-  const received = row?.receivedActual ?? 0;
-  const receivable = row?.receivableActual ?? 0;
+  const row = payload[0].payload;
   return (
     <div className="rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs shadow-md">
       <p className="mb-1 font-semibold text-slate-700">{label}</p>
       <p className="flex items-center gap-1.5 text-slate-500">
         <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: CHART_CONFIG.received }} />
-        Received: <span className="font-medium text-slate-700">{currencyFormatter.format(received)}</span>
+        Received: <span className="font-medium text-slate-700">{currencyFormatter.format(row.received)}</span>
       </p>
       <p className="flex items-center gap-1.5 text-slate-500">
         <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: CHART_CONFIG.receivable }} />
-        Receivable: <span className="font-medium text-slate-700">{currencyFormatter.format(receivable)}</span>
+        Receivable: <span className="font-medium text-slate-700">{currencyFormatter.format(row.receivable)}</span>
+      </p>
+      <p className="mt-1 border-t border-slate-100 pt-1 text-slate-500">
+        Total: <span className="font-semibold text-slate-800">{currencyFormatter.format(row.total)}</span>
       </p>
     </div>
-  );
-};
-
-const BarValueLabel = (props: {
-  x?: number;
-  y?: number;
-  width?: number;
-  payload?: ChartPoint;
-  actualKey: "receivedActual" | "receivableActual";
-  color: string;
-  formatter: (v: number) => string;
-}) => {
-  const { x = 0, y = 0, width = 0, payload, actualKey, color, formatter } = props;
-  const actual = payload?.[actualKey] ?? 0;
-  if (!actual) return null;
-  return (
-    <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={10} fontWeight={600} fill={color}>
-      {formatter(actual)}
-    </text>
   );
 };
 
@@ -140,45 +117,35 @@ const MonthlySalesOverview: React.FC<MonthlySalesOverviewProps> = ({
 }) => {
   const [period, setPeriod] = useState<Period>("Monthly");
 
-  const monthlyPoints = useMemo(
+  const monthlyPoints: ChartPoint[] = useMemo(
     () =>
       (data ?? []).map((d) => ({
         month: d.month,
-        received: d.received,
-        receivable: d.receivable,
+        received: d.received ?? 0,
+        receivable: d.receivable ?? 0,
+        total: d.total ?? 0,
       })),
     [data],
   );
 
-  const yearlyPoints = useMemo(() => {
+  const yearlyPoints: ChartPoint[] = useMemo(() => {
     const totals = monthlyPoints.reduce(
       (acc, p) => {
         acc.received += p.received;
         acc.receivable += p.receivable;
+        acc.total += p.total;
         return acc;
       },
-      { received: 0, receivable: 0 },
+      { received: 0, receivable: 0, total: 0 },
     );
     return [{ month: year, ...totals }];
   }, [monthlyPoints, year]);
 
-  const rawPoints = period === "Monthly" ? monthlyPoints : yearlyPoints;
-  const hasAnyValue = rawPoints.some((p) => p.received > 0 || p.receivable > 0);
-
-  const chartPoints: ChartPoint[] = useMemo(() => {
-    const maxValue = Math.max(...rawPoints.flatMap((p) => [p.received, p.receivable]), 1);
-    const floor = maxValue * MIN_BAR_HEIGHT_RATIO;
-    return rawPoints.map((p) => ({
-      month: p.month,
-      received: p.received > 0 ? Math.max(p.received, floor) : 0,
-      receivable: p.receivable > 0 ? Math.max(p.receivable, floor) : 0,
-      receivedActual: p.received,
-      receivableActual: p.receivable,
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawPoints]);
+  const chartPoints: ChartPoint[] = period === "Monthly" ? monthlyPoints : yearlyPoints;
+  const hasAnyValue = chartPoints.some((p) => p.received > 0 || p.receivable > 0);
 
   const yAxisTickFormatter = (v: number) => currencyFormatter.format(v);
+  const maxBarSize = period === "Yearly" ? 48 : 20;
 
   return (
     <div className="flex flex-col gap-2">
@@ -202,7 +169,7 @@ const MonthlySalesOverview: React.FC<MonthlySalesOverviewProps> = ({
       ) : (
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartPoints} margin={{ top: 20, right: 4, left: 0, bottom: 0 }} barGap={4} barCategoryGap="28%">
+            <BarChart data={chartPoints} margin={{ top: 20, right: 4, left: 0, bottom: 0 }} barCategoryGap="28%">
               <CartesianGrid vertical={false} stroke={CHART_CONFIG.grid} strokeDasharray="3 3" />
               <XAxis
                 dataKey="month"
@@ -221,38 +188,21 @@ const MonthlySalesOverview: React.FC<MonthlySalesOverviewProps> = ({
                 cursor={{ fill: "rgba(148,163,184,0.08)" }}
                 content={<ChartTooltip currencyFormatter={currencyFormatter} />}
               />
-              <Bar dataKey="received" name="Received" fill={CHART_CONFIG.received} radius={[4, 4, 0, 0]} maxBarSize={period === "Yearly" ? 48 : 20}>
-                <LabelList
-                  dataKey="received"
-                  content={(p: any) => (
-                    <BarValueLabel
-                      {...p}
-                      actualKey="receivedActual"
-                      color={CHART_CONFIG.received}
-                      formatter={currencyFormatter.format}
-                    />
-                  )}
-                />
-              </Bar>
+              <Bar
+                dataKey="received"
+                name="Received"
+                stackId="sales"
+                fill={CHART_CONFIG.received}
+                maxBarSize={maxBarSize}
+              />
               <Bar
                 dataKey="receivable"
                 name="Receivable"
+                stackId="sales"
                 fill={CHART_CONFIG.receivable}
                 radius={[4, 4, 0, 0]}
-                maxBarSize={period === "Yearly" ? 48 : 20}
-              >
-                <LabelList
-                  dataKey="receivable"
-                  content={(p: any) => (
-                    <BarValueLabel
-                      {...p}
-                      actualKey="receivableActual"
-                      color={CHART_CONFIG.receivable}
-                      formatter={currencyFormatter.format}
-                    />
-                  )}
-                />
-              </Bar>
+                maxBarSize={maxBarSize}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>

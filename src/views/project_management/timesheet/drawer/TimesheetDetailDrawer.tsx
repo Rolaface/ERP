@@ -161,6 +161,18 @@ const MoneyCell: React.FC<{
   </div>
 );
 
+const fmtBase = (v: number) =>
+  v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
 interface Props {
   open: boolean;
   data: TimesheetDetail | null;
@@ -227,6 +239,11 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
       )}
     </>
   ) : null;
+
+  // ID ki jagah naam dikhao, naam na ho to ID fallback
+  const customerLabel = data?.customer_name || data?.customer;
+  const parentProjectLabel =
+    data?.parent_project_name || data?.parent_project;
 
   return (
     <Drawer
@@ -322,8 +339,8 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
             >
               <Chip>{data.employee}</Chip>
               {data.employee_name && <Chip>{data.employee_name}</Chip>}
-              {data.customer && <Chip>{data.customer}</Chip>}
-              {data.parent_project && <Chip>{data.parent_project}</Chip>}
+              {customerLabel && <Chip>{customerLabel}</Chip>}
+              {parentProjectLabel && <Chip>{parentProjectLabel}</Chip>}
             </div>
 
             <DrawerSummaryCards
@@ -403,7 +420,7 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                   <Row label="Status" value={d.meta.label} />
                   <Row label="Employee" value={data.employee} />
                   <Row label="Employee Name" value={data.employee_name} />
-                  <Row label="Customer" value={data.customer} />
+                  <Row label="Customer" value={customerLabel} />
                   <Row label="Company" value={data.company} />
                   <Row label="Department" value={data.department} />
                   {showFinancials && (
@@ -412,16 +429,8 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                   {showFinancials && (
                     <Row label="Exchange Rate" value={data.exchange_rate} />
                   )}
-                  <Row label="Parent Project" value={data.parent_project} />
+                  <Row label="Parent Project" value={parentProjectLabel} />
                   <Row label="Timesheet Period" value={periodNode} />
-                  {/* <Row
-                    label="First Entry"
-                    value={<DateDisplay date={data.start_date} />}
-                  />
-                  <Row
-                    label="Last Entry"
-                    value={<DateDisplay date={data.end_date} />}
-                  /> */}
                 </Card>
 
                 {(showEmployeeCard || showFinancials) && (
@@ -456,12 +465,9 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                               fontSize: 14,
                             }}
                           >
-                            {(data.employee_name || data.title || "?")
-                              .split(" ")
-                              .map((w) => w[0])
-                              .slice(0, 2)
-                              .join("")
-                              .toUpperCase()}
+                            {getInitials(
+                              data.employee_name || data.title || "?",
+                            )}
                           </div>
                           <div>
                             <p
@@ -484,7 +490,7 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                             </p>
                           </div>
                         </div>
-                        <Row label="Customer" value={data.customer} />
+                        <Row label="Customer" value={customerLabel} />
                         <Row label="Company" value={data.company} />
                         <Row label="Department" value={data.department} />
                       </Card>
@@ -506,19 +512,15 @@ const TimesheetDetailDrawer: React.FC<Props> = ({
                           <>
                             <Row
                               label="Base Billable Amount"
-                              value={(
-                                data.total_billable_amount * d.rate
-                              ).toLocaleString(undefined, {
-                                maximumFractionDigits: 2,
-                              })}
+                              value={fmtBase(
+                                (data.total_billable_amount ?? 0) * d.rate,
+                              )}
                             />
                             <Row
                               label="Base Costing Amount"
-                              value={(
-                                data.total_costing_amount * d.rate
-                              ).toLocaleString(undefined, {
-                                maximumFractionDigits: 2,
-                              })}
+                              value={fmtBase(
+                                (data.total_costing_amount ?? 0) * d.rate,
+                              )}
                             />
                           </>
                         )}
