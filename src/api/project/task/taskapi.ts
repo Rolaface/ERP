@@ -109,16 +109,17 @@ const TASK_LIST_FIELDS = [
 ];
 
 export async function getTaskList(
-  page: number = 1,
-  pageSize: number = 20,
+  page = 1,
+  pageSize = 20,
   statuses?: string[],
   projects?: string[],
   search?: string,
   sortBy?: string,
   sortOrder?: "asc" | "desc",
   assignees?: string[],
-  flat: boolean = false,
+  flat = false,
   taskNames?: string[],
+  currentUserEmail?: string,
 ): Promise<TaskListResponse> {
   const start = (page - 1) * pageSize;
 
