@@ -3,15 +3,18 @@ import { createAxiosInstance } from "../../axiosInstance";
 import { buildListParams } from "../../../api/utils/queryBuilder";
 import { API, ERP_BASE } from "../../../config/api";
 import type {
+  CalendarSummaryCell,
   TimesheetDetail,
-  TimesheetListResponse,
   TimesheetHoursEntry,
+  TimesheetListResponse,
 } from "../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import { frappeDelete } from "../../Delete/frappeDeleteApi";
+
 const api = createAxiosInstance(ERP_BASE);
 export const TimesheetAPI = API.project.timesheet;
 
-// ── Fields ───────────────────────────────────────────────────────
+const PENDING_APPROVAL_STATUS = "Pending For Approval";
+const DRAFT_STATUS = "Draft";
 
 const TIMESHEET_FIELDS = [
   "name",
@@ -24,9 +27,14 @@ const TIMESHEET_FIELDS = [
   "status",
   "start_date",
   "end_date",
+  "custom_timesheet_start_date",
+  "custom_timesheet_end_date",
   "title",
-  "total_hours",
+  "employee",
+  "employee_name",
+  "customer",
   "currency",
+  "total_hours",
   "total_billable_amount",
   "total_costing_amount",
   "total_billed_amount",
@@ -34,15 +42,14 @@ const TIMESHEET_FIELDS = [
   "parent_project",
 ];
 
-// ── Timesheets ───────────────────────────────────────────────────
-
 export async function getAllTimesheets(
   page: number = 1,
   pageSize: number = 20,
   statuses?: string[],
   search?: string,
-  sortBy?: string,
-  sortOrder?: "asc" | "desc",
+  sortBy: string = "creation",
+  sortOrder: "asc" | "desc" = "desc",
+  employees?: string[],
 ): Promise<TimesheetListResponse> {
   const query = buildListParams({
     fields: TIMESHEET_FIELDS,
@@ -54,24 +61,58 @@ export async function getAllTimesheets(
     sortOrder,
   });
 
-  let url = `${TimesheetAPI.list}?${query}`;
+  const filters: unknown[] = [];
 
   if (statuses && statuses.length > 0) {
-    url += `&filters=${encodeURIComponent(JSON.stringify([["status", "in", statuses]]))}`;
+    filters.push(["status", "in", statuses]);
+  }
+
+  if (employees && employees.length > 0) {
+    filters.push(["employee", "in", employees]);
+  }
+
+  let url = `${TimesheetAPI.list}?${query}`;
+
+  if (filters.length > 0) {
+    url += `&filters=${encodeURIComponent(JSON.stringify(filters))}`;
+  }
+
+  const storedUser = localStorage.getItem("auth_user");
+
+  if (storedUser) {
+    try {
+      const currentUser = JSON.parse(storedUser);
+
+      const username = currentUser?.username ?? "";
+      const roles: string[] = currentUser?.roles ?? [];
+
+      const isAdministrator =
+        username === "Administrator" || roles.includes("Administrator");
+
+      const owner = isAdministrator ? "Administrator" : currentUser?.email;
+
+      if (owner) {
+        const orFilters = [
+          ["status", "!=", DRAFT_STATUS],
+          ["owner", "=", owner],
+        ];
+
+        url += `&or_filters=${encodeURIComponent(JSON.stringify(orFilters))}`;
+      }
+    } catch {}
   }
 
   const resp: AxiosResponse<TimesheetListResponse> = await api.get(url);
+
   return resp.data;
 }
 
 export async function getTimesheetById(
   id: string,
 ): Promise<TimesheetDetail | null> {
-  // Standard Frappe REST resource-by-name endpoint:
-  // GET /api/resource/Timesheet/{name} → { data: { ...full doc incl. time_logs } }
-  const resp: AxiosResponse = await api.get(
-    `${TimesheetAPI.list}/${encodeURIComponent(id)}`,
-  );
+  const resp: AxiosResponse = await api.get(TimesheetAPI.getbyid, {
+    params: { name: id },
+  });
   return resp.data?.data ?? null;
 }
 
@@ -97,126 +138,90 @@ export async function updateTimesheetById(payload: any): Promise<any> {
 export async function submitTimesheet(id: string): Promise<any> {
   const resp: AxiosResponse = await api.put(
     `${TimesheetAPI.list}/${encodeURIComponent(id)}`,
-    {
-      docstatus: 1,
-    },
+    { docstatus: 1 },
   );
-
   return resp.data;
 }
 
 export async function cancelTimesheet(id: string): Promise<any> {
   const resp: AxiosResponse = await api.put(
     `${TimesheetAPI.list}/${encodeURIComponent(id)}`,
-    {
-      docstatus: 2,
-    },
+    { docstatus: 2 },
   );
-
   return resp.data;
 }
-const GET_LIST_PATH = "/api/method/frappe.client.get_list";
-const HOURS_PAGE_SIZE = 200;
-const CANCELLED_DOCSTATUS = 2;
-const UNASSIGNED_LABEL = "Unassigned";
 
-interface HoursDetailRow {
-  parent: string;
-  from_time: string;
-  hours: number;
-  docstatus: number;
-  project: string | null;
-  project_name: string | null;
-  task: string | null;
-  activity_type: string | null;
-  description: string | null;
-}
-
-interface HoursSheetRow {
-  name: string;
-  employee: string | null;
-  employee_name: string | null;
-}
-
-async function getAllPages<T>(params: Record<string, unknown>): Promise<T[]> {
-  const serialized = Object.fromEntries(
-    Object.entries(params).map(([key, value]) => [
-      key,
-      typeof value === "string" ? value : JSON.stringify(value),
-    ]),
+export async function sendTimesheetForApproval(id: string): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    `${TimesheetAPI.list}/${encodeURIComponent(id)}`,
+    { status: PENDING_APPROVAL_STATUS },
   );
-
-  const rows: T[] = [];
-  for (let start = 0; ; start += HOURS_PAGE_SIZE) {
-    const query = new URLSearchParams({
-      ...serialized,
-      limit_start: String(start),
-      limit_page_length: String(HOURS_PAGE_SIZE),
-    });
-    const resp: AxiosResponse = await api.get(`${GET_LIST_PATH}?${query}`);
-    const page: T[] = resp.data?.message ?? [];
-    rows.push(...page);
-    if (page.length < HOURS_PAGE_SIZE) return rows;
-  }
+  return resp.data;
 }
 
-export async function getTimesheetHours(
+export async function getCalendarSummary(
   fromDate: string,
   toDate: string,
+  granularity: "day" | "month",
+  employees?: string[],
+  excludeDraft: boolean = false,
+  filters: { project?: string; activityType?: string } = {},
+): Promise<CalendarSummaryCell[]> {
+  const resp: AxiosResponse = await api.get(TimesheetAPI.calendarSummary, {
+    params: {
+      from_date: fromDate,
+      to_date: toDate,
+      granularity,
+      employees: employees?.length ? JSON.stringify(employees) : undefined,
+      exclude_draft: excludeDraft ? 1 : 0,
+      project: filters.project || undefined,
+      activity_type: filters.activityType || undefined,
+    },
+  });
+  return resp.data?.data ?? [];
+}
+
+export async function getCalendarDetails(
+  fromDate: string,
+  toDate: string,
+  mine: boolean = false,
+  excludeDraft: boolean = false
 ): Promise<TimesheetHoursEntry[]> {
-  const [details, sheets] = await Promise.all([
-    getAllPages<HoursDetailRow>({
-      doctype: "Timesheet Detail",
-      parent: "Timesheet",
-      fields: [
-        "parent",
-        "from_time",
-        "hours",
-        "docstatus",
-        "project",
-        "project_name",
-        "task",
+  const resp: AxiosResponse = await api.get(TimesheetAPI.calendarDetails, {
+    params: {
+      from_date: fromDate,
+      to_date: toDate,
+      mine: mine ? 1 : 0,
+      exclude_draft: excludeDraft ? 1 : 0,
+    },
+  });
 
-        "activity_type",
-        "description",
-      ],
-      filters: [
-        ["from_time", "between", [fromDate, toDate]],
-        ["docstatus", "!=", CANCELLED_DOCSTATUS],
-      ],
-      order_by: "from_time asc",
-    }),
-    getAllPages<HoursSheetRow>({
-      doctype: "Timesheet",
-      fields: ["name", "employee", "employee_name"],
-      filters: [
-        ["start_date", "<=", toDate],
-        ["end_date", ">=", fromDate],
-        ["docstatus", "!=", CANCELLED_DOCSTATUS],
-      ],
-      order_by: "creation asc",
-    }),
-  ]);
+  return resp.data?.data ?? [];
+}
 
-  const employeeBySheet = new Map(
-    sheets.map((s) => [
-      s.name,
-      s.employee_name || s.employee || UNASSIGNED_LABEL,
-    ]),
+export async function searchEmployees(
+  q: string,
+): Promise<{ label: string; value: string }[]> {
+  const params = new URLSearchParams({ page: "1", page_size: "100" });
+  if (q) params.set("search", q);
+
+  const resp: AxiosResponse = await api.get(
+    `${API.frappeUtilsAPI.employeesearch}?${params}`,
   );
+  const list: { value: string; label: string }[] = resp.data?.data ?? [];
 
-  return details.map((d) => ({
-    timesheet: d.parent,
-    employee: employeeBySheet.get(d.parent) ?? UNASSIGNED_LABEL,
-    date: d.from_time.slice(0, 10),
-    hours: d.hours,
-    docstatus: d.docstatus,
-    project: d.project,
-    project_name: d.project_name,
-    task: d.task,
-    activity_type: d.activity_type,
-    description: d.description,
-  }));
+  const term = q.trim().toLowerCase();
+  return list
+    .filter(
+      (e) =>
+        !term ||
+        e.label.toLowerCase().includes(term) ||
+        e.value.toLowerCase().includes(term),
+    )
+    .map((e) => ({
+      value: e.value,
+      label: e.label,
+    }));
 }
 
 export async function deleteTimesheetById(id: string): Promise<void> {

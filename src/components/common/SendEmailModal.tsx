@@ -11,7 +11,7 @@ import { MinimizableModal } from "../../components/common/MinimizableModal";
 interface Props {
   modalId: string;
   open: boolean;
-  docType: "Sales Invoice" | "Purchase Order" | "Payment Entry" | "Proforma Invoice" | "Quotation" | "Customer";
+  docType: "Sales Invoice" | "Purchase Order" | "Payment Entry" | "Proforma Invoice" | "Quotation" | "Customer"|"Timesheet";
   isProforma?: boolean;
   invoiceNumber?: string;
   contactEmail?: string | null;

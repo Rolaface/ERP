@@ -12,12 +12,26 @@ import type {
 const api = createAxiosInstance(ERP_BASE);
 
 export const TaskAPI = API.project.task;
-const TASK_FIELDS = ["name", "project", "subject", "status", "priority", "is_group"];
+const TASK_FIELDS = [
+  "name",
+  "project",
+  "subject",
+  "status",
+  "priority",
+  "is_group",
+  "custom_activity_type",
+];
+export interface ProjectAssignee {
+  user: string;
+  email: string;
+  full_name: string;
+}
 
 export interface GetAllTasksOptions {
   pageSize?: number;
   excludeGroups?: boolean;
   excludeStatuses?: string[];
+  assignee?: string;
 }
 
 export async function getAllTasks(
@@ -38,7 +52,13 @@ export async function getAllTasks(
   if (options.excludeStatuses?.length) {
     filters.push(["status", "not in", options.excludeStatuses]);
   }
-
+if (options.assignee) {
+  filters.push([
+    "_assign",
+    "like",
+    `%"${options.assignee}"%`,
+  ]);
+}
   let url = `${TaskAPI.list}?${query}`;
   if (filters.length) {
     url += `&filters=${encodeURIComponent(JSON.stringify(filters))}`;
@@ -46,6 +66,24 @@ export async function getAllTasks(
 
   const resp: AxiosResponse = await api.get(url);
   return resp.data?.data ?? [];
+}
+
+
+export async function getProjectAssignees(
+  project: string,
+): Promise<ProjectAssignee[]> {
+  if (!project) return [];
+
+  const resp: AxiosResponse = await api.get(
+    `/api/method/custom_hrms.api.task.api.get_project_assignees`,
+    {
+      params: {
+        project,
+      },
+    },
+  );
+
+  return resp.data?.message ?? [];
 }
 
 const CHILD_TASK_LIMIT = 500;
@@ -67,19 +105,21 @@ const TASK_LIST_FIELDS = [
   "is_milestone",
   "_assign",
   "parent_task",
+  "custom_activity_type",
 ];
 
 export async function getTaskList(
-  page: number = 1,
-  pageSize: number = 20,
+  page = 1,
+  pageSize = 20,
   statuses?: string[],
   projects?: string[],
   search?: string,
   sortBy?: string,
   sortOrder?: "asc" | "desc",
   assignees?: string[],
-  flat: boolean = false,
+  flat = false,
   taskNames?: string[],
+  currentUserEmail?: string,
 ): Promise<TaskListResponse> {
   const start = (page - 1) * pageSize;
 
@@ -167,7 +207,9 @@ export async function createTask(payload: any): Promise<any> {
 
 export async function updateTaskById(payload: any): Promise<any> {
   if (!payload?.name) {
-    throw new Error("updateTaskById: payload.name is required to update a Task.");
+    throw new Error(
+      "updateTaskById: payload.name is required to update a Task.",
+    );
   }
 
   const resp: AxiosResponse = await api.put(

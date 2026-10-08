@@ -15,6 +15,8 @@ import {
   getTimesheetById,
   deleteTimesheetById,
   renameTimesheetTitle,
+  searchEmployees,
+  sendTimesheetForApproval,
 } from "../../../../api/project/timesheet/timesheet.api";
 import Table from "../../../../components/ui/Table/Table";
 import ActionButton, {
@@ -44,18 +46,28 @@ import {
 } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
 import TimesheetCalendar from "../components/TimesheetCalendar";
 import type { TimesheetMode } from "../components/Viewtoggle";
-import { TIMESHEET_VIEW_OPTIONS } from "../components/timesheetViews";
-import ViewSelector from "../../../project_management/ViewSelector";
-
-// ── Constants ────────────────────────────────────────────────────
+import { openSendEmailModal } from "../../../../store/modalStore";
+import type { MultiSelectOption } from "../../../../components/ui/modal/MultiSelectFilter";
+import ViewSelector, {
+  type ViewOption,
+} from "../../../project_management/ViewSelector";
 
 const TS_MODULE = "Timesheet";
 const TITLE_MAX_LENGTH = 140;
+const DRAFT_STATUS = "Draft";
 
 const CONTENT_HEIGHT = "calc(85.5vh - 100px)";
+const VIEW_OPTIONS: ViewOption<TimesheetMode>[] = [
+  { value: "calendar", label: "Calendar" },
+  { value: "table", label: "Table" },
+];
+
+const fetchUserOptions = (q: string): Promise<MultiSelectOption[]> =>
+  searchEmployees(q);
 
 const STATUS_OPTIONS = [
   { label: "Draft", value: "Draft" },
+  { label: "Pending Approval", value: "Pending For Approval" },
   { label: "Approved", value: "Submitted" },
   { label: "Billed", value: "Billed" },
   { label: "Cancelled", value: "Cancelled" },
@@ -66,12 +78,11 @@ const STATUS_VARIANT: Record<
   "draft" | "info" | "success" | "danger"
 > = {
   Draft: "draft",
-  Submitted: "info",
+  "Pending For Approval": "info",
+  Submitted: "success",
   Billed: "success",
   Cancelled: "danger",
 };
-
-// ── Inline editable title ────────────────────────────────────────
 
 interface EditableTitleProps {
   value: string;
@@ -90,7 +101,6 @@ const EditableTitle: React.FC<EditableTitleProps> = ({
   const [draft, setDraft] = useState(safeValue);
   const busyRef = useRef(false);
 
-  // Not editable (e.g. Cancelled / no permission)
   if (!editable) {
     return hasTitle ? (
       <span className="font-bold text-main text-xs whitespace-normal break-words">
@@ -170,18 +180,20 @@ const EditableTitle: React.FC<EditableTitleProps> = ({
   );
 };
 
-// ── Component ────────────────────────────────────────────────────
-
 const HrTimesheetView: React.FC = () => {
   const { can } = usePermission();
   const { viewMode } = useHRView();
   const isProfessional = viewMode === "professional";
+  const statusOptions = isProfessional
+    ? STATUS_OPTIONS.filter((o) => o.value !== DRAFT_STATUS)
+    : STATUS_OPTIONS;
 
   const canCreate = can(TS_MODULE, "create");
   const canWrite = can(TS_MODULE, "write");
   const canSubmit = can(TS_MODULE, "submit");
   const canCancel = can(TS_MODULE, "cancel");
   const canDelete = can(TS_MODULE, "delete");
+
   const showFinancials = isProfessional;
   const mountedRef = useRef(true);
 
@@ -199,8 +211,12 @@ const HrTimesheetView: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [employeeFilter, setEmployeeFilter] = useState<string[]>([]);
+  const [userFilterOptions, setUserFilterOptions] = useState<
+    MultiSelectOption[]
+  >([]);
   const [sortBy, setSortBy] = useState<string>("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<TimesheetDetail | null>(null);
@@ -208,13 +224,26 @@ const HrTimesheetView: React.FC = () => {
   const [approving, setApproving] = useState(false);
   const [view, setView] = useState<TimesheetMode>("calendar");
 
-  // ── Reset page on search/filter change ────────────────────────
+  useEffect(() => {
+    if (!isProfessional) {
+      setEmployeeFilter((prev) => (prev.length ? [] : prev));
+      return;
+    }
+    setStatusFilter((prev) =>
+      prev.includes(DRAFT_STATUS)
+        ? prev.filter((s) => s !== DRAFT_STATUS)
+        : prev,
+    );
+    fetchUserOptions("")
+      .then((list) => {
+        if (mountedRef.current) setUserFilterOptions(list);
+      })
+      .catch(showApiError);
+  }, [isProfessional]);
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, statusFilter]);
-
-  // ── Fetch ────────────────────────────────────────────────────
+  }, [searchTerm, statusFilter, employeeFilter]);
 
   const fetchTimesheets = useCallback(async () => {
     if (!mountedRef.current) return;
@@ -228,6 +257,7 @@ const HrTimesheetView: React.FC = () => {
         searchTerm || undefined,
         sortBy || undefined,
         sortOrder,
+        employeeFilter.length ? employeeFilter : undefined,
       );
       if (!mountedRef.current) return;
 
@@ -242,14 +272,22 @@ const HrTimesheetView: React.FC = () => {
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, searchTerm, statusFilter, sortBy, sortOrder]);
+  }, [
+    page,
+    pageSize,
+    searchTerm,
+    statusFilter,
+    employeeFilter,
+    ,
+    sortBy,
+    sortOrder,
+  ]);
 
   const fetchTimesheetsRef = useRef(fetchTimesheets);
   useEffect(() => {
     fetchTimesheetsRef.current = fetchTimesheets;
   }, [fetchTimesheets]);
 
-  // Initial fetch
   useEffect(() => {
     mountedRef.current = true;
     fetchTimesheets();
@@ -261,7 +299,16 @@ const HrTimesheetView: React.FC = () => {
   useEffect(() => {
     if (isInitialLoad) return;
     fetchTimesheets();
-  }, [page, pageSize, searchTerm, statusFilter, sortBy, sortOrder]);
+  }, [
+    page,
+    pageSize,
+    searchTerm,
+    statusFilter,
+    employeeFilter,
+    isProfessional,
+    sortBy,
+    sortOrder,
+  ]);
 
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(REFRESH_KEYS.TIMESHEET_LIST, () =>
@@ -269,8 +316,6 @@ const HrTimesheetView: React.FC = () => {
     );
     return unsubscribe;
   }, [subscribeToRefresh]);
-
-  // ── Handlers ─────────────────────────────────────────────────
 
   const openTimesheetForm = isProfessional
     ? openAdminTimesheetFormModal
@@ -308,6 +353,51 @@ const HrTimesheetView: React.FC = () => {
     }
   };
 
+  const handleComposeEmail = async (t: TimesheetEntry) => {
+    let contactEmail: string | null = null;
+    let invoiceAttachments: { name: string; file_name: string }[] = [];
+    try {
+      const detail = await getTimesheetById(t.name);
+      contactEmail = (detail as any)?.contact_email ?? null;
+      invoiceAttachments = (detail as any)?.attachments ?? [];
+    } catch {}
+
+    openSendEmailModal({
+      docType: "Timesheet",
+      invoiceNumber: t.name,
+      contactEmail,
+      invoiceAttachments,
+    });
+  };
+
+  const handleSendForApproval = async (id: string): Promise<boolean> => {
+    if (!canWrite) return false;
+    const result = await fireManagedSwal({
+      icon: "question",
+      title: "Submit for Approval?",
+      text: `Timesheet ${id} will be sent for approval and can no longer be edited.`,
+      showCancelButton: true,
+      confirmButtonColor: "#22c55e",
+      confirmButtonText: "Yes, Submit",
+      cancelButtonText: "No",
+    });
+
+    if (!result.isConfirmed) return false;
+
+    try {
+      showLoading("Submitting for approval...");
+      await sendTimesheetForApproval(id);
+      closeSwal();
+      showSuccess("Timesheet sent for approval");
+      refreshList();
+      return true;
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+      return false;
+    }
+  };
+
   const handleRename = async (
     t: TimesheetEntry,
     next: string,
@@ -331,7 +421,7 @@ const HrTimesheetView: React.FC = () => {
 
     try {
       showLoading(hadTitle ? "Renaming timesheet..." : "Adding title...");
-      await renameTimesheetTitle(t.name, next); // same API
+      await renameTimesheetTitle(t.name, next);
       closeSwal();
       showSuccess(hadTitle ? "Timesheet renamed" : "Title added");
       refreshList();
@@ -342,6 +432,7 @@ const HrTimesheetView: React.FC = () => {
       return false;
     }
   };
+
   const handleDelete = async (id: string): Promise<boolean> => {
     if (!canDelete) return false;
     const result = await fireManagedSwal({
@@ -434,6 +525,16 @@ const HrTimesheetView: React.FC = () => {
     }
   };
 
+  const handleDrawerSendForApproval = async (id: string) => {
+    setApproving(true);
+    try {
+      const ok = await handleSendForApproval(id);
+      if (ok) closeDrawer();
+    } finally {
+      setApproving(false);
+    }
+  };
+
   const handleDrawerCancel = async (id: string) => {
     const ok = await handleCancel(id);
     if (ok) closeDrawer();
@@ -444,7 +545,6 @@ const HrTimesheetView: React.FC = () => {
     handleEdit(id);
   };
 
-  // ── Columns ──────────────────────────────────────────────────
   const columns: Column<TimesheetEntry>[] = [
     {
       key: "title",
@@ -461,30 +561,27 @@ const HrTimesheetView: React.FC = () => {
       ),
     },
     {
-      key: "start_date",
-      header: "Start Date",
+      key: "custom_timesheet_start_date",
+      header: "Timesheet Period",
       align: "left",
-      width: "140px",
+      width: "280px",
       sortable: true,
-      render: (t) => (
-        <DateDisplay
-          date={t.start_date}
-          className="text-xs text-muted whitespace-nowrap"
-        />
-      ),
-    },
-    {
-      key: "end_date",
-      header: "End Date",
-      align: "left",
-      width: "140px",
-      sortable: true,
-      render: (t) => (
-        <DateDisplay
-          date={t.end_date}
-          className="text-xs text-muted whitespace-nowrap"
-        />
-      ),
+      render: (t) => {
+        const start = t.custom_timesheet_start_date;
+        const end = t.custom_timesheet_end_date;
+        if (!start) return <span className="text-xs text-muted">—</span>;
+        return (
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <DateDisplay date={start} className="text-xs text-muted" />
+            {end && end !== start && (
+              <>
+                <span className="text-xs text-muted">→</span>
+                <DateDisplay date={end} className="text-xs text-muted" />
+              </>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "total_hours",
@@ -542,14 +639,21 @@ const HrTimesheetView: React.FC = () => {
       render: (t) => {
         const customActions = [];
 
-        if (t.status === "Draft" && canSubmit) {
+        if (t.status === "Draft" && canWrite) {
+          customActions.push({
+            label: "Submit for Approval",
+            icon: ACTION_ICONS.APPROVE,
+            onClick: () => handleSendForApproval(t.name),
+          });
+        }
+        if (t.status === "Pending For Approval" && canSubmit) {
           customActions.push({
             label: "Approve",
             icon: ACTION_ICONS.APPROVE,
             onClick: () => handleSubmit(t.name),
           });
         }
-        if (t.status === "Draft" && canDelete) {
+        if ((t.status === "Draft" || t.status === "Cancelled") && canDelete) {
           customActions.push({
             label: "Delete",
             icon: ACTION_ICONS.DELETE,
@@ -565,8 +669,17 @@ const HrTimesheetView: React.FC = () => {
             onClick: () => handleCancel(t.name),
           });
         }
+        if (t.status === "Submitted" || t.status === "Billed") {
+          customActions.push({
+            label: "Compose Email",
+            icon: ACTION_ICONS.EMAIL,
+            onClick: () => handleComposeEmail(t),
+          });
+        }
 
-        const canEdit = t.status === "Draft" && canWrite;
+        const canEdit =
+          (t.status === "Draft" || t.status === "Pending For Approval") &&
+          canWrite;
         const isMenuEmpty = customActions.length === 0;
 
         return (
@@ -597,14 +710,18 @@ const HrTimesheetView: React.FC = () => {
       },
     },
   ];
-
-  // ── Render ───────────────────────────────────────────────────
+  const viewSelector = (
+    <ViewSelector value={view} options={VIEW_OPTIONS} onChange={setView} />
+  );
 
   return (
     <HrTableFrame>
-      {/* KPIs stay mounted in both views */}
       <div className="px-1 pt-1 pb-2">
-        <MetricsRow timesheets={timesheets} showFinancials={showFinancials} />
+        <MetricsRow
+          timesheets={timesheets}
+          showFinancials={showFinancials}
+          hideDraft={isProfessional}
+        />
       </div>
 
       {view === "calendar" ? (
@@ -617,6 +734,9 @@ const HrTimesheetView: React.FC = () => {
             canEdit={canWrite}
             canCreate={canCreate}
             onSwitchToList={() => setView("table")}
+            employeeFilter={employeeFilter}
+            onEmployeeFilterChange={setEmployeeFilter}
+            fetchEmployees={fetchUserOptions}
           />
         </div>
       ) : (
@@ -637,10 +757,23 @@ const HrTimesheetView: React.FC = () => {
             {
               key: "status",
               label: "Status",
-              options: STATUS_OPTIONS,
+              options: statusOptions,
               values: statusFilter,
               onChange: setStatusFilter,
             },
+            ...(isProfessional
+              ? [
+                  {
+                    key: "employee",
+                    label: "Employee",
+                    options: userFilterOptions,
+                    values: employeeFilter,
+                    onChange: setEmployeeFilter,
+                    searchPlaceholder: "Search employee...",
+                    onSearch: fetchUserOptions,
+                  },
+                ]
+              : []),
           ]}
           sortBy={sortBy}
           sortOrder={sortOrder}
@@ -649,14 +782,8 @@ const HrTimesheetView: React.FC = () => {
             setSortOrder(newSortOrder);
             setPage(1);
           }}
-          primaryAction={
-            <ViewSelector
-              value={view}
-              options={TIMESHEET_VIEW_OPTIONS}
-              onChange={setView}
-            />
-          }
-          addLabel="+ Add Timesheet"
+          addLabel=" Add Timesheet"
+          primaryAction={viewSelector}
           onAdd={handleAdd}
           enableColumnSelector
           currentPage={page}
@@ -684,6 +811,7 @@ const HrTimesheetView: React.FC = () => {
         showFinancials={showFinancials}
         showEmployeeCard={isProfessional}
         onClose={closeDrawer}
+        onSendForApproval={handleDrawerSendForApproval}
         onApprove={handleDrawerApprove}
         onEdit={handleDrawerEdit}
         onCancel={handleDrawerCancel}

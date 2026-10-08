@@ -15,15 +15,13 @@ const TimesheetSummary: React.FC<TimesheetSummaryProps> = ({
   currency = "",
   className = "",
 }) => {
-  const { formatAmount } = useCurrencySymbols(
-    currency ? [currency] : [],
-  );
+  const { formatAmount } = useCurrencySymbols(currency ? [currency] : []);
 
   return (
     <div
-      className={`bg-app/60 border border-theme rounded-xl p-3.5 flex flex-col gap-2.5 h-full ${className}`}
+      className={`bg-app/60 border border-theme rounded-xl p-3.5 grid grid-cols-2 sm:grid-cols-3 gap-2.5 lg:flex lg:flex-col lg:h-full ${className}`}
     >
-      <div className="flex items-center gap-1.5 pb-2 border-b border-theme/70">
+      <div className="col-span-full flex items-center gap-1.5 pb-2 border-b border-theme/70">
         <Coins size={13} className="text-purple-600" />
 
         <span className="text-[11px] font-bold text-main uppercase tracking-wider">
@@ -65,10 +63,7 @@ const TimesheetSummary: React.FC<TimesheetSummaryProps> = ({
         accent="text-emerald-700"
       />
 
-      <SummaryCell
-        label="% Billed"
-        value={`${totals.percentBilled}%`}
-      />
+      <SummaryCell label="% Billed" value={`${totals.percentBilled}%`} />
     </div>
   );
 };
@@ -78,12 +73,12 @@ const SummaryCell: React.FC<{
   value: string;
   accent?: string;
 }> = ({ label, value, accent = "text-main" }) => (
-  <div className="bg-card p-2.5 rounded-lg border border-theme">
+  <div className="bg-card p-2.5 rounded-lg border border-theme min-w-0">
     <span className="text-[9px] text-muted block uppercase font-medium truncate">
       {label}
     </span>
 
-    <span className={`font-mono font-bold text-sm ${accent}`}>
+    <span className={`font-mono font-bold text-sm truncate block ${accent}`}>
       {value}
     </span>
   </div>

@@ -9,21 +9,7 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 
-// ---------------------------------------------------------------------------
-// Why this exists
-// ---------------------------------------------------------------------------
-// MinimizableModal is great for primary, taskbar-able workflows ("Add Item").
-// It's the wrong tool for "pick a value to fill one field" â€” that should feel
-// anchored to the field, not like a second screen. This component is the
-// shared anchored-popover primitive for that whole family of interactions
-// (HSN search, brand picker, warehouse picker, tax category picker, etc).
-//
-// Usage:
-//   const triggerRef = useRef<HTMLButtonElement>(null);
-//   <Popover triggerRef={triggerRef} open={open} onClose={() => setOpen(false)}>
-//     ...content...
-//   </Popover>
-// ---------------------------------------------------------------------------
+
 
 export type PopoverPlacement =
   | "bottom-start"
@@ -36,8 +22,7 @@ interface PopoverContextValue {
 }
 const PopoverContext = createContext<PopoverContextValue | null>(null);
 
-/** Lets deeply-nested popover content (e.g. a list row) close the popover
- *  without threading onClose down as a prop through every layer. */
+
 export function usePopoverContext() {
   const ctx = useContext(PopoverContext);
   if (!ctx) {
@@ -53,14 +38,12 @@ interface PopoverProps {
   onClose: () => void;
   children: React.ReactNode;
   placement?: PopoverPlacement;
-  /** Fixed width in px. Height is intrinsic (content-driven) unless maxHeight is set. */
+
   width?: number;
   maxHeight?: number;
-  /** Dim the page behind the popover. Off by default â€” popovers are usually
-   *  light-touch. Turn on for picker flows where you want to force focus
-   *  (mirrors the modal feel without becoming a second modal). */
+
   showScrim?: boolean;
-  /** Gap between trigger and popover, in px. */
+
   offset?: number;
   className?: string;
 }
@@ -174,7 +157,7 @@ export const Popover: React.FC<PopoverProps> = ({
     });
   }, [triggerRef, placement, width, offset, maxHeight]);
 
-  // Position on open, and keep in sync with scroll/resize while open.
+
   useLayoutEffect(() => {
     if (!open) return;
     reposition();
@@ -208,8 +191,7 @@ export const Popover: React.FC<PopoverProps> = ({
       }
       onClose();
     };
-    // Mousedown (not click) so a drag-select inside the popover doesn't
-    // trigger a false close on mouseup outside.
+
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, onClose, triggerRef]);

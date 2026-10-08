@@ -12,6 +12,7 @@ import ActionButton, {
   ActionGroup,
 } from "../../../../components/ui/Table/ActionButton";
 import { usePermission } from "../../../../hooks/permission/usePermission";
+import { useHRView } from "../../../../hooks/permission/useHRView";
 import {
   useDataRefreshStore,
   REFRESH_KEYS,
@@ -31,6 +32,7 @@ import {
   parseAssignedEmails,
   updateTaskAssignees,
   updateTaskStatus,
+  getProjectAssignees,
 } from "../../../../api/project/task/taskapi";
 import {
   getMyAssignedTasks,
@@ -43,7 +45,13 @@ import AssigneeCell from "../components/AssigneeCell";
 import PriorityChip from "../components/PriorityChip";
 import StatusCell from "../components/StatusCell";
 import TaskDetailDrawer from "../Drawer/Taskdetaildrawer";
-import { openEmployeeTimesheetFormModal } from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
+import {
+  openAdminTimesheetFormModal,
+  openEmployeeTimesheetFormModal,
+} from "../../../../components/feature/project management/timesheet/timesheetForm.modal";
+import BulkActionsMenu, {
+  type BulkAssignMode,
+} from "../components/Bulkactionsmenu";
 import {
   Clock,
   ChevronDown,
@@ -59,7 +67,7 @@ import ViewSelector, {
 
 const TASK_MODULE = "Task";
 const TREE_INDENT_PX = 16;
-const ADMIN_DEFAULT_VIEW: TaskMode = "table";
+const PROFESSIONAL_DEFAULT_VIEW: TaskMode = "table";
 const EMPLOYEE_DEFAULT_VIEW: TaskMode = "kanban";
 const VIEW_OPTIONS: ViewOption<TaskMode>[] = [
   { value: "kanban", label: "Kanban" },
@@ -85,7 +93,6 @@ const STATUS_VARIANT: Record<
   Working: "info",
   "Pending Review": "info",
   Overdue: "danger",
-  
   Completed: "success",
   Cancelled: "danger",
 };
@@ -121,22 +128,19 @@ const fetchProjectOptions = async (q: string): Promise<Option[]> => {
   }
 };
 
-type TaskViewContext = "admin" | "employee";
 const CONTENT_HEIGHT = "calc(95.5vh - 120px)";
 
 interface HrTaskViewProps {
-  context?: TaskViewContext;
   currentUserEmail?: string;
 }
 
-const HrTaskView: React.FC<HrTaskViewProps> = ({
-  context = "admin",
-  currentUserEmail,
-}) => {
+const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
   const { can } = usePermission();
-  const mountedRef = useRef(true);
+  const { viewMode } = useHRView();
+  const isProfessional = viewMode === "professional";
+  const isEmployee = viewMode === "employee";
 
-  const isEmployee = context === "employee";
+  const mountedRef = useRef(true);
 
   const canCreateTask = can(TASK_MODULE, "create");
   const canWriteTask = can(TASK_MODULE, "write");
@@ -145,6 +149,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   const canEditStatusOf = (_assign?: string | null) => canWriteTask;
   const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
   const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
+  const cascadeTokenRef = useRef<Map<string, number>>(new Map());
 
   const [tasks, setTasks] = useState<TaskEntry[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -166,6 +171,50 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   const [userFilterOptions, setUserFilterOptions] = useState<
     { label: string; value: string }[]
   >([]);
+  const loadAssigneeFilterOptions = useCallback(async () => {
+    try {
+      // No project selected: show all users
+      if (projectFilter.length === 0) {
+        const users = await fetchUserOptions("");
+
+        if (!mountedRef.current) return;
+
+        setUserFilterOptions(
+          users.map((u) => ({
+            label: u.label,
+            value: u.value,
+          })),
+        );
+
+        return;
+      }
+
+      // Load users from all selected projects
+      const projectUsers = await Promise.all(
+        projectFilter.map((project) => getProjectAssignees(project)),
+      );
+
+      const uniqueUsers = new Map<string, { label: string; value: string }>();
+
+      projectUsers.flat().forEach((user) => {
+        const value = user.email || user.user;
+
+        if (!value) return;
+
+        uniqueUsers.set(value, {
+          label: user.full_name || value,
+          value,
+        });
+      });
+
+      if (!mountedRef.current) return;
+
+      setUserFilterOptions(Array.from(uniqueUsers.values()));
+    } catch (error) {
+      showApiError(error);
+      setUserFilterOptions([]);
+    }
+  }, [projectFilter]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<TaskDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
@@ -178,12 +227,11 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
 
   const [selected, setSelected] = useState<Map<string, TaskEntry>>(new Map());
   const [view, setView] = useState<TaskMode>(
-    isEmployee ? EMPLOYEE_DEFAULT_VIEW : ADMIN_DEFAULT_VIEW,
+    isEmployee ? EMPLOYEE_DEFAULT_VIEW : PROFESSIONAL_DEFAULT_VIEW,
   );
 
- 
   const allAssignedNamesRef = useRef<string[] | undefined>(undefined);
-  
+
   const [assignedNames, setAssignedNames] = useState<string[]>([]);
 
   const assigneeActive = isEmployee || assigneeFilter.length > 0;
@@ -201,15 +249,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
 
   useEffect(() => {
     if (isEmployee) return;
-    fetchUserOptions("")
-      .then((list) => {
-        if (!mountedRef.current) return;
-        setUserFilterOptions(
-          list.map((u) => ({ label: u.label, value: u.value })),
-        );
-      })
-      .catch(showApiError);
-  }, [isEmployee]);
+
+    loadAssigneeFilterOptions();
+  }, [isEmployee, loadAssigneeFilterOptions]);
 
   const projectFilterOptions = projectOptions.map((p) => ({
     label: p.project_name,
@@ -229,17 +271,21 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
 
     try {
       const res = await getTaskList(
-        page,
-        pageSize,
-        statusFilter.length ? statusFilter : undefined,
-        projectFilter.length ? projectFilter : undefined,
-        searchTerm || undefined,
-        sortBy || undefined,
-        sortOrder,
-        assigneeFilter.length ? assigneeFilter : undefined,
-        isEmployee,
-        isEmployee ? allAssignedNamesRef.current : undefined,
-      );
+  page,
+  pageSize,
+  statusFilter.length ? statusFilter : undefined,
+  projectFilter.length ? projectFilter : undefined,
+  searchTerm || undefined,
+  sortBy || undefined,
+  sortOrder,
+  isEmployee && currentUserEmail
+    ? [currentUserEmail]
+    : assigneeFilter.length
+      ? assigneeFilter
+      : undefined,
+  isEmployee,
+  undefined,
+);
 
       if (!mountedRef.current) return;
 
@@ -269,6 +315,38 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     view,
   ]);
 
+  const fetchProjectAssigneeOptions = async (
+    project: string,
+    q: string,
+  ): Promise<Option[]> => {
+    if (!project) return [];
+
+    try {
+      const users = await getProjectAssignees(project);
+
+      const search = q.trim().toLowerCase();
+
+      return users
+        .filter((u) => {
+          if (!search) return true;
+
+          return (
+            u.full_name?.toLowerCase().includes(search) ||
+            u.email?.toLowerCase().includes(search) ||
+            u.user?.toLowerCase().includes(search)
+          );
+        })
+        .map((u) => ({
+          label: u.full_name || u.email || u.user,
+          value: u.email || u.user,
+          subLabel: u.email || u.user,
+        }));
+    } catch (error) {
+      showApiError(error);
+      return [];
+    }
+  };
+
   const fetchTasksRef = useRef(fetchTasks);
   useEffect(() => {
     fetchTasksRef.current = fetchTasks;
@@ -284,13 +362,12 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   }, [view]);
 
   const loadAssignedNames = useCallback(async () => {
+    if (!currentUserEmail) return;
     try {
-      const [names, allNames] = currentUserEmail
-        ? await Promise.all([
-            getMyAssignedTasks(currentUserEmail, true), 
-            getMyAssignedTasks(currentUserEmail, false), 
-          ])
-        : [[], []];
+      const [names, allNames] = await Promise.all([
+        getMyAssignedTasks(currentUserEmail, true),
+        getMyAssignedTasks(currentUserEmail, false),
+      ]);
       if (!mountedRef.current) return;
       allAssignedNamesRef.current = allNames;
       setAssignedNames((prev) =>
@@ -312,11 +389,29 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
 
   useEffect(() => {
     mountedRef.current = true;
-    reloadRef.current();
+    if (!isEmployee) reloadRef.current();
     return () => {
       mountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isEmployee || !currentUserEmail) return;
+    reloadRef.current();
+  }, [isEmployee, currentUserEmail]);
+
+  const modeInitRef = useRef(true);
+  useEffect(() => {
+    if (modeInitRef.current) {
+      modeInitRef.current = false;
+      return;
+    }
+    setSelected(new Map());
+    setAssigneeFilter([]);
+    setPage(1);
+    setView(isEmployee ? EMPLOYEE_DEFAULT_VIEW : PROFESSIONAL_DEFAULT_VIEW);
+    if (!isEmployee) reloadRef.current();
+  }, [isEmployee]);
 
   useEffect(() => {
     if (isInitialLoad) return;
@@ -425,7 +520,6 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     console.warn("handleAdd: Task create modal not wired yet.");
   };
 
-
   const finalizeEmployeeAssignment = async (
     taskName: string,
     nextStatus: string,
@@ -434,9 +528,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     try {
       await closeMyTaskAssignment(taskName, currentUserEmail);
     } catch (error) {
-      showApiError(error); 
+      showApiError(error);
     }
-    triggerRefresh(REFRESH_KEYS.TASK_LIST); 
+    triggerRefresh(REFRESH_KEYS.TASK_LIST);
   };
 
   const handleStatusChange = async (
@@ -474,31 +568,89 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     return match?.project_name || code;
   };
 
+  const openTimesheetForm = isProfessional
+    ? openAdminTimesheetFormModal
+    : openEmployeeTimesheetFormModal;
+
+  const toPrefillTask = (t: TaskEntry) => ({
+    project: t.project ?? "",
+    projectName: getProjectDisplayName(t.project),
+    task: t.name,
+    taskName: t.subject,
+    activityType: (t as any).custom_activity_type || undefined,
+  });
+
+  const refreshAfterLog = () => {
+    triggerRefresh(REFRESH_KEYS.TASK_LIST);
+    triggerRefresh(REFRESH_KEYS.TIMESHEET_LIST);
+  };
+
   const handleLogTime = (task: TaskEntry) => {
-    if (!canLogTime) return;
-    openEmployeeTimesheetFormModal({
+    if (!canLogTime || task.is_group === 1) return;
+
+    openTimesheetForm({
       title: "Log Time",
       subtitle: `Logging time for ${task.subject}`,
-      prefillTask: {
-        project: task.project ?? "",
-        projectName: getProjectDisplayName(task.project),
-        task: task.name,
-        taskName: task.subject,
-      },
+      prefillTask: toPrefillTask(task),
+      onSuccess: refreshAfterLog,
     });
   };
 
-  const canLogRow = (t: TaskEntry) => canLogTime && t.is_group !== 1;
+  const canBulkSelect = canLogTime || canWriteTask;
+  const canSelectRow = () => canBulkSelect;
 
-  const handleRowSelect = (t: TaskEntry, checked: boolean) =>
+  const collectDescendants = async (
+    groupName: string,
+  ): Promise<TaskEntry[]> => {
+    const children = childrenMap[groupName] ?? (await getChildTasks(groupName));
+    const nested = await Promise.all(
+      children
+        .filter((c) => c.is_group === 1)
+        .map((c) => collectDescendants(c.name)),
+    );
+    return [...children, ...nested.flat()];
+  };
+
+  const cascadeGroup = async (group: TaskEntry, checked: boolean) => {
+    const token = (cascadeTokenRef.current.get(group.name) ?? 0) + 1;
+    cascadeTokenRef.current.set(group.name, token);
+    const isLatest = () => cascadeTokenRef.current.get(group.name) === token;
+
+    try {
+      const descendants = await collectDescendants(group.name);
+      if (!mountedRef.current || !isLatest()) return;
+      setSelected((prev) => {
+        const next = new Map(prev);
+        descendants.forEach((d) => {
+          if (checked) next.set(d.name, d);
+          else next.delete(d.name);
+        });
+        return next;
+      });
+    } catch (error) {
+      if (!mountedRef.current || !isLatest()) return;
+      showApiError(error);
+      if (checked) {
+        setSelected((prev) => {
+          const next = new Map(prev);
+          next.delete(group.name);
+          return next;
+        });
+      }
+    }
+  };
+
+  const handleRowSelect = (t: TaskEntry, checked: boolean) => {
     setSelected((prev) => {
       const next = new Map(prev);
       if (checked) next.set(t.name, t);
       else next.delete(t.name);
       return next;
     });
+    if (t.is_group === 1) cascadeGroup(t, checked);
+  };
 
-  const handleSelectAll = (list: TaskEntry[], checked: boolean) =>
+  const handleSelectAll = (list: TaskEntry[], checked: boolean) => {
     setSelected((prev) => {
       const next = new Map(prev);
       list.forEach((t) => {
@@ -507,24 +659,71 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       });
       return next;
     });
+    list
+      .filter((t) => t.is_group === 1)
+      .forEach((g) => cascadeGroup(g, checked));
+  };
 
   const handleLogSelected = () => {
     if (!canLogTime) return;
-    const picked = Array.from(selected.values());
+    const picked = Array.from(selected.values()).filter(
+      (t) => t.is_group !== 1,
+    );
     if (picked.length === 0) return;
 
-    openEmployeeTimesheetFormModal({
+    openTimesheetForm({
       title: "Log Time",
-      subtitle: `Logging time for ${picked.length} task${picked.length > 1 ? "s" : ""
-        }`,
-      prefillTasks: picked.map((t) => ({
-        project: t.project ?? "",
-        projectName: getProjectDisplayName(t.project),
-        task: t.name,
-        taskName: t.subject,
-      })),
-      onSuccess: () => setSelected(new Map()),
+      subtitle: `Logging time for ${picked.length} task${
+        picked.length > 1 ? "s" : ""
+      }`,
+      prefillTasks: picked.map(toPrefillTask),
+      onSuccess: () => {
+        setSelected(new Map());
+        refreshAfterLog();
+      },
     });
+  };
+
+  const handleBulkAssign = async (
+    emails: string[],
+    mode: BulkAssignMode,
+  ): Promise<boolean> => {
+    if (!canWriteTask || emails.length === 0) return false;
+
+    const picked = Array.from(selected.values());
+    const results = await Promise.allSettled(
+      picked.map(async (t) => {
+        const previous = parseAssignedEmails(
+          findTask(t.name)?._assign ?? t._assign,
+        );
+        const next =
+          mode === "add"
+            ? Array.from(new Set([...previous, ...emails]))
+            : emails;
+        await updateTaskAssignees(t.name, previous, next);
+        patchTask(t.name, { _assign: JSON.stringify(next) });
+        setSelected((prev) => {
+          const current = prev.get(t.name);
+          if (!current) return prev;
+          const copy = new Map(prev);
+          copy.set(t.name, { ...current, _assign: JSON.stringify(next) });
+          return copy;
+        });
+      }),
+    );
+
+    const failed = results.filter(
+      (r): r is PromiseRejectedResult => r.status === "rejected",
+    );
+    const doneCount = results.length - failed.length;
+
+    if (doneCount > 0) {
+      showSuccess(`Assigned ${doneCount} task${doneCount > 1 ? "s" : ""}`);
+    }
+    if (failed.length > 0) showApiError(failed[0].reason);
+    if (failed.length === 0) setSelected(new Map());
+
+    return failed.length === 0;
   };
 
   const handleView = async (id: string) => {
@@ -557,11 +756,11 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       setDrawerData((prev) =>
         prev
           ? {
-            ...prev,
-            status: nextStatus as TaskStatus,
-            progress:
-              nextProgress !== undefined ? nextProgress : prev.progress,
-          }
+              ...prev,
+              status: nextStatus as TaskStatus,
+              progress:
+                nextProgress !== undefined ? nextProgress : prev.progress,
+            }
           : prev,
       );
 
@@ -584,32 +783,37 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
     }
   };
 
-  const handleAssigneesChange = async (
-    taskName: string,
-    nextEmails: string[],
-  ) => {
-    const task = findTask(taskName);
-    if (!task) return;
+ const handleAssigneesChange = async (
+  taskName: string,
+  nextEmails: string[],
+) => {
+  const task = findTask(taskName);
+  if (!task) return;
 
-    const previousEmails = parseAssignedEmails(task._assign);
+  const previousEmails = parseAssignedEmails(task._assign);
 
-    try {
-      const result = await updateTaskAssignees(
-        taskName,
-        previousEmails,
-        nextEmails,
-      );
+  try {
+    const result = await updateTaskAssignees(
+      taskName,
+      previousEmails,
+      nextEmails,
+    );
 
-      patchTask(taskName, { _assign: JSON.stringify(nextEmails) });
+    patchTask(taskName, {
+      _assign: JSON.stringify(nextEmails),
+    });
 
-      if (result.message) {
-        showSuccess(result.message);
-      }
-    } catch (error) {
-      showApiError(error);
-      throw error;
+    if (result.message) {
+      showSuccess(result.message);
     }
-  };
+
+  
+    triggerRefresh(REFRESH_KEYS.TASK_LIST);
+  } catch (error) {
+    showApiError(error);
+    throw error;
+  }
+};
 
   const allColumns: Column<TaskRow>[] = [
     {
@@ -728,7 +932,6 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       header: "Assigned To",
       align: "left",
       render: (t) => {
-      
         if (t.status === "Completed" || t.status === "Cancelled") {
           return <span className="text-xs text-muted">—</span>;
         }
@@ -738,8 +941,10 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
         return (
           <AssigneeCell
             emails={emails}
-            disabled={!canWriteTask}
-            fetchOptions={fetchUserOptions}
+            disabled={!canWriteTask || !t.project}
+            fetchOptions={(q) =>
+              fetchProjectAssigneeOptions(t.project ?? "", q)
+            }
             onChange={(nextValues) => handleAssigneesChange(t.name, nextValues)}
           />
         );
@@ -772,14 +977,18 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
       align: "center",
       render: (t) => (
         <ActionGroup>
-          <ActionButton type="view" onClick={() => handleView(t.name)} iconOnly />
           <ActionButton
+            type="view"
+            onClick={() => handleView(t.name)}
+            iconOnly
+          />
+          {/* <ActionButton
             type="edit"
             onClick={() => handleEdit(t.name)}
             iconOnly
             disabled={!canWriteTask}
             title={canWriteTask ? "Edit" : "You don't have permission to edit"}
-          />
+          /> */}
           {canLogTime && (
             <button
               onClick={() => handleLogTime(t)}
@@ -801,6 +1010,9 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
   const columns = isEmployee
     ? allColumns.filter((c) => c.key !== "progress")
     : allColumns;
+  const hasLoggable = Array.from(selected.values()).some(
+    (t) => t.is_group !== 1,
+  );
   const viewSelector = (
     <ViewSelector value={view} options={VIEW_OPTIONS} onChange={setView} />
   );
@@ -857,18 +1069,24 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
               values: projectFilter,
               onChange: setProjectFilter,
             },
-            ...(!isEmployee
+            ...(isProfessional
               ? [
-                {
-                  key: "assignee",
-                  label: "Assigned To",
-                  options: userFilterOptions,
-                  values: assigneeFilter,
-                  onChange: setAssigneeFilter,
-                  searchPlaceholder: "Search employee...",
-                  onSearch: fetchUserOptions,
-                },
-              ]
+                  {
+                    key: "assignee",
+                    label: "Assignee",
+                    options: userFilterOptions,
+                    values: assigneeFilter,
+                    onChange: setAssigneeFilter,
+                    searchPlaceholder: "Search employee...",
+                    onSearch: async (q: string) => {
+                      const search = q.trim().toLowerCase();
+
+                      return userFilterOptions.filter((user) =>
+                        user.label.toLowerCase().includes(search),
+                      );
+                    },
+                  },
+                ]
               : []),
           ]}
           sortBy={sortBy}
@@ -878,17 +1096,17 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
             setSortOrder(newSortOrder);
             setPage(1);
           }}
-          enableAdd={canCreateTask}
-          addLabel="+ Add Task"
+          // enableAdd={canCreateTask}
+          // addLabel="+ Add Task"
           onAdd={handleAdd}
-          selectable={canLogTime}
+          selectable={canBulkSelect}
           isRowSelected={(t) => selected.has(t.name)}
-          isRowSelectable={canLogRow}
+          isRowSelectable={canSelectRow}
           onRowSelect={handleRowSelect}
           onSelectAll={handleSelectAll}
           primaryAction={
             <div className="flex items-center gap-2">
-              {canLogTime && selected.size > 0 && (
+              {selected.size > 0 && (
                 <>
                   <button
                     onClick={() => setSelected(new Map())}
@@ -897,13 +1115,20 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({
                     Clear
                   </button>
 
-                  <button
-                    onClick={handleLogSelected}
-                    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  >
-                    <Clock size={14} />
-                    Log Time ({selected.size})
-                  </button>
+                  <BulkActionsMenu
+                    count={selected.size}
+                    onAddLog={
+                      canLogTime && hasLoggable ? handleLogSelected : undefined
+                    }
+                    assign={
+                      canWriteTask
+                        ? {
+                            fetchOptions: fetchUserOptions,
+                            onSubmit: handleBulkAssign,
+                          }
+                        : undefined
+                    }
+                  />
                 </>
               )}
 

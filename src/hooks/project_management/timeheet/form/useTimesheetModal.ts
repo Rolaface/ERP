@@ -41,8 +41,9 @@ export type DuplicatePosition = "after" | "end";
 export async function fetchProjectOptions(
   search: string,
   allowedProjectIds?: string[],
+  customer?: string,
 ): Promise<Option[]> {
-  const projects = await getAllProjects(search);
+  const projects = await getAllProjects(search, customer);
 
   const filtered =
     allowedProjectIds && allowedProjectIds.length > 0
@@ -55,15 +56,17 @@ export async function fetchProjectOptions(
     subLabel: project.name,
   }));
 }
+function getCurrentUserEmail(): string | undefined {
+  try {
+    const raw = localStorage.getItem("auth_user");
+    if (!raw) return undefined;
 
-export async function fetchCustomerOptions(_q: string): Promise<Option[]> {
-  return [
-    { label: "Rolaface Corp", value: "CUST-001", meta: { currency: "INR" } },
-    { label: "Apex Health UK", value: "CUST-004", meta: { currency: "GBP" } },
-    { label: "Global Academy", value: "CUST-002", meta: { currency: "USD" } },
-  ];
+    const user = JSON.parse(raw);
+    return user?.email || undefined;
+  } catch {
+    return undefined;
+  }
 }
-
 export async function fetchEmployeeOptions(search: string): Promise<Option[]> {
   return getEmployees(search);
 }
@@ -71,18 +74,21 @@ export async function fetchEmployeeOptions(search: string): Promise<Option[]> {
 export async function fetchTaskOptions(
   projectId: string,
   search: string,
+  onlyMine = false,
 ): Promise<Option[]> {
   if (!projectId) return [];
 
-  const tasks = await getAllTasks(projectId, search, {
-    excludeGroups: true,
-    excludeStatuses: ["Cancelled"],
-  });
+const tasks = await getAllTasks(projectId, search, {
+  excludeGroups: true,
+  excludeStatuses: ["Cancelled"],
+  assignee: onlyMine ? getCurrentUserEmail() : undefined,
+});
 
   return tasks.map((task) => ({
     label: task.subject,
     value: task.name,
     subLabel: task.name,
+    meta: { activity_type: task.custom_activity_type ?? "" },
   }));
 }
 
@@ -91,6 +97,7 @@ interface InitialTask {
   project_name: string;
   task: string;
   task_name: string;
+  activity_type?: string;
 }
 
 function calcHours(
@@ -150,7 +157,7 @@ export function getConflictingLineIds(
   return ids;
 }
 
-const DEFAULT_SLOT_MINUTES = 240;
+const DEFAULT_SLOT_MINUTES = 480;
 const PREFERRED_START_MINUTES = 9 * 60;
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -175,36 +182,26 @@ function findFreeSlot(
   date: string,
   durationMs: number,
 ): SlotFields | null {
-  if (durationMs <= 0 || durationMs > DAY_MS) return null;
-  const busy = lines
-    .map(lineRange)
-    .filter((r): r is { s: number; e: number } => r !== null);
-  let dayStart = new Date(`${date}T00:00:00`).getTime();
-  if (Number.isNaN(dayStart)) return null;
+  if (durationMs <= 0) return null;
 
-  for (let i = 0; i < 366; i++, dayStart += DAY_MS) {
-    const dayEnd = dayStart + DAY_MS;
-    const afterBusy = busy
-      .map((r) => r.e)
-      .filter((e) => e > dayStart && e < dayEnd)
-      .sort((a, b) => a - b);
-    const starts = [
-      dayStart + PREFERRED_START_MINUTES * 60000,
-      ...afterBusy,
-      dayStart,
-    ];
-    for (const s of starts) {
-      const e = s + durationMs;
-      if (busy.some((r) => s < r.e && r.s < e)) continue;
-      return {
-        date: toDateStr(s),
-        from_time: toTimeStr(s),
-        to_date: toDateStr(e),
-        to_time: toTimeStr(e),
-      };
-    }
-  }
-  return null;
+  const preferredStart =
+    new Date(`${date}T00:00:00`).getTime() + PREFERRED_START_MINUTES * 60000;
+  if (Number.isNaN(preferredStart)) return null;
+
+  const start = lines
+    .map(lineRange)
+    .reduce(
+      (latest, r) => (r ? Math.max(latest, r.e) : latest),
+      preferredStart,
+    );
+  const end = start + durationMs;
+
+  return {
+    date: toDateStr(start),
+    from_time: toTimeStr(start),
+    to_date: toDateStr(end),
+    to_time: toTimeStr(end),
+  };
 }
 
 function placeLine(
@@ -222,6 +219,27 @@ function placeLine(
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+const TITLE_SUFFIX = "Timesheet";
+const TITLE_SEPARATOR = " — ";
+const RANGE_DASH = "–";
+
+const monthName = (ymd: string) =>
+  new Date(`${ymd}T00:00:00`).toLocaleDateString("en-US", { month: "long" });
+
+const formatTitlePeriod = (start: string, end: string) => {
+  const startMonth = monthName(start);
+  const endMonth = monthName(end);
+  const startYear = start.slice(0, 4);
+  const endYear = end.slice(0, 4);
+
+  if (startYear !== endYear) {
+    return `${startMonth} ${startYear}${RANGE_DASH}${endMonth} ${endYear}`;
+  }
+  return startMonth === endMonth
+    ? `${startMonth} ${startYear}`
+    : `${startMonth}${RANGE_DASH}${endMonth} ${startYear}`;
+};
 
 function splitDateTime(dt: string | null | undefined): {
   date: string;
@@ -247,17 +265,30 @@ function emptyLine(
     projectManuallySet: Boolean(initialTask),
     task: initialTask?.task ?? "",
     task_name: initialTask?.task_name ?? "",
-    activity_type: "",
+    activity_type: initialTask?.activity_type ?? "",
+    activityFromTask: Boolean(initialTask?.activity_type),
     description: "",
     date,
     to_date: date,
     from_time: "09:00",
-    to_time: "13:00",
-    hours: calcHours(date, "09:00", date, "13:00"),
+    to_time: "17:00",
+    hours: calcHours(date, "09:00", date, "17:00"),
     is_completed: false,
     is_billable: true,
     billing_rate: 0,
     costing_rate: 0,
+  };
+}
+
+function clearTaskFields(l: TimesheetLineDraft): TimesheetLineDraft {
+  return {
+    ...l,
+    task: "",
+    task_name: "",
+    ...(l.activityFromTask
+      ? { activity_type: "", billing_rate: 0, costing_rate: 0 }
+      : {}),
+    activityFromTask: false,
   };
 }
 
@@ -314,6 +345,8 @@ function emptyForm(
     currency: restrictions?.lockCustomer?.currency ?? "",
     exchange_rate: 1,
     start_date: today(),
+    custom_timesheet_start_date: today(),
+    custom_timesheet_end_date: today(),
     lines: [],
   };
 }
@@ -331,33 +364,74 @@ export function useTimesheetModal(
     emptyForm(restrictions),
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [editingName, setEditingName] = useState<string | undefined>(
-    undefined,
-  );
+  const [editingName, setEditingName] = useState<string | undefined>(undefined);
+  const [customTitle, setCustomTitle] = useState<string | null>(null);
 
   const reset = useCallback(() => {
     setForm(emptyForm(restrictions));
     setEditingName(undefined);
+    setCustomTitle(null);
   }, [restrictions]);
 
   const loadFromDetail = useCallback((detail: TimesheetDetail) => {
     setEditingName(detail.name);
+    setCustomTitle(detail.title ?? null);
     setForm({
       project: "",
       project_name: "",
       customer: detail.customer ?? "",
-      customer_name: detail.customer ?? "",
+      customer_name: detail.customer_name ?? detail.customer ?? "",
       employee: detail.employee,
       employee_name: detail.employee_name,
       department: detail.department ?? "",
       currency: detail.currency,
       exchange_rate: detail.exchange_rate ?? 1,
       start_date: detail.start_date,
+      custom_timesheet_start_date: detail.custom_timesheet_start_date ?? "",
+      custom_timesheet_end_date: detail.custom_timesheet_end_date ?? "",
       lines: detail.time_logs.map(mapTimeLogToLine),
     });
   }, []);
 
   const isEditMode = Boolean(editingName);
+
+  const syncActivityRates = useCallback(async (activities: string[]) => {
+    const unique = [...new Set(activities.filter(Boolean))];
+    if (unique.length === 0) return;
+
+    try {
+      const entries = await Promise.all(
+        unique.map(async (activity) => {
+          const options = await fetchActivityTypeOptions(activity);
+          const match = options.find((o) => o.value === activity);
+          return match
+            ? ([
+                activity,
+                {
+                  billing: Number(match.meta?.billing_rate ?? 0),
+                  costing: Number(match.meta?.costing_rate ?? 0),
+                },
+              ] as const)
+            : null;
+        }),
+      );
+
+      const rates = new Map(entries.filter((e) => e !== null));
+      if (rates.size === 0) return;
+
+      setForm((f) => ({
+        ...f,
+        lines: f.lines.map((l) => {
+          const r = l.activityFromTask ? rates.get(l.activity_type) : undefined;
+          return r
+            ? { ...l, billing_rate: r.billing, costing_rate: r.costing }
+            : l;
+        }),
+      }));
+    } catch (e) {
+      showApiError(e);
+    }
+  }, []);
 
   const setProject = useCallback((value: string, opt: Option) => {
     setForm((f) => ({
@@ -368,11 +442,9 @@ export function useTimesheetModal(
         l.projectManuallySet
           ? l
           : {
-              ...l,
+              ...clearTaskFields(l),
               project: value,
               project_name: opt.label,
-              task: "",
-              task_name: "",
             },
       ),
     }));
@@ -433,6 +505,18 @@ export function useTimesheetModal(
     setForm((f) => ({ ...f, start_date: date }));
   }, []);
 
+  const setTimesheetRange = useCallback((start: string, end: string) => {
+    setForm((f) => ({
+      ...f,
+      custom_timesheet_start_date: start,
+      custom_timesheet_end_date: end,
+    }));
+  }, []);
+
+  const setTitle = useCallback((value: string) => {
+    setCustomTitle(value);
+  }, []);
+
   const addLine = useCallback(
     (initialTask?: InitialTask, initialDate?: string) => {
       setForm((f) => ({
@@ -451,8 +535,11 @@ export function useTimesheetModal(
           ),
         ],
       }));
+      if (initialTask?.activity_type) {
+        void syncActivityRates([initialTask.activity_type]);
+      }
     },
-    [],
+    [syncActivityRates],
   );
 
   const addLines = useCallback(
@@ -465,8 +552,9 @@ export function useTimesheetModal(
         );
         return { ...f, lines };
       });
+      void syncActivityRates(tasks.map((t) => t.activity_type ?? ""));
     },
-    [],
+    [syncActivityRates],
   );
 
   const updateLine = useCallback(
@@ -501,28 +589,54 @@ export function useTimesheetModal(
 
   const setLineProject = useCallback(
     (id: string, value: string, opt: Option) => {
-      updateLine(id, {
-        project: value,
-        project_name: opt.label,
-        projectManuallySet: true,
-        task: "",
-        task_name: "",
-      });
+      setForm((f) => ({
+        ...f,
+        lines: f.lines.map((l) =>
+          l.id === id
+            ? {
+                ...clearTaskFields(l),
+                project: value,
+                project_name: opt.label,
+                projectManuallySet: true,
+              }
+            : l,
+        ),
+      }));
     },
-    [updateLine],
+    [],
   );
 
   const setLineTask = useCallback(
-    (id: string, value: string, opt: Option) => {
-      updateLine(id, { task: value, task_name: opt.label });
+    async (id: string, value: string, opt: Option) => {
+      const activity = String(opt.meta?.activity_type ?? "");
+
+      setForm((f) => ({
+        ...f,
+        lines: f.lines.map((l) => {
+          if (l.id !== id) return l;
+          const base = {
+            ...l,
+            task: value,
+            task_name: opt.label,
+            activityFromTask: Boolean(activity),
+          };
+          if (activity) return { ...base, activity_type: activity };
+          return l.activityFromTask
+            ? { ...base, activity_type: "", billing_rate: 0, costing_rate: 0 }
+            : base;
+        }),
+      }));
+
+      await syncActivityRates([activity]);
     },
-    [updateLine],
+    [syncActivityRates],
   );
 
   const setLineActivity = useCallback(
     (id: string, value: string, opt: Option) => {
       updateLine(id, {
         activity_type: value,
+        activityFromTask: false,
         billing_rate: Number(opt.meta?.billing_rate ?? 0),
         costing_rate: Number(opt.meta?.costing_rate ?? 0),
       });
@@ -626,6 +740,42 @@ export function useTimesheetModal(
     [form.lines],
   );
 
+  const derivedStartDate = useMemo(() => {
+    const starts = form.lines
+      .map((l) => l.date)
+      .filter(Boolean)
+      .sort();
+    return starts[0] || form.start_date || today();
+  }, [form.lines, form.start_date]);
+
+  const derivedEndDate = useMemo(() => {
+    const ends = form.lines
+      .map((l) => l.to_date)
+      .filter(Boolean)
+      .sort();
+    return ends[ends.length - 1] || derivedStartDate;
+  }, [form.lines, derivedStartDate]);
+
+  const autoTitle = useMemo(() => {
+    const name = form.employee_name || restrictions?.employee?.name || "";
+    const start = form.custom_timesheet_start_date || derivedStartDate;
+    const end =
+      form.custom_timesheet_end_date ||
+      form.custom_timesheet_start_date ||
+      derivedEndDate;
+    const label = `${formatTitlePeriod(start, end)} ${TITLE_SUFFIX}`;
+    return name ? `${name}${TITLE_SEPARATOR}${label}` : label;
+  }, [
+    form.employee_name,
+    form.custom_timesheet_start_date,
+    form.custom_timesheet_end_date,
+    restrictions?.employee?.name,
+    derivedStartDate,
+    derivedEndDate,
+  ]);
+
+  const title = customTitle ?? autoTitle;
+
   const buildPayload = useCallback(
     (exchangeRate: number): TimesheetCreatePayload => {
       const rowStarts = form.lines
@@ -644,12 +794,15 @@ export function useTimesheetModal(
         doctype: "Timesheet",
         employee: form.employee || restrictions?.employee?.id || "",
         employee_name: form.employee_name || restrictions?.employee?.name || "",
+        title: title.trim() || autoTitle,
         customer: form.customer || undefined,
         department: form.department || undefined,
         currency: form.currency,
         exchange_rate: exchangeRate,
         start_date: derivedStart,
         end_date: derivedEnd,
+        custom_timesheet_start_date: form.custom_timesheet_start_date || null,
+        custom_timesheet_end_date: form.custom_timesheet_end_date || null,
         time_logs: form.lines.map((l) => ({
           ...(l.logName ? { name: l.logName } : {}),
           doctype: "Timesheet Detail",
@@ -671,7 +824,7 @@ export function useTimesheetModal(
         })),
       };
     },
-    [form, editingName, restrictions?.employee],
+    [form, editingName, restrictions?.employee, title, autoTitle],
   );
 
   const validate = useCallback((): string | null => {
@@ -764,15 +917,18 @@ export function useTimesheetModal(
 
   return {
     form,
+    title,
     totals,
     conflictIds,
     isSaving,
     isEditMode,
     restrictions,
+    setTitle,
     setProject,
     setCustomer,
     setEmployee,
     setStartDate,
+    setTimesheetRange,
     addLine,
     addLines,
     updateLine,

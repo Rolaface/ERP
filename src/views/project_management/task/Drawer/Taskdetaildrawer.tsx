@@ -27,7 +27,7 @@ const STATUS_OPTIONS: TaskStatus[] = [
   "Working",
   "Pending Review",
   "Overdue",
-  "Template",
+
   "Completed",
   "Cancelled",
 ];
@@ -106,7 +106,6 @@ const TaskDetailDrawer: React.FC<Props> = ({
       if (result.isConfirmed) {
         onStatusChange(data.name, nextStatus);
       }
-
     };
 
     if (canEditStatus && onStatusChange) {
@@ -120,7 +119,9 @@ const TaskDetailDrawer: React.FC<Props> = ({
             gap: 10,
           }}
         >
-          <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>
+          <span
+            style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}
+          >
             Update Status
           </span>
           <select
@@ -237,11 +238,11 @@ const TaskDetailDrawer: React.FC<Props> = ({
               items={[
                 ...(showFinancials
                   ? [
-                    {
-                      label: "Progress",
-                      value: `${(data.progress ?? 0).toFixed(0)}%`,
-                    },
-                  ]
+                      {
+                        label: "Progress",
+                        value: `${(data.progress ?? 0).toFixed(0)}%`,
+                      },
+                    ]
                   : []),
                 {
                   label: "Actual Time",
@@ -249,16 +250,16 @@ const TaskDetailDrawer: React.FC<Props> = ({
                 },
                 ...(showFinancials
                   ? [
-                    {
-                      label: "Costing Amount",
-                      value: formatCurrency(data.total_costing_amount),
-                    },
-                    {
-                      label: "Billing Amount",
-                      value: formatCurrency(data.total_billing_amount),
-                      emphasis: true,
-                    },
-                  ]
+                      {
+                        label: "Costing Amount",
+                        value: formatCurrency(data.total_costing_amount),
+                      },
+                      {
+                        label: "Billing Amount",
+                        value: formatCurrency(data.total_billing_amount),
+                        emphasis: true,
+                      },
+                    ]
                   : []),
               ]}
             />

@@ -2,23 +2,6 @@ import React from "react";
 import { flexRender, type Table, type Row } from "@tanstack/react-table";
 import { Loader2 } from "lucide-react";
 
-/**
- * Generic, reusable table shell built on a TanStack Table instance.
- *
- * Handles the edge cases every data table in this app needs, so callers
- * don't reimplement them each time:
- *  - initial load (no data yet)               -> centered spinner, sized like `skeletonRows`
- *  - background refetch (data already shown)  -> translucent overlay spinner, table stays visible
- *  - zero results                             -> empty state message
- *  - error                                    -> inline error row (optional, caller-controlled)
- *  - sticky header while scrolling body
- *  - per-column alignment via `columnDef.meta.align` ("left" | "center" | "right")
- *  - optional row click handling
- *
- * Pagination is intentionally NOT part of this component — pair it with
- * <TablePagination /> underneath so either can be reused independently
- * (e.g. a table that doesn't paginate, or infinite-scroll instead).
- */
 
 type ColumnAlign = "left" | "center" | "right";
 
@@ -39,11 +22,7 @@ export interface DataTableProps<TData> {
   table: Table<TData>;
   /** True on the very first load, before any rows exist. Shows a full-height spinner. */
   loading?: boolean;
-  /**
-   * True when refetching data that's already on screen (e.g. after "Apply").
-   * Keeps existing rows visible and dims them with an overlay spinner instead
-   * of blanking the table — avoids layout jump / flicker on every refetch.
-   */
+  
   refreshing?: boolean;
   /** Shown when there are zero rows and we're not in the initial loading state. */
   emptyMessage?: React.ReactNode;

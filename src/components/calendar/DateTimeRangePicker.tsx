@@ -11,13 +11,24 @@ import { WEEKLY_OFF_COLOR } from "../../views/project_management/timesheet/compo
 import type { DayOff } from "../../views/project_management/timesheet/components/dayOff.types";
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 const POPOVER_GAP = 6;
 const VIEWPORT_MARGIN = 8;
+const TRIGGER_HEIGHT = 36;
 
 function toYMD(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -38,9 +49,17 @@ function fmtDate(s?: string) {
   const [y, m, d] = s.split("-");
   return `${d} ${MONTHS[+m - 1].slice(0, 3)} ${y}`;
 }
+function fmtShortDate(s?: string) {
+  if (!s) return "";
+  const [, m, d] = s.split("-");
+  return `${d} ${MONTHS[+m - 1].slice(0, 3)}`;
+}
 function daysBetween(from: string, to: string) {
   if (!from || !to) return 1;
-  return Math.round((parseYMD(to).getTime() - parseYMD(from).getTime()) / 86400000) + 1;
+  return (
+    Math.round((parseYMD(to).getTime() - parseYMD(from).getTime()) / 86400000) +
+    1
+  );
 }
 
 export function calcDurationHours(from: string, to: string): number {
@@ -67,7 +86,10 @@ function toMinutes(t: string): number {
   return h * 60 + m;
 }
 function addMinutes(time24: string, minutes: number): string {
-  const total = Math.max(0, Math.min(23 * 60 + 59, toMinutes(time24) + minutes));
+  const total = Math.max(
+    0,
+    Math.min(23 * 60 + 59, toMinutes(time24) + minutes),
+  );
   const hh = Math.floor(total / 60);
   const mm = total % 60;
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
@@ -106,7 +128,12 @@ interface TimeDropdownProps {
   onChange: (val: string) => void;
 }
 
-const TimeDropdown: React.FC<TimeDropdownProps> = ({ label, value, options, onChange }) => {
+const TimeDropdown: React.FC<TimeDropdownProps> = ({
+  label,
+  value,
+  options,
+  onChange,
+}) => {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -114,7 +141,8 @@ const TimeDropdown: React.FC<TimeDropdownProps> = ({ label, value, options, onCh
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node))
+        setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -122,13 +150,23 @@ const TimeDropdown: React.FC<TimeDropdownProps> = ({ label, value, options, onCh
 
   useEffect(() => {
     if (!open || !listRef.current) return;
-    const activeEl = listRef.current.querySelector<HTMLElement>('[data-active="true"]');
+    const activeEl = listRef.current.querySelector<HTMLElement>(
+      '[data-active="true"]',
+    );
     activeEl?.scrollIntoView({ block: "center" });
   }, [open]);
 
   return (
     <div ref={wrapRef} style={{ position: "relative", flex: 1 }}>
-      <span style={{ display: "block", fontSize: 10, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
+      <span
+        style={{
+          display: "block",
+          fontSize: 10,
+          fontWeight: 600,
+          color: "var(--muted)",
+          marginBottom: 4,
+        }}
+      >
         {label}
       </span>
       <button
@@ -181,10 +219,12 @@ const TimeDropdown: React.FC<TimeDropdownProps> = ({ label, value, options, onCh
                 cursor: "pointer",
               }}
               onMouseEnter={(e) => {
-                if (t !== value) e.currentTarget.style.background = "var(--row-hover)";
+                if (t !== value)
+                  e.currentTarget.style.background = "var(--row-hover)";
               }}
               onMouseLeave={(e) => {
-                if (t !== value) e.currentTarget.style.background = "transparent";
+                if (t !== value)
+                  e.currentTarget.style.background = "transparent";
               }}
             >
               {formatTime12h(t)}
@@ -210,38 +250,82 @@ interface MonthCalProps {
 }
 
 const MonthCal: React.FC<MonthCalProps> = ({
-  year, month, selected, selectedEnd, onDay, onPrev, onNext, disableFuture, disablePast, getDayOff,
+  year,
+  month,
+  selected,
+  selectedEnd,
+  onDay,
+  onPrev,
+  onNext,
+  disableFuture,
+  disablePast,
+  getDayOff,
 }) => {
   const cells = calDays(year, month);
   const todayYMD = toYMD(new Date());
 
   return (
     <div style={{ minWidth: 220 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <button type="button" onClick={onPrev} style={navBtn}>‹</button>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 12,
+        }}
+      >
+        <button type="button" onClick={onPrev} style={navBtn}>
+          ‹
+        </button>
         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
           {MONTHS[month]} {year}
         </span>
-        <button type="button" onClick={onNext} style={navBtn}>›</button>
+        <button type="button" onClick={onNext} style={navBtn}>
+          ›
+        </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 4 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7,1fr)",
+          gap: 2,
+          marginBottom: 4,
+        }}
+      >
         {DAYS.map((d) => (
-          <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 600, color: "var(--muted)", padding: "2px 0" }}>
+          <div
+            key={d}
+            style={{
+              textAlign: "center",
+              fontSize: 10,
+              fontWeight: 600,
+              color: "var(--muted)",
+              padding: "2px 0",
+            }}
+          >
             {d}
           </div>
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7,1fr)",
+          gap: 2,
+        }}
+      >
         {cells.map((day, i) => {
           if (day === null) return <div key={i} />;
           const ymd = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const isSelected = ymd === selected || ymd === selectedEnd;
-          const inRange = !!selected && !!selectedEnd && ymd > selected && ymd < selectedEnd;
+          const inRange =
+            !!selected && !!selectedEnd && ymd > selected && ymd < selectedEnd;
           const isToday = ymd === todayYMD;
           const disabled =
-            (disableFuture && ymd > todayYMD) || (disablePast && ymd < todayYMD);
+            (disableFuture && ymd > todayYMD) ||
+            (disablePast && ymd < todayYMD);
           const off = getDayOff?.(ymd);
           const offColor = off ? dayOffColor(off) : undefined;
 
@@ -275,7 +359,10 @@ const MonthCal: React.FC<MonthCalProps> = ({
                       ? "var(--primary)"
                       : "var(--text)",
                 opacity: disabled ? 0.4 : 1,
-                outline: isToday && !isSelected ? "1.5px solid var(--input-focus-ring)" : "none",
+                outline:
+                  isToday && !isSelected
+                    ? "1.5px solid var(--input-focus-ring)"
+                    : "none",
                 transition: "all .12s",
               }}
             >
@@ -317,9 +404,14 @@ const navBtn: React.CSSProperties = {
   lineHeight: 1,
 };
 
-const LegendDot: React.FC<{ color: string; label: string }> = ({ color, label }) => (
+const LegendDot: React.FC<{ color: string; label: string }> = ({
+  color,
+  label,
+}) => (
   <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-    <span style={{ width: 6, height: 6, borderRadius: "50%", background: color }} />
+    <span
+      style={{ width: 6, height: 6, borderRadius: "50%", background: color }}
+    />
     {label}
   </span>
 );
@@ -329,16 +421,19 @@ export interface DateTimeRangePickerProps {
   to_date?: string;
   from_time: string;
   to_time: string;
-  onApply: (date: string, from_time: string, to_time: string, to_date: string) => void;
+  onApply: (
+    date: string,
+    from_time: string,
+    to_time: string,
+    to_date: string,
+  ) => void;
   disabled?: boolean;
   intervalMinutes?: number;
   quickDurations?: { label: string; minutes: number }[];
   disableFuture?: boolean;
   disablePast?: boolean;
   placeholder?: string;
-  /** Optional: mark holidays / leaves / weekly off on the date grid. */
   getDayOff?: (ymd: string) => DayOff | undefined;
-  /** Optional: called with first/last day of the month being viewed (YYYY-MM-DD). */
   onMonthChange?: (from: string, to: string) => void;
 }
 
@@ -361,8 +456,12 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
   const [draftDate, setDraftDate] = useState(date);
   const [draftToDate, setDraftToDate] = useState(to_date || date);
   const [pickingEnd, setPickingEnd] = useState(false);
-  const [viewY, setViewY] = useState(() => (date ? parseYMD(date) : new Date()).getFullYear());
-  const [viewM, setViewM] = useState(() => (date ? parseYMD(date) : new Date()).getMonth());
+  const [viewY, setViewY] = useState(() =>
+    (date ? parseYMD(date) : new Date()).getFullYear(),
+  );
+  const [viewM, setViewM] = useState(() =>
+    (date ? parseYMD(date) : new Date()).getMonth(),
+  );
   const [draftFrom, setDraftFrom] = useState(from_time);
   const [draftTo, setDraftTo] = useState(to_time);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -388,7 +487,6 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
     setDraftTo(to_time);
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // tell the parent which month is on screen so it can load leaves for it
   useEffect(() => {
     if (!open) return;
     const first = toYMD(new Date(viewY, viewM, 1));
@@ -406,11 +504,21 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
     const spaceAbove = trigger.top - VIEWPORT_MARGIN;
     const openUp = h > spaceBelow && spaceAbove > spaceBelow;
 
-    const rawTop = openUp ? trigger.top - h - POPOVER_GAP : trigger.bottom + POPOVER_GAP;
-    const top = Math.max(VIEWPORT_MARGIN, Math.min(rawTop, window.innerHeight - h - VIEWPORT_MARGIN));
-    const left = Math.max(VIEWPORT_MARGIN, Math.min(trigger.left, window.innerWidth - w - VIEWPORT_MARGIN));
+    const rawTop = openUp
+      ? trigger.top - h - POPOVER_GAP
+      : trigger.bottom + POPOVER_GAP;
+    const top = Math.max(
+      VIEWPORT_MARGIN,
+      Math.min(rawTop, window.innerHeight - h - VIEWPORT_MARGIN),
+    );
+    const left = Math.max(
+      VIEWPORT_MARGIN,
+      Math.min(trigger.left, window.innerWidth - w - VIEWPORT_MARGIN),
+    );
 
-    setPos((prev) => (prev && prev.top === top && prev.left === left ? prev : { top, left }));
+    setPos((prev) =>
+      prev && prev.top === top && prev.left === left ? prev : { top, left },
+    );
   }, []);
 
   useLayoutEffect(() => {
@@ -431,15 +539,34 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
     if (!open) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (triggerRef.current?.contains(target) || popRef.current?.contains(target)) return;
+      if (
+        triggerRef.current?.contains(target) ||
+        popRef.current?.contains(target)
+      )
+        return;
       setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const rangeInvalid = !draftFrom || !draftTo || toMinutes(draftTo) <= toMinutes(draftFrom);
-  const draftHours = rangeInvalid ? 0 : calcDurationHours(draftFrom, draftTo);
+  const rangeInvalid =
+    !draftFrom ||
+    !draftTo ||
+    !draftDate ||
+    !draftToDate ||
+    new Date(`${draftToDate}T${draftTo}:00`).getTime() <=
+      new Date(`${draftDate}T${draftFrom}:00`).getTime();
+
+  const draftHours = rangeInvalid
+    ? 0
+    : Math.round(
+        ((new Date(`${draftToDate}T${draftTo}:00`).getTime() -
+          new Date(`${draftDate}T${draftFrom}:00`).getTime()) /
+          3600000) *
+          100,
+      ) / 100;
+
   const dayCount = daysBetween(draftDate, draftToDate);
   const showError = rangeInvalid && !!draftFrom && !!draftTo;
 
@@ -488,28 +615,41 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
     }
   };
 
-  const dateLabel = date
-    ? `${fmtDate(date)}${to_date && to_date !== date ? " → " + fmtDate(to_date) : ""}`
-    : "";
-  const triggerLabel =
-    from_time && to_time
-      ? `${dateLabel ? dateLabel + " · " : ""}${formatTime12h(from_time)} → ${formatTime12h(to_time)}`
-      : placeholder;
+  const isMultiDay = !!to_date && to_date !== date;
+  const hasRange = !!from_time && !!to_time;
+  const fromPart = `${date ? `${fmtShortDate(date)} · ` : ""}${formatTime12h(from_time)}`;
+  const toPart = `${isMultiDay ? `${fmtShortDate(to_date)} · ` : ""}${formatTime12h(to_time)}`;
+  const triggerLabel = hasRange ? `${fromPart} → ${toPart}` : placeholder;
+  const fullLabel =
+    hasRange && date
+      ? `${fmtDate(date)} ${formatTime12h(from_time)} → ${fmtDate(isMultiDay ? to_date : date)} ${formatTime12h(to_time)}`
+      : undefined;
 
   return (
-    <div style={{ position: "relative", display: "inline-block", width: "100%" }}>
+    <div
+      style={{
+        position: "relative",
+        display: "inline-block",
+        width: "100%",
+        minWidth: 0,
+      }}
+    >
       <button
         ref={triggerRef}
         type="button"
         disabled={disabled}
+        title={fullLabel}
         onClick={() => setOpen((o) => !o)}
         style={{
           width: "100%",
+          minWidth: 0,
+          height: TRIGGER_HEIGHT,
+          boxSizing: "border-box",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 6,
-          padding: "6px 8px",
+          padding: "0 8px",
           background: "var(--card)",
           border: "1.5px solid var(--border)",
           borderRadius: 8,
@@ -519,9 +659,24 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
           opacity: disabled ? 0.5 : 1,
         }}
       >
-        <span style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
           <ClockIcon />
-          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span
+            style={{
+              minWidth: 0,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
             {triggerLabel}
           </span>
         </span>
@@ -547,7 +702,9 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
               display: "flex",
             }}
           >
-            <div style={{ padding: 16, borderRight: "1.5px solid var(--border)" }}>
+            <div
+              style={{ padding: 16, borderRight: "1.5px solid var(--border)" }}
+            >
               <MonthCal
                 year={viewY}
                 month={viewM}
@@ -586,25 +743,66 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                     color: "var(--muted)",
                   }}
                 >
-                  <LegendDot color={`var(${DAY_OFF_TONE.company_holiday})`} label="Holiday" />
-                  <LegendDot color={`var(${DAY_OFF_TONE.leave})`} label="Leave" />
+                  <LegendDot
+                    color={`var(${DAY_OFF_TONE.company_holiday})`}
+                    label="Holiday"
+                  />
+                  <LegendDot
+                    color={`var(${DAY_OFF_TONE.leave})`}
+                    label="Leave"
+                  />
                   <LegendDot color={WEEKLY_OFF_COLOR} label="Weekly Off" />
                 </div>
               )}
             </div>
 
-            <div style={{ padding: 16, width: 280, display: "flex", flexDirection: "column", gap: 12 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 0.5, margin: 0 }}>
+            <div
+              style={{
+                padding: 16,
+                width: 280,
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+              }}
+            >
+              <p
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                  margin: 0,
+                }}
+              >
                 Time Range
               </p>
 
               <div style={{ display: "flex", gap: 10 }}>
-                <TimeDropdown label="From" value={draftFrom} options={timeOptions} onChange={setDraftFrom} />
-                <TimeDropdown label="To" value={draftTo} options={timeOptions} onChange={setDraftTo} />
+                <TimeDropdown
+                  label="From"
+                  value={draftFrom}
+                  options={timeOptions}
+                  onChange={setDraftFrom}
+                />
+                <TimeDropdown
+                  label="To"
+                  value={draftTo}
+                  options={timeOptions}
+                  onChange={setDraftTo}
+                />
               </div>
 
               <div>
-                <span style={{ display: "block", fontSize: 10, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>
+                <span
+                  style={{
+                    display: "block",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: "var(--muted)",
+                    marginBottom: 6,
+                  }}
+                >
                   Quick Duration
                 </span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -644,8 +842,12 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                   borderRadius: 8,
                   fontSize: 12,
                   fontWeight: 700,
-                  background: showError ? "rgba(220,38,38,0.12)" : "var(--row-hover)",
-                  color: showError ? "var(--danger, #dc2626)" : "var(--primary)",
+                  background: showError
+                    ? "rgba(220,38,38,0.12)"
+                    : "var(--row-hover)",
+                  color: showError
+                    ? "var(--danger, #dc2626)"
+                    : "var(--primary)",
                 }}
               >
                 {showError
@@ -653,8 +855,20 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                   : `Duration: ${draftHours.toFixed(1)} hrs${dayCount > 1 ? ` × ${dayCount} days` : ""}`}
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, borderTop: "1.5px solid var(--border)", paddingTop: 10 }}>
-                <button type="button" onClick={() => setOpen(false)} style={footerBtn("ghost")}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 8,
+                  borderTop: "1.5px solid var(--border)",
+                  paddingTop: 10,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  style={footerBtn("ghost")}
+                >
                   Cancel
                 </button>
                 <button
@@ -668,7 +882,7 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </div>
   );
@@ -684,7 +898,10 @@ const timeSelectStyle: React.CSSProperties = {
   color: "var(--text)",
 };
 
-function footerBtn(variant: "ghost" | "primary", disabled?: boolean): React.CSSProperties {
+function footerBtn(
+  variant: "ghost" | "primary",
+  disabled?: boolean,
+): React.CSSProperties {
   return {
     padding: "7px 16px",
     borderRadius: 8,
@@ -692,22 +909,295 @@ function footerBtn(variant: "ghost" | "primary", disabled?: boolean): React.CSSP
     fontWeight: 700,
     cursor: disabled ? "not-allowed" : "pointer",
     border: variant === "primary" ? "none" : "1.5px solid var(--border)",
-    background: variant === "primary" ? (disabled ? "var(--muted)" : "var(--primary)") : "transparent",
+    background:
+      variant === "primary"
+        ? disabled
+          ? "var(--muted)"
+          : "var(--primary)"
+        : "transparent",
     color: variant === "primary" ? "#fff" : "var(--text)",
     opacity: disabled ? 0.6 : 1,
   };
 }
 
 const ClockIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--primary)", flexShrink: 0 }}>
+  <svg
+    width="13"
+    height="13"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ color: "var(--primary)", flexShrink: 0 }}
+  >
     <circle cx="12" cy="12" r="10" />
     <polyline points="12 6 12 12 16 14" />
   </svg>
 );
 const ChevronIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--muted)", flexShrink: 0 }}>
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ color: "var(--muted)", flexShrink: 0 }}
+  >
     <polyline points="6 9 12 15 18 9" />
   </svg>
 );
 
+export interface DateRangePickerProps {
+  start: string;
+  end: string;
+  onChange: (start: string, end: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+}
+
+export const DateRangePicker: React.FC<DateRangePickerProps> = ({
+  start,
+  end,
+  onChange,
+  disabled,
+  placeholder = "Select date range",
+}) => {
+  const [open, setOpen] = useState(false);
+  const [draftStart, setDraftStart] = useState(start);
+  const [draftEnd, setDraftEnd] = useState(end);
+  const [pickingEnd, setPickingEnd] = useState(false);
+  const [viewY, setViewY] = useState(() =>
+    (start ? parseYMD(start) : new Date()).getFullYear(),
+  );
+  const [viewM, setViewM] = useState(() =>
+    (start ? parseYMD(start) : new Date()).getMonth(),
+  );
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const d = start ? parseYMD(start) : new Date();
+    setDraftStart(start);
+    setDraftEnd(end);
+    setPickingEnd(false);
+    setViewY(d.getFullYear());
+    setViewM(d.getMonth());
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const place = useCallback(() => {
+    const trigger = triggerRef.current?.getBoundingClientRect();
+    const pop = popRef.current;
+    if (!trigger || !pop) return;
+    const { offsetWidth: w, offsetHeight: h } = pop;
+    const spaceBelow = window.innerHeight - trigger.bottom - VIEWPORT_MARGIN;
+    const spaceAbove = trigger.top - VIEWPORT_MARGIN;
+    const openUp = h > spaceBelow && spaceAbove > spaceBelow;
+    const rawTop = openUp
+      ? trigger.top - h - POPOVER_GAP
+      : trigger.bottom + POPOVER_GAP;
+    const top = Math.max(
+      VIEWPORT_MARGIN,
+      Math.min(rawTop, window.innerHeight - h - VIEWPORT_MARGIN),
+    );
+    const left = Math.max(
+      VIEWPORT_MARGIN,
+      Math.min(trigger.left, window.innerWidth - w - VIEWPORT_MARGIN),
+    );
+    setPos((prev) =>
+      prev && prev.top === top && prev.left === left ? prev : { top, left },
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPos(null);
+      return;
+    }
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, viewY, viewM, place]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        triggerRef.current?.contains(target) ||
+        popRef.current?.contains(target)
+      )
+        return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleDayClick = (ymd: string) => {
+    if (!pickingEnd) {
+      setDraftStart(ymd);
+      setDraftEnd(ymd);
+      setPickingEnd(true);
+      return;
+    }
+    const [s, e] = ymd < draftStart ? [ymd, draftStart] : [draftStart, ymd];
+    onChange(s, e);
+    setOpen(false);
+  };
+
+  const handleClear = () => {
+    onChange("", "");
+    setOpen(false);
+  };
+
+  const prevMonth = () => {
+    if (viewM === 0) {
+      setViewM(11);
+      setViewY((y) => y - 1);
+    } else setViewM((m) => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewM === 11) {
+      setViewM(0);
+      setViewY((y) => y + 1);
+    } else setViewM((m) => m + 1);
+  };
+
+  const label = start
+    ? end && end !== start
+      ? `${fmtDate(start)} → ${fmtDate(end)}`
+      : fmtDate(start)
+    : placeholder;
+
+  return (
+    <div style={{ position: "relative", width: "100%", minWidth: 0 }}>
+      <button
+        ref={triggerRef}
+        type="button"
+        disabled={disabled}
+        title={label}
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          width: "100%",
+          minWidth: 0,
+          height: TRIGGER_HEIGHT,
+          boxSizing: "border-box",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 6,
+          padding: "0 8px",
+          background: "var(--card)",
+          border: "1.5px solid var(--border)",
+          borderRadius: 8,
+          fontSize: 12,
+          color: start ? "var(--text)" : "var(--muted)",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+        }}
+      >
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          <ClockIcon />
+          <span
+            style={{
+              minWidth: 0,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {label}
+          </span>
+        </span>
+        <ChevronIcon />
+      </button>
+
+      {open &&
+        createPortal(
+          <div
+            ref={popRef}
+            style={{
+              position: "fixed",
+              top: pos?.top ?? 0,
+              left: pos?.left ?? 0,
+              visibility: pos ? "visible" : "hidden",
+              zIndex: 99999,
+              padding: 16,
+              background: "var(--card)",
+              border: "1.5px solid var(--border)",
+              borderRadius: 14,
+              boxShadow: "var(--shadow-lg)",
+            }}
+          >
+            <MonthCal
+              year={viewY}
+              month={viewM}
+              selected={draftStart}
+              selectedEnd={draftEnd}
+              onDay={handleDayClick}
+              onPrev={prevMonth}
+              onNext={nextMonth}
+            />
+            <div
+              style={{
+                marginTop: 10,
+                fontSize: 11,
+                fontWeight: 600,
+                textAlign: "center",
+                color: pickingEnd ? "var(--primary)" : "var(--muted)",
+              }}
+            >
+              {pickingEnd ? "Now select end date" : "Select start date"}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 8,
+                borderTop: "1.5px solid var(--border)",
+                paddingTop: 10,
+                marginTop: 10,
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleClear}
+                style={footerBtn("ghost")}
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                style={footerBtn("ghost")}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+};
 export default DateTimeRangePicker;
