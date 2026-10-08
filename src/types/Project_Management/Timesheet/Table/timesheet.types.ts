@@ -5,6 +5,15 @@ export type TimesheetStatus =
   | "Billed"
   | "Cancelled";
 
+
+  export interface CalendarSummaryCell {
+  employee: string;
+  employee_name: string;
+  date: string;
+  approved_hours: number;
+  draft_hours: number;
+  draft_sheets: string[];
+}
 export interface TimesheetEntry {
   name: string;
   owner: string;
