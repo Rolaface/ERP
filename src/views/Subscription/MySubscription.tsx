@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Award, Clock, Copy, CreditCard, Layers } from "lucide-react";
 import { Button, Card } from "../../components/ui/modal/formComponent";
 import { showApiError, showSuccess } from "../../utils/alert";
@@ -8,25 +8,40 @@ import {
   type MySubscriptionResponse,
 } from "../../api/SubscriptionApi";
 
-
 const parseDate = (d: string) => new Date(`${d.slice(0, 10)}T00:00:00`);
 
-const formatDate = (d: string) =>
-  parseDate(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-
-const daysFromToday = (d: string) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.ceil((parseDate(d).getTime() - today.getTime()) / 86400000);
+const formatDate = (d: string | null | undefined) => {
+  if (!d) return "-";
+  const date = parseDate(d);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
 
-const formatMoney = (amount: number, currency: string) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount);
+const daysFromToday = (d: string) => {
+  const date = parseDate(d);
+  if (Number.isNaN(date.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.ceil((date.getTime() - today.getTime()) / 86400000);
+};
 
+const formatMoney = (amount: number, currency: string) => {
+  try {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount ?? 0);
+  } catch {
+    // invalid / missing currency code
+    return `${currency ?? ""} ${amount ?? 0}`.trim();
+  }
+};
+
+const getErrorMessage = (err: unknown) => {
+  const e = err as { response?: { data?: { message?: string } }; message?: string };
+  return e?.response?.data?.message || e?.message || "Failed to load subscription";
+};
 
 const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
   <div className={`animate-pulse rounded-md bg-app ${className}`} />
@@ -60,41 +75,47 @@ const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, 
   </div>
 );
 
-
 const MySubscription: React.FC = () => {
   const [data, setData] = useState<MySubscriptionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(true);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setData(await getMySubscription());
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || "Failed to load subscription");
+      const res = await getMySubscription();
+      if (mounted.current) setData(res);
+    } catch (err: unknown) {
+      if (!mounted.current) return;
+      setError(getErrorMessage(err));
       showApiError(err);
     } finally {
-      setLoading(false);
+      if (mounted.current) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    mounted.current = true;
     load();
-  }, []);
+    return () => {
+      mounted.current = false;
+    };
+  }, [load]);
 
   const d = data?.details;
 
   const products = useMemo(() => {
     if (!d) return [];
-    const codes = d.products
+    const codes = (d.products ?? "")
       .split(",")
       .map((p) => p.trim())
       .filter(Boolean);
+    const modules = d.modules ?? [];
 
     return codes.map((code) => {
-      const mods = d.modules.filter((m) => m.product === code);
-      const enabled = mods.filter((m) => m.is_enabled);
+      const enabled = modules.filter((m) => m.product === code && m.is_enabled);
       return {
         code,
         active: enabled.length > 0,
@@ -109,11 +130,12 @@ const MySubscription: React.FC = () => {
       await navigator.clipboard.writeText(data.name);
       showSuccess("Subscription ID copied");
     } catch {
+      // clipboard blocked (permissions / insecure context) — nothing to do
     }
   };
 
-  const activeCount = products.filter((p) => p.active).length;
-  const daysToRenewal = d?.trial_end_date ? daysFromToday(d.trial_end_date) : null;
+  const renewalDate = d?.end_date ?? null;
+  const daysToRenewal = renewalDate ? daysFromToday(renewalDate) : null;
 
   return (
     <AppPage>
@@ -139,7 +161,7 @@ const MySubscription: React.FC = () => {
 
         {!loading && !error && !data && (
           <Card>
-            <p className="py-6 text-center text-sm text-muted">No active subscription found.</p>
+            <p className="py-6 text-center text-sm text-muted">No subscription found.</p>
           </Card>
         )}
 
@@ -161,7 +183,6 @@ const MySubscription: React.FC = () => {
                 </div>
               </div>
 
-              {/* All details in one row */}
               <div className="mt-5 grid grid-cols-2 gap-4 border-t border-white/20 pt-4 md:grid-cols-3 lg:grid-cols-6">
                 <Field label="Subscription ID">
                   <div className="mt-1 flex items-center gap-1.5">
@@ -183,19 +204,17 @@ const MySubscription: React.FC = () => {
                   <p className="mt-1.5 text-sm font-semibold text-white">{formatDate(d.start_date)}</p>
                 </Field>
 
-                {d.trial_end_date && (
-                  <Field label="Next Renewal">
-                    <p className="mt-1.5 text-sm font-semibold text-white">{formatDate(d.trial_end_date)}</p>
-                    {daysToRenewal !== null && (
-                      <p className="mt-0.5 flex items-center gap-1 text-[11px] text-white/70">
-                        <Clock className="h-3 w-3" />
-                        {daysToRenewal >= 0
-                          ? `(in ${daysToRenewal} days)`
-                          : `(${Math.abs(daysToRenewal)} days ago)`}
-                      </p>
-                    )}
-                  </Field>
-                )}
+                <Field label="Next Renewal">
+                  <p className="mt-1.5 text-sm font-semibold text-white">{formatDate(renewalDate)}</p>
+                  {daysToRenewal !== null && (
+                    <p className="mt-0.5 flex items-center gap-1 text-[11px] text-white/70">
+                      <Clock className="h-3 w-3" />
+                      {daysToRenewal >= 0
+                        ? `(in ${daysToRenewal} days)`
+                        : `(${Math.abs(daysToRenewal)} days ago)`}
+                    </p>
+                  )}
+                </Field>
 
                 {d.trial_enabled ? (
                   <Field label="Free Trial">
@@ -211,47 +230,50 @@ const MySubscription: React.FC = () => {
               </div>
             </div>
 
-            {/* Products */}
             <div className="p-6">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <h3 className="text-lg font-bold text-main">Products</h3>
                   <p className="text-sm text-muted">
-                    Detailed view of products activated under your account,and sub-modules.
+                    Detailed view of products activated under your account, and sub-modules.
                   </p>
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {products.map((product) => (
-                  <div key={product.code} className="rounded-xl border border-theme bg-app p-4">
-                    <div className="flex items-center gap-2.5">
-                      <span className="rounded-lg bg-primary/10 p-2">
-                        <Layers className="h-5 w-5 text-primary" />
-                      </span>
-                      <span className="text-sm font-semibold text-main">{product.code}</span>
-                    </div>
-
-                    {product.subFeatures.length > 0 && (
-                      <div className="mt-0">
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
-                          Included Modules
-                        </p>
-                        <div className="mt-1.5 flex flex-wrap gap-1.5">
-                          {product.subFeatures.map((f) => (
-                            <span
-                              key={f}
-                              className="inline-flex items-center gap-1 rounded-md border border-theme bg-card px-2 py-1 text-[11px] text-main"
-                            >
-                              {f}
-                            </span>
-                          ))}
-                        </div>
+              {products.length === 0 ? (
+                <p className="mt-4 text-sm text-muted">No products activated.</p>
+              ) : (
+                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {products.map((product) => (
+                    <div key={product.code} className="rounded-xl border border-theme bg-app p-4">
+                      <div className="flex items-center gap-2.5">
+                        <span className="rounded-lg bg-primary/10 p-2">
+                          <Layers className="h-5 w-5 text-primary" />
+                        </span>
+                        <span className="text-sm font-semibold text-main">{product.code}</span>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+
+                      {product.subFeatures.length > 0 && (
+                        <div className="mt-0">
+                          <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
+                            Included Modules
+                          </p>
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {product.subFeatures.map((f) => (
+                              <span
+                                key={f}
+                                className="inline-flex items-center gap-1 rounded-md border border-theme bg-card px-2 py-1 text-[11px] text-main"
+                              >
+                                {f}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
