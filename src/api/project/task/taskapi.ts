@@ -31,6 +31,7 @@ export interface GetAllTasksOptions {
   pageSize?: number;
   excludeGroups?: boolean;
   excludeStatuses?: string[];
+  assignee?: string;
 }
 
 export async function getAllTasks(
@@ -51,7 +52,13 @@ export async function getAllTasks(
   if (options.excludeStatuses?.length) {
     filters.push(["status", "not in", options.excludeStatuses]);
   }
-
+if (options.assignee) {
+  filters.push([
+    "_assign",
+    "like",
+    `%"${options.assignee}"%`,
+  ]);
+}
   let url = `${TaskAPI.list}?${query}`;
   if (filters.length) {
     url += `&filters=${encodeURIComponent(JSON.stringify(filters))}`;
