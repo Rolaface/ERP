@@ -68,6 +68,10 @@ export const API = {
     update: `${ERP_BASE}/api/method/custom_api.api.pdc.api.update`,
   },
 
+  subscription:{
+   mysubscription: `${ERP_BASE}/api/resource/Custom Subscription Details`
+  },
+
   /* =========================
    * CUSTOMER DASHBOARD
    * ========================= */
