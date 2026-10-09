@@ -17,8 +17,6 @@ interface StatusCellProps {
   progress?: number;
   options: StatusOption[];
   disabled?: boolean;
-  // progress is omitted (undefined) when the user didn't opt in to change it —
-  // the API only includes it in the payload when it's actually passed.
   onChange: (nextStatus: string, nextProgress?: number) => void;
 }
 
@@ -45,8 +43,6 @@ const StatusCell: React.FC<StatusCellProps> = ({
 
   const currentOption = options.find((o) => o.value === status);
 
-  // Reset every time the dropdown opens: draft re-seeded from the row's
-  // actual progress, checkbox back off (compact by default).
   useEffect(() => {
     if (open) {
       setProgressDraft(progress ?? 0);
@@ -89,10 +85,6 @@ const StatusCell: React.FC<StatusCellProps> = ({
   }, [open]);
 
   const handleSelect = async (nextValue: string, nextLabel: string) => {
-    // Three cases, matching the API's "only include progress if provided" rule:
-    // 1. Completed        -> always send progress: 100
-    // 2. checkbox checked -> send the slider's value
-    // 3. checkbox off     -> send NO progress at all (undefined)
     const nextProgress: number | undefined =
       nextValue === "Completed"
         ? 100

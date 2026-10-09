@@ -14,6 +14,7 @@ import { showApiError, showSuccess } from "../../../../utils/alert";
 import { getEmployees } from "../../../../api/utils/frappeUtilsApi";
 import { getAllProjects } from "../../../../api/project/projectapi/project.api";
 import { getAllTasks } from "../../../../api/project/task/taskapi";
+import { getMyLoggableTaskNames } from "../../../../api/project/todo/todo.api";
 import { getAllActivityTypes } from "../../../../api/project/projectapi/Activity/activityType.api";
 import { useCompanyDefaultsStore } from "../../../../store/Companydefaultsstore";
 import { getExchangeRate } from "../../../../api/BankAccountApi";
@@ -56,7 +57,17 @@ export async function fetchProjectOptions(
     subLabel: project.name,
   }));
 }
+function getCurrentUserEmail(): string | undefined {
+  try {
+    const raw = localStorage.getItem("auth_user");
+    if (!raw) return undefined;
 
+    const user = JSON.parse(raw);
+    return user?.email || undefined;
+  } catch {
+    return undefined;
+  }
+}
 export async function fetchEmployeeOptions(search: string): Promise<Option[]> {
   return getEmployees(search);
 }
@@ -64,12 +75,17 @@ export async function fetchEmployeeOptions(search: string): Promise<Option[]> {
 export async function fetchTaskOptions(
   projectId: string,
   search: string,
+  onlyMine = false,
 ): Promise<Option[]> {
   if (!projectId) return [];
+
+  const email = onlyMine ? getCurrentUserEmail() : undefined;
+  const names = email ? await getMyLoggableTaskNames(email) : undefined;
 
   const tasks = await getAllTasks(projectId, search, {
     excludeGroups: true,
     excludeStatuses: ["Cancelled"],
+    names,
   });
 
   return tasks.map((task) => ({
@@ -368,7 +384,7 @@ export function useTimesheetModal(
       project: "",
       project_name: "",
       customer: detail.customer ?? "",
-      customer_name: detail.customer ?? "",
+      customer_name: detail.customer_name ?? detail.customer ?? "",
       employee: detail.employee,
       employee_name: detail.employee_name,
       department: detail.department ?? "",

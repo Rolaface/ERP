@@ -8,8 +8,9 @@ interface AssigneeCellProps {
   emails: string[];
   disabled?: boolean;
   fetchOptions: (q: string) => Promise<Option[]>;
-  onChange: (nextEmails: string[]) => void | Promise<void>;
+  onChange: (nextEmails: string[], description?: string) => void | Promise<void>;
   onTake?: () => void | Promise<void>;
+  currentUserEmail?: string;
 }
 
 const AVATAR_PALETTE: [string, string][] = [
@@ -59,6 +60,7 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
   fetchOptions,
   onChange,
   onTake,
+  currentUserEmail,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{
@@ -84,6 +86,7 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
   const [pendingOptionsMap, setPendingOptionsMap] = useState<
     Record<string, Option>
   >({});
+  const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [taking, setTaking] = useState(false);
 
@@ -167,6 +170,7 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
     setPendingEmails([...emails]);
     setSearch("");
     setDebouncedSearch("");
+    setDescription("");
     setOptions([]);
     repositionPopover();
     setOpen(true);
@@ -222,15 +226,45 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, saving]);
 
-  const toggleEmail = (opt: Option) => {
-    setPendingEmails((prev) =>
-      prev.includes(opt.value)
-        ? prev.filter((v) => v !== opt.value)
-        : [...prev, opt.value],
-    );
-    setPendingOptionsMap((prev) => ({ ...prev, [opt.value]: opt }));
-  };
+  const selfAssigned = !!currentUserEmail && emails.includes(currentUserEmail);
 
+  // const toggleEmail = (opt: Option) => {
+  //   setPendingEmails((prev) => {
+  //     if (prev.includes(opt.value)) {
+  //       return prev.filter((v) => v !== opt.value);
+  //     }
+  //     if (!selfAssigned) return [...prev, opt.value];
+
+  //     const isSelf = opt.value === currentUserEmail;
+  //     const hasNewOthers = prev.some(
+  //       (v) => v !== currentUserEmail && !emails.includes(v),
+  //     );
+
+  //     if (isSelf) return hasNewOthers ? prev : [...prev, opt.value];
+
+  //     const isNewOther = !emails.includes(opt.value);
+  //     const base = isNewOther
+  //       ? prev.filter((v) => v !== currentUserEmail)
+  //       : prev;
+  //     return [...base, opt.value];
+  //   });
+  //   setPendingOptionsMap((prev) => ({ ...prev, [opt.value]: opt }));
+  // };
+
+const toggleEmail = (opt: Option) => {
+  setPendingEmails((prev) => {
+    if (prev.includes(opt.value)) {
+      return prev.filter((v) => v !== opt.value);
+    }
+
+    return [...prev, opt.value];
+  });
+
+  setPendingOptionsMap((prev) => ({
+    ...prev,
+    [opt.value]: opt,
+  }));
+};
   const handleCancel = () => {
     if (saving) return;
     setOpen(false);
@@ -240,7 +274,7 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
     if (saving) return;
     setSaving(true);
     try {
-      await onChange(pendingEmails);
+      await onChange(pendingEmails, description.trim() || undefined);
       if (mountedRef.current) setOpen(false);
     } catch {
     } finally {
@@ -543,6 +577,17 @@ if (!hasAssignees && takeButton) return takeButton;
                     No records found
                   </div>
                 )}
+            </div>
+
+            <div className="px-3 py-2 border-t border-theme">
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={saving}
+                rows={2}
+                placeholder="Description (optional)"
+                className="w-full resize-none bg-transparent border border-theme rounded px-2 py-1 text-[12px] text-main outline-none focus:border-[var(--input-border-focus)] disabled:opacity-50"
+              />
             </div>
 
             <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-theme">

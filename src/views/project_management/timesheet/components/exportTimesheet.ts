@@ -289,7 +289,7 @@ export async function exportTimesheetToExcel(
   };
 
   const logs = data.time_logs ?? [];
-  const parentProject = data.parent_project ?? "";
+  const parentProject = data.parent_project_name || data.parent_project || "";
   const hasClock = logs.some((l) => {
     const t = timePart(l.from_time);
     return t !== "" && t !== "00:00";
@@ -437,7 +437,7 @@ export async function exportTimesheetToExcel(
     { label: "Employee", value: empText || "-" },
     { label: "Period", value: period || "-" },
     { label: "Department", value: data.department || "-" },
-    { label: "Customer", value: data.customer || "-" },
+    { label: "Customer", value: data.customer_name || data.customer || "-" },
     { label: "Project", value: parentProject || "-" },
     { label: "Company", value: data.company || "-" },
     ...(showFinancials
@@ -652,7 +652,12 @@ export async function exportTimesheetsToExcel(
       min: 14,
       max: 28,
       optional: true,
-      get: ({ t, l }) => l.project_name || l.project || t.parent_project || "",
+      get: ({ t, l }) =>
+        l.project_name ||
+        l.project ||
+        t.parent_project_name ||
+        t.parent_project ||
+        "",
     },
     {
       key: "customer",
@@ -661,7 +666,7 @@ export async function exportTimesheetsToExcel(
       min: 14,
       max: 26,
       optional: true,
-      get: ({ t }) => t.customer ?? "",
+      get: ({ t }) => t.customer_name || t.customer || "",
     },
     {
       key: "date",

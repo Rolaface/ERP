@@ -27,7 +27,7 @@ const STATUS_OPTIONS: TaskStatus[] = [
   "Working",
   "Pending Review",
   "Overdue",
-  "Template",
+
   "Completed",
   "Cancelled",
 ];
@@ -48,6 +48,8 @@ interface Props {
   onClose: () => void;
   onStatusChange?: (taskName: string, nextStatus: string) => void;
   actionLoading?: boolean;
+  assignmentNotes?: { user: string; text: string }[];
+  showNoteUser?: boolean;
 }
 
 const getDisplayName = (email: string): string => {
@@ -76,6 +78,8 @@ const TaskDetailDrawer: React.FC<Props> = ({
   onClose,
   onStatusChange,
   actionLoading,
+  assignmentNotes,
+  showNoteUser,
 }) => {
   if (!open) return null;
 
@@ -106,7 +110,6 @@ const TaskDetailDrawer: React.FC<Props> = ({
       if (result.isConfirmed) {
         onStatusChange(data.name, nextStatus);
       }
-
     };
 
     if (canEditStatus && onStatusChange) {
@@ -120,7 +123,9 @@ const TaskDetailDrawer: React.FC<Props> = ({
             gap: 10,
           }}
         >
-          <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>
+          <span
+            style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}
+          >
             Update Status
           </span>
           <select
@@ -237,11 +242,11 @@ const TaskDetailDrawer: React.FC<Props> = ({
               items={[
                 ...(showFinancials
                   ? [
-                    {
-                      label: "Progress",
-                      value: `${(data.progress ?? 0).toFixed(0)}%`,
-                    },
-                  ]
+                      {
+                        label: "Progress",
+                        value: `${(data.progress ?? 0).toFixed(0)}%`,
+                      },
+                    ]
                   : []),
                 {
                   label: "Actual Time",
@@ -249,16 +254,16 @@ const TaskDetailDrawer: React.FC<Props> = ({
                 },
                 ...(showFinancials
                   ? [
-                    {
-                      label: "Costing Amount",
-                      value: formatCurrency(data.total_costing_amount),
-                    },
-                    {
-                      label: "Billing Amount",
-                      value: formatCurrency(data.total_billing_amount),
-                      emphasis: true,
-                    },
-                  ]
+                      {
+                        label: "Costing Amount",
+                        value: formatCurrency(data.total_costing_amount),
+                      },
+                      {
+                        label: "Billing Amount",
+                        value: formatCurrency(data.total_billing_amount),
+                        emphasis: true,
+                      },
+                    ]
                   : []),
               ]}
             />
@@ -405,6 +410,58 @@ const TaskDetailDrawer: React.FC<Props> = ({
                 )}
               </div>
             </div>
+
+            {assignmentNotes && assignmentNotes.length > 0 && (
+              <>
+                <S title="Assignment Notes" />
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    marginBottom: 7,
+                  }}
+                >
+                  {assignmentNotes.map((note, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        background: "var(--bg)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        padding: "8px 10px",
+                      }}
+                    >
+                      {showNoteUser && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: "var(--muted)",
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            display: "block",
+                            marginBottom: 3,
+                          }}
+                        >
+                          {note.user}
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text)",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {note.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {showFinancials && (
