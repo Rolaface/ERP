@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, Pencil, Plus, Search } from "lucide-react";
 import { showApiError } from "../../../../utils/alert";
 
@@ -7,35 +7,40 @@ import SearchSelect2, {
 } from "../../../../components/ui/modal/SearchSelect2";
 import { getAllProjects } from "../../../../api/project/projectapi/project.api";
 import { getAllActivityTypes } from "../../../../api/project/projectapi/Activity/activityType.api";
-import type { TimesheetHoursEntry } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
+import type { CalendarSummaryCell } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import type { DayOffLookup } from "./dayOff.types";
 import DayOffChip, { DAY_OFF_TONE } from "./DayOffChip";
 import { WEEKLY_OFF_COLOR, weeklyOffFill } from "./Weeklyoff";
 
 interface Props {
   days: Date[];
-  entries: TimesheetHoursEntry[];
+  cells: CalendarSummaryCell[];
   todayKey: string;
   granularity?: "day" | "month";
-  onCellClick?: (employee: string, dateKey: string) => void;
+  onCellClick?: (
+    employeeId: string,
+    employeeName: string,
+    dateKey: string,
+  ) => void;
   onEditDraft?: (timesheetId: string) => void;
+  onFiltersChange?: (project: string, activityType: string) => void;
   dayOffs?: DayOffLookup;
 }
 
 interface Cell {
   hours: number;
   draftHours: number;
-  items: TimesheetHoursEntry[];
+  draftSheets: string[];
 }
 
 interface Row {
+  id: string;
   name: string;
   cells: Record<string, Cell>;
   total: number;
 }
 
 const ALL = "ALL";
-const DRAFT_DOCSTATUS = 0;
 const HOURS_DECIMALS = 2;
 const APPROVED_TONE = "--success";
 const DRAFT_TONE = "--warning";
@@ -79,12 +84,9 @@ const avatarColor = (name: string) =>
   ];
 
 const cellTitle = (c: Cell) =>
-  c.items
-    .map(
-      (e) =>
-        `${[e.project, e.task, e.activity_type].filter(Boolean).join(" · ")} — ${formatHours(e.hours)}`,
-    )
-    .join("\n");
+  c.draftHours > 0
+    ? `${formatHours(c.hours)} · Draft ${formatHours(c.draftHours)}`
+    : formatHours(c.hours);
 
 const FilterSelect: React.FC<{
   value: string;
@@ -108,11 +110,12 @@ const FilterSelect: React.FC<{
 
 const TimesheetMatrix: React.FC<Props> = ({
   days,
-  entries,
+  cells,
   todayKey,
   granularity = "day",
   onCellClick,
   onEditDraft,
+  onFiltersChange,
   dayOffs,
 }) => {
   const isMonthly = granularity === "month";
@@ -123,6 +126,12 @@ const TimesheetMatrix: React.FC<Props> = ({
   const [activityId, setActivityId] = useState("");
   const [activityLabel, setActivityLabel] = useState("");
   const [status, setStatus] = useState(ALL);
+
+  useEffect(() => {
+    onFiltersChange?.(projectId, activityId);
+  }, [projectId, activityId]);
+
+  useEffect(() => () => onFiltersChange?.("", ""), []);
 
   const fetchProjects = useCallback(async (q: string): Promise<Option[]> => {
     try {
@@ -160,37 +169,38 @@ const TimesheetMatrix: React.FC<Props> = ({
     const q = search.trim().toLowerCase();
     const byEmployee = new Map<string, Row>();
 
-    entries.forEach((e) => {
-      const bucket = bucketKey(e.date, isMonthly);
-      if (!columnKeys.has(bucket)) return;
-      if (projectId && e.project !== projectId) return;
-      if (activityId && e.activity_type !== activityId) return;
-      const isDraft = e.docstatus === DRAFT_DOCSTATUS;
-      if (status === "draft" && !isDraft) return;
-      if (status === "submitted" && isDraft) return;
-      if (q && !e.employee.toLowerCase().includes(q)) return;
+    cells.forEach((c) => {
+      if (!columnKeys.has(c.date)) return;
+      if (status === "draft" && c.draft_sheets.length === 0) return;
+      if (status === "submitted" && c.approved_hours <= 0) return;
+      if (q && !c.employee_name.toLowerCase().includes(q)) return;
 
-      const row = byEmployee.get(e.employee) ?? {
-        name: e.employee,
-        cells: {},
-        total: 0,
+      const draftHours = status === "submitted" ? 0 : c.draft_hours;
+      const approvedHours = status === "draft" ? 0 : c.approved_hours;
+      const hours = draftHours + approvedHours;
+
+ const employeeId = c.employee || "UNASSIGNED";
+const employeeName = c.employee_name?.trim() || "Unassigned";
+
+const row = byEmployee.get(employeeId) ?? {
+  id: employeeId,
+  name: employeeName,
+  cells: {},
+  total: 0,
+};
+      row.cells[c.date] = {
+        hours,
+        draftHours,
+        draftSheets: status === "submitted" ? [] : c.draft_sheets,
       };
-      const cell = (row.cells[bucket] ??= {
-        hours: 0,
-        draftHours: 0,
-        items: [],
-      });
-      cell.hours += e.hours;
-      if (isDraft) cell.draftHours += e.hours;
-      cell.items.push(e);
-      row.total += e.hours;
-      byEmployee.set(e.employee, row);
+      row.total += hours;
+      byEmployee.set(c.employee, row);
     });
 
     return Array.from(byEmployee.values()).sort((a, b) =>
       a.name.localeCompare(b.name),
     );
-  }, [days, entries, search, projectId, activityId, status, isMonthly]);
+  }, [days, cells, search, status, isMonthly]);
 
   const columnTotals = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -384,7 +394,7 @@ const TimesheetMatrix: React.FC<Props> = ({
               const av = avatarColor(row.name);
               return (
                 <tr
-                  key={row.name}
+                  key={row.id}
                   className="group h-[52px] border-b border-[var(--border)]/40 hover:bg-row-hover"
                 >
                   <td
@@ -412,24 +422,17 @@ const TimesheetMatrix: React.FC<Props> = ({
                         dayOffs?.leaveOn(key, row.name));
                     const canAdd = clickable;
                     const columnTint = isCurrent(key) ? "bg-primary/5" : "";
-                    const draftIds = cell
-                      ? [
-                          ...new Set(
-                            cell.items
-                              .filter((e) => e.docstatus === DRAFT_DOCSTATUS)
-                              .map((e) => e.timesheet),
-                          ),
-                        ]
-                      : [];
                     const editId =
-                      onEditDraft && draftIds.length === 1
-                        ? draftIds[0]
+                      onEditDraft && cell?.draftSheets.length === 1
+                        ? cell.draftSheets[0]
                         : undefined;
                     return (
                       <td
                         key={key}
                         onClick={
-                          canAdd ? () => onCellClick?.(row.name, key) : undefined
+                          canAdd
+                            ? () => onCellClick?.(row.id, row.name, key)
+                            : undefined
                         }
                         style={
                           off?.kind === "weekly_off" ? weeklyOffFill : undefined

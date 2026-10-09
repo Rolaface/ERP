@@ -87,7 +87,7 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
           label=""
           value={line.task_name}
           disabled={!line.project}
-          fetchOptions={(q) => fetchTaskOptions(line.project, q)}
+         fetchOptions={(q) => fetchTaskOptions(line.project, q, isEmployee)}
           onChange={(val, opt) => handlers.onTask(line.id, val, opt)}
           placeholder={line.project ? "Task" : "Select project first"}
         />

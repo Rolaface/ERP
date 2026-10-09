@@ -56,7 +56,17 @@ export async function fetchProjectOptions(
     subLabel: project.name,
   }));
 }
+function getCurrentUserEmail(): string | undefined {
+  try {
+    const raw = localStorage.getItem("auth_user");
+    if (!raw) return undefined;
 
+    const user = JSON.parse(raw);
+    return user?.email || undefined;
+  } catch {
+    return undefined;
+  }
+}
 export async function fetchEmployeeOptions(search: string): Promise<Option[]> {
   return getEmployees(search);
 }
@@ -64,13 +74,15 @@ export async function fetchEmployeeOptions(search: string): Promise<Option[]> {
 export async function fetchTaskOptions(
   projectId: string,
   search: string,
+  onlyMine = false,
 ): Promise<Option[]> {
   if (!projectId) return [];
 
-  const tasks = await getAllTasks(projectId, search, {
-    excludeGroups: true,
-    excludeStatuses: ["Cancelled"],
-  });
+const tasks = await getAllTasks(projectId, search, {
+  excludeGroups: true,
+  excludeStatuses: ["Cancelled"],
+  assignee: onlyMine ? getCurrentUserEmail() : undefined,
+});
 
   return tasks.map((task) => ({
     label: task.subject,

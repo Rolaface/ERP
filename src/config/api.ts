@@ -800,6 +800,8 @@ export const API = {
       cancel:`${ERP_BASE}/api/resource/Timesheet`,
       renametitle:`${ERP_BASE}/api/method/frappe.model.rename_doc.update_document_title`,
       getbyid:`${ERP_BASE}/api/method/custom_hrms.api.timesheet.api.get_timesheet`,
+      calendarSummary:`${ERP_BASE}/api/method/custom_hrms.api.timesheet.api.get_timesheet_calendar_summary`,
+      calendarDetails:`${ERP_BASE}/api/method/custom_hrms.api.timesheet.api.get_timesheet_calendar_details`,
     },
     activityType:{ list: `${ERP_BASE}/api/resource/Activity Type`,
   },

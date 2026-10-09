@@ -271,17 +271,21 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
 
     try {
       const res = await getTaskList(
-        page,
-        pageSize,
-        statusFilter.length ? statusFilter : undefined,
-        projectFilter.length ? projectFilter : undefined,
-        searchTerm || undefined,
-        sortBy || undefined,
-        sortOrder,
-        assigneeFilter.length ? assigneeFilter : undefined,
-        isEmployee,
-        isEmployee ? allAssignedNamesRef.current : undefined,
-      );
+  page,
+  pageSize,
+  statusFilter.length ? statusFilter : undefined,
+  projectFilter.length ? projectFilter : undefined,
+  searchTerm || undefined,
+  sortBy || undefined,
+  sortOrder,
+  isEmployee && currentUserEmail
+    ? [currentUserEmail]
+    : assigneeFilter.length
+      ? assigneeFilter
+      : undefined,
+  isEmployee,
+  undefined,
+);
 
       if (!mountedRef.current) return;
 
@@ -779,32 +783,37 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     }
   };
 
-  const handleAssigneesChange = async (
-    taskName: string,
-    nextEmails: string[],
-  ) => {
-    const task = findTask(taskName);
-    if (!task) return;
+ const handleAssigneesChange = async (
+  taskName: string,
+  nextEmails: string[],
+) => {
+  const task = findTask(taskName);
+  if (!task) return;
 
-    const previousEmails = parseAssignedEmails(task._assign);
+  const previousEmails = parseAssignedEmails(task._assign);
 
-    try {
-      const result = await updateTaskAssignees(
-        taskName,
-        previousEmails,
-        nextEmails,
-      );
+  try {
+    const result = await updateTaskAssignees(
+      taskName,
+      previousEmails,
+      nextEmails,
+    );
 
-      patchTask(taskName, { _assign: JSON.stringify(nextEmails) });
+    patchTask(taskName, {
+      _assign: JSON.stringify(nextEmails),
+    });
 
-      if (result.message) {
-        showSuccess(result.message);
-      }
-    } catch (error) {
-      showApiError(error);
-      throw error;
+    if (result.message) {
+      showSuccess(result.message);
     }
-  };
+
+  
+    triggerRefresh(REFRESH_KEYS.TASK_LIST);
+  } catch (error) {
+    showApiError(error);
+    throw error;
+  }
+};
 
   const allColumns: Column<TaskRow>[] = [
     {
