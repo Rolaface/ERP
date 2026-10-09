@@ -71,19 +71,29 @@ const formatReportDate = (val: string) => {
   return match[4] ? `${date} ${match[4]}` : date;
 };
 
-const initialValues = (defs: ReportFilter[]): FilterValues => {
+const initialValues = (
+  defs: ReportFilter[],
+  reportKey?: string,
+): FilterValues => {
   const values: FilterValues = {};
+
   defs.forEach((d) => {
     if (d.type === "date") {
-      values.from_date = startOfYear();
+      const isDailyTimesheetSummary =
+        reportKey === "daily-timesheet-summary";
+
+      values.from_date = isDailyTimesheetSummary
+        ? today()
+        : startOfYear();
+
       values.to_date = today();
     } else {
       values[d.key] = d.type === "check" ? false : "";
     }
   });
+
   return values;
 };
-
 const toApiFilters = (values: FilterValues) =>
   Object.fromEntries(
     Object.entries(values)
@@ -165,9 +175,9 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
   const { user } = useAuth();
   const storageKey = `${user?.username ?? "guest"}:${report.key}`;
 
-  const [values, setValues] = useState<FilterValues>(() =>
-    initialValues(report.filters),
-  );
+const [values, setValues] = useState<FilterValues>(() =>
+  initialValues(report.filters, report.key),
+);
   const [linkOptions, setLinkOptions] = useState<
     Partial<Record<LinkSource, SelectOption[]>>
   >({});
