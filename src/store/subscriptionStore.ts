@@ -48,6 +48,7 @@ export function useSubscriptionAccess(): SubscriptionAccess & { isLoading: boole
     const erp = (name: string) => hasModule(raw, "ERP", name);
 
     const sales = erp("Sales");
+    const customer = erp("Customer"); 
     const procurement = erp("Procurement");
     const inventory = erp("Inventory");
 
@@ -56,7 +57,7 @@ export function useSubscriptionAccess(): SubscriptionAccess & { isLoading: boole
       hasErpKey: erpEnabled,
       hasHrmsKey: hrmsEnabled,
       sales,
-      customer: erp("Customer"),
+      customer,
       procurement,
       inventory,
       accounting: erp("Accounting"),
@@ -64,9 +65,7 @@ export function useSubscriptionAccess(): SubscriptionAccess & { isLoading: boole
       expenseManagement: hasModule(raw, "HRMS", "Expense Management"),
       lending: getModuleList(raw, "LMS").length > 0,
       los: getModuleList(raw, "LOS").length > 0,
-
-      importAccess: sales || procurement || inventory,
-
+      importAccess: sales || customer || procurement || inventory,
       scheduler: erpEnabled,
       taxMaintenance: erpEnabled,
       settingsAccess: () => erpEnabled || hrmsEnabled,
