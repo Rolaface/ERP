@@ -5,6 +5,15 @@ export type TimesheetStatus =
   | "Billed"
   | "Cancelled";
 
+
+  export interface CalendarSummaryCell {
+  employee: string;
+  employee_name: string;
+  date: string;
+  approved_hours: number;
+  draft_hours: number;
+  draft_sheets: string[];
+}
 export interface TimesheetEntry {
   name: string;
   owner: string;
@@ -16,6 +25,8 @@ export interface TimesheetEntry {
   status: TimesheetStatus;
   start_date: string;
   end_date: string;
+    custom_timesheet_start_date?: string | null;
+  custom_timesheet_end_date?: string | null;
   title: string; // employee display name
   total_hours: number;
   currency: string;
@@ -76,12 +87,17 @@ export interface TimesheetDetail {
   department?: string;
   company?: string;
   customer?: string;
+   customer_name?: string;          
+  parent_project?: string;
+  parent_project_name?: string; 
   currency: string;
   exchange_rate?: number;
   status: TimesheetStatus;
-  parent_project?: string;
+
   start_date: string;
   end_date: string;
+  custom_timesheet_start_date: string | null;
+  custom_timesheet_end_date: string | null;
   total_hours: number;
   total_billable_hours?: number;
   total_billable_amount: number;

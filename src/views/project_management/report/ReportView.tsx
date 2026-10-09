@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -12,23 +18,28 @@ import {
   ChevronRight,
   Download,
   Filter,
+  GripVertical,
   Loader2,
-  Mail,
+  Plus,
   RefreshCw,
+  RotateCcw,
 } from "lucide-react";
 import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
 import { getAllProjects } from "../../../api/project/projectapi/project.api";
 import {
-  emailReport,
   fetchReport,
   getEmployeeOptions,
   getProjectTypeOptions,
+  isAmountType,
   type ReportColumn,
   type ReportResponse,
   type ResourceOption,
 } from "../../../api/project/report/report.api";
 import { formatAmount } from "../../../utils/day-time formatter/Format";
 import { formatDate } from "../../../components/UI_Utils/Datedisplay";
+import { useAuth } from "../../../context/AuthContext";
+import AddColumnModal from "../../../components/report/AddColumnModal";
+import { useCustomColumns } from "../../../hooks/report/useCustomColumns";
 
 import type {
   LinkSource,
@@ -45,8 +56,6 @@ const PAGE_SIZE = 20;
 const MIN_COL_WIDTH = 110;
 const DEFAULT_COL_WIDTH = 160;
 const PAGE_WINDOW = 2;
-const AMOUNT_TYPES = ["Currency", "Float", "Int", "Percent"];
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ISO_DATE_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}(?::\d{2})?)(?:\.\d+)?)?$/;
 
@@ -62,19 +71,29 @@ const formatReportDate = (val: string) => {
   return match[4] ? `${date} ${match[4]}` : date;
 };
 
-const initialValues = (defs: ReportFilter[]): FilterValues => {
+const initialValues = (
+  defs: ReportFilter[],
+  reportKey?: string,
+): FilterValues => {
   const values: FilterValues = {};
+
   defs.forEach((d) => {
     if (d.type === "date") {
-      values.from_date = startOfYear();
+      const isDailyTimesheetSummary =
+        reportKey === "daily-timesheet-summary";
+
+      values.from_date = isDailyTimesheetSummary
+        ? today()
+        : startOfYear();
+
       values.to_date = today();
     } else {
       values[d.key] = d.type === "check" ? false : "";
     }
   });
+
   return values;
 };
-
 const toApiFilters = (values: FilterValues) =>
   Object.fromEntries(
     Object.entries(values)
@@ -98,13 +117,10 @@ const LINK_LOADERS: Record<LinkSource, () => Promise<SelectOption[]>> = {
     })),
 };
 
-const isAmountCol = (col: ReportColumn) =>
-  !!col.fieldtype && AMOUNT_TYPES.includes(col.fieldtype);
-
 const renderCell = (col: ReportColumn, val: any) => {
   if (val === null || val === undefined || val === "")
     return <span className="text-muted text-xs">—</span>;
-  if (isAmountCol(col))
+  if (isAmountType(col.fieldtype))
     return (
       <span className="text-xs font-medium tabular-nums text-main">
         {formatAmount(Number(val))}
@@ -113,6 +129,16 @@ const renderCell = (col: ReportColumn, val: any) => {
   const dateText = typeof val === "string" ? formatReportDate(val) : null;
   if (dateText) return <span className="text-xs text-main">{dateText}</span>;
   return <span className="text-xs text-main">{String(val)}</span>;
+};
+
+const reconcileOrder = (prev: string[], ids: string[]) => {
+  const next = prev.filter((id) => ids.includes(id));
+  ids.forEach((id, i) => {
+    if (next.includes(id)) return;
+    const before = i > 0 ? next.indexOf(ids[i - 1]) : -1;
+    next.splice(before + 1, 0, id);
+  });
+  return next;
 };
 
 const csvCell = (v: unknown) => {
@@ -137,34 +163,36 @@ const downloadCsv = (fileName: string, csv: string) => {
   URL.revokeObjectURL(url);
 };
 
+const hoverCls = "hover:bg-[var(--row-hover)]";
+
 const inputCls =
-  "h-8 px-2.5 text-xs border border-[var(--border)] rounded-md bg-card text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary";
+  "h-8 px-2.5 text-xs border border-[var(--border)] rounded-md bg-card text-main focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--primary)_20%,transparent)] focus:border-[var(--primary)]";
 const labelCls = "text-[9px] font-black uppercase tracking-widest text-muted";
-const pageBtnCls =
-  "p-1 rounded-md border border-[var(--border)] bg-card text-main hover:bg-row-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all";
-const actionBtnCls =
-  "h-8 flex items-center gap-1.5 px-3 text-xs font-semibold border border-[var(--border)] rounded-md bg-card text-main hover:bg-row-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+const pageBtnCls = `p-1 rounded-md border border-[var(--border)] bg-card text-main ${hoverCls} disabled:opacity-40 disabled:cursor-not-allowed transition-all`;
+const actionBtnCls = `h-8 flex items-center gap-1.5 px-3 text-xs font-semibold border border-[var(--border)] rounded-md bg-card text-main ${hoverCls} transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap`;
 
 const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
-  const [values, setValues] = useState<FilterValues>(() =>
-    initialValues(report.filters),
-  );
+  const { user } = useAuth();
+  const storageKey = `${user?.username ?? "guest"}:${report.key}`;
+
+const [values, setValues] = useState<FilterValues>(() =>
+  initialValues(report.filters, report.key),
+);
   const [linkOptions, setLinkOptions] = useState<
     Partial<Record<LinkSource, SelectOption[]>>
   >({});
   const [result, setResult] = useState<ReportResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: PAGE_SIZE,
   });
-  const [emailOpen, setEmailOpen] = useState(false);
-  const [recipients, setRecipients] = useState("");
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
-  const appliedRef = useRef<FilterValues>(values);
+  const [addColOpen, setAddColOpen] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
 
   const setValue = (key: string, v: string | boolean | undefined) =>
     setValues((p) => ({ ...p, [key]: v }));
@@ -176,8 +204,6 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
     async (v: FilterValues) => {
       setLoading(true);
       setError(null);
-      setNotice(null);
-      appliedRef.current = v;
       try {
         setResult(
           await fetchReport(report.reportName, toApiFilters(v), {
@@ -198,8 +224,7 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
   );
 
   useEffect(() => {
-    load(values);
-  
+    load(valuesRef.current);
   }, [load]);
 
   useEffect(() => {
@@ -218,47 +243,41 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
     [result?.columns],
   );
 
-  const data = useMemo(() => result?.data ?? [], [result?.data]);
+  const baseData = useMemo(() => result?.data ?? [], [result?.data]);
+
+  const custom = useCustomColumns(visibleColumns, baseData, storageKey);
+  const { data, allColumns } = custom;
+  const shownError = error || custom.error;
+
+  const columnOrder = useMemo(
+    () => reconcileOrder(custom.order, allColumns.map((c) => c.fieldname)),
+    [custom.order, allColumns],
+  );
+
+  const orderedColumns = useMemo(
+    () =>
+      columnOrder
+        .map((id) => allColumns.find((c) => c.fieldname === id))
+        .filter((c): c is ReportColumn => !!c),
+    [columnOrder, allColumns],
+  );
+
+  const moveColumn = (from: string, to: string) => {
+    if (from === to) return;
+    const next = [...columnOrder];
+    const toIdx = next.indexOf(to);
+    next.splice(next.indexOf(from), 1);
+    next.splice(toIdx, 0, from);
+    custom.setOrder(next);
+  };
+
+  const endDrag = () => {
+    setDragId(null);
+    setOverId(null);
+  };
 
   const handleExport = () =>
-    downloadCsv(`${report.label}_${today()}.csv`, toCsv(visibleColumns, data));
-
-  const closeEmail = () => {
-    setEmailOpen(false);
-    setEmailError(null);
-  };
-
-  const handleSendEmail = async () => {
-    const list = recipients
-      .split(/[,;\s]+/)
-      .map((e) => e.trim())
-      .filter(Boolean);
-    if (list.length === 0) return setEmailError("Enter at least one email.");
-    const invalid = list.find((e) => !EMAIL_PATTERN.test(e));
-    if (invalid) return setEmailError(`${invalid} is not a valid email.`);
-
-    setSending(true);
-    setEmailError(null);
-    try {
-      await emailReport(
-        report.reportName,
-        toApiFilters(appliedRef.current),
-        list,
-        { isTree: report.isTree },
-      );
-      setRecipients("");
-      setEmailOpen(false);
-      setNotice(`Report emailed to ${list.join(", ")}.`);
-    } catch (err: any) {
-      setEmailError(
-        err?.response?.data?.exception ||
-          err?.message ||
-          "Failed to send email.",
-      );
-    } finally {
-      setSending(false);
-    }
-  };
+    downloadCsv(`${report.label}_${today()}.csv`, toCsv(orderedColumns, data));
 
   const renderSelect = (
     key: string,
@@ -321,23 +340,23 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
 
   const columns = useMemo<ColumnDef<ReportRow>[]>(
     () =>
-      visibleColumns.map(
+      allColumns.map(
         (col): ColumnDef<ReportRow> => ({
           id: col.fieldname,
           accessorFn: (row) => row[col.fieldname],
           header: col.label,
           size: Math.max(col.width ?? DEFAULT_COL_WIDTH, MIN_COL_WIDTH),
-          meta: { align: isAmountCol(col) ? "right" : "left" },
+          meta: { align: isAmountType(col.fieldtype) ? "right" : "left" },
           cell: ({ getValue }) => renderCell(col, getValue()),
         }),
       ),
-    [visibleColumns],
+    [allColumns],
   );
 
   const table = useReactTable({
     data,
     columns,
-    state: { pagination },
+    state: { pagination, columnOrder },
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -347,10 +366,10 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
   const pageCount = table.getPageCount();
   const { pageIndex, pageSize } = table.getState().pagination;
   const page = pageIndex + 1;
+  const hasCustomState = custom.defs.length > 0 || custom.order.length > 0;
 
   return (
     <div className="flex flex-col gap-3 h-full min-h-0">
-      {/* ── Filter Bar ── */}
       <div className="relative bg-card rounded-lg border border-[var(--border)] px-3 py-2.5 flex flex-wrap items-end gap-2">
         {leading}
         {report.filters.map(renderFilter)}
@@ -358,9 +377,7 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
         <button
           onClick={handleApply}
           disabled={loading || datesMissing}
-          className="h-8 flex items-center gap-1.5 px-4 bg-primary text-white text-xs font-bold
-                     rounded-md hover:bg-primary/90 transition-all disabled:opacity-50
-                     disabled:cursor-not-allowed whitespace-nowrap"
+          className="h-8 flex items-center gap-1.5 px-4 bg-primary text-white text-xs font-bold rounded-md hover:brightness-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         >
           {loading ? (
             <RefreshCw size={11} className="animate-spin" />
@@ -372,6 +389,25 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
 
         <div className="ml-auto flex items-end gap-2">
           <button
+            onClick={() => setAddColOpen(true)}
+            disabled={loading || custom.linkColumns.length === 0}
+            className={actionBtnCls}
+          >
+            <Plus size={12} />
+            Add Column
+          </button>
+          {hasCustomState && (
+            <button
+              onClick={custom.reset}
+              disabled={loading}
+              title="Remove added columns and restore default order"
+              className={actionBtnCls}
+            >
+              <RotateCcw size={12} />
+              Reset
+            </button>
+          )}
+          <button
             onClick={handleExport}
             disabled={loading || totalRows === 0}
             className={actionBtnCls}
@@ -379,66 +415,15 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
             <Download size={12} />
             Export
           </button>
-          <button
-            onClick={() => (emailOpen ? closeEmail() : setEmailOpen(true))}
-            disabled={loading || totalRows === 0}
-            className={actionBtnCls}
-          >
-            <Mail size={12} />
-            Email
-          </button>
         </div>
-
-        {emailOpen && (
-          <div className="absolute right-3 top-full mt-1 z-30 w-80 bg-card border border-[var(--border)] rounded-lg p-3 flex flex-col gap-2 shadow-lg">
-            <label className={labelCls}>Send to</label>
-            <input
-              type="text"
-              value={recipients}
-              onChange={(e) => {
-                setRecipients(e.target.value);
-                setEmailError(null);
-              }}
-              onKeyDown={(e) => e.key === "Enter" && handleSendEmail()}
-              placeholder="name@company.com, other@company.com"
-              className={inputCls}
-              autoFocus
-            />
-            {emailError && (
-              <span className="text-[11px] text-red-500">{emailError}</span>
-            )}
-            <div className="flex justify-end gap-2">
-              <button onClick={closeEmail} className={actionBtnCls}>
-                Cancel
-              </button>
-              <button
-                onClick={handleSendEmail}
-                disabled={sending}
-                className="h-8 flex items-center gap-1.5 px-4 bg-primary text-white text-xs font-bold rounded-md hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                {sending && <RefreshCw size={11} className="animate-spin" />}
-                Send
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* ── Notice ── */}
-      {notice && (
-        <div className="px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg text-xs text-green-600">
-          {notice}
-        </div>
-      )}
-
-      {/* ── Error ── */}
-      {error && (
+      {shownError && (
         <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-500">
-          {error}
+          {shownError}
         </div>
       )}
 
-      {/* ── Table ── */}
       {columns.length > 0 && (
         <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
           <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0 relative custom-scrollbar">
@@ -447,22 +432,47 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
                 {table.getHeaderGroups().map((hg) => (
                   <tr key={hg.id}>
                     {hg.headers.map((header) => {
-                      const align =
-                        (header.column.columnDef.meta as any)?.align === "right"
-                          ? "text-right"
-                          : "text-left";
+                      const id = header.column.id;
+                      const right =
+                        (header.column.columnDef.meta as any)?.align ===
+                        "right";
                       return (
                         <th
                           key={header.id}
+                          draggable
+                          onDragStart={() => setDragId(id)}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setOverId(id);
+                          }}
+                          onDrop={() => {
+                            if (dragId) moveColumn(dragId, id);
+                            endDrag();
+                          }}
+                          onDragEnd={endDrag}
                           style={{ minWidth: header.getSize() }}
-                          className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest
-                                      text-muted whitespace-nowrap bg-card
-                                      border-b border-[var(--border)] ${align}`}
+                          className={`group cursor-grab select-none px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] transition-opacity active:cursor-grabbing ${
+                            right ? "text-right" : "text-left"
+                          } ${dragId === id ? "opacity-40" : ""} ${
+                            overId === id && dragId !== id
+                              ? "shadow-[inset_2px_0_0_var(--primary)]"
+                              : ""
+                          }`}
                         >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                          <span
+                            className={`inline-flex items-center gap-1 ${
+                              right ? "flex-row-reverse" : ""
+                            }`}
+                          >
+                            <GripVertical
+                              size={10}
+                              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-60"
+                            />
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                          </span>
                         </th>
                       );
                     })}
@@ -478,10 +488,7 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
                       style={{ height: `${Math.min(PAGE_SIZE, 10) * 38}px` }}
                     >
                       <div className="flex justify-center items-center h-full">
-                        <Loader2
-                          size={20}
-                          className="animate-spin text-muted"
-                        />
+                        <Loader2 size={20} className="animate-spin text-muted" />
                       </div>
                     </td>
                   </tr>
@@ -498,10 +505,8 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
                   table.getRowModel().rows.map((row) => (
                     <tr
                       key={row.id}
-                      className="hover:bg-row-hover transition-colors h-[36px]"
-                      style={{
-                        borderBottom: "1px solid rgba(128,128,128,0.12)",
-                      }}
+                      className={`${hoverCls} transition-colors h-[36px]`}
+                      style={{ borderBottom: "1px solid rgba(128,128,128,0.12)" }}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const align =
@@ -527,13 +532,12 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
             </table>
 
             {loading && totalRows > 0 && (
-              <div className="absolute inset-0 bg-card/60 backdrop-blur-[1px] flex items-center justify-center z-20">
+              <div className="absolute inset-0 bg-[color-mix(in_srgb,var(--card)_60%,transparent)] backdrop-blur-[1px] flex items-center justify-center z-20">
                 <Loader2 size={20} className="animate-spin text-primary" />
               </div>
             )}
           </div>
 
-          {/* ── Pagination ── */}
           <div className="border-t border-[var(--border)] bg-card px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
             <span className="text-[11px]">
               {totalRows > 0 ? (
@@ -543,8 +547,7 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
                     {pageIndex * pageSize + 1}–
                     {Math.min(page * pageSize, totalRows)}
                   </span>{" "}
-                  of{" "}
-                  <span className="font-semibold text-main">{totalRows}</span>
+                  of <span className="font-semibold text-main">{totalRows}</span>
                 </>
               ) : (
                 "No entries"
@@ -568,8 +571,8 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
                       disabled={loading}
                       className={`px-2 py-0.5 text-[11px] rounded-md border transition-all ${
                         p === page
-                          ? "bg-primary text-white border-primary font-bold"
-                          : "border-[var(--border)] bg-card text-main hover:bg-row-hover"
+                          ? "bg-primary text-white border-[var(--primary)] font-bold"
+                          : `border-[var(--border)] bg-card text-main ${hoverCls}`
                       }`}
                     >
                       {p}
@@ -587,10 +590,18 @@ const GenericReportView: React.FC<ReportViewProps> = ({ report, leading }) => {
           </div>
         </div>
       )}
+
+      <AddColumnModal
+        open={addColOpen}
+        onClose={() => setAddColOpen(false)}
+        linkColumns={custom.linkColumns}
+        columns={orderedColumns}
+        existingKeys={custom.defs.map((d) => d.key)}
+        onSubmit={custom.addDefs}
+      />
     </div>
   );
 };
-
 
 const CUSTOM_VIEWS: Record<string, React.FC<ReportViewProps>> = {
   "project-summary": ProjectSummaryView,

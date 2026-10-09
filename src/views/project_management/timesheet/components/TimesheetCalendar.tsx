@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { showApiError, showDayOffToast } from "../../../../utils/alert";
-import { getTimesheetHours } from "../../../../api/project/timesheet/timesheet.api";
-import type { TimesheetHoursEntry } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
+import {
+  getCalendarDetails,
+  getCalendarSummary,
+} from "../../../../api/project/timesheet/timesheet.api";
+import type {
+  CalendarSummaryCell,
+  TimesheetHoursEntry,
+} from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import type { TimesheetModalRestrictions } from "../../../../hooks/project_management/timeheet/form/useTimesheetModal";
 import { useDayOffs } from "../../../../hooks/project_management/timeheet/useDayOffs";
 import type { MultiSelectOption } from "../../../../components/ui/modal/MultiSelectFilter";
@@ -71,6 +77,9 @@ const TimesheetCalendar: React.FC<Props> = ({
   const [anchor, setAnchor] = useState(() => new Date());
   const [range, setRange] = useState<DateRange | null>(null);
   const [entries, setEntries] = useState<TimesheetHoursEntry[]>([]);
+  const [summary, setSummary] = useState<CalendarSummaryCell[]>([]);
+  const [projectFilter, setProjectFilter] = useState("");
+  const [activityFilter, setActivityFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
@@ -114,32 +123,48 @@ const TimesheetCalendar: React.FC<Props> = ({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    getTimesheetHours(
-      fromDate,
-      toDate,
-      activeEmployees.length ? activeEmployees : undefined,
-      canViewAll,
-    )
-      .then((data) => {
-        if (!cancelled) setEntries(data);
-      })
-      .catch(showApiError)
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+
+    const load = canViewAll
+      ? getCalendarSummary(
+          fromDate,
+          toDate,
+          matrixGranularity,
+          activeEmployees.length ? activeEmployees : undefined,
+          canViewAll,
+          { project: projectFilter, activityType: activityFilter },
+        ).then((data) => {
+          if (!cancelled) setSummary(data);
+        })
+      : getCalendarDetails(fromDate, toDate, true).then((data) => {
+          if (!cancelled) setEntries(data);
+        });
+
+    load.catch(showApiError).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+
     return () => {
       cancelled = true;
     };
-  }, [fromDate, toDate, reloadKey, employeeKey, canViewAll]);
+  }, [
+    fromDate,
+    toDate,
+    matrixGranularity,
+    reloadKey,
+    employeeKey,
+    canViewAll,
+    projectFilter,
+    activityFilter,
+  ]);
 
-  const eventsByDay = useMemo(
-    () => buildEventsByDay(entries, canViewAll),
-    [entries, canViewAll],
-  );
+  const eventsByDay = useMemo(() => buildEventsByDay(entries), [entries]);
 
   const rangeTotal = useMemo(
-    () => entries.reduce((sum, e) => sum + e.hours, 0),
-    [entries],
+    () =>
+      canViewAll
+        ? summary.reduce((sum, c) => sum + c.approved_hours + c.draft_hours, 0)
+        : entries.reduce((sum, e) => sum + e.hours, 0),
+    [canViewAll, summary, entries],
   );
 
   const dayData: DayData = {
@@ -256,8 +281,17 @@ const TimesheetCalendar: React.FC<Props> = ({
     openTimesheetForm({ timesheetId, onSuccess: reload });
   };
 
-  const handleMatrixCellClick = (employee: string, dateKey: string) => {
-    openLogModal(dateKey, { id: employee, name: employee });
+  const handleServerFilters = (project: string, activityType: string) => {
+    setProjectFilter(project);
+    setActivityFilter(activityType);
+  };
+
+  const handleMatrixCellClick = (
+    employeeId: string,
+    employeeName: string,
+    dateKey: string,
+  ) => {
+    openLogModal(dateKey, { id: employeeId, name: employeeName });
   };
 
   const chipEdit = (ev: DayEvent) => {
@@ -276,11 +310,12 @@ const TimesheetCalendar: React.FC<Props> = ({
       return (
         <TimesheetMatrix
           days={matrixDays}
-          entries={entries}
+          cells={summary}
           todayKey={todayKey}
           granularity={matrixGranularity}
           onCellClick={handleMatrixCellClick}
           onEditDraft={canEdit ? openEditModal : undefined}
+          onFiltersChange={handleServerFilters}
           dayOffs={dayOffs}
         />
       );

@@ -1,8 +1,11 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Clock, ClipboardList } from "lucide-react";
 import { ModalInput } from "../../../components/ui/modal/modalComponent";
 import type { TimesheetLine } from "../../../types/Project_Management/Timesheet/form/Timesheetformmodal";
-import { formatRangeLabel, getInitials } from "../../../utils/project_management/timehseet/Timesheetformmodal.utils";
+import {
+
+  getInitials,
+} from "../../../utils/project_management/timehseet/Timesheetformmodal.utils";
 
 interface EmployeeHeaderProps {
   employeeName: string;
@@ -11,6 +14,7 @@ interface EmployeeHeaderProps {
   title: string;
   totalHours: number;
   onTitleChange: (value: string) => void;
+  periodField?: React.ReactNode;
 }
 
 const STAT_TONE = "bg-primary/10 text-primary";
@@ -18,16 +22,13 @@ const STAT_TONE = "bg-primary/10 text-primary";
 const EmployeeHeader: React.FC<EmployeeHeaderProps> = ({
   employeeName,
   lines,
-  prefillDate,
+  
   title,
   totalHours,
   onTitleChange,
+  periodField,
 }) => {
-  const rangeLabel = useMemo(
-    () => formatRangeLabel(lines, prefillDate),
-    [lines, prefillDate],
-  );
-
+  
   const stats = [
     { icon: ClipboardList, value: String(lines.length), label: "Entries" },
     { icon: Clock, value: `${totalHours.toFixed(1)}h`, label: "Total Hours" },
@@ -43,18 +44,24 @@ const EmployeeHeader: React.FC<EmployeeHeaderProps> = ({
           <div className="truncate text-base font-bold text-main">
             {employeeName || "Employee"}
           </div>
-          <div className="text-xs text-muted">{rangeLabel}</div>
+        
         </div>
       </div>
 
-      <div className="min-w-[220px] max-w-md flex-1">
-        <ModalInput
-          label="Title"
-          name="title"
-          value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
-          placeholder="Timesheet title"
-        />
+      <div className="ts-info flex min-w-[220px] flex-1 flex-wrap items-end gap-4">
+        <div className="min-w-[220px] max-w-md flex-1">
+          <ModalInput
+            label="Title"
+            name="title"
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            placeholder="Timesheet title"
+          />
+        </div>
+
+        {periodField && (
+          <div className="w-[240px] shrink-0">{periodField}</div>
+        )}
       </div>
 
       <div className="ml-auto flex items-center divide-x divide-theme">

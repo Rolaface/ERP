@@ -39,7 +39,7 @@ const expandDateRange = (start: Date, end: Date): Date[] => {
 
 const AdvancedCalendar: React.FC<AdvancedCalendarProps> = ({
   leaves,
-  holidays, // <-- DESTRUCTURE THIS
+  holidays, 
   selectedRange,
   onRangeSelect,
   month,

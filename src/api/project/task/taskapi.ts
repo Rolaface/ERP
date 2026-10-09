@@ -12,12 +12,31 @@ import type {
 const api = createAxiosInstance(ERP_BASE);
 
 export const TaskAPI = API.project.task;
-const TASK_FIELDS = ["name", "project", "subject", "status", "priority", "is_group"];
+
+export const DEFAULT_ASSIGN_DESCRIPTION = "Task assigned from Task Management";
+
+const TASK_FIELDS = [
+  "name",
+  "project",
+  "subject",
+  "status",
+  "priority",
+  "is_group",
+  "custom_activity_type",
+];
+
+export interface ProjectAssignee {
+  user: string;
+  email: string;
+  full_name: string;
+}
 
 export interface GetAllTasksOptions {
   pageSize?: number;
   excludeGroups?: boolean;
   excludeStatuses?: string[];
+  assignee?: string;
+  names?: string[];
 }
 
 export async function getAllTasks(
@@ -25,6 +44,8 @@ export async function getAllTasks(
   search?: string,
   options: GetAllTasksOptions = {},
 ): Promise<any[]> {
+  if (options.names && options.names.length === 0) return [];
+
   const query = buildListParams({
     fields: TASK_FIELDS,
     search,
@@ -38,6 +59,10 @@ export async function getAllTasks(
   if (options.excludeStatuses?.length) {
     filters.push(["status", "not in", options.excludeStatuses]);
   }
+  if (options.assignee) {
+    filters.push(["_assign", "like", `%"${options.assignee}"%`]);
+  }
+  if (options.names) filters.push(["name", "in", options.names]);
 
   let url = `${TaskAPI.list}?${query}`;
   if (filters.length) {
@@ -46,6 +71,23 @@ export async function getAllTasks(
 
   const resp: AxiosResponse = await api.get(url);
   return resp.data?.data ?? [];
+}
+
+export async function getProjectAssignees(
+  project: string,
+): Promise<ProjectAssignee[]> {
+  if (!project) return [];
+
+  const resp: AxiosResponse = await api.get(
+    `/api/method/custom_hrms.api.task.api.get_project_assignees`,
+    {
+      params: {
+        project,
+      },
+    },
+  );
+
+  return resp.data?.message ?? [];
 }
 
 const CHILD_TASK_LIMIT = 500;
@@ -67,33 +109,53 @@ const TASK_LIST_FIELDS = [
   "is_milestone",
   "_assign",
   "parent_task",
+  "custom_activity_type",
 ];
 
+const DEFAULT_ORDER_BY = "priority desc, modified desc";
+
+const resolveOrderBy = (
+  sortBy?: string,
+  sortOrder: "asc" | "desc" = "desc",
+): string => {
+  if (!sortBy) return DEFAULT_ORDER_BY;
+  if (sortBy === "priority") return `priority ${sortOrder}, modified desc`;
+  return `${sortBy} ${sortOrder}, priority desc`;
+};
+
+const withOrderBy = (query: string, orderBy: string): string => {
+  const params = new URLSearchParams(query);
+  params.set("order_by", orderBy);
+  return params.toString();
+};
+
 export async function getTaskList(
-  page: number = 1,
-  pageSize: number = 20,
+  page = 1,
+  pageSize = 20,
   statuses?: string[],
   projects?: string[],
   search?: string,
   sortBy?: string,
   sortOrder?: "asc" | "desc",
   assignees?: string[],
-  flat: boolean = false,
+  flat = false,
   taskNames?: string[],
+  _currentUserEmail?: string,
 ): Promise<TaskListResponse> {
   const start = (page - 1) * pageSize;
+
+  const hasMultipleAssignees = !!assignees && assignees.length > 1;
+  const splitSearch = hasMultipleAssignees && !!search;
 
   const query = buildListParams({
     fields: TASK_LIST_FIELDS,
     start,
     pageSize,
-    search,
+    search: splitSearch ? undefined : search,
     searchFields: ["name", "subject"],
-    sortBy,
-    sortOrder,
   });
 
-  let url = `${TaskAPI.list}?${query}`;
+  let url = `${TaskAPI.list}?${withOrderBy(query, resolveOrderBy(sortBy, sortOrder))}`;
 
   const filters: unknown[] = [];
 
@@ -122,7 +184,13 @@ export async function getTaskList(
     filters.push(["project", "in", projects]);
   }
 
-  if (assignees && assignees.length > 0) {
+  if (splitSearch) {
+    filters.push(["subject", "like", `%${search}%`]);
+  }
+
+  if (assignees && assignees.length === 1) {
+    filters.push(["_assign", "like", `%"${assignees[0]}"%`]);
+  } else if (assignees && assignees.length > 1) {
     const orFilters = assignees.map((email) => [
       "_assign",
       "like",
@@ -142,13 +210,11 @@ export async function getChildTasks(parentTask: string): Promise<TaskEntry[]> {
   const query = buildListParams({
     fields: TASK_LIST_FIELDS,
     pageSize: CHILD_TASK_LIMIT,
-    sortBy: "lft",
-    sortOrder: "asc",
   });
 
   const filters = [["parent_task", "=", parentTask]];
   const resp: AxiosResponse = await api.get(
-    `${TaskAPI.list}?${query}&filters=${encodeURIComponent(JSON.stringify(filters))}`,
+    `${TaskAPI.list}?${withOrderBy(query, DEFAULT_ORDER_BY)}&filters=${encodeURIComponent(JSON.stringify(filters))}`,
   );
   return resp.data?.data ?? [];
 }
@@ -167,7 +233,9 @@ export async function createTask(payload: any): Promise<any> {
 
 export async function updateTaskById(payload: any): Promise<any> {
   if (!payload?.name) {
-    throw new Error("updateTaskById: payload.name is required to update a Task.");
+    throw new Error(
+      "updateTaskById: payload.name is required to update a Task.",
+    );
   }
 
   const resp: AxiosResponse = await api.put(
@@ -180,12 +248,13 @@ export async function updateTaskById(payload: any): Promise<any> {
 export async function assignTask(
   taskName: string,
   email: string,
+  description: string = DEFAULT_ASSIGN_DESCRIPTION,
 ): Promise<any> {
   const resp: AxiosResponse = await api.post(TaskAPI.assign, {
     assign_to: JSON.stringify([email]),
     doctype: "Task",
     name: taskName,
-    description: "Task assigned from Task Management",
+    description: description.trim() || DEFAULT_ASSIGN_DESCRIPTION,
   });
 
   return resp.data;
@@ -194,6 +263,7 @@ export async function assignTask(
 export async function assignTaskToUsers(
   taskName: string,
   emails: string[],
+  description: string = DEFAULT_ASSIGN_DESCRIPTION,
 ): Promise<any> {
   if (emails.length === 0) return null;
 
@@ -201,7 +271,7 @@ export async function assignTaskToUsers(
     assign_to: JSON.stringify(emails),
     doctype: "Task",
     name: taskName,
-    description: "Task assigned from Task Management",
+    description: description.trim() || DEFAULT_ASSIGN_DESCRIPTION,
   });
 
   return resp.data;
@@ -265,6 +335,7 @@ export async function updateTaskAssignees(
   taskName: string,
   previousEmails: string[],
   nextEmails: string[],
+  description?: string,
 ): Promise<UpdateTaskAssigneesResult> {
   const previousSet = new Set(previousEmails);
   const nextSet = new Set(nextEmails);
@@ -275,7 +346,7 @@ export async function updateTaskAssignees(
   let message: string | null = null;
 
   if (added.length > 0) {
-    const addResp = await assignTaskToUsers(taskName, added);
+    const addResp = await assignTaskToUsers(taskName, added, description);
     message = extractServerMessage(addResp);
   }
 

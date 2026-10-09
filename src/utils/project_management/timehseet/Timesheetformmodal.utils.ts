@@ -7,7 +7,7 @@ import type {
 } from "../../../types/Project_Management/Timesheet/form/Timesheetformmodal";
 
 export const MODAL_SIZE = {
-  width: "min(1400px, 96vw)",
+  width: "min(1550px, 100vw)",
   height: "min(750px, 92vh)",
 } as const;
 

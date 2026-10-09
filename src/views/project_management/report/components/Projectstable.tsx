@@ -12,22 +12,30 @@ import {
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Plus, Search } from "lucide-react";
 
 import DataTable from "../../../../components/ui/Tankstack/Datatable";
 import ActionButton, { ActionGroup } from "../../../../components/ui/Table/ActionButton";
 import StatusBadge from "../../../../components/ui/Table/StatusBadge";
 import DateDisplay from "../../../../components/UI_Utils/Datedisplay";
+import { formatAmount } from "../../../../utils/day-time formatter/Format";
+import {
+  isAmountType,
+  isDateType,
+} from "../../../../api/project/report/report.api";
 import ColumnToggle from "./Columntoggle";
 import TablePagination from "./Tablepagination";
 import { cardCls, inputCls } from "./Styles";
 import { clampPercent, formatPercent } from "../Utils";
 import type { ProjectSummaryRow } from "../Types";
+import type { CustomColumnDef } from "../../../../hooks/report/useCustomColumns";
 
 type TabKey = "all" | "overdue" | "no_tasks";
 
 const TABLE_MAX_HEIGHT = "520px";
 const PAGE_SIZES = [10, 20, 50, 100];
+const ACTIONS_COLUMN_ID = "actions";
+const CUSTOM_COLUMN_SIZE = 160;
 
 const STATUS_VARIANT: Record<string, "draft" | "info" | "success" | "danger"> = {
   Open: "success",
@@ -60,10 +68,10 @@ const searchFilter: FilterFn<ProjectSummaryRow> = (row, _id, value) => {
   );
 };
 
-const SortHeader: React.FC<{ column: Column<ProjectSummaryRow, unknown>; label: string }> = ({
-  column,
-  label,
-}) => {
+const SortHeader: React.FC<{
+  column: Column<ProjectSummaryRow, unknown>;
+  label: string;
+}> = ({ column, label }) => {
   const sorted = column.getIsSorted();
   const Icon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
   return (
@@ -78,18 +86,41 @@ const SortHeader: React.FC<{ column: Column<ProjectSummaryRow, unknown>; label: 
   );
 };
 
+const columnId = (c: ColumnDef<ProjectSummaryRow>) =>
+  (c as any).id ?? (c as any).accessorKey;
+
+const sortable = (label: string) => ({
+  header: ({ column }: { column: Column<ProjectSummaryRow, unknown> }) => (
+    <SortHeader column={column} label={label} />
+  ),
+});
+
 interface Props {
   rows: ProjectSummaryRow[];
   loading: boolean;
   isInitialLoad: boolean;
   onView?: (projectName: string) => void;
+  customDefs?: CustomColumnDef[];
+  onAddColumn?: () => void;
+  addColumnDisabled?: boolean;
 }
 
-const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }) => {
+const ProjectsTable: React.FC<Props> = ({
+  rows,
+  loading,
+  isInitialLoad,
+  onView,
+  customDefs = [],
+  onAddColumn,
+  addColumnDisabled = false,
+}) => {
   const [tab, setTab] = useState<TabKey>("all");
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: PAGE_SIZES[0],
+  });
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const counts = useMemo(
@@ -104,14 +135,7 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
   const data = useMemo(() => rows.filter(TAB_FILTERS[tab]), [rows, tab]);
 
   const columns = useMemo<ColumnDef<ProjectSummaryRow>[]>(() => {
-    // header = sortable button, meta.label = Columns dropdown me naam
-    const sortable = (label: string) => ({
-      header: ({ column }: { column: Column<ProjectSummaryRow, unknown> }) => (
-        <SortHeader column={column} label={label} />
-      ),
-    });
-
-    return [
+    const base: ColumnDef<ProjectSummaryRow>[] = [
       {
         id: "sn",
         header: "#",
@@ -121,7 +145,11 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
         cell: ({ row, table }) => {
           const { pageIndex, pageSize } = table.getState().pagination;
           const pos = table.getRowModel().rows.findIndex((r) => r.id === row.id);
-          return <span className="text-xs text-muted">{pageIndex * pageSize + pos + 1}</span>;
+          return (
+            <span className="text-xs text-muted">
+              {pageIndex * pageSize + pos + 1}
+            </span>
+          );
         },
       },
       {
@@ -137,7 +165,9 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
         meta: { label: "Project Name" },
         ...sortable("Project Name"),
         cell: ({ row }) => (
-          <span className="text-xs font-medium text-main">{row.original.project_name}</span>
+          <span className="text-xs font-medium text-main">
+            {row.original.project_name}
+          </span>
         ),
       },
       {
@@ -171,7 +201,9 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
         meta: { label: "Total Tasks", align: "center" },
         ...sortable("Total Tasks"),
         cell: ({ row }) => (
-          <span className="text-xs tabular-nums text-main">{row.original.total_tasks}</span>
+          <span className="text-xs tabular-nums text-main">
+            {row.original.total_tasks}
+          </span>
         ),
       },
       {
@@ -180,7 +212,9 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
         meta: { label: "Completed", align: "center" },
         ...sortable("Completed"),
         cell: ({ row }) => (
-          <span className="text-xs tabular-nums text-main">{row.original.completed_tasks}</span>
+          <span className="text-xs tabular-nums text-main">
+            {row.original.completed_tasks}
+          </span>
         ),
       },
       {
@@ -191,7 +225,9 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
         cell: ({ row }) => (
           <span
             className="text-xs font-semibold tabular-nums"
-            style={{ color: row.original.overdue_tasks > 0 ? "var(--danger)" : "var(--text)" }}
+            style={{
+              color: row.original.overdue_tasks > 0 ? "var(--danger)" : "var(--text)",
+            }}
           >
             {row.original.overdue_tasks}
           </span>
@@ -249,7 +285,7 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
           ),
       },
       {
-        id: "actions",
+        id: ACTIONS_COLUMN_ID,
         header: "Actions",
         size: 90,
         enableSorting: false,
@@ -257,12 +293,55 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
         meta: { align: "center" },
         cell: ({ row }) => (
           <ActionGroup>
-            <ActionButton type="view" iconOnly onClick={() => onView?.(row.original.name)} />
+            <ActionButton
+              type="view"
+              iconOnly
+              onClick={() => onView?.(row.original.name)}
+            />
           </ActionGroup>
         ),
       },
     ];
-  }, [onView]);
+
+    customDefs.forEach((d) => {
+      const type = d.column.fieldtype;
+      const amount = isAmountType(type);
+      const date = isDateType(type);
+      const custom: ColumnDef<ProjectSummaryRow> = {
+        id: d.key,
+        accessorFn: (r) => (r as any)[d.key] ?? "",
+        size: CUSTOM_COLUMN_SIZE,
+        meta: { label: d.column.label, align: amount ? "right" : "left" },
+        ...sortable(d.column.label),
+        cell: ({ getValue }) => {
+          const val = getValue();
+          if (val === null || val === undefined || val === "") return dash;
+          if (amount)
+            return (
+              <span className="text-xs font-medium tabular-nums text-main">
+                {formatAmount(Number(val))}
+              </span>
+            );
+          if (date)
+            return (
+              <DateDisplay
+                date={String(val)}
+                className="whitespace-nowrap text-xs text-main"
+              />
+            );
+          return <span className="text-xs text-main">{String(val)}</span>;
+        },
+      };
+
+      const afterIdx = base.findIndex((c) => columnId(c) === d.after);
+      const actionsIdx = base.findIndex((c) => columnId(c) === ACTIONS_COLUMN_ID);
+      const insertAt =
+        afterIdx >= 0 ? afterIdx + 1 : actionsIdx >= 0 ? actionsIdx : base.length;
+      base.splice(insertAt, 0, custom);
+    });
+
+    return base;
+  }, [onView, customDefs]);
 
   const table = useReactTable({
     data,
@@ -281,7 +360,6 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
 
   return (
     <div className={`${cardCls} flex flex-col overflow-hidden`}>
-      {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-4 pt-2">
         <div className="flex items-center gap-5">
           {(Object.keys(TAB_LABELS) as TabKey[]).map((k) => (
@@ -301,7 +379,10 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
 
         <div className="flex items-center gap-2 pb-2">
           <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+            <Search
+              size={13}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted"
+            />
             <input
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
@@ -309,6 +390,17 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
               className={`${inputCls} w-56 pl-8`}
             />
           </div>
+          {onAddColumn && (
+            <button
+              type="button"
+              onClick={onAddColumn}
+              disabled={addColumnDisabled}
+              className={`${inputCls} inline-flex w-auto items-center gap-1.5 whitespace-nowrap font-semibold hover:bg-row-hover disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              <Plus size={13} />
+              Add Column
+            </button>
+          )}
           <ColumnToggle columns={table.getAllLeafColumns()} />
           <select
             value={pagination.pageSize}
@@ -324,7 +416,6 @@ const ProjectsTable: React.FC<Props> = ({ rows, loading, isInitialLoad, onView }
         </div>
       </div>
 
-      {/* ── Table ── */}
       <div className="custom-scrollbar overflow-auto" style={{ maxHeight: TABLE_MAX_HEIGHT }}>
         <DataTable
           table={table}

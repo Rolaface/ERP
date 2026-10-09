@@ -18,7 +18,6 @@ export interface DateRange {
 
 export type DayOff = NonNullable<ReturnType<DayOffLookup["holidayOn"]>>;
 
-
 export interface DayData {
   eventsByDay: Record<string, DayEvent[]>;
   dayTotal: (key: string) => number;
@@ -151,16 +150,12 @@ export const draftIds = (items: TimesheetHoursEntry[]) => [
   ),
 ];
 
-
 export const buildEventsByDay = (
   entries: TimesheetHoursEntry[],
-  canViewAll: boolean,
 ): Record<string, DayEvent[]> => {
   const grouped: Record<string, Record<string, DayEvent>> = {};
   entries.forEach((e) => {
- const label = canViewAll
-  ? e.employee
-  : e.description || e.activity_type || EMPTY_LABEL;
+    const label = e.description || e.activity_type || EMPTY_LABEL;
     const day = (grouped[e.date] ??= {});
     const ev = (day[label] ??= {
       id: label,
@@ -180,7 +175,6 @@ export const buildEventsByDay = (
     ]),
   );
 };
-
 
 export const tintStyle = (tone: string, pct = 16) => ({
   background: `color-mix(in srgb, var(${tone}) ${pct}%, transparent)`,
