@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Package,
   Boxes,
-
   Warehouse,
   Layers,
   Upload,
@@ -18,7 +17,6 @@ import {
 import { usePermission } from "../../hooks/permission/usePermission";
 import { useUrlTab } from "../../hooks/useUrlTab";
 import { useCompanyStore } from "../../store/companyStore";
-import { useSubscriptionStore } from "../../store/subscriptionStore";
 
 
 const Items = lazy(() => import("./Items"));
@@ -103,33 +101,15 @@ const Inventory: React.FC = () => {
   const { can } = usePermission();
   const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
-  const inv = useSubscriptionStore((s) => s.raw?.erp?.inventory);
-  const erpEnabled = useSubscriptionStore((s) => s.raw?.erp?.enabled === true);
-  const hasItemAccess = erpEnabled && inv?.item === true;
-  const hasWarehouseAccess = erpEnabled && inv?.warehouse === true;
-  const hasStockEntryAccess = erpEnabled && inv?.stockEntry === true;
-
-  const inventoryTabs = useMemo(
-    () =>
-      ALL_INVENTORY_TAB.filter((t) => {
-        const hasPermission = !t.module || can(t.module, t.action);
-        const hasSubscription =
-         t.subscriptionKey === "item"
-           ? hasItemAccess
-           : t.subscriptionKey === "warehouse"
-             ? hasWarehouseAccess
-             : t.subscriptionKey === "stockEntry"
-               ? hasStockEntryAccess
-                : true;
-
-       
-        if (t.id === "importedItems") {
-          return hasPermission && hasSubscription && isZraEnabled;
-        }
-        return hasPermission && hasSubscription;
-      }),
-    [can, isZraEnabled, hasItemAccess, hasWarehouseAccess, hasStockEntryAccess],
-  );
+    const inventoryTabs = useMemo(
+     () =>
+       ALL_INVENTORY_TAB.filter((t) => {
+         const hasPermission = !t.module || can(t.module, t.action);
+         if (t.id === "importedItems") return hasPermission && isZraEnabled;
+         return hasPermission;
+       }),
+     [can, isZraEnabled],
+   );
 
   const fallbackTab = inventoryTabs[0]?.id ?? DEFAULT_TAB;
   const [resolvedTab, handleTabChange] = useUrlTab({

@@ -1,65 +1,57 @@
 export type ProductId = "erp" | "lms";
+export type SubscriptionProductKey = "ERP" | "LMS" | "LOS" | "HRMS";
 
 export interface RawSubscribedModules {
-  erp?: {
-    enabled?: boolean;
-    sales?: boolean;
-    customer?: boolean;
-    procurement?: boolean;
-    inventory?: {
-      warehouse?: boolean;
-      stockEntry?: boolean;
-      item?: boolean;
-    };
-    accounting?: boolean;
-    assets?: boolean;
-    settings?: {
-      bank?: boolean;
-      email?: boolean;
-      company?: boolean;
-      userAndRoles?: boolean;
-      scheduler?: boolean;
-      taxMain?: {
-        taxCategory?: boolean;
-        salesTax?: boolean;
-        itemTax?: boolean;
-      };
-    };
-  };
-  hrms?: {
-    enabled?: boolean;
-    settings?: {
-      bank?: boolean;
-      email?: boolean;
-      company?: boolean;
-      userAndRoles?: boolean;
-    };
-    expenseManagement?: boolean;
-  };
-  lending?: {
-    enabled?: boolean;
-  };
-  los?: {
-    enabled?: boolean;
-  };
+  ERP?: string[];
+  LMS?: string[];
+  LOS?: string[];
+  HRMS?: string[];
 }
 
+const norm = (s: string) => s.trim().toLowerCase();
 
+export function getModuleList(
+  raw: RawSubscribedModules | null | undefined,
+  product: SubscriptionProductKey,
+): string[] {
+  if (!raw || typeof raw !== "object") return [];
+  const target = product.toLowerCase();
+  for (const [key, value] of Object.entries(raw)) {
+    if (key.toLowerCase() === target && Array.isArray(value)) {
+      return value.filter((v): v is string => typeof v === "string");
+    }
+  }
+  return [];
+}
+
+export function hasModule(
+  raw: RawSubscribedModules | null | undefined,
+  product: SubscriptionProductKey,
+  moduleName: string,
+): boolean {
+  const target = norm(moduleName);
+  return getModuleList(raw, product).some((m) => norm(m) === target);
+}
+
+export function isLegacySubscriptionShape(raw: unknown): boolean {
+  if (!raw || typeof raw !== "object") return false;
+  return Object.values(raw as Record<string, unknown>).some(
+    (v) => v !== null && typeof v === "object" && !Array.isArray(v),
+  );
+}
 
 export function deriveSubscribedProducts(
   raw: RawSubscribedModules | null | undefined,
 ): ProductId[] {
-  const hasErpSide = raw?.erp?.enabled === true || raw?.hrms?.enabled === true;
-  const hasLms = raw?.lending?.enabled === true || raw?.los?.enabled === true;
+  const hasErpSide =
+    getModuleList(raw, "ERP").length > 0 || getModuleList(raw, "HRMS").length > 0;
+  const hasLms =
+    getModuleList(raw, "LMS").length > 0 || getModuleList(raw, "LOS").length > 0;
 
   if (hasErpSide && hasLms) return ["erp", "lms"];
   if (hasLms && !hasErpSide) return ["lms"];
   if (hasErpSide && !hasLms) return ["erp"];
 
-
-  console.warn(
-    "[productClassifier] Neither 'erp'/'hrms' nor 'lending' found in subscribed_modules:",
-    raw,
-  );
+  console.warn("[productClassifier] No ERP/HRMS/LMS/LOS modules found:", raw);
   return ["erp"];
 }

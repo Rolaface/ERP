@@ -1,6 +1,10 @@
+import { useMemo } from "react";
 import { create } from "zustand";
-import type { RawSubscribedModules } from "../utils/productClassifier";
-
+import {
+  getModuleList,
+  hasModule,
+  type RawSubscribedModules,
+} from "../utils/productClassifier";
 
 interface SubscriptionState {
   raw: RawSubscribedModules | null;
@@ -15,7 +19,6 @@ export const useSubscriptionStore = create<SubscriptionState>((set) => ({
   setSubscription: (raw) => set({ raw: raw ?? null, isLoading: false }),
   clearSubscription: () => set({ raw: null, isLoading: false }),
 }));
-
 
 export interface SubscriptionAccess {
   hasErpKey: boolean;
@@ -38,35 +41,35 @@ export interface SubscriptionAccess {
 export function useSubscriptionAccess(): SubscriptionAccess & { isLoading: boolean } {
   const raw = useSubscriptionStore((s) => s.raw);
   const isLoading = useSubscriptionStore((s) => s.isLoading);
-  const erpEnabled = raw?.erp?.enabled === true;
-  const hrmsEnabled = raw?.hrms?.enabled === true;
-  const lendingEnabled = raw?.lending?.enabled === true;
-  const losEnabled = raw?.los?.enabled === true;
 
-  const taxMain = raw?.erp?.settings?.taxMain;
-  const inv = raw?.erp?.inventory;
-  const hasInventoryAccess = erpEnabled && !!(inv?.item || inv?.warehouse || inv?.stockEntry);
+  return useMemo(() => {
+    const erpEnabled = getModuleList(raw, "ERP").length > 0;
+    const hrmsEnabled = getModuleList(raw, "HRMS").length > 0;
+    const erp = (name: string) => hasModule(raw, "ERP", name);
 
-  return {
-    isLoading,
-    hasErpKey: erpEnabled,
-    inventory: hasInventoryAccess,
-    hasHrmsKey: hrmsEnabled,
-    sales: erpEnabled && raw?.erp?.sales === true,
-    customer: erpEnabled && raw?.erp?.customer === true,
-    procurement: erpEnabled && raw?.erp?.procurement === true,
-    accounting: erpEnabled && raw?.erp?.accounting === true,
-    assets: erpEnabled && raw?.erp?.assets === true,
-    scheduler: erpEnabled && raw?.erp?.settings?.scheduler === true,
-    expenseManagement: hrmsEnabled && raw?.hrms?.expenseManagement === true,
-    lending: lendingEnabled,
-    los: losEnabled,
-    taxMaintenance: erpEnabled && !!(taxMain?.itemTax || taxMain?.salesTax || taxMain?.taxCategory),
-    importAccess:
-      erpEnabled &&
-      (raw?.erp?.sales === true || raw?.erp?.procurement === true || hasInventoryAccess),
-    settingsAccess: (key) =>
-      (erpEnabled && raw?.erp?.settings?.[key] === true) ||
-      (hrmsEnabled && raw?.hrms?.settings?.[key] === true),
-  };
+    const sales = erp("Sales");
+    const procurement = erp("Procurement");
+    const inventory = erp("Inventory");
+
+    return {
+      isLoading,
+      hasErpKey: erpEnabled,
+      hasHrmsKey: hrmsEnabled,
+      sales,
+      customer: erp("Customer"),
+      procurement,
+      inventory,
+      accounting: erp("Accounting"),
+      assets: erp("Assets"),
+      expenseManagement: hasModule(raw, "HRMS", "Expense Management"),
+      lending: getModuleList(raw, "LMS").length > 0,
+      los: getModuleList(raw, "LOS").length > 0,
+
+      importAccess: sales || procurement || inventory,
+
+      scheduler: erpEnabled,
+      taxMaintenance: erpEnabled,
+      settingsAccess: () => erpEnabled || hrmsEnabled,
+    };
+  }, [raw, isLoading]);
 }

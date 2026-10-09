@@ -2,12 +2,11 @@ import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ROUTES } from "../routes/RoutesPath";
-
+import { getModuleList } from "../utils/productClassifier";
 
 const ProtectedRoute: React.FC = () => {
-   const { isAuthenticated, loading, user } = useAuth();
-   const location = useLocation();
-
+  const { isAuthenticated, loading, user } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -20,19 +19,13 @@ const ProtectedRoute: React.FC = () => {
     );
   }
 
-    if (!isAuthenticated) {
+  if (!isAuthenticated) {
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
-  // Pure lending+los account (no erp/hrms) must always be inside the
-  // /select-lms-mode picker, never inside the ERP app itself — even if
-  // they got here via back button, a typed URL, or a restored tab.
   const modules = user?.subscribedModules;
-  const isPureLmsDual =
-    modules?.erp?.enabled !== true &&
-    modules?.hrms?.enabled !== true &&
-    modules?.lending?.enabled === true &&
-    modules?.los?.enabled === true;
+  const has = (k: "ERP" | "HRMS" | "LMS" | "LOS") => getModuleList(modules, k).length > 0;
+  const isPureLmsDual = !has("ERP") && !has("HRMS") && has("LMS") && has("LOS");
 
   if (isPureLmsDual && location.pathname !== "/select-lms-mode") {
     return <Navigate to="/select-lms-mode" replace />;
