@@ -36,6 +36,7 @@ export interface GetAllTasksOptions {
   excludeGroups?: boolean;
   excludeStatuses?: string[];
   assignee?: string;
+  names?: string[];
 }
 
 export async function getAllTasks(
@@ -43,6 +44,8 @@ export async function getAllTasks(
   search?: string,
   options: GetAllTasksOptions = {},
 ): Promise<any[]> {
+  if (options.names && options.names.length === 0) return [];
+
   const query = buildListParams({
     fields: TASK_FIELDS,
     search,
@@ -59,6 +62,7 @@ export async function getAllTasks(
   if (options.assignee) {
     filters.push(["_assign", "like", `%"${options.assignee}"%`]);
   }
+  if (options.names) filters.push(["name", "in", options.names]);
 
   let url = `${TaskAPI.list}?${query}`;
   if (filters.length) {

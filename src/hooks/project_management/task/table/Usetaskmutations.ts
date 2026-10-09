@@ -73,6 +73,38 @@ export const useTaskMutations = ({
     [currentUserEmail],
   );
 
+  const applyAssignees = useCallback(
+    async (
+      taskName: string,
+      previous: string[],
+      next: string[],
+      description?: string,
+    ) => {
+      const leftSelf =
+        !!currentUserEmail &&
+        previous.includes(currentUserEmail) &&
+        !next.includes(currentUserEmail);
+
+      const result = await updateTaskAssignees(
+        taskName,
+        leftSelf ? previous.filter((e) => e !== currentUserEmail) : previous,
+        next,
+        description,
+      );
+
+      if (leftSelf && currentUserEmail) {
+        try {
+          await closeMyTaskAssignment(taskName, currentUserEmail);
+        } catch (error) {
+          showApiError(error);
+        }
+      }
+
+      return result;
+    },
+    [currentUserEmail],
+  );
+
   const finalizeEmployeeAssignment = useCallback(
     async (taskName: string, nextStatus: string) => {
       if (nextStatus !== "Completed" || !isEmployee || !currentUserEmail) {
@@ -131,7 +163,7 @@ export const useTaskMutations = ({
       const nextEmails = handOff(previousEmails, requestedEmails);
 
       try {
-        const result = await updateTaskAssignees(
+        const result = await applyAssignees(
           taskName,
           previousEmails,
           nextEmails,
@@ -160,6 +192,7 @@ export const useTaskMutations = ({
       deselectTasks,
       staysInView,
       handOff,
+      applyAssignees,
       triggerRefresh,
     ],
   );
@@ -185,7 +218,7 @@ export const useTaskMutations = ({
               ? Array.from(new Set([...previous, ...emails]))
               : emails,
           );
-          await updateTaskAssignees(t.name, previous, next, description);
+          await applyAssignees(t.name, previous, next, description);
           if (staysInView(next)) {
             const assign = JSON.stringify(next);
             patchTask(t.name, { _assign: assign });
@@ -223,6 +256,7 @@ export const useTaskMutations = ({
       deselectTasks,
       staysInView,
       handOff,
+      applyAssignees,
       triggerRefresh,
     ],
   );

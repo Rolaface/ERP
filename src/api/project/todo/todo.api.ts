@@ -91,6 +91,34 @@ export async function getMyAssignedTasks(
   return Array.from(new Set(names));
 }
 
+export async function getMyLoggableTaskNames(
+  userEmail: string,
+): Promise<string[]> {
+  const query = buildListParams({
+    fields: ["reference_name"],
+    pageSize: 1000,
+    sortBy: "creation",
+    sortOrder: "desc",
+  });
+
+  const filters: unknown[] = [
+    ["allocated_to", "=", userEmail],
+    ["reference_type", "=", "Task"],
+    ["status", "in", ["Open", "Closed"]],
+  ];
+
+  const resp: AxiosResponse<{ data: { reference_name: string }[] }> =
+    await api.get(
+      `?${query}&filters=${encodeURIComponent(JSON.stringify(filters))}`,
+    );
+
+  const names = (resp.data?.data ?? [])
+    .map((todo) => todo.reference_name)
+    .filter(Boolean);
+
+  return Array.from(new Set(names));
+}
+
 export async function getTaskNotes(
   taskNames: string[],
   allocatedTo?: string,

@@ -228,29 +228,43 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
 
   const selfAssigned = !!currentUserEmail && emails.includes(currentUserEmail);
 
-  const toggleEmail = (opt: Option) => {
-    setPendingEmails((prev) => {
-      if (prev.includes(opt.value)) {
-        return prev.filter((v) => v !== opt.value);
-      }
-      if (!selfAssigned) return [...prev, opt.value];
+  // const toggleEmail = (opt: Option) => {
+  //   setPendingEmails((prev) => {
+  //     if (prev.includes(opt.value)) {
+  //       return prev.filter((v) => v !== opt.value);
+  //     }
+  //     if (!selfAssigned) return [...prev, opt.value];
 
-      const isSelf = opt.value === currentUserEmail;
-      const hasNewOthers = prev.some(
-        (v) => v !== currentUserEmail && !emails.includes(v),
-      );
+  //     const isSelf = opt.value === currentUserEmail;
+  //     const hasNewOthers = prev.some(
+  //       (v) => v !== currentUserEmail && !emails.includes(v),
+  //     );
 
-      if (isSelf) return hasNewOthers ? prev : [...prev, opt.value];
+  //     if (isSelf) return hasNewOthers ? prev : [...prev, opt.value];
 
-      const isNewOther = !emails.includes(opt.value);
-      const base = isNewOther
-        ? prev.filter((v) => v !== currentUserEmail)
-        : prev;
-      return [...base, opt.value];
-    });
-    setPendingOptionsMap((prev) => ({ ...prev, [opt.value]: opt }));
-  };
+  //     const isNewOther = !emails.includes(opt.value);
+  //     const base = isNewOther
+  //       ? prev.filter((v) => v !== currentUserEmail)
+  //       : prev;
+  //     return [...base, opt.value];
+  //   });
+  //   setPendingOptionsMap((prev) => ({ ...prev, [opt.value]: opt }));
+  // };
 
+const toggleEmail = (opt: Option) => {
+  setPendingEmails((prev) => {
+    if (prev.includes(opt.value)) {
+      return prev.filter((v) => v !== opt.value);
+    }
+
+    return [...prev, opt.value];
+  });
+
+  setPendingOptionsMap((prev) => ({
+    ...prev,
+    [opt.value]: opt,
+  }));
+};
   const handleCancel = () => {
     if (saving) return;
     setOpen(false);

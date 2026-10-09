@@ -14,6 +14,7 @@ import { showApiError, showSuccess } from "../../../../utils/alert";
 import { getEmployees } from "../../../../api/utils/frappeUtilsApi";
 import { getAllProjects } from "../../../../api/project/projectapi/project.api";
 import { getAllTasks } from "../../../../api/project/task/taskapi";
+import { getMyLoggableTaskNames } from "../../../../api/project/todo/todo.api";
 import { getAllActivityTypes } from "../../../../api/project/projectapi/Activity/activityType.api";
 import { useCompanyDefaultsStore } from "../../../../store/Companydefaultsstore";
 import { getExchangeRate } from "../../../../api/BankAccountApi";
@@ -78,11 +79,14 @@ export async function fetchTaskOptions(
 ): Promise<Option[]> {
   if (!projectId) return [];
 
-const tasks = await getAllTasks(projectId, search, {
-  excludeGroups: true,
-  excludeStatuses: ["Cancelled"],
-  assignee: onlyMine ? getCurrentUserEmail() : undefined,
-});
+  const email = onlyMine ? getCurrentUserEmail() : undefined;
+  const names = email ? await getMyLoggableTaskNames(email) : undefined;
+
+  const tasks = await getAllTasks(projectId, search, {
+    excludeGroups: true,
+    excludeStatuses: ["Cancelled"],
+    names,
+  });
 
   return tasks.map((task) => ({
     label: task.subject,
