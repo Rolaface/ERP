@@ -11,6 +11,7 @@ import ActionButton, {
 import { parseAssignedEmails } from "../../../../api/project/task/taskapi";
 
 import type { TaskEntry } from "../../../../types/Project_Management/task/table/Task.types";
+import type { TaskNoteView } from "./Tasktreeparts";
 
 import AssigneeCell from "./AssigneeCell";
 import PriorityChip from "./PriorityChip";
@@ -42,6 +43,8 @@ interface TaskColumnsContext {
   canWriteTask: boolean;
   canLogTime: boolean;
   currentUserEmail?: string;
+  notesByTask: Record<string, TaskNoteView[]>;
+  showNoteUser: boolean;
   selection: TaskSelectionApi;
   getProjectDisplayName: (code: string | null) => string;
   onToggleGroup: (name: string) => void;
@@ -147,6 +150,8 @@ export const buildTaskColumns = (
           selected={ctx.selection.isSelected(t)}
           onSelect={() => ctx.selection.onToggle(t)}
           onView={() => ctx.onView(t.name)}
+          notes={ctx.notesByTask[t.name]}
+          showNoteUser={ctx.showNoteUser}
         />
       );
     },

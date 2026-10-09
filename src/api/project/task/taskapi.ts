@@ -13,7 +13,7 @@ const api = createAxiosInstance(ERP_BASE);
 
 export const TaskAPI = API.project.task;
 
-const DEFAULT_ASSIGN_DESCRIPTION = "Task assigned from Task Management";
+export const DEFAULT_ASSIGN_DESCRIPTION = "Task assigned from Task Management";
 
 const TASK_FIELDS = [
   "name",

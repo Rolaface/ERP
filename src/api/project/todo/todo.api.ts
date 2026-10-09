@@ -3,6 +3,7 @@ import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "../../axiosInstance";
 import { buildListParams } from "../../../api/utils/queryBuilder";
 import { API } from "../../../config/api";
+import { DEFAULT_ASSIGN_DESCRIPTION } from "../task/taskapi";
 
 export interface TodoEntry {
   name: string;
@@ -21,6 +22,12 @@ export interface TodoAssignment extends TodoEntry {
   creation?: string;
   modified?: string;
   modified_by?: string;
+}
+
+export interface TaskNote {
+  task: string;
+  user: string;
+  text: string;
 }
 
 const api = createAxiosInstance(API.project.todo.list);
@@ -44,6 +51,14 @@ const ASSIGNMENT_FIELDS = [
   "modified",
   "modified_by",
 ];
+
+const NOTE_FIELDS = ["name", "allocated_to", "reference_name", "description"];
+
+const stripHtml = (value?: string): string =>
+  (value ?? "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 export async function getMyAssignedTasks(
   userEmail: string,
@@ -74,6 +89,43 @@ export async function getMyAssignedTasks(
     .filter(Boolean);
 
   return Array.from(new Set(names));
+}
+
+export async function getTaskNotes(
+  taskNames: string[],
+  allocatedTo?: string,
+): Promise<TaskNote[]> {
+  const names = Array.from(new Set(taskNames.filter(Boolean)));
+  if (names.length === 0) return [];
+
+  const query = buildListParams({
+    fields: NOTE_FIELDS,
+    pageSize: 500,
+    sortBy: "creation",
+    sortOrder: "asc",
+  });
+
+  const filters: unknown[] = [
+    ["reference_type", "=", "Task"],
+    ["reference_name", "in", names],
+    ["status", "=", "Open"],
+  ];
+
+  if (allocatedTo) {
+    filters.push(["allocated_to", "=", allocatedTo]);
+  }
+
+  const resp: AxiosResponse<{ data: TodoEntry[] }> = await api.get(
+    `?${query}&filters=${encodeURIComponent(JSON.stringify(filters))}`,
+  );
+
+  return (resp.data?.data ?? [])
+    .map((todo) => ({
+      task: todo.reference_name,
+      user: todo.allocated_to,
+      text: stripHtml(todo.description),
+    }))
+    .filter((note) => note.text && note.text !== DEFAULT_ASSIGN_DESCRIPTION);
 }
 
 export async function closeMyTaskAssignment(

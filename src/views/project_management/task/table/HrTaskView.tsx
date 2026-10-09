@@ -38,6 +38,7 @@ import { useAssignedTaskNames } from "../../../../hooks/project_management/task/
 import { useTaskDrawer } from "../../../../hooks/project_management/task/table/Usetaskdrawer";
 import { useTaskFilterOptions } from "../../../../hooks/project_management/task/table/Usetaskfilteroptions";
 import { useTaskList } from "../../../../hooks/project_management/task/table/Usetasklist";
+import { useTaskNotes } from "../../../../hooks/project_management/task/table/Usetasknotes";
 import { useTaskMutations } from "../../../../hooks/project_management/task/table/Usetaskmutations";
 import { useTaskSelection } from "../../../../hooks/project_management/task/table/Usetaskselection";
 import { useTaskTimeLog } from "../../../../hooks/project_management/task/table/Usetasktimelog";
@@ -194,6 +195,19 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     [list.tasks, tree.childrenMap, tree.expanded, list.assigneeActive],
   );
 
+  const noteTaskNames = useMemo(() => {
+    if (isEmployee && !currentUserEmail) return [];
+    const names = rows.map((r) => r.name);
+    if (drawer.data?.name) names.push(drawer.data.name);
+    return names;
+  }, [rows, drawer.data?.name, isEmployee, currentUserEmail]);
+
+  const notesByTask = useTaskNotes({
+    taskNames: noteTaskNames,
+    reloadKey: list.loadVersion,
+    userEmail: isEmployee ? currentUserEmail : undefined,
+  });
+
   const allSelected = rows.length > 0 && rows.every((r) => selection.isSelected(r));
   const someSelected = rows.some((r) => selection.isSelected(r));
 
@@ -215,6 +229,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     canWriteTask,
     canLogTime,
     currentUserEmail,
+    notesByTask,
+    showNoteUser: !isEmployee,
     selection: selectionApi,
     getProjectDisplayName: filterOptions.getProjectDisplayName,
     onToggleGroup: tree.toggleGroup,
@@ -379,6 +395,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
         actionLoading={drawer.actionLoading}
         onClose={drawer.close}
         onStatusChange={drawer.handleStatusChange}
+        assignmentNotes={drawer.data ? notesByTask[drawer.data.name] : undefined}
+        showNoteUser={!isEmployee}
       />
     </HrTableFrame>
   );

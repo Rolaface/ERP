@@ -92,6 +92,41 @@ const ELBOW = 18;
 
 const LINE = "pointer-events-none absolute bg-slate-200";
 
+const MAX_INLINE_NOTES = 2;
+
+export interface TaskNoteView {
+  user: string;
+  text: string;
+}
+
+const NoteLines: React.FC<{ notes?: TaskNoteView[]; showUser?: boolean }> = ({
+  notes,
+  showUser,
+}) => {
+  if (!notes || notes.length === 0) return null;
+
+  const shown = notes.slice(0, MAX_INLINE_NOTES);
+  const rest = notes.length - shown.length;
+
+  return (
+    <div className="mt-0.5 flex flex-col gap-0.5">
+      {shown.map((note, i) => (
+        <p
+          key={i}
+          title={note.text}
+          className="whitespace-normal break-words text-[11px] italic leading-4 text-muted"
+        >
+          <span className="font-semibold not-italic">
+            {showUser ? `${note.user}: ` : "Note: "}
+          </span>
+          {note.text}
+        </p>
+      ))}
+      {rest > 0 && <span className="text-[11px] text-muted">+{rest} more</span>}
+    </div>
+  );
+};
+
 export interface TaskTreeCellProps {
   name: string;
   taskId: string;
@@ -109,6 +144,8 @@ export interface TaskTreeCellProps {
   selected?: boolean;
   onSelect?: () => void;
   onView?: () => void;
+  notes?: TaskNoteView[];
+  showNoteUser?: boolean;
 }
 
 export const TaskTreeCell: React.FC<TaskTreeCellProps> = ({
@@ -128,6 +165,8 @@ export const TaskTreeCell: React.FC<TaskTreeCellProps> = ({
   selected,
   onSelect,
   onView,
+  notes,
+  showNoteUser,
 }) => {
   const nested = depth > 0;
   const elbowX = BASE_X + (depth - 1) * STEP;
@@ -231,6 +270,7 @@ export const TaskTreeCell: React.FC<TaskTreeCellProps> = ({
             <p className="mt-0.5 whitespace-normal break-words text-xs text-muted">
               {description || taskId}
             </p>
+            <NoteLines notes={notes} showUser={showNoteUser} />
           </div>
         </>
       ) : (
@@ -244,6 +284,7 @@ export const TaskTreeCell: React.FC<TaskTreeCellProps> = ({
           <div className="min-w-0 flex-1 pl-1">
             {nameBtn}
             <p className="text-[11px] leading-4 text-muted">{taskId}</p>
+            <NoteLines notes={notes} showUser={showNoteUser} />
           </div>
         </>
       )}
