@@ -58,6 +58,21 @@ export const useTaskMutations = ({
     [visibleAssignees],
   );
 
+  const handOff = useCallback(
+    (previous: string[], next: string[]) => {
+      if (!currentUserEmail || !previous.includes(currentUserEmail)) {
+        return next;
+      }
+      const assignedToOthers = next.some(
+        (email) => email !== currentUserEmail && !previous.includes(email),
+      );
+      return assignedToOthers
+        ? next.filter((email) => email !== currentUserEmail)
+        : next;
+    },
+    [currentUserEmail],
+  );
+
   const finalizeEmployeeAssignment = useCallback(
     async (taskName: string, nextStatus: string) => {
       if (nextStatus !== "Completed" || !isEmployee || !currentUserEmail) {
@@ -104,17 +119,23 @@ export const useTaskMutations = ({
   );
 
   const changeAssignees = useCallback(
-    async (taskName: string, nextEmails: string[]) => {
+    async (
+      taskName: string,
+      requestedEmails: string[],
+      description?: string,
+    ) => {
       const task = findTask(taskName);
       if (!task) return;
 
       const previousEmails = parseAssignedEmails(task._assign);
+      const nextEmails = handOff(previousEmails, requestedEmails);
 
       try {
         const result = await updateTaskAssignees(
           taskName,
           previousEmails,
           nextEmails,
+          description,
         );
 
         if (staysInView(nextEmails)) {
@@ -132,11 +153,23 @@ export const useTaskMutations = ({
         triggerRefresh(REFRESH_KEYS.TASK_LIST);
       }
     },
-    [findTask, patchTask, removeTask, deselectTasks, staysInView, triggerRefresh],
+    [
+      findTask,
+      patchTask,
+      removeTask,
+      deselectTasks,
+      staysInView,
+      handOff,
+      triggerRefresh,
+    ],
   );
 
   const bulkAssign = useCallback(
-    async (emails: string[], mode: BulkAssignMode): Promise<boolean> => {
+    async (
+      emails: string[],
+      mode: BulkAssignMode,
+      description?: string,
+    ): Promise<boolean> => {
       if (!canWriteTask || emails.length === 0) return false;
 
       const leftView: string[] = [];
@@ -146,11 +179,13 @@ export const useTaskMutations = ({
           const previous = parseAssignedEmails(
             findTask(t.name)?._assign ?? t._assign,
           );
-          const next =
+          const next = handOff(
+            previous,
             mode === "add"
               ? Array.from(new Set([...previous, ...emails]))
-              : emails;
-          await updateTaskAssignees(t.name, previous, next);
+              : emails,
+          );
+          await updateTaskAssignees(t.name, previous, next, description);
           if (staysInView(next)) {
             const assign = JSON.stringify(next);
             patchTask(t.name, { _assign: assign });
@@ -187,6 +222,7 @@ export const useTaskMutations = ({
       clearSelection,
       deselectTasks,
       staysInView,
+      handOff,
       triggerRefresh,
     ],
   );

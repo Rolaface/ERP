@@ -214,6 +214,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     assigneeActive: list.assigneeActive,
     canWriteTask,
     canLogTime,
+    currentUserEmail,
     selection: selectionApi,
     getProjectDisplayName: filterOptions.getProjectDisplayName,
     onToggleGroup: tree.toggleGroup,

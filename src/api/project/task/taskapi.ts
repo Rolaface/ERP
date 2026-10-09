@@ -13,6 +13,8 @@ const api = createAxiosInstance(ERP_BASE);
 
 export const TaskAPI = API.project.task;
 
+const DEFAULT_ASSIGN_DESCRIPTION = "Task assigned from Task Management";
+
 const TASK_FIELDS = [
   "name",
   "project",
@@ -242,12 +244,13 @@ export async function updateTaskById(payload: any): Promise<any> {
 export async function assignTask(
   taskName: string,
   email: string,
+  description: string = DEFAULT_ASSIGN_DESCRIPTION,
 ): Promise<any> {
   const resp: AxiosResponse = await api.post(TaskAPI.assign, {
     assign_to: JSON.stringify([email]),
     doctype: "Task",
     name: taskName,
-    description: "Task assigned from Task Management",
+    description: description.trim() || DEFAULT_ASSIGN_DESCRIPTION,
   });
 
   return resp.data;
@@ -256,6 +259,7 @@ export async function assignTask(
 export async function assignTaskToUsers(
   taskName: string,
   emails: string[],
+  description: string = DEFAULT_ASSIGN_DESCRIPTION,
 ): Promise<any> {
   if (emails.length === 0) return null;
 
@@ -263,7 +267,7 @@ export async function assignTaskToUsers(
     assign_to: JSON.stringify(emails),
     doctype: "Task",
     name: taskName,
-    description: "Task assigned from Task Management",
+    description: description.trim() || DEFAULT_ASSIGN_DESCRIPTION,
   });
 
   return resp.data;
@@ -327,6 +331,7 @@ export async function updateTaskAssignees(
   taskName: string,
   previousEmails: string[],
   nextEmails: string[],
+  description?: string,
 ): Promise<UpdateTaskAssigneesResult> {
   const previousSet = new Set(previousEmails);
   const nextSet = new Set(nextEmails);
@@ -337,7 +342,7 @@ export async function updateTaskAssignees(
   let message: string | null = null;
 
   if (added.length > 0) {
-    const addResp = await assignTaskToUsers(taskName, added);
+    const addResp = await assignTaskToUsers(taskName, added, description);
     message = extractServerMessage(addResp);
   }
 

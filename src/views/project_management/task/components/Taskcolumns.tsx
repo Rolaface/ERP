@@ -41,6 +41,7 @@ interface TaskColumnsContext {
   assigneeActive: boolean;
   canWriteTask: boolean;
   canLogTime: boolean;
+  currentUserEmail?: string;
   selection: TaskSelectionApi;
   getProjectDisplayName: (code: string | null) => string;
   onToggleGroup: (name: string) => void;
@@ -53,6 +54,7 @@ interface TaskColumnsContext {
   onAssigneesChange: (
     name: string,
     emails: string[],
+    description?: string,
   ) => Promise<void>;
   onLogTime: (task: TaskEntry) => void;
 }
@@ -258,16 +260,18 @@ export const buildTaskColumns = (
         <AssigneeCell
           emails={parseAssignedEmails(t._assign)}
           disabled={!ctx.canWriteTask || !t.project}
+          currentUserEmail={ctx.currentUserEmail}
           fetchOptions={(q) =>
             fetchProjectAssigneeOptions(
               t.project ?? "",
               q,
             )
           }
-          onChange={(nextValues) =>
+          onChange={(nextValues, description) =>
             ctx.onAssigneesChange(
               t.name,
               nextValues,
+              description,
             )
           }
         />
