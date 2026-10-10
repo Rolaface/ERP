@@ -79,6 +79,7 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
             fetchOptions={fetchProjects}
             onChange={(val, opt) => handlers.onProject(line.id, val, opt)}
             placeholder="Project"
+            required
           />
         </td>
       )}
@@ -91,6 +92,7 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
           fetchOptions={(q) => fetchTaskOptions(line.project, q, isEmployee)}
           onChange={(val, opt) => handlers.onTask(line.id, val, opt)}
           placeholder={line.project ? "Task" : "Select project first"}
+          required
         />
       </td>
 
@@ -114,6 +116,7 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
           fetchOptions={fetchActivityTypeOptions}
           onChange={(value, opt) => handlers.onActivity(line.id, value, opt)}
           placeholder={isEmployee ? "Auto from task" : "Activity Type"}
+          required
         />
       </td>
 

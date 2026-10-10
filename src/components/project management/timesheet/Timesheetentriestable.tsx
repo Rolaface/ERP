@@ -135,10 +135,18 @@ const TimesheetEntriesTable: React.FC<TimesheetEntriesTableProps> = ({
                   disabled={lines.length === 0}
                 />
               </th>
-              {!hasHeaderProject && <th className="p-2">Project</th>}
-              <th className="p-2">Task</th>
+              {!hasHeaderProject && (
+                <th className="p-2">
+                  Project<span className="text-red-500">*</span>
+                </th>
+              )}
+              <th className="p-2">
+                Task<span className="text-red-500">*</span>
+              </th>
               <th className="p-2">Worked On</th>
-              <th className="p-2">Activity Type</th>
+              <th className="p-2">
+                Activity Type<span className="text-red-500">*</span>
+              </th>
               <th className="p-2">
                 <button
                   onClick={sort.toggleSort}
