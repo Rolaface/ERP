@@ -247,6 +247,8 @@ interface MonthCalProps {
   disableFuture?: boolean;
   disablePast?: boolean;
   getDayOff?: (ymd: string) => DayOff | undefined;
+  minDate?: string;
+  maxDate?: string;
 }
 
 const MonthCal: React.FC<MonthCalProps> = ({
@@ -260,6 +262,8 @@ const MonthCal: React.FC<MonthCalProps> = ({
   disableFuture,
   disablePast,
   getDayOff,
+  minDate,
+  maxDate,
 }) => {
   const cells = calDays(year, month);
   const todayYMD = toYMD(new Date());
@@ -325,7 +329,9 @@ const MonthCal: React.FC<MonthCalProps> = ({
           const isToday = ymd === todayYMD;
           const disabled =
             (disableFuture && ymd > todayYMD) ||
-            (disablePast && ymd < todayYMD);
+            (disablePast && ymd < todayYMD) ||
+            (!!minDate && ymd < minDate) ||
+            (!!maxDate && ymd > maxDate);
           const off = getDayOff?.(ymd);
           const offColor = off ? dayOffColor(off) : undefined;
 
@@ -435,6 +441,8 @@ export interface DateTimeRangePickerProps {
   placeholder?: string;
   getDayOff?: (ymd: string) => DayOff | undefined;
   onMonthChange?: (from: string, to: string) => void;
+  minDate?: string;
+  maxDate?: string;
 }
 
 const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
@@ -451,6 +459,8 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
   placeholder = "Set time",
   getDayOff,
   onMonthChange,
+  minDate,
+  maxDate,
 }) => {
   const [open, setOpen] = useState(false);
   const [draftDate, setDraftDate] = useState(date);
@@ -558,6 +568,10 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
     new Date(`${draftToDate}T${draftTo}:00`).getTime() <=
       new Date(`${draftDate}T${draftFrom}:00`).getTime();
 
+  const outOfBounds =
+    (!!minDate && !!draftDate && draftDate < minDate) ||
+    (!!maxDate && !!draftToDate && draftToDate > maxDate);
+
   const draftHours = rangeInvalid
     ? 0
     : Math.round(
@@ -569,6 +583,8 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
 
   const dayCount = daysBetween(draftDate, draftToDate);
   const showError = rangeInvalid && !!draftFrom && !!draftTo;
+  const showBoundsError = outOfBounds && !showError;
+  const applyBlocked = rangeInvalid || !draftDate || outOfBounds;
 
   const handleQuickDuration = (minutes: number) => {
     const base = draftFrom || "09:00";
@@ -593,7 +609,7 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
   };
 
   const handleApply = () => {
-    if (rangeInvalid || !draftDate) return;
+    if (applyBlocked) return;
     onApply(draftDate, draftFrom, draftTo, draftToDate || draftDate);
     setOpen(false);
   };
@@ -716,6 +732,8 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                 disableFuture={disableFuture}
                 disablePast={disablePast}
                 getDayOff={getDayOff}
+                minDate={minDate}
+                maxDate={maxDate}
               />
               <div
                 style={{
@@ -842,17 +860,21 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                   borderRadius: 8,
                   fontSize: 12,
                   fontWeight: 700,
-                  background: showError
-                    ? "rgba(220,38,38,0.12)"
-                    : "var(--row-hover)",
-                  color: showError
-                    ? "var(--danger, #dc2626)"
-                    : "var(--primary)",
+                  background:
+                    showError || showBoundsError
+                      ? "rgba(220,38,38,0.12)"
+                      : "var(--row-hover)",
+                  color:
+                    showError || showBoundsError
+                      ? "var(--danger, #dc2626)"
+                      : "var(--primary)",
                 }}
               >
                 {showError
                   ? "End time must be after start time."
-                  : `Duration: ${draftHours.toFixed(1)} hrs${dayCount > 1 ? ` × ${dayCount} days` : ""}`}
+                  : showBoundsError
+                    ? "Select dates within the project period."
+                    : `Duration: ${draftHours.toFixed(1)} hrs${dayCount > 1 ? ` × ${dayCount} days` : ""}`}
               </div>
 
               <div
@@ -874,8 +896,8 @@ const DateTimeRangePicker: React.FC<DateTimeRangePickerProps> = ({
                 <button
                   type="button"
                   onClick={handleApply}
-                  disabled={rangeInvalid || !draftDate}
-                  style={footerBtn("primary", rangeInvalid || !draftDate)}
+                  disabled={applyBlocked}
+                  style={footerBtn("primary", applyBlocked)}
                 >
                   Apply
                 </button>

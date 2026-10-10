@@ -63,6 +63,7 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
   onMonthChange,
 }) => {
   const off = getDayOff(line.date) ?? getDayOff(line.to_date);
+  const range = handlers.getRange?.(line.project);
 
   return (
     <tr
@@ -87,7 +88,7 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
           label=""
           value={line.task_name}
           disabled={!line.project}
-         fetchOptions={(q) => fetchTaskOptions(line.project, q, isEmployee)}
+          fetchOptions={(q) => fetchTaskOptions(line.project, q, isEmployee)}
           onChange={(val, opt) => handlers.onTask(line.id, val, opt)}
           placeholder={line.project ? "Task" : "Select project first"}
         />
@@ -125,6 +126,8 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
             to_time={line.to_time}
             getDayOff={getDayOff}
             onMonthChange={onMonthChange}
+            minDate={range?.start ?? undefined}
+            maxDate={range?.end ?? undefined}
             onApply={(date, from, to, toDate) =>
               handlers.onApplyTime(line.id, date, from, to, toDate)
             }
@@ -149,7 +152,9 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
       {!isEmployee && (
         <CheckboxCell
           checked={line.is_billable}
-          onChange={(is_billable) => handlers.onUpdate(line.id, { is_billable })}
+          onChange={(is_billable) =>
+            handlers.onUpdate(line.id, { is_billable })
+          }
         />
       )}
 

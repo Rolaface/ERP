@@ -60,6 +60,7 @@ const TimesheetInfoCard: React.FC<TimesheetInfoCardProps> = ({
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
             placeholder="Timesheet title"
+            required
           />
         </div>
 
@@ -97,6 +98,7 @@ const TimesheetInfoCard: React.FC<TimesheetInfoCardProps> = ({
             fetchOptions={fetchProjects}
             onChange={onProject}
             placeholder="Search project..."
+
           />
         </div>
 
@@ -107,6 +109,7 @@ const TimesheetInfoCard: React.FC<TimesheetInfoCardProps> = ({
               value={form.employee_name}
               disabled
               name="employee"
+              required
             />
           ) : (
             <SearchSelect2
@@ -115,6 +118,7 @@ const TimesheetInfoCard: React.FC<TimesheetInfoCardProps> = ({
               fetchOptions={fetchEmployeeOptions}
               onChange={onEmployee}
               placeholder="Search employee..."
+              required
             />
           )}
         </div>
