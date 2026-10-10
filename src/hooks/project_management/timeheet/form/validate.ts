@@ -111,14 +111,14 @@ export function validateTimesheet({
       return `Entry ${row} must have a duration greater than zero.`;
     }
 
-    if (line.hours > 24) {
-      return `Entry ${row} cannot exceed 24 hours.`;
-    }
+    // if (line.hours > 24) {
+    //   return `Entry ${row} cannot exceed 24 hours.`;
+    // }
   }
 
-  if (getConflictingLineIds(form.lines).size > 0) {
-    return OVERLAP_MSG;
-  }
+  // if (getConflictingLineIds(form.lines).size > 0) {
+  //   return OVERLAP_MSG;
+  // }
 
   return null;
 }
