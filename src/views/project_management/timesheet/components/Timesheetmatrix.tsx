@@ -12,11 +12,16 @@ import type { DayOffLookup } from "./dayOff.types";
 import DayOffChip, { DAY_OFF_TONE } from "./DayOffChip";
 import { WEEKLY_OFF_COLOR, weeklyOffFill } from "./Weeklyoff";
 
+const ALL = "ALL";
+export type TimesheetMatrixStatus = typeof ALL | "submitted" | "draft";
+
 interface Props {
   days: Date[];
   cells: CalendarSummaryCell[];
   todayKey: string;
   granularity?: "day" | "month";
+  status: TimesheetMatrixStatus;
+  onStatusChange: (status: TimesheetMatrixStatus) => void;
   onCellClick?: (
     employeeId: string,
     employeeName: string,
@@ -40,7 +45,6 @@ interface Row {
   total: number;
 }
 
-const ALL = "ALL";
 const HOURS_DECIMALS = 2;
 const APPROVED_TONE = "--success";
 const DRAFT_TONE = "--warning";
@@ -113,6 +117,8 @@ const TimesheetMatrix: React.FC<Props> = ({
   cells,
   todayKey,
   granularity = "day",
+  status,
+  onStatusChange,
   onCellClick,
   onEditDraft,
   onFiltersChange,
@@ -125,13 +131,12 @@ const TimesheetMatrix: React.FC<Props> = ({
   const [projectLabel, setProjectLabel] = useState("");
   const [activityId, setActivityId] = useState("");
   const [activityLabel, setActivityLabel] = useState("");
-  const [status, setStatus] = useState(ALL);
 
   useEffect(() => {
     onFiltersChange?.(projectId, activityId);
-  }, [projectId, activityId]);
+  }, [projectId, activityId, onFiltersChange]);
 
-  useEffect(() => () => onFiltersChange?.("", ""), []);
+  useEffect(() => () => onFiltersChange?.("", ""), [onFiltersChange]);
 
   const fetchProjects = useCallback(async (q: string): Promise<Option[]> => {
     try {
@@ -171,13 +176,13 @@ const TimesheetMatrix: React.FC<Props> = ({
 
     cells.forEach((c) => {
       if (!columnKeys.has(c.date)) return;
-      if (status === "draft" && c.draft_sheets.length === 0) return;
       if (status === "submitted" && c.approved_hours <= 0) return;
       if (q && !c.employee_name.toLowerCase().includes(q)) return;
 
       const draftHours = status === "submitted" ? 0 : c.draft_hours;
-      const approvedHours = status === "draft" ? 0 : c.approved_hours;
+      const approvedHours = c.approved_hours;
       const hours = draftHours + approvedHours;
+      if (hours <= 0) return;
 
  const employeeId = c.employee || "UNASSIGNED";
 const employeeName = c.employee_name?.trim() || "Unassigned";
@@ -271,7 +276,10 @@ const row = byEmployee.get(employeeId) ?? {
             }}
           />
         </div>
-        <FilterSelect value={status} onChange={setStatus}>
+        <FilterSelect
+          value={status}
+          onChange={(next) => onStatusChange(next as TimesheetMatrixStatus)}
+        >
           <option value={ALL}>All Status</option>
           <option value="submitted">Approved</option>
           <option value="draft">Includes draft</option>
@@ -284,7 +292,7 @@ const row = byEmployee.get(employeeId) ?? {
               setProjectLabel("");
               setActivityId("");
               setActivityLabel("");
-              setStatus(ALL);
+              onStatusChange(ALL);
             }}
             className="text-xs font-semibold text-primary hover:underline"
           >
