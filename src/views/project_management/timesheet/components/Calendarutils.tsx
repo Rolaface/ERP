@@ -155,15 +155,22 @@ export const buildEventsByDay = (
 ): Record<string, DayEvent[]> => {
   const grouped: Record<string, Record<string, DayEvent>> = {};
   entries.forEach((e) => {
-    const label = e.description || e.activity_type || EMPTY_LABEL;
-    const day = (grouped[e.date] ??= {});
-    const ev = (day[label] ??= {
-      id: label,
-      label,
-      hours: 0,
-      draftHours: 0,
-      items: [],
-    });
+const label = e.description || e.activity_type || EMPTY_LABEL;
+
+const status =
+  e.docstatus === DRAFT_DOCSTATUS ? "Draft" : "Approved";
+
+const eventKey = `${label}__${status}`;
+
+const day = (grouped[e.date] ??= {});
+
+const ev = (day[eventKey] ??= {
+  id: eventKey,
+  label: `${label} (${status})`,
+  hours: 0,
+  draftHours: 0,
+  items: [],
+});
     ev.hours += e.hours;
     if (e.docstatus === DRAFT_DOCSTATUS) ev.draftHours += e.hours;
     ev.items.push(e);
