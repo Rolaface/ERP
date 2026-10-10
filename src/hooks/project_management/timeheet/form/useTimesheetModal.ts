@@ -612,49 +612,50 @@ export function useTimesheetModal(
     setCustomTitle(value);
   }, []);
 
-  const addLine = useCallback(
-    (initialTask?: InitialTask, initialDate?: string) => {
-      setForm((f) => ({
-        ...f,
-        lines: [
-          ...f.lines,
-          placeLine(
-            emptyLine(
-              f.project
-                ? { project: f.project, project_name: f.project_name }
-                : undefined,
-              initialTask,
-              initialDate,
-            ),
-            f.lines,
-          ),
-        ],
-      }));
-      if (initialTask?.project) {
-        void ensureProjectRanges([initialTask.project]);
-      }
-      if (initialTask?.activity_type) {
-        void syncActivityRates([initialTask.activity_type]);
-      }
-    },
-    [syncActivityRates, ensureProjectRanges],
-  );
+ const addLine = useCallback(
+  (initialTask?: InitialTask, initialDate?: string) => {
+    setForm((f) => ({
+      ...f,
+      lines: [
+        ...f.lines,
+        emptyLine(
+          f.project
+            ? { project: f.project, project_name: f.project_name }
+            : undefined,
+          initialTask,
+          initialDate,
+        ),
+      ],
+    }));
 
-  const addLines = useCallback(
-    (tasks: InitialTask[], initialDate?: string) => {
-      if (tasks.length === 0) return;
-      setForm((f) => {
-        const lines = [...f.lines];
-        tasks.forEach((t) =>
-          lines.push(placeLine(emptyLine(undefined, t, initialDate), lines)),
-        );
-        return { ...f, lines };
-      });
-      void ensureProjectRanges(tasks.map((t) => t.project));
-      void syncActivityRates(tasks.map((t) => t.activity_type ?? ""));
-    },
-    [syncActivityRates, ensureProjectRanges],
-  );
+    if (initialTask?.project) {
+      void ensureProjectRanges([initialTask.project]);
+    }
+
+    if (initialTask?.activity_type) {
+      void syncActivityRates([initialTask.activity_type]);
+    }
+  },
+  [syncActivityRates, ensureProjectRanges],
+);
+
+const addLines = useCallback(
+  (tasks: InitialTask[], initialDate?: string) => {
+    if (tasks.length === 0) return;
+
+    setForm((f) => ({
+      ...f,
+      lines: [
+        ...f.lines,
+        ...tasks.map((task) => emptyLine(undefined, task, initialDate)),
+      ],
+    }));
+
+    void ensureProjectRanges(tasks.map((task) => task.project));
+    void syncActivityRates(tasks.map((task) => task.activity_type ?? ""));
+  },
+  [syncActivityRates, ensureProjectRanges],
+);
 
   const updateLine = useCallback(
     (id: string, patch: Partial<TimesheetLineDraft>) => {
@@ -768,29 +769,29 @@ export function useTimesheetModal(
     setForm((f) => ({ ...f, lines: f.lines.filter((l) => !idSet.has(l.id)) }));
   }, []);
 
-  const duplicateLine = useCallback(
-    (id: string, position: DuplicatePosition = "after") => {
-      setForm((f) => {
-        const idx = f.lines.findIndex((l) => l.id === id);
-        if (idx === -1) return f;
-        const src = f.lines[idx];
-        const copy = placeLine(
-          {
-            ...src,
-            id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            logName: undefined,
-          },
-          f.lines,
-          slotDurationMs(src),
-        );
-        const lines = [...f.lines];
-        lines.splice(position === "end" ? lines.length : idx + 1, 0, copy);
-        return { ...f, lines };
-      });
-    },
-    [],
-  );
+const duplicateLine = useCallback(
+  (id: string, position: DuplicatePosition = "after") => {
+    setForm((f) => {
+      const idx = f.lines.findIndex((line) => line.id === id);
+      if (idx === -1) return f;
 
+      const source = f.lines[idx];
+
+      const copy: TimesheetLineDraft = {
+        ...source,
+        id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        logName: undefined,
+        isEditing: true,
+      };
+
+      const lines = [...f.lines];
+      lines.splice(position === "end" ? lines.length : idx + 1, 0, copy);
+
+      return { ...f, lines };
+    });
+  },
+  [],
+);
   const sortLines = useCallback((direction: "asc" | "desc") => {
     setForm((f) => {
       const key = (l: TimesheetLineDraft) =>
