@@ -20,6 +20,7 @@ import {
   TaskSearchInput,
 } from "../components/Tasktoolbar";
 import {
+  fetchProjectAssigneeOptions,
   fetchProjectOptions,
   fetchUserOptions,
 } from "../components/Taskoptionfetchers";
@@ -119,6 +120,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     isEmployee,
     view,
     changeStatus: mutations.changeStatus,
+    assignTask: mutations.assignTask,
   });
 
   const timeLog = useTaskTimeLog({
@@ -144,6 +146,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
       subscribeToRefresh(REFRESH_KEYS.TASK_LIST, () => refreshRef.current()),
     [subscribeToRefresh],
   );
+
+  const pendingFocusRef = useRef<string | null>(null);
 
   const modeInitRef = useRef(true);
   useEffect(() => {
@@ -186,6 +190,24 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
 
     lastLoadRef.current = { signature, names };
   }, [list.loadVersion]);
+
+  useEffect(() => {
+    const target = pendingFocusRef.current;
+    if (!target || list.loadVersion === 0) return;
+
+    const byName = new Map(list.tasks.map((t) => [t.name, t]));
+    if (!byName.has(target)) return;
+
+    const chain: string[] = [];
+    let parent = byName.get(target)?.parent_task;
+    while (parent && byName.has(parent) && !chain.includes(parent)) {
+      chain.push(parent);
+      parent = byName.get(parent)?.parent_task;
+    }
+
+    pendingFocusRef.current = null;
+    if (chain.length) tree.expandGroups(chain);
+  }, [list.loadVersion, list.tasks]);
 
   const rows = useMemo(
     () => buildTaskRows(list.tasks, tree.childrenByParent, tree.expanded),
@@ -240,6 +262,27 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     ? allColumns.filter((c) => c.id !== "progress")
     : allColumns;
 
+  const fetchBulkAssigneeOptions = useCallback(
+    async (q: string) => {
+      const projects = Array.from(
+        new Set(
+          selection.pickedTasks
+            .map((t) => t.project)
+            .filter((p): p is string => Boolean(p)),
+        ),
+      );
+      if (projects.length === 0) return [];
+
+      const lists = await Promise.all(
+        projects.map((project) => fetchProjectAssigneeOptions(project, q)),
+      );
+      const [first, ...rest] = lists;
+      const shared = rest.map((list) => new Set(list.map((o) => o.value)));
+      return first.filter((o) => shared.every((values) => values.has(o.value)));
+    },
+    [selection.pickedTasks],
+  );
+
   const hasLoggable = selection.pickedTasks.some((t) => t.is_group !== 1);
 
   const handleViewChange = (next: TaskMode) => {
@@ -269,10 +312,22 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     (isProfessional && list.assigneeFilter.length > 0);
 
   const clearFilters = () => {
+    pendingFocusRef.current = null;
     list.setSearchValue("");
     list.changeStatusFilter([]);
     list.changeProjectFilter([]);
     if (isProfessional) list.changeAssigneeFilter([]);
+  };
+
+  const handleDependencyClick = (taskName: string) => {
+    drawer.close();
+    list.changeStatusFilter([]);
+    list.changeProjectFilter([]);
+    if (isProfessional) list.changeAssigneeFilter([]);
+    list.setPage(1);
+    pendingFocusRef.current = taskName;
+    list.setSearchValue(taskName);
+    setView("table");
   };
 
   return (
@@ -366,7 +421,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
                         assign={
                           canWriteTask
                             ? {
-                                fetchOptions: fetchUserOptions,
+                                fetchOptions: fetchBulkAssigneeOptions,
                                 onSubmit: mutations.bulkAssign,
                               }
                             : undefined
@@ -403,6 +458,12 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
         actionLoading={drawer.actionLoading}
         onClose={drawer.close}
         onStatusChange={drawer.handleStatusChange}
+        onDependencyClick={handleDependencyClick}
+        canAssign={canWriteTask}
+        assignOnlyOwn={isEmployee}
+        currentUserEmail={currentUserEmail}
+        dependencyInfo={drawer.dependencyInfo}
+        onAssigneesChange={drawer.handleAssign}
         assignmentNotes={drawer.data ? notesByTask[drawer.data.name] : undefined}
         showNoteUser={!isEmployee}
       />

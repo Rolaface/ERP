@@ -604,3 +604,20 @@ export function parseAssignedEmails(assignRaw: string | null): string[] {
     return [];
   }
 }
+
+export type TaskBrief = Pick<TaskEntry, "name" | "project" | "status" | "_assign">;
+
+export async function getTaskBriefs(names: string[]): Promise<TaskBrief[]> {
+  if (names.length === 0) return [];
+
+  const query = buildListParams({
+    fields: ["name", "project", "status", "_assign"],
+    pageSize: names.length,
+  });
+  const filters = [["name", "in", names]];
+
+  const resp: AxiosResponse = await api.get(
+    `${TASK_RESOURCE}?${query}&filters=${encodeURIComponent(JSON.stringify(filters))}`,
+  );
+  return (resp.data?.data ?? []) as TaskBrief[];
+}
