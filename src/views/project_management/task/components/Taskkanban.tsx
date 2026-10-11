@@ -6,7 +6,15 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { CornerDownRight, Folder, Search } from "lucide-react";
+import {
+  Check,
+  CornerDownRight,
+  Folder,
+  Maximize2,
+  Minimize2,
+  Search,
+  X,
+} from "lucide-react";
 import { showApiError, showSuccess } from "../../../../utils/alert";
 import DateDisplay from "../../../../components/UI_Utils/Datedisplay";
 import SearchSelect2, {
@@ -26,6 +34,7 @@ import {
   updateTaskStatus,
 } from "../../../../api/project/task/taskapi";
 import PriorityChip from "./PriorityChip";
+import { isContextTask } from "./Tasktable.config";
 
 type Variant = "draft" | "info" | "success" | "danger";
 type Highlight = "none" | "on" | "dim";
@@ -67,6 +76,23 @@ const SEARCH_DEBOUNCE_MS = 400;
 const MAX_AVATARS = 3;
 const FALLBACK_COLOR = "var(--muted, #94a3b8)";
 const EMPTY_TASKS: TaskEntry[] = [];
+const MARQUEE_THRESHOLD = 4;
+const DENSITY_KEY = "kanban-density";
+const SELECTED_BG =
+  "color-mix(in srgb, var(--primary, #3b82f6) 8%, var(--card, #fff))";
+const MARQUEE_FILL =
+  "color-mix(in srgb, var(--primary, #3b82f6) 10%, transparent)";
+const MARQUEE_STROKE =
+  "color-mix(in srgb, var(--primary, #3b82f6) 70%, transparent)";
+const MARQUEE_GLOW =
+  "color-mix(in srgb, var(--primary, #3b82f6) 15%, transparent)";
+
+interface MarqueeRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
 
 const VARIANT_COLOR: Record<Variant, string> = {
   draft: "var(--muted, #94a3b8)",
@@ -104,6 +130,9 @@ const avatarColor = (s: string) => AVATAR_COLORS[hashOf(s) % AVATAR_COLORS.lengt
 
 const familyColor = (s: string) => FAMILY_COLORS[hashOf(s) % FAMILY_COLORS.length];
 
+// "TASK-2026-00017" -> "#00017" (full ID stays available in the tooltip)
+const shortId = (name: string) => name.replace(/^TASK-\d{4}-/, "#");
+
 const clampProgress = (v: unknown) => {
   const n = Number(v);
   if (!Number.isFinite(n)) return 0;
@@ -127,10 +156,14 @@ interface CardProps {
   accent: string | null;
   highlight: Highlight;
   movable: boolean;
+  selected: boolean;
+  selecting: boolean;
   hasFilters: boolean;
   showProgress: boolean;
+  compact: boolean;
   metaMap: Map<string, StatusMeta>;
   onOpen: (name: string) => void;
+  onToggleSelect: (name: string) => void;
   onHover: (key: string | null) => void;
   onDragBegin: (name: string, from: string) => void;
   onDragFinish: () => void;
@@ -145,10 +178,14 @@ const KanbanCard = memo(function KanbanCard({
   accent,
   highlight,
   movable,
+  selected,
+  selecting,
   hasFilters,
   showProgress,
+  compact,
   metaMap,
   onOpen,
+  onToggleSelect,
   onHover,
   onDragBegin,
   onDragFinish,
@@ -165,16 +202,92 @@ const KanbanCard = memo(function KanbanCard({
 
   const kidsLabel = hasFilters
     ? `${kids.length} shown`
-    : `${kids.length} child ${kids.length === 1 ? "task" : "tasks"}`;
+    : `${kids.length} ${kids.length === 1 ? "child" : "children"}`;
 
   const familyKey = familyKeyOf(task);
 
   const open = () => onOpen(task.name);
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (movable && (selecting || e.ctrlKey || e.metaKey || e.shiftKey)) {
+      onToggleSelect(task.name);
+      return;
+    }
+    open();
+  };
+
+  const avatarSize = compact ? "h-4 w-4 text-[8px]" : "h-5 w-5 text-[9px]";
+
+  const avatars = (
+    <div className="flex shrink-0 items-center">
+      {emails.slice(0, MAX_AVATARS).map((email, i) => {
+        const av = avatarColor(email);
+        return (
+          <span
+            key={email}
+            title={email}
+            className={`flex ${avatarSize} items-center justify-center rounded-full border-2 border-[var(--card,#fff)] font-bold`}
+            style={{
+              background: av.bg,
+              color: av.fg,
+              marginLeft: i === 0 ? 0 : -6,
+            }}
+          >
+            {email.charAt(0).toUpperCase()}
+          </span>
+        );
+      })}
+      {emails.length > MAX_AVATARS && (
+        <span className="ml-1 text-[10px] font-semibold text-muted">
+          +{emails.length - MAX_AVATARS}
+        </span>
+      )}
+    </div>
+  );
+
+  const kidsBar =
+    kids.length > 0 ? (
+      <div
+        className={[
+          "flex min-w-0 flex-1 gap-px overflow-hidden rounded-full",
+          compact ? "h-0.5" : "h-1.5",
+        ].join(" ")}
+        style={{ background: "var(--border)" }}
+      >
+        {kidCounts.map(([st, n]) => {
+          const meta = metaMap.get(st);
+          return (
+            <span
+              key={st}
+              title={`${n} ${meta?.label ?? st}`}
+              style={{
+                flexGrow: n,
+                flexBasis: 0,
+                background: meta?.color ?? FALLBACK_COLOR,
+              }}
+            />
+          );
+        })}
+      </div>
+    ) : null;
+
+  const tooltip = compact
+    ? [
+        task.subject,
+        task.name,
+        projectName,
+        parentLabel ? `↳ ${parentLabel}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : undefined;
+
   return (
     <div
       role="button"
       tabIndex={0}
+      data-task-name={task.name}
+      title={tooltip}
       draggable={movable}
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
@@ -183,27 +296,35 @@ const KanbanCard = memo(function KanbanCard({
         onDragBegin(task.name, status);
       }}
       onDragEnd={onDragFinish}
-      onMouseEnter={() => onHover(familyKey)}
+      onMouseEnter={() => onHover(familyKey ? task.name : null)}
       onMouseLeave={() => onHover(null)}
-      onFocus={() => onHover(familyKey)}
+      onFocus={() => onHover(familyKey ? task.name : null)}
       onBlur={() => onHover(null)}
-      onClick={open}
+      onClick={handleClick}
       onKeyDown={(e) => {
         if (e.target !== e.currentTarget) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          open();
+          if (e.key === " " && movable && selecting) onToggleSelect(task.name);
+          else open();
         }
       }}
       style={{
         contentVisibility: "auto",
-        containIntrinsicSize: "0 150px",
-        ...(highlight === "on" && accent
-          ? { outline: `2px solid ${accent}`, outlineOffset: 0 }
-          : {}),
+        containIntrinsicSize: compact ? "0 48px" : "0 104px",
+        ...(selected
+          ? {
+              outline: "1.5px solid var(--primary, #3b82f6)",
+              outlineOffset: 0,
+              background: SELECTED_BG,
+            }
+          : highlight === "on" && accent
+            ? { outline: `1.5px solid ${accent}`, outlineOffset: 0 }
+            : {}),
       }}
       className={[
-        "relative overflow-hidden rounded-xl border border-[var(--border)] bg-card py-3 pl-4 pr-3 shadow-sm transition-[opacity,box-shadow] hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary",
+        "group relative overflow-hidden rounded-lg border border-[var(--border)] bg-card shadow-sm transition-[opacity,box-shadow] hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary",
+        compact ? "py-1.5 pl-3 pr-2" : "py-2 pl-3.5 pr-2.5",
         highlight === "dim" ? "opacity-40" : "",
         movable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
       ].join(" ")}
@@ -216,7 +337,30 @@ const KanbanCard = memo(function KanbanCard({
         />
       )}
 
-      {parentLabel && task.parent_task && (
+      {movable && (
+        <button
+          type="button"
+          aria-label={selected ? "Deselect task" : "Select task"}
+          aria-pressed={selected}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect(task.name);
+          }}
+          className={[
+            "absolute z-10 flex h-4 w-4 items-center justify-center rounded border transition-opacity",
+            compact ? "right-1.5 top-1.5" : "right-2 top-2",
+            selected
+              ? "border-primary bg-primary text-white opacity-100"
+              : selecting
+                ? "border-[var(--border)] bg-card opacity-100"
+                : "border-[var(--border)] bg-card opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
+          ].join(" ")}
+        >
+          {selected && <Check size={11} />}
+        </button>
+      )}
+
+      {!compact && parentLabel && task.parent_task && (
         <span
           role="link"
           tabIndex={-1}
@@ -224,7 +368,7 @@ const KanbanCard = memo(function KanbanCard({
             e.stopPropagation();
             onOpen(task.parent_task as string);
           }}
-          className="mb-1.5 inline-flex max-w-full items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold hover:underline"
+          className="mb-1 inline-flex max-w-full items-center gap-1 rounded px-1.5 py-px text-[10px] font-semibold hover:underline"
           style={{
             background: accent ? `${accent}24` : "transparent",
             color: accent ?? "inherit",
@@ -235,109 +379,120 @@ const KanbanCard = memo(function KanbanCard({
         </span>
       )}
 
-      <p className="flex items-start gap-1 text-xs font-bold text-main">
+      <p className="flex items-start gap-1 pr-4 text-xs font-bold leading-snug text-main">
         {isGroup && (
           <Folder
-            size={13}
+            size={compact ? 12 : 13}
             className="mt-0.5 shrink-0"
             style={{ color: accent ?? undefined }}
           />
         )}
-        <span className="min-w-0 break-words">{task.subject}</span>
+        <span className={compact ? "min-w-0 truncate" : "min-w-0 break-words"}>
+          {task.subject}
+        </span>
       </p>
 
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-        <span className="font-mono text-[10px] text-muted">{task.name}</span>
-        {isGroup && (
-          <span
-            className="rounded border px-1 text-[9px] font-bold uppercase tracking-wide"
-            style={{
-              borderColor: accent ?? "var(--border)",
-              color: accent ?? undefined,
-            }}
-          >
-            Group
-          </span>
-        )}
-        <PriorityChip priority={task.priority} />
-      </div>
-
-      {projectName && (
-        <p className="mt-1.5 truncate text-[11px] font-medium text-muted">
-          {projectName}
-        </p>
-      )}
-
-      {isGroup && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted">
-          <span className="font-semibold">{kidsLabel}</span>
-          {kidCounts.map(([st, n]) => {
-            const meta = metaMap.get(st);
-            return (
-              <span key={st} className="flex items-center gap-1">
-                <span
-                  className="h-1.5 w-1.5 rounded-full"
-                  style={{ background: meta?.color ?? FALLBACK_COLOR }}
-                />
-                {n} {meta?.label ?? st}
-              </span>
-            );
-          })}
-        </div>
-      )}
-
-      {showProgress && (
-        <div className="mt-2 flex items-center gap-2">
-          <div
-            className="h-1.5 flex-1 rounded-full"
-            style={{ background: "var(--border)" }}
-          >
-            <div
-              className="h-1.5 rounded-full bg-success"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <span className="w-8 text-right font-mono text-[10px] text-muted">
-            {progress}%
-          </span>
-        </div>
-      )}
-
-      <div className="mt-2 flex items-center justify-between gap-2">
-        {task.exp_end_date ? (
-          <DateDisplay
-            date={task.exp_end_date}
-            className="whitespace-nowrap text-[10px] text-muted"
-          />
-        ) : (
-          <span className="text-[10px] text-muted">—</span>
-        )}
-
-        <div className="flex items-center">
-          {emails.slice(0, MAX_AVATARS).map((email, i) => {
-            const av = avatarColor(email);
-            return (
+      {compact ? (
+        <>
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <span className="font-mono text-[10px] text-muted">
+              {shortId(task.name)}
+            </span>
+            {isGroup && (
               <span
-                key={email}
-                title={email}
-                className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--card,#fff)] text-[10px] font-bold"
+                title={kidsLabel}
+                className="rounded border px-1 text-[9px] font-bold"
                 style={{
-                  background: av.bg,
-                  color: av.fg,
-                  marginLeft: i === 0 ? 0 : -6,
+                  borderColor: accent ?? "var(--border)",
+                  color: accent ?? undefined,
                 }}
               >
-                {email.charAt(0).toUpperCase()}
+                {kids.length}
               </span>
-            );
-          })}
-          {emails.length > MAX_AVATARS && (
-            <span className="ml-1 text-[10px] font-semibold text-muted">
-              +{emails.length - MAX_AVATARS}
-            </span>
+            )}
+            <PriorityChip priority={task.priority} />
+            <div className="ml-auto">{avatars}</div>
+          </div>
+
+          {isGroup && kidsBar ? (
+            <div className="mt-1 flex">{kidsBar}</div>
+          ) : (
+            showProgress &&
+            progress > 0 && (
+              <div
+                className="mt-1 h-0.5 rounded-full"
+                style={{ background: "var(--border)" }}
+              >
+                <div
+                  className="h-0.5 rounded-full bg-success"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            )
           )}
-        </div>
-      </div>
+        </>
+      ) : (
+        <>
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            <span className="font-mono text-[10px] text-muted">{task.name}</span>
+            {isGroup && (
+              <span
+                className="rounded border px-1 text-[9px] font-bold uppercase tracking-wide"
+                style={{
+                  borderColor: accent ?? "var(--border)",
+                  color: accent ?? undefined,
+                }}
+              >
+                Group
+              </span>
+            )}
+            <PriorityChip priority={task.priority} />
+          </div>
+
+          {isGroup && (
+            <div className="mt-1 flex items-center gap-2 text-[10px] text-muted">
+              <span className="shrink-0 font-semibold">{kidsLabel}</span>
+              {kidsBar}
+            </div>
+          )}
+
+          {showProgress && (
+            <div className="mt-1.5 flex items-center gap-2">
+              <div
+                className="h-1.5 flex-1 rounded-full"
+                style={{ background: "var(--border)" }}
+              >
+                <div
+                  className="h-1.5 rounded-full bg-success"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="w-8 text-right font-mono text-[10px] text-muted">
+                {progress}%
+              </span>
+            </div>
+          )}
+
+          <div className="mt-1.5 flex items-center gap-2">
+            <div className="flex min-w-0 flex-1 flex-col">
+              {projectName && (
+                <span className="truncate text-[10px] font-medium text-muted">
+                  {projectName}
+                </span>
+              )}
+              {task.exp_end_date ? (
+                <DateDisplay
+                  date={task.exp_end_date}
+                  className="whitespace-nowrap text-[10px] text-muted"
+                />
+              ) : (
+                <span className="text-[10px] text-muted">—</span>
+              )}
+            </div>
+            {avatars}
+          </div>
+        </>
+      )}
     </div>
   );
 });
@@ -369,13 +524,24 @@ const TaskKanban: React.FC<Props> = ({
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchInput, setSearchInput] = useState(searchTerm);
   const [dragOver, setDragOver] = useState<string | null>(null);
-  const [hoverKey, setHoverKey] = useState<string | null>(null);
+  const [hoverName, setHoverName] = useState<string | null>(null);
+  const [contextRows, setContextRows] = useState<TaskEntry[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [marquee, setMarquee] = useState<MarqueeRect | null>(null);
   const [projectLabel, setProjectLabel] = useState(
     projectFilter.length === 1 ? getProjectName(projectFilter[0]) : "",
   );
   const [assigneeLabel, setAssigneeLabel] = useState(
     assigneeFilter.length === 1 ? assigneeFilter[0] : "",
   );
+  const [compact, setCompact] = useState<boolean>(() => {
+    try {
+      return (localStorage.getItem(DENSITY_KEY) ?? "compact") === "compact";
+    } catch {
+      return true;
+    }
+  });
 
   const reqRef = useRef(0);
   const mountedRef = useRef(true);
@@ -408,6 +574,16 @@ const TaskKanban: React.FC<Props> = ({
     if (!assigneeFilter.length) setAssigneeLabel("");
   }, [assigneeFilter]);
 
+  const toggleCompact = () =>
+    setCompact((prev) => {
+      try {
+        localStorage.setItem(DENSITY_KEY, prev ? "comfortable" : "compact");
+      } catch {
+        /* storage unavailable: keep in-memory state only */
+      }
+      return !prev;
+    });
+
   const hasFilters =
     Boolean(searchInput) ||
     projectFilter.length > 0 ||
@@ -438,9 +614,14 @@ const TaskKanban: React.FC<Props> = ({
         true,
         taskNames,
       );
-      const items = Array.isArray(res?.data) ? (res.data as TaskEntry[]) : [];
+      // Context rows are ancestors the API sends only so hierarchy can be shown.
+      // They are not cards and not part of `total`, but we keep them for parent
+      // labels and for linking a whole family on hover.
+      const rows = Array.isArray(res?.data) ? (res.data as TaskEntry[]) : [];
+      const items = rows.filter((t) => !isContextTask(t));
       return {
         items,
+        context: rows.filter(isContextTask),
         total: Number(res?.pagination?.total) || items.length,
       };
     },
@@ -452,7 +633,7 @@ const TaskKanban: React.FC<Props> = ({
       const id = ++reqRef.current;
       if (!silent) setLoading(true);
       try {
-        const { items, total: count } = await fetchTasks(1);
+        const { items, context, total: count } = await fetchTasks(1);
         if (id !== reqRef.current || !mountedRef.current) return;
         const seen = new Set<string>();
         setTasks(
@@ -462,6 +643,7 @@ const TaskKanban: React.FC<Props> = ({
             return true;
           }),
         );
+        setContextRows(context);
         setTotal(count);
         setPage(1);
       } catch (error) {
@@ -501,11 +683,15 @@ const TaskKanban: React.FC<Props> = ({
     const nextPage = page + 1;
     setLoadingMore(true);
     try {
-      const { items, total: count } = await fetchTasks(nextPage);
+      const { items, context, total: count } = await fetchTasks(nextPage);
       if (id !== reqRef.current || !mountedRef.current) return;
       setTasks((prev) => {
         const seen = new Set(prev.map((t) => t.name));
         return [...prev, ...items.filter((t) => t?.name && !seen.has(t.name))];
+      });
+      setContextRows((prev) => {
+        const seen = new Set(prev.map((t) => t.name));
+        return [...prev, ...context.filter((t) => !seen.has(t.name))];
       });
       setTotal(count);
       setPage(nextPage);
@@ -538,10 +724,69 @@ const TaskKanban: React.FC<Props> = ({
     return { byStatus, childrenOf, byName };
   }, [tasks]);
 
+  // Cards plus context ancestors: used only for labels and family linking.
+  const lookup = useMemo(() => {
+    const map = new Map<string, TaskEntry>();
+    contextRows.forEach((t) => map.set(t.name, t));
+    tasks.forEach((t) => map.set(t.name, t));
+    return map;
+  }, [tasks, contextRows]);
+
+  // Whole family of the hovered card: top-most ancestor and every descendant.
+  const family = useMemo(() => {
+    if (!hoverName) return null;
+
+    let root = hoverName;
+    const climbed = new Set([root]);
+    for (;;) {
+      const parent = lookup.get(root)?.parent_task;
+      if (!parent || climbed.has(parent)) break;
+      climbed.add(parent);
+      root = parent;
+    }
+
+    const names = new Set<string>();
+    const stack = [root];
+    while (stack.length) {
+      const name = stack.pop() as string;
+      if (names.has(name)) continue;
+      names.add(name);
+      childrenOf.get(name)?.forEach((child) => stack.push(child.name));
+    }
+    return names;
+  }, [hoverName, lookup, childrenOf]);
+
   const byNameRef = useRef(byName);
   useEffect(() => {
     byNameRef.current = byName;
   }, [byName]);
+
+  useEffect(() => {
+    setSelected((prev) => {
+      if (!prev.size) return prev;
+      const next = new Set(Array.from(prev).filter((n) => byName.has(n)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [byName]);
+
+  useEffect(() => {
+    if (!selected.size) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelected(new Set());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected.size]);
+
+  const toggleSelect = useCallback((name: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(name)) next.add(name);
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => setSelected(new Set()), []);
 
   const isMovable = useCallback((t: TaskEntry) => {
     if (!canEditRef.current) return false;
@@ -582,11 +827,61 @@ const TaskKanban: React.FC<Props> = ({
     [isMovable],
   );
 
+  const bulkMove = async (to: string) => {
+    if (bulkBusy) return;
+    const targets = Array.from(selected)
+      .map((n) => byNameRef.current.get(n))
+      .filter(
+        (t): t is TaskEntry => Boolean(t) && t!.status !== to && isMovable(t!),
+      );
+    if (!targets.length) {
+      clearSelection();
+      return;
+    }
+
+    const progressOf = (t: TaskEntry) =>
+      to === DONE_STATUS && !isGroupTask(t) ? DONE_PROGRESS : undefined;
+    const names = new Set(targets.map((t) => t.name));
+
+    setBulkBusy(true);
+    setTasks((prev) =>
+      prev.map((t) =>
+        names.has(t.name)
+          ? {
+              ...t,
+              status: to as TaskStatus,
+              ...(progressOf(t) !== undefined ? { progress: DONE_PROGRESS } : {}),
+            }
+          : t,
+      ),
+    );
+
+    const results = await Promise.allSettled(
+      targets.map((t) => updateTaskStatus(t.name, to, progressOf(t))),
+    );
+    if (!mountedRef.current) return;
+
+    const failed = results.filter(
+      (r): r is PromiseRejectedResult => r.status === "rejected",
+    );
+    if (failed.length) showApiError(failed[0].reason);
+    if (failed.length < results.length) {
+      showSuccess(`${results.length - failed.length} task(s) updated`);
+    }
+    clearSelection();
+    setBulkBusy(false);
+    loadAllRef.current(true);
+  };
+
   const handleDrop = (status: string) => {
     const drag = dragRef.current;
     dragRef.current = null;
     setDragOver(null);
     if (!drag || drag.from === status || !canEdit) return;
+    if (selected.size > 1 && selected.has(drag.name)) {
+      bulkMove(status);
+      return;
+    }
     moveTask(drag.name, status);
   };
 
@@ -594,8 +889,8 @@ const TaskKanban: React.FC<Props> = ({
     onViewRef.current(name);
   }, []);
 
-  const handleHover = useCallback((key: string | null) => {
-    setHoverKey((prev) => (prev === key ? prev : key));
+  const handleHover = useCallback((name: string | null) => {
+    setHoverName((prev) => (prev === name ? prev : name));
   }, []);
 
   const handleDragBegin = useCallback((name: string, from: string) => {
@@ -615,13 +910,13 @@ const TaskKanban: React.FC<Props> = ({
   };
 
   const highlightOf = (t: TaskEntry): Highlight => {
-    if (!hoverKey) return "none";
-    return t.name === hoverKey || t.parent_task === hoverKey ? "on" : "dim";
+    if (!family) return "none";
+    return family.has(t.name) ? "on" : "dim";
   };
 
   const renderCard = (t: TaskEntry, status: string) => {
     const familyKey = familyKeyOf(t);
-    const parent = t.parent_task ? byName.get(t.parent_task) : undefined;
+    const parent = t.parent_task ? lookup.get(t.parent_task) : undefined;
     const parentLabel = t.parent_task ? (parent?.subject || t.parent_task) : null;
 
     return (
@@ -635,15 +930,82 @@ const TaskKanban: React.FC<Props> = ({
         accent={familyKey ? familyColor(familyKey) : null}
         highlight={highlightOf(t)}
         movable={isMovable(t)}
+        selected={selected.has(t.name)}
+        selecting={selected.size > 0}
         hasFilters={hasFilters}
         showProgress={showProgress}
+        compact={compact}
         metaMap={metaMap}
         onOpen={handleOpen}
+        onToggleSelect={toggleSelect}
         onHover={handleHover}
         onDragBegin={handleDragBegin}
         onDragFinish={handleDragFinish}
       />
     );
+  };
+
+  const startMarquee = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || !canEditRef.current) return;
+    const el = e.target as HTMLElement;
+    if (el.closest("[data-task-name]")) return;
+    const box = el.getBoundingClientRect();
+    if (
+      e.clientX > box.left + el.clientWidth ||
+      e.clientY > box.top + el.clientHeight
+    ) {
+      return;
+    }
+
+    e.preventDefault();
+    const board = e.currentTarget;
+    const additive = e.ctrlKey || e.metaKey || e.shiftKey;
+    const base = additive ? new Set(selected) : new Set<string>();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let active = false;
+
+    const onMove = (ev: MouseEvent) => {
+      if (
+        !active &&
+        Math.hypot(ev.clientX - startX, ev.clientY - startY) < MARQUEE_THRESHOLD
+      ) {
+        return;
+      }
+      active = true;
+
+      const rect: MarqueeRect = {
+        left: Math.min(startX, ev.clientX),
+        top: Math.min(startY, ev.clientY),
+        right: Math.max(startX, ev.clientX),
+        bottom: Math.max(startY, ev.clientY),
+      };
+      setMarquee(rect);
+
+      const next = new Set(base);
+      board.querySelectorAll<HTMLElement>("[data-task-name]").forEach((card) => {
+        const c = card.getBoundingClientRect();
+        const hit =
+          c.left < rect.right &&
+          c.right > rect.left &&
+          c.top < rect.bottom &&
+          c.bottom > rect.top;
+        if (!hit) return;
+        const task = byNameRef.current.get(card.dataset.taskName ?? "");
+        if (task && isMovable(task)) next.add(task.name);
+      });
+      setSelected(next);
+    };
+
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      setMarquee(null);
+      if (!active && !additive) clearSelection();
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   };
 
   const hasMore = tasks.length < total;
@@ -701,10 +1063,38 @@ const TaskKanban: React.FC<Props> = ({
           </button>
         )}
 
-        <div className="ml-auto flex items-center gap-2">{toolbarRight}</div>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleCompact}
+            title={compact ? "Switch to detailed cards" : "Switch to compact cards"}
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-card px-2.5 py-2 text-xs font-semibold text-main hover:bg-row-hover"
+          >
+            {compact ? <Maximize2 size={13} /> : <Minimize2 size={13} />}
+            {compact ? "Detailed" : "Compact"}
+          </button>
+          {toolbarRight}
+        </div>
       </div>
 
+      {marquee && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed z-50 rounded-md"
+          style={{
+            left: marquee.left,
+            top: marquee.top,
+            width: marquee.right - marquee.left,
+            height: marquee.bottom - marquee.top,
+            background: MARQUEE_FILL,
+            border: `1px solid ${MARQUEE_STROKE}`,
+            boxShadow: `0 0 0 1px ${MARQUEE_GLOW}`,
+          }}
+        />
+      )}
+
       <div
+        onMouseDown={startMarquee}
         className={[
           "custom-scrollbar flex min-h-0 flex-1 gap-3 overflow-x-auto",
           loading ? "opacity-60" : "",
@@ -733,11 +1123,16 @@ const TaskKanban: React.FC<Props> = ({
                 handleDrop(s.value);
               }}
               className={[
-                "flex h-full w-72 shrink-0 flex-col rounded-xl bg-[var(--border)]/15 transition-shadow",
+                "flex h-full flex-1 flex-col rounded-xl bg-[var(--border)]/15 transition-shadow",
+                compact ? "min-w-[13rem] max-w-[17rem]" : "min-w-[15rem] max-w-[20rem]",
                 isOver ? "ring-2 ring-primary" : "",
               ].join(" ")}
             >
-              <div className="flex items-center justify-between px-3 py-3">
+              <div
+                className={`flex items-center justify-between px-3 ${
+                  compact ? "py-1" : "py-2"
+                }`}
+              >
                 <div className="flex min-w-0 items-center gap-2">
                   <span
                     className="h-2 w-2 shrink-0 rounded-full"
@@ -753,7 +1148,11 @@ const TaskKanban: React.FC<Props> = ({
                 </span>
               </div>
 
-              <div className="custom-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto px-2 pb-2">
+              <div
+                className={`custom-scrollbar min-h-0 flex-1 overflow-y-auto px-1.5 pb-1.5 ${
+                  compact ? "space-y-1" : "space-y-1.5"
+                }`}
+              >
                 {items.map((t) => renderCard(t, s.value))}
 
                 {!loading && items.length === 0 && (
@@ -766,6 +1165,35 @@ const TaskKanban: React.FC<Props> = ({
           );
         })}
       </div>
+
+      {selected.size > 0 && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-card px-3 py-2 shadow-md">
+          <span className="text-xs font-bold text-main">
+            {selected.size} selected
+          </span>
+          <span className="text-[10px] text-muted">Move to</span>
+          {statuses.map((s) => (
+            <button
+              key={s.value}
+              disabled={bulkBusy}
+              onClick={() => bulkMove(s.value)}
+              className="flex items-center gap-1.5 rounded-full border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold text-main transition-colors hover:bg-row-hover disabled:opacity-50"
+            >
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ background: VARIANT_COLOR[s.variant] ?? FALLBACK_COLOR }}
+              />
+              {s.label}
+            </button>
+          ))}
+          <button
+            onClick={clearSelection}
+            className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-muted hover:text-main"
+          >
+            <X size={12} /> Clear
+          </button>
+        </div>
+      )}
 
       {hasMore && (
         <div className="flex shrink-0 justify-center">
