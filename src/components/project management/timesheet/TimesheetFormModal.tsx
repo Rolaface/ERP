@@ -167,6 +167,16 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     updateLine(id, slot);
   };
 
+  const handleDuplicateSelected = (
+    ids: string[],
+    position: Parameters<typeof duplicateLine>[1],
+  ) => {
+    const selected = new Set(ids);
+    form.lines
+      .filter((l) => selected.has(l.id))
+      .forEach((l) => duplicateLine(l.id, position));
+  };
+
   const handleSave = async () => {
     if (await save()) onClose();
   };
@@ -259,6 +269,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
               fetchProjects={fetchProjects}
               handlers={rowHandlers}
               onAddRow={() => addLine(undefined, prefillDate)}
+              onDuplicateSelected={handleDuplicateSelected}
             />
           </div>
         </div>

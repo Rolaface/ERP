@@ -27,6 +27,12 @@ export interface TaskEntry {
   _assign: string | null;
 }
 
+
+export interface AssignedTaskEntry extends TaskEntry {
+  context_only: boolean;
+  is_assigned: boolean;
+  depth: number;
+}
 export interface TaskDependency {
   name: string;
   task: string;

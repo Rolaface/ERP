@@ -17,19 +17,23 @@ import AssigneeCell from "./AssigneeCell";
 import PriorityChip from "./PriorityChip";
 import StatusCell from "./StatusCell";
 
-import { STATUS_CELL_OPTIONS, type TaskRow } from "./Tasktable.config";
+import {
+  STATUS_CELL_OPTIONS,
+  isContextTask,
+  type TaskRow,
+} from "./Tasktable.config";
 import { fetchProjectAssigneeOptions } from "./Taskoptionfetchers";
 
-import {
-  GroupCheckbox,
-  ProgressBar,
-  TaskTreeCell,
-} from "./Tasktreeparts";
+import { GroupCheckbox, ProgressBar, TaskTreeCell } from "./Tasktreeparts";
+
+const MULTI_SELECT_ASSIGN_MESSAGE =
+  "Multiple tasks selected. Use Actions → Assign to assign them together.";
 
 export interface TaskSelectionApi {
   enabled: boolean;
+  count: number;
   isSelected: (t: TaskEntry) => boolean;
-  onToggle: (t: TaskEntry) => void;
+  onToggle: (t: TaskEntry, checked: boolean) => void;
   allSelected: boolean;
   someSelected: boolean;
   onToggleAll: () => void;
@@ -37,9 +41,7 @@ export interface TaskSelectionApi {
 
 interface TaskColumnsContext {
   expanded: Set<string>;
-  loadingGroups: Set<string>;
-  childrenMap: Record<string, TaskEntry[]>;
-  assigneeActive: boolean;
+  childrenOf: (name: string) => TaskEntry[];
   canWriteTask: boolean;
   canLogTime: boolean;
   currentUserEmail?: string;
@@ -70,7 +72,6 @@ export const buildTaskColumns = (
     size: 40,
     minSize: 40,
     maxSize: 40,
-    enableSorting: false,
     enableHiding: false,
     meta: {
       cellClassName: "pl-3 pr-1 py-1.5",
@@ -90,26 +91,23 @@ export const buildTaskColumns = (
     cell: ({ row }) => {
       const t = row.original;
 
-      if (t.is_group !== 1 || !ctx.selection.enabled) {
+      if (t.is_group !== 1 || !ctx.selection.enabled || isContextTask(t)) {
         return null;
       }
 
-      const kids = ctx.childrenMap[t.name] ?? [];
-      const picked = kids.filter((k) =>
-        ctx.selection.isSelected(k),
-      ).length;
+      const kids = ctx.childrenOf(t.name).filter((k) => !isContextTask(k));
+      const picked = kids.filter((k) => ctx.selection.isSelected(k)).length;
 
       const checked =
         ctx.selection.isSelected(t) ||
         (kids.length > 0 && picked === kids.length);
-
       const indeterminate = !checked && picked > 0;
 
       return (
         <GroupCheckbox
           checked={checked}
           indeterminate={indeterminate}
-          onChange={() => ctx.selection.onToggle(t)}
+          onChange={() => ctx.selection.onToggle(t, !checked)}
           label={`Select ${t.subject}`}
         />
       );
@@ -129,26 +127,26 @@ export const buildTaskColumns = (
     },
     cell: ({ row }) => {
       const t = row.original;
+      const context = isContextTask(t);
 
       return (
         <TaskTreeCell
           name={t.subject}
           taskId={t.name}
-          description={
-            (t as { description?: string | null }).description
-          }
+          description={(t as { description?: string | null }).description}
           isGroup={t.is_group === 1}
           depth={t._depth}
           guides={t._guides}
           isLast={t._isLast}
           expanded={ctx.expanded.has(t.name)}
-          loading={ctx.loadingGroups.has(t.name)}
-          childCount={ctx.childrenMap[t.name]?.length}
-          showToggle={t.is_group === 1 && !ctx.assigneeActive}
+          childCount={t._childCount}
+          showToggle={t._childCount > 0}
           onToggle={() => ctx.onToggleGroup(t.name)}
-          selectable={ctx.selection.enabled}
-          selected={ctx.selection.isSelected(t)}
-          onSelect={() => ctx.selection.onToggle(t)}
+          selectable={ctx.selection.enabled && !context}
+          selected={!context && ctx.selection.isSelected(t)}
+          onSelect={() =>
+            ctx.selection.onToggle(t, !ctx.selection.isSelected(t))
+          }
           onView={() => ctx.onView(t.name)}
           notes={ctx.notesByTask[t.name]}
           showNoteUser={ctx.showNoteUser}
@@ -163,12 +161,8 @@ export const buildTaskColumns = (
     size: 82,
     minSize: 75,
     maxSize: 90,
-    meta: {
-      align: "left",
-    },
-    cell: ({ row }) => (
-      <PriorityChip priority={row.original.priority} />
-    ),
+    meta: { align: "left" },
+    cell: ({ row }) => <PriorityChip priority={row.original.priority} />,
   },
 
   {
@@ -177,9 +171,7 @@ export const buildTaskColumns = (
     size: 95,
     minSize: 80,
     maxSize: 110,
-    meta: {
-      align: "left",
-    },
+    meta: { align: "left" },
     cell: ({ row }) => (
       <span className="block max-w-full truncate text-xs font-medium text-main">
         {ctx.getProjectDisplayName(row.original.project)}
@@ -193,9 +185,7 @@ export const buildTaskColumns = (
     size: 105,
     minSize: 90,
     maxSize: 115,
-    meta: {
-      align: "left",
-    },
+    meta: { align: "left" },
     cell: ({ row }) =>
       row.original.exp_end_date ? (
         <DateDisplay
@@ -213,9 +203,7 @@ export const buildTaskColumns = (
     size: 115,
     minSize: 105,
     maxSize: 125,
-    meta: {
-      align: "left",
-    },
+    meta: { align: "left" },
     cell: ({ row }) => {
       const t = row.original;
 
@@ -224,13 +212,9 @@ export const buildTaskColumns = (
           status={t.status}
           progress={t.progress ?? 0}
           options={STATUS_CELL_OPTIONS}
-          disabled={!ctx.canWriteTask}
+          disabled={!ctx.canWriteTask || isContextTask(t)}
           onChange={(nextStatus, nextProgress) =>
-            ctx.onStatusChange(
-              t.name,
-              nextStatus,
-              nextProgress,
-            )
+            ctx.onStatusChange(t.name, nextStatus, nextProgress)
           }
         />
       );
@@ -243,41 +227,29 @@ export const buildTaskColumns = (
     size: 120,
     minSize: 100,
     maxSize: 135,
-    enableSorting: false,
-    meta: {
-      align: "left",
-    },
+    meta: { align: "left" },
     cell: ({ row }) => {
       const t = row.original;
 
       if (
+        isContextTask(t) ||
         t.status === "Completed" ||
         t.status === "Cancelled"
       ) {
-        return (
-          <span className="text-xs text-muted">
-            —
-          </span>
-        );
+        return <span className="text-xs text-muted">—</span>;
       }
+
+      const multiSelected = ctx.selection.enabled && ctx.selection.count > 1;
 
       return (
         <AssigneeCell
           emails={parseAssignedEmails(t._assign)}
           disabled={!ctx.canWriteTask || !t.project}
+          lockedReason={multiSelected ? MULTI_SELECT_ASSIGN_MESSAGE : undefined}
           currentUserEmail={ctx.currentUserEmail}
-          fetchOptions={(q) =>
-            fetchProjectAssigneeOptions(
-              t.project ?? "",
-              q,
-            )
-          }
+          fetchOptions={(q) => fetchProjectAssigneeOptions(t.project ?? "", q)}
           onChange={(nextValues, description) =>
-            ctx.onAssigneesChange(
-              t.name,
-              nextValues,
-              description,
-            )
+            ctx.onAssigneesChange(t.name, nextValues, description)
           }
         />
       );
@@ -290,15 +262,8 @@ export const buildTaskColumns = (
     size: 125,
     minSize: 105,
     maxSize: 140,
-    enableSorting: false,
-    meta: {
-      align: "left",
-    },
-    cell: ({ row }) => (
-      <ProgressBar
-        value={row.original.progress}
-      />
-    ),
+    meta: { align: "left" },
+    cell: ({ row }) => <ProgressBar value={row.original.progress} />,
   },
 
   {
@@ -307,11 +272,8 @@ export const buildTaskColumns = (
     size: 80,
     minSize: 70,
     maxSize: 90,
-    enableSorting: false,
     enableHiding: false,
-    meta: {
-      align: "center",
-    },
+    meta: { align: "center" },
     cell: ({ row }) => {
       const t = row.original;
 
@@ -327,7 +289,7 @@ export const buildTaskColumns = (
             <button
               type="button"
               onClick={() => ctx.onLogTime(t)}
-              disabled={t.is_group === 1}
+              disabled={t.is_group === 1 || isContextTask(t)}
               className="rounded border border-theme p-1.5 text-muted transition-colors hover:bg-app hover:text-main disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-muted"
               title={
                 t.is_group === 1

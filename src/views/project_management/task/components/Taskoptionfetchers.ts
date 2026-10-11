@@ -5,13 +5,36 @@ import { getProjectAssignees } from "../../../../api/project/task/taskapi";
 import type { Option } from "../../../../components/selects/tabelselect/MultiSearchSelect";
 
 export const fetchUserOptions = async (q: string): Promise<Option[]> => {
-  const res: any = await getalluser(q || undefined);
-  const list = res?.data ?? res ?? [];
-  return list.map((u: any) => ({
-    label: u.label,
-    value: u.value,
-    subLabel: u.description,
-  }));
+  try {
+    const res: any = await getalluser(q || undefined);
+
+    const raw = res?.data ?? res?.message ?? res;
+    const list: any[] = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.data)
+        ? raw.data
+        : [];
+
+    const seen = new Set<string>();
+    const options: Option[] = [];
+
+    list.forEach((u) => {
+      const value = u?.value ?? u?.email ?? u?.name;
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+
+      options.push({
+        label: u.label || u.full_name || u.name || value,
+        value,
+        subLabel: u.description || u.email || undefined,
+      });
+    });
+
+    return options;
+  } catch (error) {
+    showApiError(error);
+    return [];
+  }
 };
 
 export const fetchProjectOptions = async (q: string): Promise<Option[]> => {

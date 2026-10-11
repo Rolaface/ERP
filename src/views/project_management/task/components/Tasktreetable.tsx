@@ -3,12 +3,12 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
+  type Column,
   type ColumnDef,
   type RowData,
-  type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown, Columns3, Loader2 } from "lucide-react";
+import { Columns3, Loader2 } from "lucide-react";
 import TablePagination from "../../../../components/ui/Tankstack/Tablepagination";
 
 declare module "@tanstack/react-table" {
@@ -22,11 +22,7 @@ declare module "@tanstack/react-table" {
 const alignClass = (a?: "left" | "center" | "right") =>
   a === "center" ? "text-center" : a === "right" ? "text-right" : "text-left";
 
-function ColumnPicker({
-  columns,
-}: {
-  columns: ReturnType<ReturnType<typeof useReactTable<any>>["getAllLeafColumns"]>;
-}) {
+function ColumnPicker({ columns }: { columns: Column<any, unknown>[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -84,10 +80,6 @@ export interface TaskTreeTableProps<T> {
   fetching?: boolean;
   emptyMessage?: React.ReactNode;
 
-  sortBy?: string;
-  sortOrder?: string;
-  onSortChange?: (key: string, order: "asc" | "desc") => void;
-
   toolbar?: React.ReactNode;
   rowClassName?: (row: T) => string;
   onRowDoubleClick?: (row: T) => void;
@@ -109,9 +101,6 @@ export function TaskTreeTable<T>({
   loading = false,
   fetching = false,
   emptyMessage = "No tasks found.",
-  sortBy,
-  sortOrder,
-  onSortChange,
   toolbar,
   rowClassName,
   onRowDoubleClick,
@@ -138,30 +127,19 @@ export function TaskTreeTable<T>({
     try {
       localStorage.setItem(storageKey, JSON.stringify(columnVisibility));
     } catch {
-      return;
+      // storage unavailable: visibility just won't persist
     }
   }, [columnVisibility, storageKey]);
-
-  const sorting: SortingState = sortBy
-    ? [{ id: sortBy, desc: sortOrder === "desc" }]
-    : [];
 
   const table = useReactTable({
     data,
     columns,
     getRowId,
     getCoreRowModel: getCoreRowModel(),
-    manualSorting: true,
     manualPagination: true,
-    state: { sorting, columnVisibility },
+    state: { columnVisibility },
     onColumnVisibilityChange: setColumnVisibility,
   });
-
-  const toggleSort = (id: string) => {
-    if (!onSortChange) return;
-    if (sortBy !== id) return onSortChange(id, "asc");
-    onSortChange(id, sortOrder === "asc" ? "desc" : "asc");
-  };
 
   const rows = table.getRowModel().rows;
   const colCount = table.getVisibleLeafColumns().length;
@@ -173,7 +151,7 @@ export function TaskTreeTable<T>({
         <ColumnPicker columns={table.getAllLeafColumns()} />
       </div>
 
-       <div className="custom-scrollbar relative min-h-0 flex-1 overflow-auto">
+      <div className="custom-scrollbar relative min-h-0 flex-1 overflow-auto">
         <table className="w-full table-fixed border-separate border-spacing-0 text-left">
           <thead className="sticky top-0 z-20">
             {table.getHeaderGroups().map((hg) => (
@@ -181,24 +159,11 @@ export function TaskTreeTable<T>({
                 {hg.headers.map((header) => {
                   const col = header.column;
                   const meta = col.columnDef.meta;
-                  const sorted = col.getIsSorted();
-                  const canSort =
-                    col.columnDef.enableSorting !== false && !!onSortChange;
-                  const content = header.isPlaceholder
-                    ? null
-                    : flexRender(col.columnDef.header, header.getContext());
                   const pinned = meta?.stickyLeft !== undefined;
                   return (
                     <th
                       key={header.id}
                       scope="col"
-                      aria-sort={
-                        sorted === "asc"
-                          ? "ascending"
-                          : sorted === "desc"
-                            ? "descending"
-                            : undefined
-                      }
                       className={`whitespace-nowrap border-b border-[var(--border)] bg-app px-3 py-2 text-[11px] font-semibold text-muted ${alignClass(meta?.align)} ${
                         pinned ? "md:sticky md:z-30" : ""
                       }`}
@@ -208,26 +173,9 @@ export function TaskTreeTable<T>({
                         left: pinned ? meta?.stickyLeft : undefined,
                       }}
                     >
-                      {canSort ? (
-                        <button
-                          type="button"
-                          onClick={() => toggleSort(col.id)}
-                          className={`inline-flex items-center gap-1 transition-colors hover:text-main ${
-                            sorted ? "text-main" : ""
-                          }`}
-                        >
-                          {content}
-                          {sorted === "asc" ? (
-                            <ArrowUp size={11} />
-                          ) : sorted === "desc" ? (
-                            <ArrowDown size={11} />
-                          ) : (
-                            <ArrowUpDown size={11} className="opacity-50" />
-                          )}
-                        </button>
-                      ) : (
-                        content
-                      )}
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(col.columnDef.header, header.getContext())}
                     </th>
                   );
                 })}

@@ -13,7 +13,10 @@ import type { Option } from "../../../../components/ui/modal/SearchSelect2";
 import { showApiError, showSuccess } from "../../../../utils/alert";
 import { getEmployees } from "../../../../api/utils/frappeUtilsApi";
 import { getAllProjects } from "../../../../api/project/projectapi/project.api";
-import { getAllTasks } from "../../../../api/project/task/taskapi";
+import {
+  getTaskTree,
+  type TaskTreeEntry,
+} from "../../../../api/project/task/taskapi";
 import { getMyLoggableTaskNames } from "../../../../api/project/todo/todo.api";
 import { getAllActivityTypes } from "../../../../api/project/projectapi/Activity/activityType.api";
 import { useCompanyDefaultsStore } from "../../../../store/Companydefaultsstore";
@@ -80,6 +83,14 @@ export async function fetchEmployeeOptions(search: string): Promise<Option[]> {
   return getEmployees(search);
 }
 
+const taskPath = (task: TaskTreeEntry): string =>
+  (task.ancestors ?? []).map((a) => a.subject || a.name).join(" / ");
+
+/**
+ * Task picker options straight from the backend hierarchy. Time can only be
+ * logged on non-group tasks, so groups are not listed; they show up as the
+ * path (e.g. "Module / backend") under each task.
+ */
 export async function fetchTaskOptions(
   projectId: string,
   search: string,
@@ -88,20 +99,24 @@ export async function fetchTaskOptions(
   if (!projectId) return [];
 
   const email = onlyMine ? getCurrentUserEmail() : undefined;
-  const names = email ? await getMyLoggableTaskNames(email) : undefined;
+  const loggable = email ? new Set(await getMyLoggableTaskNames(email)) : null;
 
-  const tasks = await getAllTasks(projectId, search, {
-    excludeGroups: true,
-    excludeStatuses: ["Cancelled"],
-    names,
-  });
+  const rows = await getTaskTree(projectId, search);
 
-  return tasks.map((task) => ({
-    label: task.subject,
-    value: task.name,
-    subLabel: task.name,
-    meta: { activity_type: task.custom_activity_type ?? "" },
-  }));
+  return rows
+    .filter((t) => !t.is_group && (!loggable || loggable.has(t.name)))
+    .map((t) => ({
+      label: t.subject || t.name,
+      value: t.name,
+      subLabel: taskPath(t) || undefined,
+      meta: {
+        activity_type: t.custom_activity_type ?? "",
+        ancestors: (t.ancestors ?? []).map((a) => ({
+          name: a.name,
+          subject: a.subject || a.name,
+        })),
+      },
+    }));
 }
 
 interface InitialTask {
@@ -612,50 +627,50 @@ export function useTimesheetModal(
     setCustomTitle(value);
   }, []);
 
- const addLine = useCallback(
-  (initialTask?: InitialTask, initialDate?: string) => {
-    setForm((f) => ({
-      ...f,
-      lines: [
-        ...f.lines,
-        emptyLine(
-          f.project
-            ? { project: f.project, project_name: f.project_name }
-            : undefined,
-          initialTask,
-          initialDate,
-        ),
-      ],
-    }));
+  const addLine = useCallback(
+    (initialTask?: InitialTask, initialDate?: string) => {
+      setForm((f) => ({
+        ...f,
+        lines: [
+          ...f.lines,
+          emptyLine(
+            f.project
+              ? { project: f.project, project_name: f.project_name }
+              : undefined,
+            initialTask,
+            initialDate,
+          ),
+        ],
+      }));
 
-    if (initialTask?.project) {
-      void ensureProjectRanges([initialTask.project]);
-    }
+      if (initialTask?.project) {
+        void ensureProjectRanges([initialTask.project]);
+      }
 
-    if (initialTask?.activity_type) {
-      void syncActivityRates([initialTask.activity_type]);
-    }
-  },
-  [syncActivityRates, ensureProjectRanges],
-);
+      if (initialTask?.activity_type) {
+        void syncActivityRates([initialTask.activity_type]);
+      }
+    },
+    [syncActivityRates, ensureProjectRanges],
+  );
 
-const addLines = useCallback(
-  (tasks: InitialTask[], initialDate?: string) => {
-    if (tasks.length === 0) return;
+  const addLines = useCallback(
+    (tasks: InitialTask[], initialDate?: string) => {
+      if (tasks.length === 0) return;
 
-    setForm((f) => ({
-      ...f,
-      lines: [
-        ...f.lines,
-        ...tasks.map((task) => emptyLine(undefined, task, initialDate)),
-      ],
-    }));
+      setForm((f) => ({
+        ...f,
+        lines: [
+          ...f.lines,
+          ...tasks.map((task) => emptyLine(undefined, task, initialDate)),
+        ],
+      }));
 
-    void ensureProjectRanges(tasks.map((task) => task.project));
-    void syncActivityRates(tasks.map((task) => task.activity_type ?? ""));
-  },
-  [syncActivityRates, ensureProjectRanges],
-);
+      void ensureProjectRanges(tasks.map((task) => task.project));
+      void syncActivityRates(tasks.map((task) => task.activity_type ?? ""));
+    },
+    [syncActivityRates, ensureProjectRanges],
+  );
 
   const updateLine = useCallback(
     (id: string, patch: Partial<TimesheetLineDraft>) => {
@@ -769,29 +784,30 @@ const addLines = useCallback(
     setForm((f) => ({ ...f, lines: f.lines.filter((l) => !idSet.has(l.id)) }));
   }, []);
 
-const duplicateLine = useCallback(
-  (id: string, position: DuplicatePosition = "after") => {
-    setForm((f) => {
-      const idx = f.lines.findIndex((line) => line.id === id);
-      if (idx === -1) return f;
+  const duplicateLine = useCallback(
+    (id: string, position: DuplicatePosition = "after") => {
+      setForm((f) => {
+        const idx = f.lines.findIndex((line) => line.id === id);
+        if (idx === -1) return f;
 
-      const source = f.lines[idx];
+        const source = f.lines[idx];
 
-      const copy: TimesheetLineDraft = {
-        ...source,
-        id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        logName: undefined,
-        isEditing: true,
-      };
+        const copy: TimesheetLineDraft = {
+          ...source,
+          id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          logName: undefined,
+          isEditing: true,
+        };
 
-      const lines = [...f.lines];
-      lines.splice(position === "end" ? lines.length : idx + 1, 0, copy);
+        const lines = [...f.lines];
+        lines.splice(position === "end" ? lines.length : idx + 1, 0, copy);
 
-      return { ...f, lines };
-    });
-  },
-  [],
-);
+        return { ...f, lines };
+      });
+    },
+    [],
+  );
+
   const sortLines = useCallback((direction: "asc" | "desc") => {
     setForm((f) => {
       const key = (l: TimesheetLineDraft) =>

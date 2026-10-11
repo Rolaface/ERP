@@ -7,6 +7,7 @@ import { Option } from "../../../../components/selects/tabelselect/MultiSearchSe
 interface AssigneeCellProps {
   emails: string[];
   disabled?: boolean;
+  lockedReason?: string;
   fetchOptions: (q: string) => Promise<Option[]>;
   onChange: (nextEmails: string[], description?: string) => void | Promise<void>;
   onTake?: () => void | Promise<void>;
@@ -57,11 +58,13 @@ const DEBOUNCE_DELAY = 350;
 const AssigneeCell: React.FC<AssigneeCellProps> = ({
   emails,
   disabled,
+  lockedReason,
   fetchOptions,
   onChange,
   onTake,
-  currentUserEmail,
 }) => {
+  const locked = !!lockedReason;
+
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{
     top?: number;
@@ -154,7 +157,7 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
   }, []);
 
   const openPopover = () => {
-    if (disabled || saving) return;
+    if (disabled || locked || saving) return;
     setShowTooltip(false);
 
     const initialMap: Record<string, Option> = {};
@@ -226,45 +229,24 @@ const AssigneeCell: React.FC<AssigneeCellProps> = ({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, saving]);
 
-  const selfAssigned = !!currentUserEmail && emails.includes(currentUserEmail);
+  useEffect(() => {
+    if (locked && !saving) setOpen(false);
+  }, [locked, saving]);
 
-  // const toggleEmail = (opt: Option) => {
-  //   setPendingEmails((prev) => {
-  //     if (prev.includes(opt.value)) {
-  //       return prev.filter((v) => v !== opt.value);
-  //     }
-  //     if (!selfAssigned) return [...prev, opt.value];
+  const toggleEmail = (opt: Option) => {
+    setPendingEmails((prev) => {
+      if (prev.includes(opt.value)) {
+        return prev.filter((v) => v !== opt.value);
+      }
+      return [...prev, opt.value];
+    });
 
-  //     const isSelf = opt.value === currentUserEmail;
-  //     const hasNewOthers = prev.some(
-  //       (v) => v !== currentUserEmail && !emails.includes(v),
-  //     );
+    setPendingOptionsMap((prev) => ({
+      ...prev,
+      [opt.value]: opt,
+    }));
+  };
 
-  //     if (isSelf) return hasNewOthers ? prev : [...prev, opt.value];
-
-  //     const isNewOther = !emails.includes(opt.value);
-  //     const base = isNewOther
-  //       ? prev.filter((v) => v !== currentUserEmail)
-  //       : prev;
-  //     return [...base, opt.value];
-  //   });
-  //   setPendingOptionsMap((prev) => ({ ...prev, [opt.value]: opt }));
-  // };
-
-const toggleEmail = (opt: Option) => {
-  setPendingEmails((prev) => {
-    if (prev.includes(opt.value)) {
-      return prev.filter((v) => v !== opt.value);
-    }
-
-    return [...prev, opt.value];
-  });
-
-  setPendingOptionsMap((prev) => ({
-    ...prev,
-    [opt.value]: opt,
-  }));
-};
   const handleCancel = () => {
     if (saving) return;
     setOpen(false);
@@ -309,70 +291,57 @@ const toggleEmail = (opt: Option) => {
   const overflow = emails.length - visible.length;
   const hasAssignees = emails.length > 0;
 
-const takeButton = onTake ? (
-  <button
-    type="button"
-    onClick={handleTake}
-    onDoubleClick={(e) => e.stopPropagation()}
-    disabled={taking}
-    title={
-      hasAssignees ? "Add yourself to this task" : "Assign this task to yourself"
-    }
-    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/40 bg-primary/10 font-semibold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60 ${
-      hasAssignees ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-[11px]"
-    }`}
-  >
-    {taking ? (
-      <Loader2 size={12} className="animate-spin" />
-    ) : (
-      <UserPlus size={12} />
-    )}
-    {taking ? "Joining..." : hasAssignees ? "Join" : "Take task"}
-  </button>
-) : null;
+  const takeButton = onTake ? (
+    <button
+      type="button"
+      onClick={handleTake}
+      onDoubleClick={(e) => e.stopPropagation()}
+      disabled={taking}
+      title={
+        hasAssignees
+          ? "Add yourself to this task"
+          : "Assign this task to yourself"
+      }
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/40 bg-primary/10 font-semibold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60 ${
+        hasAssignees ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-[11px]"
+      }`}
+    >
+      {taking ? (
+        <Loader2 size={12} className="animate-spin" />
+      ) : (
+        <UserPlus size={12} />
+      )}
+      {taking ? "Joining..." : hasAssignees ? "Join" : "Take task"}
+    </button>
+  ) : null;
 
-if (!hasAssignees && takeButton) return takeButton;
-
-  if (emails.length === 0 && onTake) {
-    return (
-      <button
-        type="button"
-        onClick={handleTake}
-        onDoubleClick={(e) => e.stopPropagation()}
-        disabled={taking}
-        title="Assign this task to yourself"
-        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {taking ? (
-          <Loader2 size={12} className="animate-spin" />
-        ) : (
-          <UserPlus size={12} />
-        )}
-        {taking ? "Taking..." : "Take task"}
-      </button>
-    );
-  }
+  if (!hasAssignees && takeButton) return takeButton;
 
   return (
     <>
       <button
         ref={triggerRef}
         type="button"
-        aria-disabled={disabled || undefined}
+        title={lockedReason}
+        aria-disabled={disabled || locked || undefined}
         onClick={(e) => {
           e.stopPropagation();
-          if (disabled) return;
+          if (disabled || locked) return;
           openPopover();
         }}
         onDoubleClick={(e) => e.stopPropagation()}
         onMouseEnter={emails.length > 0 ? handleMouseEnter : undefined}
         onMouseLeave={emails.length > 0 ? handleMouseLeave : undefined}
         className={`relative flex items-center min-w-[120px] text-left ${
-          disabled ? "cursor-default" : "cursor-pointer"
+          disabled
+            ? "cursor-default"
+            : locked
+              ? "cursor-not-allowed opacity-50"
+              : "cursor-pointer"
         }`}
       >
         {emails.length === 0 ? (
-          disabled ? (
+          disabled && !locked ? (
             <span className="text-xs text-muted">Unassigned</span>
           ) : (
             <span className="flex items-center gap-1 text-xs text-muted border border-dashed border-theme rounded-full px-2.5 py-1 hover:text-main hover:border-main">
@@ -444,7 +413,10 @@ if (!hasAssignees && takeButton) return takeButton;
                   const [bg, fg] = getAvatarColors(email);
 
                   return (
-                    <div key={email} className="flex items-center gap-2.5 min-w-0">
+                    <div
+                      key={email}
+                      className="flex items-center gap-2.5 min-w-0"
+                    >
                       <span
                         className="flex shrink-0 items-center justify-center rounded-full"
                         style={{
@@ -541,7 +513,9 @@ if (!hasAssignees && takeButton) return takeButton;
               ))}
 
               {isLoading && (
-                <div className="px-3 py-2 text-[12px] text-muted">Loading...</div>
+                <div className="px-3 py-2 text-[12px] text-muted">
+                  Loading...
+                </div>
               )}
 
               {!isLoading &&

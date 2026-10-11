@@ -23,7 +23,12 @@ export type TaskRow = TaskEntry & {
   _depth: number;
   _guides: boolean[];
   _isLast: boolean;
+  _childCount: number;
 };
+
+/** Ancestor rows the API sends only so the hierarchy renders; not actionable. */
+export const isContextTask = (task: TaskEntry): boolean =>
+  Boolean((task as TaskEntry & { context_only?: boolean }).context_only);
 
 export const STATUS_OPTIONS = [
   { label: "Open", value: "Open" },
