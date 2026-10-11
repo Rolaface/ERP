@@ -82,13 +82,13 @@ export function validateTimesheet({
       return `Please select a project in entry ${row}.`;
     }
 
-    if (!line.task) {
-      return `Please select a task in entry ${row}.`;
-    }
+    // if (!line.task) {
+    //   return `Please select a task in entry ${row}.`;
+    // }
 
-    if (!line.activity_type) {
-      return `Activity Type is required in entry ${row}.`;
-    }
+    // if (!line.activity_type) {
+    //   return `Activity Type is required in entry ${row}.`;
+    // }
 
     if (!line.date || !line.to_date) {
       return `Please select dates in entry ${row}.`;

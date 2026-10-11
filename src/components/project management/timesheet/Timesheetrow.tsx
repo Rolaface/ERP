@@ -1,6 +1,7 @@
 import React from "react";
 import { MoreVertical } from "lucide-react";
 import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
+import TaskSelect from "../../../components/selects/project/Taskselect";
 import {
   fetchActivityTypeOptions,
   fetchTaskOptions,
@@ -85,13 +86,16 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
       )}
 
       <td className="p-2 ts-field min-w-0">
-        <SearchSelect2
+        <TaskSelect
           label=""
           value={line.task_name}
+          selectedValue={line.task}
           disabled={!line.project}
           fetchOptions={(q) => fetchTaskOptions(line.project, q, isEmployee)}
           onChange={(val, opt) => handlers.onTask(line.id, val, opt)}
-          placeholder={line.project ? "Task" : "Select project first"}
+          placeholder={line.project ? "Search task" : "Select project first"}
+          dropdownMinWidth={400}
+          dropdownMaxWidth={480}
           required
         />
       </td>

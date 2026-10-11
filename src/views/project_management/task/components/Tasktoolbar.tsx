@@ -34,6 +34,7 @@ export const MultiSelectFilter: React.FC<{
   onChange: (values: string[]) => void;
   searchable?: boolean;
   searchPlaceholder?: string;
+  single?: boolean;
 }> = ({
   label,
   icon,
@@ -42,6 +43,7 @@ export const MultiSelectFilter: React.FC<{
   onChange,
   searchable,
   searchPlaceholder = "Search...",
+  single,
 }) => {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -60,8 +62,19 @@ export const MultiSelectFilter: React.FC<{
     ? options.filter((o) => o.label.toLowerCase().includes(q.trim().toLowerCase()))
     : options;
 
-  const toggle = (v: string) =>
+  const toggle = (v: string) => {
+    if (single) {
+      onChange(values.includes(v) ? [] : [v]);
+      setOpen(false);
+      return;
+    }
     onChange(values.includes(v) ? values.filter((x) => x !== v) : [...values, v]);
+  };
+
+  const buttonLabel =
+    single && values.length === 1
+      ? (options.find((o) => o.value === values[0])?.label ?? label)
+      : label;
 
   return (
     <div ref={ref} className="relative">
@@ -77,8 +90,8 @@ export const MultiSelectFilter: React.FC<{
         }`}
       >
         {icon}
-        {label}
-        {values.length > 0 && (
+        <span className="max-w-[140px] truncate">{buttonLabel}</span>
+        {!single && values.length > 0 && (
           <span className="rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-4 text-white">
             {values.length}
           </span>
@@ -99,7 +112,7 @@ export const MultiSelectFilter: React.FC<{
               />
             </div>
           )}
-          <div role="listbox" aria-multiselectable className="max-h-64 overflow-auto">
+          <div role="listbox" aria-multiselectable={!single} className="max-h-64 overflow-auto">
             {shown.length === 0 && (
               <p className="px-3 py-2 text-xs text-muted">No options</p>
             )}

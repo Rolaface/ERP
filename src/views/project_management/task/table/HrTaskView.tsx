@@ -20,6 +20,7 @@ import {
   TaskSearchInput,
 } from "../components/Tasktoolbar";
 import {
+  fetchProjectAssigneeOptions,
   fetchProjectOptions,
   fetchUserOptions,
 } from "../components/Taskoptionfetchers";
@@ -33,6 +34,7 @@ import {
   TASK_MODULE,
   TIMESHEET_MODULE,
   VIEW_OPTIONS,
+  isContextTask,
 } from "../components/Tasktable.config";
 import { useAssignedTaskNames } from "../../../../hooks/project_management/task/table/Useassignedtasknames";
 import { useTaskDrawer } from "../../../../hooks/project_management/task/table/Usetaskdrawer";
@@ -54,7 +56,6 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
   const isProfessional = viewMode === "professional";
   const isEmployee = viewMode === "employee";
 
-  const canCreateTask = can(TASK_MODULE, "create");
   const canWriteTask = can(TASK_MODULE, "write");
   const canLogTime = can(TIMESHEET_MODULE, "create");
   const canBulkSelect = canLogTime || canWriteTask;
@@ -77,11 +78,16 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
   const tree = useTaskTree({
     tasks: list.tasks,
     setTasks: list.setTasks,
-    loadVersion: list.loadVersion,
-    flat: list.assigneeActive,
+    resetKey: JSON.stringify([
+      list.page,
+      list.pageSize,
+      list.searchValue,
+      list.statusFilter,
+      list.projectFilter,
+      list.assigneeFilter,
+    ]),
   });
-
-  const selection = useTaskSelection({ childrenMap: tree.childrenMap });
+  const selection = useTaskSelection({ childrenOf: tree.childrenOf });
   const assigned = useAssignedTaskNames(isEmployee, currentUserEmail);
 
   const visibleAssignees = useMemo(
@@ -114,6 +120,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     isEmployee,
     view,
     changeStatus: mutations.changeStatus,
+    assignTask: mutations.assignTask,
   });
 
   const timeLog = useTaskTimeLog({
@@ -139,6 +146,8 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
       subscribeToRefresh(REFRESH_KEYS.TASK_LIST, () => refreshRef.current()),
     [subscribeToRefresh],
   );
+
+  const pendingFocusRef = useRef<string | null>(null);
 
   const modeInitRef = useRef(true);
   useEffect(() => {
@@ -168,8 +177,6 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
       list.statusFilter,
       list.projectFilter,
       list.assigneeFilter,
-      list.sortBy,
-      list.sortOrder,
     ]);
     const names = new Set(list.tasks.map((t) => t.name));
     const previous = lastLoadRef.current;
@@ -184,15 +191,27 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     lastLoadRef.current = { signature, names };
   }, [list.loadVersion]);
 
+  useEffect(() => {
+    const target = pendingFocusRef.current;
+    if (!target || list.loadVersion === 0) return;
+
+    const byName = new Map(list.tasks.map((t) => [t.name, t]));
+    if (!byName.has(target)) return;
+
+    const chain: string[] = [];
+    let parent = byName.get(target)?.parent_task;
+    while (parent && byName.has(parent) && !chain.includes(parent)) {
+      chain.push(parent);
+      parent = byName.get(parent)?.parent_task;
+    }
+
+    pendingFocusRef.current = null;
+    if (chain.length) tree.expandGroups(chain);
+  }, [list.loadVersion, list.tasks]);
+
   const rows = useMemo(
-    () =>
-      buildTaskRows(
-        list.tasks,
-        tree.childrenMap,
-        tree.expanded,
-        list.assigneeActive,
-      ),
-    [list.tasks, tree.childrenMap, tree.expanded, list.assigneeActive],
+    () => buildTaskRows(list.tasks, tree.childrenByParent, tree.expanded),
+    [list.tasks, tree.childrenByParent, tree.expanded],
   );
 
   const noteTaskNames = useMemo(() => {
@@ -208,24 +227,24 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     userEmail: isEmployee ? currentUserEmail : undefined,
   });
 
-  const allSelected = rows.length > 0 && rows.every((r) => selection.isSelected(r));
-  const someSelected = rows.some((r) => selection.isSelected(r));
+  const selectableRows = rows.filter((r) => !isContextTask(r));
+  const allSelected =
+    selectableRows.length > 0 && selectableRows.every(selection.isSelected);
+  const someSelected = selectableRows.some(selection.isSelected);
 
   const selectionApi: TaskSelectionApi = {
     enabled: canBulkSelect,
-    isSelected: (t) => selection.isSelected(t),
-
-    onToggle: (t) => selection.handleRowSelect(t, !selection.isSelected(t)),
+    count: selection.selected.size,
+    isSelected: selection.isSelected,
+    onToggle: selection.handleRowSelect,
     allSelected,
     someSelected,
-    onToggleAll: () => selection.handleSelectAll(rows, !allSelected),
+    onToggleAll: () => selection.handleSelectAll(selectableRows, !allSelected),
   };
 
   const allColumns = buildTaskColumns({
     expanded: tree.expanded,
-    loadingGroups: tree.loadingGroups,
-    childrenMap: tree.childrenMap,
-    assigneeActive: list.assigneeActive,
+    childrenOf: tree.childrenOf,
     canWriteTask,
     canLogTime,
     currentUserEmail,
@@ -243,15 +262,47 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     ? allColumns.filter((c) => c.id !== "progress")
     : allColumns;
 
-  const handleAdd = () => {
-    if (!canCreateTask) return;
-    console.warn("handleAdd: Task create modal not wired yet.");
-  };
+  const fetchBulkAssigneeOptions = useCallback(
+    async (q: string) => {
+      const projects = Array.from(
+        new Set(
+          selection.pickedTasks
+            .map((t) => t.project)
+            .filter((p): p is string => Boolean(p)),
+        ),
+      );
+      if (projects.length === 0) return [];
+
+      const lists = await Promise.all(
+        projects.map((project) => fetchProjectAssigneeOptions(project, q)),
+      );
+      const [first, ...rest] = lists;
+      const shared = rest.map((list) => new Set(list.map((o) => o.value)));
+      return first.filter((o) => shared.every((values) => values.has(o.value)));
+    },
+    [selection.pickedTasks],
+  );
 
   const hasLoggable = selection.pickedTasks.some((t) => t.is_group !== 1);
 
+  const handleViewChange = (next: TaskMode) => {
+    if (next === "table") {
+      if (list.projectFilter.length > 1) {
+        list.changeProjectFilter(list.projectFilter.slice(0, 1));
+      }
+      if (!isEmployee && list.assigneeFilter.length > 1) {
+        list.changeAssigneeFilter(list.assigneeFilter.slice(0, 1));
+      }
+    }
+    setView(next);
+  };
+
   const viewSelector = (
-    <ViewSelector value={view} options={VIEW_OPTIONS} onChange={setView} />
+    <ViewSelector
+      value={view}
+      options={VIEW_OPTIONS}
+      onChange={handleViewChange}
+    />
   );
 
   const hasActiveFilters =
@@ -261,10 +312,22 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     (isProfessional && list.assigneeFilter.length > 0);
 
   const clearFilters = () => {
+    pendingFocusRef.current = null;
     list.setSearchValue("");
     list.changeStatusFilter([]);
     list.changeProjectFilter([]);
     if (isProfessional) list.changeAssigneeFilter([]);
+  };
+
+  const handleDependencyClick = (taskName: string) => {
+    drawer.close();
+    list.changeStatusFilter([]);
+    list.changeProjectFilter([]);
+    if (isProfessional) list.changeAssigneeFilter([]);
+    list.setPage(1);
+    pendingFocusRef.current = taskName;
+    list.setSearchValue(taskName);
+    setView("table");
   };
 
   return (
@@ -297,92 +360,92 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
         </div>
       ) : (
         <div style={{ height: CONTENT_HEIGHT }}>
-        <TaskTreeTable
-          tableId="hr-task"
-          columns={columns}
-          data={rows}
-          getRowId={(row) => row.name}
-          loading={list.isInitialLoad}
-          fetching={list.isFetching}
-          sortBy={list.sortBy}
-          sortOrder={list.sortOrder}
-          onSortChange={list.changeSort}
-          onRowDoubleClick={(t) => drawer.handleView(t.name)}
-          toolbar={
-            <>
-              <TaskSearchInput
-                value={list.searchValue}
-                onChange={list.setSearchValue}
-              />
-              <MultiSelectFilter
-                label="Status"
-                options={STATUS_OPTIONS}
-                values={list.statusFilter}
-                onChange={list.changeStatusFilter}
-              />
-              <MultiSelectFilter
-                label="Project"
-                options={filterOptions.projectFilterOptions}
-                values={list.projectFilter}
-                onChange={list.changeProjectFilter}
-                searchable
-                searchPlaceholder="Search project..."
-              />
-              {isProfessional && (
-                <MultiSelectFilter
-                  label="Assignee"
-                  options={filterOptions.userFilterOptions}
-                  values={list.assigneeFilter}
-                  onChange={list.changeAssigneeFilter}
-                  searchable
-                  searchPlaceholder="Search employee..."
+          <TaskTreeTable
+            tableId="hr-task"
+            columns={columns}
+            data={rows}
+            getRowId={(row) => row.name}
+            loading={list.isInitialLoad}
+            fetching={list.isFetching}
+            rowClassName={(row) => (isContextTask(row) ? "opacity-60" : "")}
+            onRowDoubleClick={(t) => drawer.handleView(t.name)}
+            toolbar={
+              <>
+                <TaskSearchInput
+                  value={list.searchValue}
+                  onChange={list.setSearchValue}
                 />
-              )}
-
-              <div className="ml-auto flex items-center gap-2">
-                {selection.selected.size > 0 && (
-                  <>
-                    <button
-                      onClick={selection.clear}
-                      className="h-9 rounded-lg border border-[var(--border)] px-3 text-sm font-medium text-main transition-colors hover:bg-row-hover"
-                    >
-                      Clear selection
-                    </button>
-                    <BulkActionsMenu
-                      count={selection.selected.size}
-                      onAddLog={
-                        canLogTime && hasLoggable
-                          ? timeLog.logSelected
-                          : undefined
-                      }
-                      assign={
-                        canWriteTask
-                          ? {
-                              fetchOptions: fetchUserOptions,
-                              onSubmit: mutations.bulkAssign,
-                            }
-                          : undefined
-                      }
-                    />
-                  </>
+                <MultiSelectFilter
+                  label="Status"
+                  options={STATUS_OPTIONS}
+                  values={list.statusFilter}
+                  onChange={list.changeStatusFilter}
+                />
+                <MultiSelectFilter
+                  single
+                  label="Project"
+                  options={filterOptions.projectFilterOptions}
+                  values={list.projectFilter}
+                  onChange={list.changeProjectFilter}
+                  searchable
+                  searchPlaceholder="Search project..."
+                />
+                {isProfessional && (
+                  <MultiSelectFilter
+                    single
+                    label="Assignee"
+                    options={filterOptions.userFilterOptions}
+                    values={list.assigneeFilter}
+                    onChange={list.changeAssigneeFilter}
+                    searchable
+                    searchPlaceholder="Search employee..."
+                  />
                 )}
-                {viewSelector}
-              </div>
 
-              <ClearFiltersButton
-                onClick={clearFilters}
-                disabled={!hasActiveFilters}
-              />
-            </>
-          }
-          page={list.page}
-          totalPages={list.totalPages}
-          pageSize={list.pageSize}
-          totalItems={list.totalItems}
-          pageSizeOptions={PAGE_SIZE_OPTIONS}
-          onPageSizeChange={list.changePageSize}
-          onPageChange={list.setPage}
-        />
+                <div className="ml-auto flex items-center gap-2">
+                  {selection.selected.size > 0 && (
+                    <>
+                      <button
+                        onClick={selection.clear}
+                        className="h-9 rounded-lg border border-[var(--border)] px-3 text-sm font-medium text-main transition-colors hover:bg-row-hover"
+                      >
+                        Clear selection
+                      </button>
+                      <BulkActionsMenu
+                        count={selection.selected.size}
+                        onAddLog={
+                          canLogTime && hasLoggable
+                            ? timeLog.logSelected
+                            : undefined
+                        }
+                        assign={
+                          canWriteTask
+                            ? {
+                                fetchOptions: fetchBulkAssigneeOptions,
+                                onSubmit: mutations.bulkAssign,
+                              }
+                            : undefined
+                        }
+                      />
+                    </>
+                  )}
+                  {viewSelector}
+                </div>
+
+                <ClearFiltersButton
+                  onClick={clearFilters}
+                  disabled={!hasActiveFilters}
+                />
+              </>
+            }
+            page={list.page}
+            totalPages={list.totalPages}
+            pageSize={list.pageSize}
+            totalItems={list.totalItems}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageSizeChange={list.changePageSize}
+            onPageChange={list.setPage}
+          />
         </div>
       )}
 
@@ -395,6 +458,12 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
         actionLoading={drawer.actionLoading}
         onClose={drawer.close}
         onStatusChange={drawer.handleStatusChange}
+        onDependencyClick={handleDependencyClick}
+        canAssign={canWriteTask}
+        assignOnlyOwn={isEmployee}
+        currentUserEmail={currentUserEmail}
+        dependencyInfo={drawer.dependencyInfo}
+        onAssigneesChange={drawer.handleAssign}
         assignmentNotes={drawer.data ? notesByTask[drawer.data.name] : undefined}
         showNoteUser={!isEmployee}
       />

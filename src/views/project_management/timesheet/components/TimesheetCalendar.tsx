@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { showApiError, showDayOffToast } from "../../../../utils/alert";
 import {
   getCalendarDetails,
@@ -11,7 +11,9 @@ import type {
 import type { TimesheetModalRestrictions } from "../../../../hooks/project_management/timeheet/form/useTimesheetModal";
 import { useDayOffs } from "../../../../hooks/project_management/timeheet/useDayOffs";
 import type { MultiSelectOption } from "../../../../components/ui/modal/MultiSelectFilter";
-import TimesheetMatrix from "./Timesheetmatrix";
+import TimesheetMatrix, {
+  type TimesheetMatrixStatus,
+} from "./Timesheetmatrix";
 import { DAY_OFF_TONE } from "./DayOffChip";
 import { WEEKLY_OFF_COLOR } from "./Weeklyoff";
 import {
@@ -80,6 +82,8 @@ const TimesheetCalendar: React.FC<Props> = ({
   const [summary, setSummary] = useState<CalendarSummaryCell[]>([]);
   const [projectFilter, setProjectFilter] = useState("");
   const [activityFilter, setActivityFilter] = useState("");
+  const [matrixStatus, setMatrixStatus] =
+    useState<TimesheetMatrixStatus>("ALL");
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
@@ -117,6 +121,7 @@ const TimesheetCalendar: React.FC<Props> = ({
   const toDate = toYMD(visibleDays[visibleDays.length - 1]);
   const todayKey = toYMD(new Date());
   const showMatrix = canViewAll && view !== "list";
+  const excludeDraft = matrixStatus === "submitted";
 
   const dayOffs = useDayOffs(fromDate, toDate, canViewAll);
 
@@ -130,7 +135,7 @@ const TimesheetCalendar: React.FC<Props> = ({
           toDate,
           matrixGranularity,
           activeEmployees.length ? activeEmployees : undefined,
-          canViewAll,
+          excludeDraft,
           { project: projectFilter, activityType: activityFilter },
         ).then((data) => {
           if (!cancelled) setSummary(data);
@@ -152,9 +157,11 @@ const TimesheetCalendar: React.FC<Props> = ({
     matrixGranularity,
     reloadKey,
     employeeKey,
+    activeEmployees,
     canViewAll,
     projectFilter,
     activityFilter,
+    excludeDraft,
   ]);
 
   const eventsByDay = useMemo(() => buildEventsByDay(entries), [entries]);
@@ -162,9 +169,13 @@ const TimesheetCalendar: React.FC<Props> = ({
   const rangeTotal = useMemo(
     () =>
       canViewAll
-        ? summary.reduce((sum, c) => sum + c.approved_hours + c.draft_hours, 0)
+        ? summary.reduce(
+            (sum, c) =>
+              sum + c.approved_hours + (excludeDraft ? 0 : c.draft_hours),
+            0,
+          )
         : entries.reduce((sum, e) => sum + e.hours, 0),
-    [canViewAll, summary, entries],
+    [canViewAll, summary, entries, excludeDraft],
   );
 
   const dayData: DayData = {
@@ -281,10 +292,13 @@ const TimesheetCalendar: React.FC<Props> = ({
     openTimesheetForm({ timesheetId, onSuccess: reload });
   };
 
-  const handleServerFilters = (project: string, activityType: string) => {
-    setProjectFilter(project);
-    setActivityFilter(activityType);
-  };
+  const handleServerFilters = useCallback(
+    (project: string, activityType: string) => {
+      setProjectFilter(project);
+      setActivityFilter(activityType);
+    },
+    [],
+  );
 
   const handleMatrixCellClick = (
     employeeId: string,
@@ -313,6 +327,8 @@ const TimesheetCalendar: React.FC<Props> = ({
           cells={summary}
           todayKey={todayKey}
           granularity={matrixGranularity}
+          status={matrixStatus}
+          onStatusChange={setMatrixStatus}
           onCellClick={handleMatrixCellClick}
           onEditDraft={canEdit ? openEditModal : undefined}
           onFiltersChange={handleServerFilters}

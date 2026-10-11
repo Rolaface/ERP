@@ -5,7 +5,6 @@ import {
   ChevronRight,
   Folder,
   FolderOpen,
-  Loader2,
   Minus,
 } from "lucide-react";
 
@@ -136,7 +135,6 @@ export interface TaskTreeCellProps {
   guides: boolean[];
   isLast: boolean;
   expanded?: boolean;
-  loading?: boolean;
   childCount?: number;
   showToggle?: boolean;
   onToggle?: () => void;
@@ -157,7 +155,6 @@ export const TaskTreeCell: React.FC<TaskTreeCellProps> = ({
   guides,
   isLast,
   expanded,
-  loading,
   childCount = 0,
   showToggle = true,
   onToggle,
@@ -230,9 +227,7 @@ export const TaskTreeCell: React.FC<TaskTreeCellProps> = ({
               }}
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100"
             >
-              {loading ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : expanded ? (
+              {expanded ? (
                 <ChevronDown size={16} />
               ) : (
                 <ChevronRight size={16} />

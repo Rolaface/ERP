@@ -31,10 +31,6 @@ export const useTaskList = ({ view, isEmployee, currentUserEmail }: Args) => {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [projectFilter, setProjectFilter] = useState<string[]>([]);
   const [assigneeFilter, setAssigneeFilter] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-
-  const assigneeActive = isEmployee || assigneeFilter.length > 0;
 
   useEffect(() => {
     if (searchValue === search) return;
@@ -53,6 +49,9 @@ export const useTaskList = ({ view, isEmployee, currentUserEmail }: Args) => {
     const isLatest = () =>
       mountedRef.current && requestId === requestIdRef.current;
 
+    // Employees only ever see their own tasks. Professionals see everything
+    // unless they pick an assignee; never send their own email by default,
+    // otherwise the backend drops out of "all tasks" mode.
     const assignees = isEmployee
       ? [currentUserEmail as string]
       : assigneeFilter.length
@@ -68,10 +67,12 @@ export const useTaskList = ({ view, isEmployee, currentUserEmail }: Args) => {
         statusFilter.length ? statusFilter : undefined,
         projectFilter.length ? projectFilter : undefined,
         search || undefined,
-        sortBy || undefined,
-        sortOrder,
+        undefined,
+        "desc",
         assignees,
-        isEmployee,
+        false,
+        undefined,
+        isEmployee ? currentUserEmail : undefined,
       );
 
       if (!isLatest()) return;
@@ -98,8 +99,6 @@ export const useTaskList = ({ view, isEmployee, currentUserEmail }: Args) => {
     statusFilter,
     projectFilter,
     assigneeFilter,
-    sortBy,
-    sortOrder,
   ]);
 
   useEffect(() => {
@@ -131,15 +130,6 @@ export const useTaskList = ({ view, isEmployee, currentUserEmail }: Args) => {
     setPage(1);
   }, []);
 
-  const changeSort = useCallback(
-    (nextSortBy: string, nextSortOrder: "asc" | "desc") => {
-      setSortBy(nextSortBy);
-      setSortOrder(nextSortOrder);
-      setPage(1);
-    },
-    [],
-  );
-
   return {
     tasks,
     setTasks,
@@ -161,10 +151,6 @@ export const useTaskList = ({ view, isEmployee, currentUserEmail }: Args) => {
     assigneeFilter,
     changeAssigneeFilter,
     resetAssigneeFilter,
-    sortBy,
-    sortOrder,
-    changeSort,
-    assigneeActive,
     reload,
   };
 };

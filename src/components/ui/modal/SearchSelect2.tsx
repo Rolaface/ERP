@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { Check } from "lucide-react";
 
 export type Option = {
   label: string;
@@ -18,6 +19,7 @@ export type Option = {
 interface SearchSelectProps {
   label: string;
   value?: string;
+  selectedValue?: string;
   onChange: (value: string, option: Option) => void;
   fetchOptions: (q: string) => Promise<Option[]>;
   placeholder?: string;
@@ -27,6 +29,9 @@ interface SearchSelectProps {
   allowCustomInput?: boolean;
   loading?: boolean;
   onInputChange?: (input: string) => void;
+  optionVariant?: "default" | "task";
+  dropdownMinWidth?: number;
+  dropdownMaxWidth?: number;
 }
 
 interface DropdownPos {
@@ -42,11 +47,14 @@ const MIN_SEARCH_LENGTH = 2;
 const DROPDOWN_MAX_HEIGHT = 208;
 const DROPDOWN_GAP = 2;
 const VIEWPORT_EDGE = 8;
+const DEFAULT_TASK_DROPDOWN_MIN_WIDTH = 400;
+const DEFAULT_TASK_DROPDOWN_MAX_WIDTH = 480;
 
 const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
   ({
     label,
     value,
+    selectedValue,
     onChange,
     onInputChange,
     fetchOptions,
@@ -56,6 +64,9 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
     required,
     allowCustomInput,
     loading,
+    optionVariant = "default",
+    dropdownMinWidth,
+    dropdownMaxWidth,
   }) => {
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -138,15 +149,32 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
 
       const available = Math.max(openUp ? spaceAbove : spaceBelow, 80);
 
+      const preferredMin =
+        dropdownMinWidth ??
+        (optionVariant === "task" ? DEFAULT_TASK_DROPDOWN_MIN_WIDTH : 0);
+      const preferredMax =
+        dropdownMaxWidth ??
+        (optionVariant === "task" ? DEFAULT_TASK_DROPDOWN_MAX_WIDTH : rect.width);
+      const viewportWidth = window.innerWidth - VIEWPORT_EDGE * 2;
+      const width = Math.min(
+        Math.max(rect.width, preferredMin),
+        preferredMax,
+        viewportWidth,
+      );
+      const left = Math.min(
+        Math.max(rect.left, VIEWPORT_EDGE),
+        window.innerWidth - width - VIEWPORT_EDGE,
+      );
+
       setDropdownPos({
-        left: rect.left,
-        width: rect.width,
+        left,
+        width,
         maxHeight: Math.min(DROPDOWN_MAX_HEIGHT, available),
         ...(openUp
           ? { bottom: window.innerHeight - rect.top + DROPDOWN_GAP }
           : { top: rect.bottom + DROPDOWN_GAP }),
       });
-    }, []);
+    }, [dropdownMaxWidth, dropdownMinWidth, optionVariant]);
 
     useLayoutEffect(() => {
       if (!open) return;
@@ -296,33 +324,71 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                 maxHeight: dropdownPos.maxHeight,
                 zIndex: 99999,
               }}
-              className="bg-card border border-theme rounded shadow-lg overflow-auto"
+              className={[
+                "bg-card border border-theme shadow-lg overflow-auto",
+                optionVariant === "task" ? "rounded-lg" : "rounded",
+              ].join(" ")}
             >
-              {options.map((opt) => (
-                <div
-                  key={opt.value || opt.label}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    requestIdRef.current += 1;
+              {options.map((opt) => {
+                const selected =
+                  selectedValue !== undefined
+                    ? opt.value === selectedValue
+                    : opt.label === value;
+                return (
+                  <div
+                    key={opt.value || opt.label}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      requestIdRef.current += 1;
 
-                    onChange(opt.value, opt);
-                    setSearch(opt.label);
-                    setIsCustom(false);
-                    userEditingRef.current = false;
-                    setOpen(false);
-                  }}
-                  className="px-3 py-2 cursor-pointer row-hover transition-colors"
-                >
-                  <span className="block text-[13px] text-main">
-                    {opt.label}
-                  </span>
-                  {opt.subLabel && (
-                    <span className="block text-[11px] text-muted leading-tight">
-                      {opt.subLabel}
-                    </span>
-                  )}
-                </div>
-              ))}
+                      onChange(opt.value, opt);
+                      setSearch(opt.label);
+                      setIsCustom(false);
+                      userEditingRef.current = false;
+                      setOpen(false);
+                    }}
+                    className={[
+                      "cursor-pointer transition-colors",
+                      optionVariant === "task"
+                        ? "border-b border-theme px-3.5 py-3 last:border-b-0 hover:bg-primary/5"
+                        : "px-3 py-2 row-hover",
+                      selected ? "bg-primary/10" : "",
+                    ].join(" ")}
+                  >
+                    {optionVariant === "task" ? (
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="min-w-0 flex-1">
+                          <span className="block text-[13px] font-medium leading-snug text-main">
+                            {opt.label}
+                          </span>
+                          {opt.subLabel && (
+                            <span className="mt-1 block truncate text-[11px] leading-tight text-muted">
+                              {opt.subLabel}
+                            </span>
+                          )}
+                        </div>
+                        {selected && (
+                          <Check
+                            size={14}
+                            className="mt-0.5 shrink-0 text-primary"
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <span className="block text-[13px] text-main">
+                          {opt.label}
+                        </span>
+                        {opt.subLabel && (
+                          <span className="block text-[11px] text-muted leading-tight">
+                            {opt.subLabel}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
               {options.length === 0 && (
                 <div className="px-3 py-2 text-[12px] text-muted">
                   No records found

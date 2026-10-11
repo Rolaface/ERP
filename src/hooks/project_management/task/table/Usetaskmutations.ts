@@ -150,16 +150,13 @@ export const useTaskMutations = ({
     [canWriteTask, patchTask, refreshParents, finalizeEmployeeAssignment],
   );
 
-  const changeAssignees = useCallback(
+  const assignTask = useCallback(
     async (
       taskName: string,
+      previousEmails: string[],
       requestedEmails: string[],
       description?: string,
-    ) => {
-      const task = findTask(taskName);
-      if (!task) return;
-
-      const previousEmails = parseAssignedEmails(task._assign);
+    ): Promise<string[]> => {
       const nextEmails = handOff(previousEmails, requestedEmails);
 
       try {
@@ -170,14 +167,17 @@ export const useTaskMutations = ({
           description,
         );
 
-        if (staysInView(nextEmails)) {
-          patchTask(taskName, { _assign: JSON.stringify(nextEmails) });
-        } else {
-          removeTask(taskName);
-          deselectTasks([taskName]);
+        if (findTask(taskName)) {
+          if (staysInView(nextEmails)) {
+            patchTask(taskName, { _assign: JSON.stringify(nextEmails) });
+          } else {
+            removeTask(taskName);
+            deselectTasks([taskName]);
+          }
         }
 
         showSuccess(result.message || "Assignees updated");
+        return nextEmails;
       } catch (error) {
         showApiError(error);
         throw error;
@@ -195,6 +195,25 @@ export const useTaskMutations = ({
       applyAssignees,
       triggerRefresh,
     ],
+  );
+
+  const changeAssignees = useCallback(
+    async (
+      taskName: string,
+      requestedEmails: string[],
+      description?: string,
+    ) => {
+      const task = findTask(taskName);
+      if (!task) return;
+
+      await assignTask(
+        taskName,
+        parseAssignedEmails(task._assign),
+        requestedEmails,
+        description,
+      );
+    },
+    [findTask, assignTask],
   );
 
   const bulkAssign = useCallback(
@@ -261,5 +280,5 @@ export const useTaskMutations = ({
     ],
   );
 
-  return { changeStatus, changeAssignees, bulkAssign };
+  return { changeStatus, changeAssignees, assignTask, bulkAssign };
 };

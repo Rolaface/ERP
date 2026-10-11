@@ -1,69 +1,96 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
+
 import { showApiError } from "../../../../utils/alert";
-import {
-  getChildTasks,
-  getTaskById,
-} from "../../../../api/project/task/taskapi";
+import { getTaskById } from "../../../../api/project/task/taskapi";
 import type { TaskEntry } from "../../../../types/Project_Management/task/table/Task.types";
+import { groupChildren } from "../../../../views/project_management/task/components/Taskrows";
 import { useIsMounted } from "./Useismounted";
 
 interface Args {
   tasks: TaskEntry[];
   setTasks: Dispatch<SetStateAction<TaskEntry[]>>;
-  loadVersion: number;
-  flat: boolean;
+  resetKey?: string;
 }
 
-export const useTaskTree = ({
-  tasks,
-  setTasks,
-  loadVersion,
-  flat,
-}: Args) => {
+export const useTaskTree = ({ tasks, setTasks, resetKey }: Args) => {
   const mountedRef = useIsMounted();
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [childrenMap, setChildrenMap] = useState<Record<string, TaskEntry[]>>(
-    {},
-  );
-  const [loadingGroups, setLoadingGroups] = useState<Set<string>>(new Set());
 
   const tasksRef = useRef(tasks);
   tasksRef.current = tasks;
-  const expandedRef = useRef(expanded);
-  expandedRef.current = expanded;
-  const childrenRef = useRef(childrenMap);
-  childrenRef.current = childrenMap;
-  const loadingRef = useRef(loadingGroups);
-  loadingRef.current = loadingGroups;
-  const flatRef = useRef(flat);
-  flatRef.current = flat;
-  const syncSeqRef = useRef(0);
 
-  const findTask = useCallback((name: string): TaskEntry | undefined => {
-    return (
-      tasksRef.current.find((t) => t.name === name) ??
-      Object.values(childrenRef.current)
-        .flat()
-        .find((t) => t.name === name)
+  const childrenByParent = useMemo(() => groupChildren(tasks), [tasks]);
+
+  const initializedRef = useRef(false);
+
+  useEffect(() => {
+    if (!tasks.length || initializedRef.current) return;
+
+    const firstFolder = tasks.find((task) =>
+      childrenByParent.has(task.name),
     );
+
+    if (!firstFolder) return;
+
+    setExpanded(new Set([firstFolder.name]));
+    initializedRef.current = true;
+  }, [tasks, childrenByParent]);
+
+  useEffect(() => {
+    initializedRef.current = false;
+    setExpanded(new Set());
+  }, [resetKey]);
+
+  const childrenOf = useCallback(
+    (name: string): TaskEntry[] => childrenByParent.get(name) ?? [],
+    [childrenByParent],
+  );
+
+  const toggleGroup = useCallback((name: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+
+      return next;
+    });
   }, []);
+
+  const expandGroups = useCallback((names: string[]) => {
+    setExpanded((prev) => {
+      if (names.every((name) => prev.has(name))) return prev;
+
+      const next = new Set(prev);
+      names.forEach((name) => next.add(name));
+
+      return next;
+    });
+  }, []);
+
+  const findTask = useCallback(
+    (name: string): TaskEntry | undefined =>
+      tasksRef.current.find((task) => task.name === name),
+    [],
+  );
 
   const patchTask = useCallback(
     (taskName: string, patch: Partial<TaskEntry>) => {
-      const apply = (list: TaskEntry[]) =>
-        list.map((t) => (t.name === taskName ? { ...t, ...patch } : t));
-      setTasks(apply);
-      setChildrenMap((prev) =>
-        Object.fromEntries(
-          Object.entries(prev).map(([key, list]) => [key, apply(list)]),
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.name === taskName ? { ...task, ...patch } : task,
         ),
       );
     },
@@ -72,29 +99,28 @@ export const useTaskTree = ({
 
   const removeTask = useCallback(
     (taskName: string) => {
-      setTasks((prev) => prev.filter((t) => t.name !== taskName));
-      setChildrenMap((prev) =>
-        Object.fromEntries(
-          Object.entries(prev).map(([key, list]) => [
-            key,
-            list.filter((t) => t.name !== taskName),
-          ]),
-        ),
-      );
+      setTasks((prev) => prev.filter((task) => task.name !== taskName));
     },
     [setTasks],
   );
 
   const refreshParents = useCallback(
     async (taskName: string) => {
-      if (flatRef.current) return;
-
+      const chain: string[] = [];
       let parent = findTask(taskName)?.parent_task;
-      while (parent) {
+
+      while (parent && !chain.includes(parent)) {
+        chain.push(parent);
+        parent = findTask(parent)?.parent_task;
+      }
+
+      for (const name of chain) {
         try {
-          const detail = await getTaskById(parent);
+          const detail = await getTaskById(name);
+
           if (!detail || !mountedRef.current) return;
-          patchTask(parent, {
+
+          patchTask(name, {
             status: detail.status,
             progress: detail.progress,
           });
@@ -102,112 +128,17 @@ export const useTaskTree = ({
           showApiError(error);
           return;
         }
-        parent = findTask(parent)?.parent_task;
       }
     },
-    [findTask, patchTask],
+    [findTask, patchTask, mountedRef],
   );
-
-  const toggleGroup = useCallback(async (groupName: string) => {
-    const isOpen = expandedRef.current.has(groupName);
-
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (isOpen) next.delete(groupName);
-      else next.add(groupName);
-      return next;
-    });
-
-    if (
-      isOpen ||
-      childrenRef.current[groupName] ||
-      loadingRef.current.has(groupName)
-    ) {
-      return;
-    }
-
-    setLoadingGroups((prev) => new Set(prev).add(groupName));
-
-    try {
-      const children = await getChildTasks(groupName);
-      if (!mountedRef.current) return;
-      setChildrenMap((prev) => ({ ...prev, [groupName]: children }));
-    } catch (error) {
-      showApiError(error);
-      setExpanded((prev) => {
-        const next = new Set(prev);
-        next.delete(groupName);
-        return next;
-      });
-    } finally {
-      if (mountedRef.current) {
-        setLoadingGroups((prev) => {
-          const next = new Set(prev);
-          next.delete(groupName);
-          return next;
-        });
-      }
-    }
-  }, []);
-
-  const syncExpanded = useCallback(async () => {
-    const seq = ++syncSeqRef.current;
-    const open = expandedRef.current;
-
-    if (flatRef.current || open.size === 0) {
-      setExpanded((prev) => (prev.size ? new Set() : prev));
-      setChildrenMap((prev) => (Object.keys(prev).length ? {} : prev));
-      return;
-    }
-
-    const nextMap: Record<string, TaskEntry[]> = {};
-    const nextExpanded = new Set<string>();
-    let frontier = tasksRef.current
-      .filter((t) => t.is_group === 1 && open.has(t.name))
-      .map((t) => t.name);
-
-    try {
-      while (frontier.length > 0) {
-        const results = await Promise.all(
-          frontier.map(
-            async (name) => [name, await getChildTasks(name)] as const,
-          ),
-        );
-        if (!mountedRef.current || seq !== syncSeqRef.current) return;
-
-        frontier = [];
-        results.forEach(([name, children]) => {
-          nextMap[name] = children;
-          nextExpanded.add(name);
-          children.forEach((child) => {
-            if (child.is_group === 1 && open.has(child.name)) {
-              frontier.push(child.name);
-            }
-          });
-        });
-      }
-    } catch (error) {
-      if (!mountedRef.current || seq !== syncSeqRef.current) return;
-      showApiError(error);
-      setExpanded(new Set());
-      setChildrenMap({});
-      return;
-    }
-
-    setChildrenMap(nextMap);
-    setExpanded(nextExpanded);
-  }, []);
-
-  useEffect(() => {
-    if (loadVersion === 0) return;
-    void syncExpanded();
-  }, [loadVersion]);
 
   return {
     expanded,
-    childrenMap,
-    loadingGroups,
+    childrenByParent,
+    childrenOf,
     toggleGroup,
+    expandGroups,
     findTask,
     patchTask,
     removeTask,

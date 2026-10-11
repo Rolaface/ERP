@@ -1,31 +1,14 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { showApiError } from "../../../../utils/alert";
-import { getChildTasks } from "../../../../api/project/task/taskapi";
 import type { TaskEntry } from "../../../../types/Project_Management/task/table/Task.types";
-import { useIsMounted } from "./Useismounted";
-
-const collectDescendants = async (
-  groupName: string,
-  cache: Record<string, TaskEntry[]>,
-): Promise<TaskEntry[]> => {
-  const children = cache[groupName] ?? (await getChildTasks(groupName));
-  const nested = await Promise.all(
-    children
-      .filter((c) => c.is_group === 1)
-      .map((c) => collectDescendants(c.name, cache)),
-  );
-  return [...children, ...nested.flat()];
-};
+import { isContextTask } from "../../../../views/project_management/task/components/Tasktable.config";
 
 interface Args {
-  childrenMap: Record<string, TaskEntry[]>;
+  childrenOf: (name: string) => TaskEntry[];
 }
 
-export const useTaskSelection = ({ childrenMap }: Args) => {
-  const mountedRef = useIsMounted();
-  const childrenRef = useRef(childrenMap);
-  childrenRef.current = childrenMap;
-  const cascadeTokenRef = useRef<Map<string, number>>(new Map());
+export const useTaskSelection = ({ childrenOf }: Args) => {
+  const childrenOfRef = useRef(childrenOf);
+  childrenOfRef.current = childrenOf;
 
   const [selected, setSelected] = useState<Map<string, TaskEntry>>(new Map());
 
@@ -60,70 +43,42 @@ export const useTaskSelection = ({ childrenMap }: Args) => {
     });
   }, []);
 
-  const cascadeGroup = useCallback(
-    async (group: TaskEntry, checked: boolean) => {
-      const token = (cascadeTokenRef.current.get(group.name) ?? 0) + 1;
-      cascadeTokenRef.current.set(group.name, token);
-      const isLatest = () =>
-        mountedRef.current && cascadeTokenRef.current.get(group.name) === token;
+  /** The given tasks plus all their loaded descendants, minus context rows. */
+  const withDescendants = (tasks: TaskEntry[]): TaskEntry[] => {
+    const visited = new Set<string>();
+    const out: TaskEntry[] = [];
 
-      try {
-        const descendants = await collectDescendants(
-          group.name,
-          childrenRef.current,
-        );
-        if (!isLatest()) return;
-        setSelected((prev) => {
-          const next = new Map(prev);
-          descendants.forEach((d) => {
-            if (checked) next.set(d.name, d);
-            else next.delete(d.name);
-          });
-          return next;
-        });
-      } catch (error) {
-        if (!isLatest()) return;
-        showApiError(error);
-        if (checked) {
-          setSelected((prev) => {
-            const next = new Map(prev);
-            next.delete(group.name);
-            return next;
-          });
-        }
-      }
-    },
-    [],
-  );
+    const visit = (task: TaskEntry) => {
+      if (visited.has(task.name)) return;
+      visited.add(task.name);
+      if (!isContextTask(task)) out.push(task);
+      childrenOfRef.current(task.name).forEach(visit);
+    };
 
-  const handleRowSelect = useCallback(
-    (task: TaskEntry, checked: boolean) => {
-      setSelected((prev) => {
-        const next = new Map(prev);
+    tasks.forEach(visit);
+    return out;
+  };
+
+  const setChecked = useCallback((tasks: TaskEntry[], checked: boolean) => {
+    const items = withDescendants(tasks);
+    setSelected((prev) => {
+      const next = new Map(prev);
+      items.forEach((task) => {
         if (checked) next.set(task.name, task);
         else next.delete(task.name);
-        return next;
       });
-      if (task.is_group === 1) void cascadeGroup(task, checked);
-    },
-    [cascadeGroup],
+      return next;
+    });
+  }, []);
+
+  const handleRowSelect = useCallback(
+    (task: TaskEntry, checked: boolean) => setChecked([task], checked),
+    [setChecked],
   );
 
   const handleSelectAll = useCallback(
-    (list: TaskEntry[], checked: boolean) => {
-      setSelected((prev) => {
-        const next = new Map(prev);
-        list.forEach((task) => {
-          if (checked) next.set(task.name, task);
-          else next.delete(task.name);
-        });
-        return next;
-      });
-      list
-        .filter((task) => task.is_group === 1)
-        .forEach((group) => void cascadeGroup(group, checked));
-    },
-    [cascadeGroup],
+    (list: TaskEntry[], checked: boolean) => setChecked(list, checked),
+    [setChecked],
   );
 
   return {
