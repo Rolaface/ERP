@@ -136,6 +136,7 @@ const MySubscription: React.FC = () => {
 
   const renewalDate = d?.end_date ?? null;
   const daysToRenewal = renewalDate ? daysFromToday(renewalDate) : null;
+  const subscriptionStatus = data?.subscription_status?.trim() || null;
 
   return (
     <AppPage>
@@ -170,9 +171,16 @@ const MySubscription: React.FC = () => {
             <div className="rounded-t-2xl bg-primary p-6 text-white">
               <div className="flex flex-wrap items-start justify-between gap-1">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
-                    <Award className="h-3.5 w-3.5" /> Current Plan
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
+                      <Award className="h-3.5 w-3.5" /> Current Plan
+                    </span>
+                    {subscriptionStatus && (
+                      <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
+                        {subscriptionStatus}
+                      </span>
+                    )}
+                  </div>
                   <h3 className="mt-2 text-2xl font-bold text-white">{d.plan_name}</h3>
                 </div>
                 <div className="text-right">
