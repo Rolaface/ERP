@@ -137,7 +137,7 @@ export default function StockItemSelect({
   const [stockFilter, setStockFilter] = useState<StockFilter>("instock");
   const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
-  const showStockFilter = invoiceType !== "Service" && invoiceType !== "RVAT";
+  const showStockFilter = invoiceType !== "Service";
 
   // Tracks which row in the open list is currently keyboard-highlighted.
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -149,15 +149,17 @@ export default function StockItemSelect({
   const load = async () => {
     try {
       setLoading(true);
-      const res = await getStockReport(1, 1000, "", taxCategory);
+      const res = await getStockReport(
+        1,
+        1000,
+        "",
+        taxCategory,
+        invoiceType === "Product" ? 0 : 1,
+        invoiceType === "Service" ? 0 : 1,
+      );
       const raw = res?.message?.data ?? [];
       const rows: any[] = [];
       raw.forEach((item: any) => {
-        const isService = item.is_service_item === 1;
-        const wantsServiceItems =
-          invoiceType === "Service" || invoiceType === "RVAT";
-        if (wantsServiceItems && !isService) return;
-        if (!wantsServiceItems && isService) return;
         const base = {
           itemCode: item.item_code,
           itemName: item.item_name,
