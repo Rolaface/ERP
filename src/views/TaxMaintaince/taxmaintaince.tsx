@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import TaxTemplate from "../Inventory/TaxTemplate";
 import TaxCategory from "../Inventory/TaxCategory";
 import SalesTaxTemplate from "./Salestaxtemplate";
-import { useSubscriptionStore } from "../../store/subscriptionStore";
 import {
   ReceiptText,
   FileSpreadsheet,
@@ -53,20 +52,12 @@ const Inventory: React.FC = () => {
   const [activeTab, setActiveTab] = useState("taxCategory");
 
   const { can } = usePermission();
-    const taxMain = useSubscriptionStore((s) => s.raw?.erp?.settings?.taxMain);
-  const erpEnabled = useSubscriptionStore((s) => s.raw?.erp?.enabled === true);
+  
 
-  const taxTabs = useMemo(
-    () =>
-      ALL_TAX_TABS.filter(
-       (t) => {
-          const hasPermission = !t.module || can(t.module, t.action);
-          const hasSubscription = erpEnabled && taxMain?.[t.subscriptionKey] === true;
-         return hasPermission && hasSubscription;
-       }
-      ),
-    [can]
-  );
+   const taxTabs = useMemo(
+     () => ALL_TAX_TABS.filter((t) => !t.module || can(t.module, t.action)),
+     [can],
+   );
 
   const resolvedTab =
     taxTabs.find((t) => t.id === activeTab)?.id ??
