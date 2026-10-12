@@ -3,6 +3,7 @@ import React from "react";
 import { ModalInput, ModalSelect, NumericInput, ToggleSwitch } from "../../components/ui/modal/modalComponent";
 import type {
   CorrectionRow,
+  ManufactureRow,
   Mode,
   MovementRow,
   Option,
@@ -11,6 +12,8 @@ import type {
 } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 import { RemoveRowButton, SectionLabel } from "../../components/Stock-correction-movement/Summaryui";
 import StockItemSelect from "../../components/selects/StockItemSelect";
+import ItemSelect from "../../components/selects/ItemSelect";
+import type { SelectedStockItem } from "../../components/selects/ItemSelect";
 
 import WarehouseSelect from "../selects/WarehouseSelect";
 
@@ -72,6 +75,12 @@ export const ItemPicker: React.FC<{
   </div>
 );
 
+const TRANSACTION_TYPE_OPTIONS: { label: string; value: Mode }[] = [
+  { label: "Correction", value: "correction" },
+  { label: "Movement", value: "movement" },
+  { label: "Manufacture", value: "manufacture" },
+];
+
 export const TransactionTypeToggle: React.FC<{ mode: Mode; onModeChange: (mode: Mode) => void }> = ({
   mode,
   onModeChange,
@@ -80,9 +89,10 @@ export const TransactionTypeToggle: React.FC<{ mode: Mode; onModeChange: (mode: 
     name="transactionType"
     label="Transaction Type"
     checked={mode === "movement"}
-    offLabel="Correction"
-    onLabel="Movement"
-    onChange={(e) => onModeChange(e.target.checked ? "movement" : "correction")}
+    onChange={() => {}}
+    options={TRANSACTION_TYPE_OPTIONS}
+    value={mode}
+    onValueChange={(v) => onModeChange(v as Mode)}
   />
 );
 
@@ -243,3 +253,100 @@ export const MovementRowFields: React.FC<MovementRowFieldsProps> = ({
     </>
   );
 };
+
+// ─── Manufacture row fields ──────────────────────────────────────────────────
+
+interface ConsumeRowFieldsProps {
+  row: ManufactureRow;
+  onItemPicked: (id: string, payload: StockItemSelectPayload) => void;
+  onItemClear: (id: string) => void;
+  onQtyChange: (id: string, value: string) => void;
+  onRemove: (id: string) => void;
+  removeDisabled: boolean;
+}
+
+export const ConsumeRowFields: React.FC<ConsumeRowFieldsProps> = ({
+  row,
+  onItemPicked,
+  onItemClear,
+  onQtyChange,
+  onRemove,
+  removeDisabled,
+}) => {
+  const exceeds = row.itemCode !== "" && Number(row.qty) > Number(row.availableQty ?? 0);
+
+  return (
+    <>
+      <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
+        <div className="w-full">
+          <StockItemSelect
+            itemName={row.itemName}
+            onChange={(p: StockItemSelectPayload) => onItemPicked(row.id, p)}
+            onClear={() => onItemClear(row.id)}
+            invoiceType="Product"
+            formatDisplayName={(r: any) =>
+              [r.itemName, r.batchNo, r.warehouse].filter(Boolean).join("-")
+            }
+          />
+        </div>
+      </div>
+      <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
+        <WarehouseSelect value={row.warehouse} compact onChange={() => {}} readOnlyField disabled />
+      </div>
+      <div className="scm-cell scm-cell-border text-[12px] text-muted" style={{ padding: "6px 10px" }}>
+        {row.batchNo || "—"}
+      </div>
+      <div className="scm-cell scm-cell-border text-[12px] font-semibold text-main" style={{ padding: "6px 10px" }}>
+        {row.availableQty === null ? "—" : row.availableQty.toLocaleString()}
+      </div>
+      <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
+        <NumericInput
+          value={row.qty === "" ? null : Number(row.qty)}
+          allowNegative={false}
+          decimalScale={2}
+          placeholder="0"
+          onChange={(v) => onQtyChange(row.id, v === null ? "" : String(v))}
+          className={["h-[28px] text-[11px] w-full", exceeds ? "text-danger" : ""].join(" ")}
+        />
+      </div>
+      <div className="scm-cell" style={{ justifyContent: "center", padding: "6px 10px" }}>
+        <RemoveRowButton onClick={() => onRemove(row.id)} disabled={removeDisabled} />
+      </div>
+    </>
+  );
+};
+
+interface ProduceRowFieldsProps {
+  row: ManufactureRow;
+  onItemPicked: (item: SelectedStockItem) => void;
+  onChange: (field: "warehouse" | "qty", value: string) => void;
+}
+
+export const ProduceRowFields: React.FC<ProduceRowFieldsProps> = ({
+  row,
+  onItemPicked,
+  onChange,
+}) => (
+  <>
+    <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
+      <ItemSelect value={row.itemCode} onChange={onItemPicked} />
+    </div>
+    <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
+      <WarehouseSelect
+        value={row.warehouse}
+        compact
+        onChange={(e) => onChange("warehouse", e.target.value)}
+      />
+    </div>
+    <div className="scm-cell" style={{ padding: "6px 10px" }}>
+      <NumericInput
+        value={row.qty === "" ? null : Number(row.qty)}
+        allowNegative={false}
+        decimalScale={2}
+        placeholder="0"
+        onChange={(v) => onChange("qty", v === null ? "" : String(v))}
+        className="h-[28px] text-[11px] w-full"
+      />
+    </div>
+  </>
+);

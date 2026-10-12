@@ -1,5 +1,5 @@
 import React from "react";
-import { Wrench, ArrowRightLeft } from "lucide-react";
+import { Wrench, ArrowRightLeft, Factory } from "lucide-react";
 
 import { MinimizableModal } from "../../common/MinimizableModal";
 import PaginatedRowsTable from "../../common/Paginatedrowstable";
@@ -9,6 +9,8 @@ import {
   useStockCorrectionForm,
   CORRECTION_COLS,
   MOVEMENT_COLS,
+  CONSUME_COLS,
+  PRODUCE_COLS,
   ROWS_PAGE_SIZE,
   REASON_OPTIONS,
 } from "../../../hooks/stock correction-movement/Usestockcorrectionform";
@@ -21,6 +23,8 @@ import {
   CorrectionRowFields,
   ItemPicker,
   MovementRowFields,
+  ConsumeRowFields,
+  ProduceRowFields,
   TransactionTypeToggle,
   StockEntryTypeToggle,
 } from "../../Stock-correction-movement/Rowfields";
@@ -68,7 +72,13 @@ const StockCorrectionModal: React.FC<
           ? `${isViewMode ? "Viewing" : "Editing"} batch ${selectedBatch.batch_no ?? "-"}`
           : "Adjust inventory levels or transfer items between warehouses with full traceability and batch control."
       }
-      icon={f.mode === "correction" ? Wrench : ArrowRightLeft}
+      icon={
+        f.mode === "correction"
+          ? Wrench
+          : f.mode === "manufacture"
+            ? Factory
+            : ArrowRightLeft
+      }
       maxWidth="5xl"
       height="580px"
       footer={
@@ -141,14 +151,16 @@ const StockCorrectionModal: React.FC<
               />
             </div>
 
-            <div className="flex-1 ">
-              <ItemPicker
-                mode={f.mode}
-                selectedItem={f.selectedItem}
-                onItemPicked={f.handleItemPicked}
-                onItemClear={f.handleItemClear}
-              />
-            </div>
+            {f.mode !== "manufacture" && (
+              <div className="flex-1 ">
+                <ItemPicker
+                  mode={f.mode}
+                  selectedItem={f.selectedItem}
+                  onItemPicked={f.handleItemPicked}
+                  onItemClear={f.handleItemClear}
+                />
+              </div>
+            )}
 
             {f.mode === "correction" && (
               <label className="flex items-center gap-1.5 h-9 text-[12px] font-semibold text-main cursor-pointer select-none shrink-0">
@@ -164,6 +176,53 @@ const StockCorrectionModal: React.FC<
 
           </div>
 
+          {f.mode === "manufacture" ? (
+            <>
+              <div>
+                <SectionLabel>Raw Materials (Consumed)</SectionLabel>
+                <div className="mt-2">
+                  <PaginatedRowsTable
+                    columns={["Item", "Warehouse", "Batch", "Available Qty", "Consume Qty", ""]}
+                    gridTemplate={CONSUME_COLS}
+                    rows={f.consumeRows}
+                    pageSize={ROWS_PAGE_SIZE}
+                    onAddRow={f.addConsumeRow}
+                    addLabel="Add Raw Material"
+                    addRowVariant="solid"
+                    renderRow={(row) => (
+                      <ConsumeRowFields
+                        row={row}
+                        onItemPicked={f.pickConsumeItem}
+                        onItemClear={f.clearConsumeItem}
+                        onQtyChange={f.updateConsumeQty}
+                        onRemove={f.removeConsumeRow}
+                        removeDisabled={f.consumeRows.length === 1}
+                      />
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <SectionLabel>Finished Product (Produced)</SectionLabel>
+                <div className="mt-2">
+                  <PaginatedRowsTable
+                    columns={["Item", "Target Warehouse", "Produce Qty"]}
+                    gridTemplate={PRODUCE_COLS}
+                    rows={[f.produceRow]}
+                    pageSize={ROWS_PAGE_SIZE}
+                    renderRow={(row) => (
+                      <ProduceRowFields
+                        row={row}
+                        onItemPicked={f.pickProduceItem}
+                        onChange={f.updateProduceRow}
+                      />
+                    )}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
           <div>
             <SectionLabel>
               {f.mode === "correction"
@@ -219,6 +278,7 @@ const StockCorrectionModal: React.FC<
               )}
             </div>
           </div>
+          )}
 
           <div>
             <SectionLabel>Reason / Remarks</SectionLabel>
@@ -267,6 +327,9 @@ const StockCorrectionModal: React.FC<
             f.correctionRows[0]?.availableQty ??
             undefined
           }
+          consumeRows={f.consumeRows}
+          produceRow={f.produceRow}
+          totalConsumedQty={f.totalConsumedQty}
           valuationRate={
             f.isOpeningStock
               ? f.correctionRows[0]?.valuationRate ?? undefined
