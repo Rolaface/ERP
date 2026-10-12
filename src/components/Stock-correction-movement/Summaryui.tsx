@@ -1,7 +1,7 @@
 
 import { Trash2 } from "lucide-react";
 import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
-import type { Mode, Option } from "../../hooks/stock correction-movement/Usestockcorrectionform";
+import type { ManufactureRow, Mode, Option } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 
 // ─── Tiny atoms ─────────────────────────────────────────────────────────────
 
@@ -95,6 +95,9 @@ interface SummaryRailProps {
   expiryDate?: string;
   batchAvailableQty?: number;
   valuationRate?: number;
+  consumeRows?: ManufactureRow[];
+  produceRow?: ManufactureRow;
+  totalConsumedQty?: number;
 }
 
 export const SummaryRail: React.FC<SummaryRailProps> = ({
@@ -115,9 +118,68 @@ export const SummaryRail: React.FC<SummaryRailProps> = ({
   expiryDate,
   
   valuationRate,
+  consumeRows = [],
+  produceRow,
+  totalConsumedQty = 0,
 }) => {
   const displayUnit = unit || "PCS";
   const isCorrection = mode === "correction";
+
+  if (mode === "manufacture") {
+    const pickedRows = consumeRows.filter((r) => r.itemCode);
+    const produceQty = Number(produceRow?.qty) || 0;
+    const produceUnit = produceRow?.unit || "PCS";
+
+    return (
+      <aside className="flex flex-col gap-2 h-full min-h-0 overflow-y-auto">
+        <SummaryCard className="p-2.5">
+          <span className="block text-[9px] font-bold uppercase tracking-widest text-muted mb-1">
+            Manufacture Impact
+          </span>
+          <div className="divide-y divide-theme">
+            <KeyValueRow label="Raw Materials" value={pickedRows.length} />
+            <KeyValueRow label="Total Consumed" value={totalConsumedQty.toLocaleString()} />
+          </div>
+          <div
+            className="rounded-lg py-1.5 px-2.5 mt-1.5 flex items-center justify-between"
+            style={{ background: "rgba(28,63,110,0.06)" }}
+          >
+            <span className="text-[10px] font-semibold text-muted">Produced Qty</span>
+            <span className="text-base font-black leading-none" style={{ color: "var(--primary,#1c3f6e)" }}>
+              {produceQty.toLocaleString()}{" "}
+              <span className="text-[10px] font-bold text-muted align-middle">{produceUnit}</span>
+            </span>
+          </div>
+        </SummaryCard>
+
+        <SummaryCard className="p-2.5">
+          <span className="block text-[9px] font-bold uppercase tracking-widest text-muted mb-0.5">
+            Manufacture Details
+          </span>
+          <div className="divide-y divide-theme">
+            {pickedRows.map((r) => (
+              <KeyValueRow
+                key={r.id}
+                label={r.itemName}
+                value={`-${Number(r.qty) || 0} ${r.unit || ""}`.trim()}
+                valueClassName="text-danger"
+              />
+            ))}
+            <KeyValueRow
+              label={produceRow?.itemName || "Finished Product"}
+              value={produceRow?.itemCode ? `+${produceQty} ${produceUnit}` : "—"}
+            />
+            <KeyValueRow
+              label="Target"
+              value={getGLNameWithoutAbbreviation(produceRow?.warehouse) || "—"}
+            />
+            <KeyValueRow label="Mode" value="Manufacture" badge />
+            <KeyValueRow label="Posting Date" value={formatDisplayDate(postingDate)} />
+          </div>
+        </SummaryCard>
+      </aside>
+    );
+  }
 
   return (
     <aside className="flex flex-col gap-2 h-full min-h-0 overflow-y-auto">
