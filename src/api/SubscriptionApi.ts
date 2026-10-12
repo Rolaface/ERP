@@ -34,6 +34,7 @@ export interface SubscriptionDetails {
 
 export interface MySubscriptionResponse {
   name: string;
+  subscription_status: string | null;
   details: SubscriptionDetails;
 }
 
@@ -50,7 +51,7 @@ const parseDetails = (raw: unknown): SubscriptionDetails | null => {
 export async function getMySubscription(): Promise<MySubscriptionResponse | null> {
   const resp: AxiosResponse = await api.get(SubscriptionAPI.mysubscription, {
     params: {
-      fields: JSON.stringify(["name", "details"]),
+      fields: JSON.stringify(["name", "subscription_status", "details"]),
       order_by: "creation desc",
       limit_page_length: 1,
     },
@@ -62,5 +63,9 @@ export async function getMySubscription(): Promise<MySubscriptionResponse | null
   const details = parseDetails(row.details);
   if (!details) throw new Error("Invalid subscription data received");
 
-  return { name: row.name, details };
+  return {
+  name: row.name,
+  subscription_status: row.subscription_status ?? null,
+  details,
+};
 }
