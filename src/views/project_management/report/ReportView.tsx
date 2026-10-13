@@ -40,6 +40,8 @@ import { formatDate } from "../../../components/UI_Utils/Datedisplay";
 import { useAuth } from "../../../context/AuthContext";
 import AddColumnModal from "../../../components/report/AddColumnModal";
 import { useCustomColumns } from "../../../hooks/report/useCustomColumns";
+import TimesheetActivityView from "./TimesheetActivityView";
+
 
 import type {
   LinkSource,
@@ -605,6 +607,7 @@ const [values, setValues] = useState<FilterValues>(() =>
 
 const CUSTOM_VIEWS: Record<string, React.FC<ReportViewProps>> = {
   "project-summary": ProjectSummaryView,
+  "timesheet-activity": TimesheetActivityView,
 };
 
 const ReportView: React.FC<ReportViewProps> = (props) => {
