@@ -38,8 +38,69 @@ export interface DocFieldMeta {
   hidden?: 0 | 1;
 }
 
+export interface TimesheetActivityEntry {
+  timesheet: string;
+  employee: string | null;
+  employee_name: string | null;
+  status: string;
+  detail_id: string;
+  from_time: string;
+  to_time: string;
+  date: string;
+  day_name: string;
+  hours: number;
+  project: string | null;
+  project_name: string | null;
+  customer: string | null;
+  customer_name: string | null;
+  task: string | null;
+  task_name: string | null;
+  activity_type: string | null;
+  description: string | null;
+  is_billable: boolean;
+  billing_rate: number;
+  costing_rate: number;
+  billing_amount: number;
+  costing_amount: number;
+  completed: boolean;
+}
+
+export interface TimesheetActivityGroup {
+  group: string;
+  group_id: string;
+  entries: TimesheetActivityEntry[];
+  total_hours: number;
+  billable_hours: number;
+  non_billable_hours: number;
+  total_billable_amount: number;
+}
+
+export interface TimesheetActivityResponse {
+  success: boolean;
+  summary: {
+    total_entries: number;
+    total_employees: number;
+    total_projects: number;
+    total_hours: number;
+    billable_hours: number;
+    non_billable_hours: number;
+    total_billable_amount: number;
+    total_costing_amount: number;
+  };
+  grouped_data: TimesheetActivityGroup[];
+  data: TimesheetActivityEntry[];
+}
+
+export async function fetchTimesheetActivityReport(
+  params: Record<string, unknown>,
+): Promise<TimesheetActivityResponse> {
+  const resp: AxiosResponse = await api.get(ReportAPI.TIMESHEET_ACTIVITY, {
+    params,
+  });
+  return resp.data?.message;
+}
 const DOCTYPE_META_URL = API.project.report.DOCTYPE_META_URL;
-const CUSTOM_FIELD_DATA_URL = API.project.report.CUSTOM_FIELD_DATA_URL
+const CUSTOM_FIELD_DATA_URL = API.project.report.CUSTOM_FIELD_DATA_URL;
 
 export const NAME_FIELD = "name";
 export const AMOUNT_FIELD_TYPES = ["Currency", "Float", "Int", "Percent"];
@@ -74,9 +135,7 @@ const STANDARD_FIELDS: Record<string, [string, string]> = {
 
 const toColumn = (c: string | ReportColumn, i: number): ReportColumn => {
   if (typeof c !== "string") {
-    return c.fieldname
-      ? c
-      : { ...c, fieldname: `col_${i}`, positional: true };
+    return c.fieldname ? c : { ...c, fieldname: `col_${i}`, positional: true };
   }
   const [label, type = "", width] = c.split(":");
   const [fieldtype, options] = type.split("/");
