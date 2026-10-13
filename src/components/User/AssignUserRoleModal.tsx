@@ -1,9 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  ShieldCheck
-} from "lucide-react";
+import { ChevronDown, ChevronRight, ShieldCheck } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import {
@@ -12,12 +8,15 @@ import {
   ALL_MODULES,
 } from "../../hooks/useUserRole";
 import ModalFooter from "../common/ModalFooter";
-import type { UserRoleFormData, PermissionEntry } from "../../types/RoleManagement/UserRole";
-
+import type {
+  UserRoleFormData,
+  PermissionEntry,
+} from "../../types/RoleManagement/UserRole";
 
 type PermissionKey = keyof Omit<PermissionEntry, "module">;
 
 const PERMISSION_KEYS: PermissionKey[] = [
+  "select",
   "read",
   "write",
   "create",
@@ -27,7 +26,7 @@ const PERMISSION_KEYS: PermissionKey[] = [
   "report",
   "submit",
   "cancel",
-  "email"
+  "email",
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -41,8 +40,8 @@ interface AssignUserRoleModalProps {
   modalId: string;
 }
 
-
 const ACTION_LABELS: Record<PermissionKey, string> = {
+  select: "Select",
   read: "Read",
   write: "Write",
   create: "Create",
@@ -52,7 +51,7 @@ const ACTION_LABELS: Record<PermissionKey, string> = {
   report: "Report",
   submit: "Submit",
   cancel: "Cancel",
-  email:"Email"
+  email: "Email",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -71,21 +70,32 @@ interface ActionChipProps {
   disabled?: boolean;
 }
 
-const ActionChip: React.FC<ActionChipProps> = ({ permKey, selected, onClick, disabled }) => (
+const ActionChip: React.FC<ActionChipProps> = ({
+  permKey,
+  selected,
+  onClick,
+  disabled,
+}) => (
   <button
     type="button"
     onClick={disabled ? undefined : onClick}
     disabled={disabled}
     className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-semibold transition-all duration-150 select-none bg-card border-[var(--border)] hover:bg-[var(--row-hover)] text-main"
-
   >
-    <div className={`w-3 h-3 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all ${selected
-      ? "bg-primary border-primary"
-      : "border-[var(--border)] bg-app"
-      }`}>
+    <div
+      className={`w-3 h-3 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all ${
+        selected ? "bg-primary border-primary" : "border-[var(--border)] bg-app"
+      }`}
+    >
       {selected && (
         <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 8 8">
-          <path d="M1 4l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M1 4l2 2 4-4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       )}
     </div>
@@ -120,37 +130,58 @@ const ActionRow: React.FC<ActionRowProps> = ({
 
   return (
     <div
-      className={`flex items-center gap-3 py-2 px-3 rounded-lg transition-colors ${indent
-        ? "ml-6 bg-[var(--row-hover)]/40 hover:bg-[var(--row-hover)]"
-        : isModule
-          ? "bg-primary/5 border border-primary/10"
-          : ""
-        }`}
+      className={`flex items-center gap-3 py-2 px-3 rounded-lg transition-colors ${
+        indent
+          ? "ml-6 bg-[var(--row-hover)]/40 hover:bg-[var(--row-hover)]"
+          : isModule
+            ? "bg-primary/5 border border-primary/10"
+            : ""
+      }`}
     >
       {/* Tri-state checkbox + label */}
       <button
         type="button"
-        onClick={disabled ? undefined : () => (allSelected ? onClearAll() : onSelectAll())}
+        onClick={
+          disabled
+            ? undefined
+            : () => (allSelected ? onClearAll() : onSelectAll())
+        }
         disabled={disabled}
         className={`flex items-center gap-2 min-w-[160px] group ${disabled ? "cursor-not-allowed" : ""}`}
       >
-        <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all ${allSelected
-          ? "bg-primary border-primary"
-          : someSelected
-            ? "bg-primary/30 border-primary"
-            : "border-[var(--border)] bg-app"
-          }`}>
+        <div
+          className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all ${
+            allSelected
+              ? "bg-primary border-primary"
+              : someSelected
+                ? "bg-primary/30 border-primary"
+                : "border-[var(--border)] bg-app"
+          }`}
+        >
           {allSelected && (
-            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 8 8">
-              <path d="M1 4l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <svg
+              className="w-2.5 h-2.5 text-white"
+              fill="none"
+              viewBox="0 0 8 8"
+            >
+              <path
+                d="M1 4l2 2 4-4"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           )}
           {someSelected && (
             <div className="w-1.5 h-0.5 bg-primary rounded-full" />
           )}
         </div>
-        <span className={`text-[12px] font-${isModule ? "bold" : "semibold"} ${activeKeys.length > 0 ? "text-main" : "text-muted"
-          } group-hover:text-main transition-colors truncate`}>
+        <span
+          className={`text-[12px] font-${isModule ? "bold" : "semibold"} ${
+            activeKeys.length > 0 ? "text-main" : "text-muted"
+          } group-hover:text-main transition-colors truncate`}
+        >
           {label}
         </span>
         {activeKeys.length > 0 && (
@@ -190,7 +221,9 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(
+    new Set(),
+  );
 
   const {
     form,
@@ -211,7 +244,6 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
     initialData: initialData ?? null,
   });
 
-
   useEffect(() => {
     if (!isOpen) {
       setExpandedModules(new Set());
@@ -224,7 +256,9 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
         const subModules = MODULE_STRUCTURE[module] ?? [];
         const hasPermission =
           initialData.permission.some((p) => p.module === module) ||
-          subModules.some((sub) => initialData.permission.some((p) => p.module === sub.key));
+          subModules.some((sub) =>
+            initialData.permission.some((p) => p.module === sub.key),
+          );
         if (hasPermission) modulesToExpand.add(module);
       });
       setExpandedModules(modulesToExpand);
@@ -240,7 +274,10 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
     });
   };
 
-  const handleFieldChangeDirty = (field: keyof UserRoleFormData, value: unknown) => {
+  const handleFieldChangeDirty = (
+    field: keyof UserRoleFormData,
+    value: unknown,
+  ) => {
     handleFieldChange(field, value);
     markDirty();
   };
@@ -260,13 +297,7 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={
-        isViewMode
-          ? "View Role"
-          : isEdit
-            ? "Edit Role"
-            : "Add Role"
-      }
+      title={isViewMode ? "View Role" : isEdit ? "Edit Role" : "Add Role"}
       subtitle={
         isViewMode
           ? `Viewing permissions for: ${form.role}`
@@ -276,16 +307,29 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
       }
       icon={ShieldCheck}
       footer={
-  <ModalFooter
-    onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-    onReset={!isViewMode ? () => { handleReset(); resetDirty(); } : undefined}
-    onSubmit={!isViewMode ? async () => { await handleSubmit(); } : undefined}
-    isSubmitting={isSubmitting}
-    submitLabel={isEdit ? "Update" : "Submit"}
-    cancelLabel={isViewMode ? "Close" : "Cancel"}
-    resetLabel="Reset"
-  />
-}
+        <ModalFooter
+          onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+          onReset={
+            !isViewMode
+              ? () => {
+                  handleReset();
+                  resetDirty();
+                }
+              : undefined
+          }
+          onSubmit={
+            !isViewMode
+              ? async () => {
+                  await handleSubmit();
+                }
+              : undefined
+          }
+          isSubmitting={isSubmitting}
+          submitLabel={isEdit ? "Update" : "Submit"}
+          cancelLabel={isViewMode ? "Close" : "Cancel"}
+          resetLabel="Reset"
+        />
+      }
       maxWidth="5xl"
       height="82vh"
     >
@@ -302,13 +346,15 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
               disabled={isEdit || isViewMode}
               onChange={(e) => handleFieldChangeDirty("role", e.target.value)}
               placeholder="e.g. Admin, HR Manager, Sales Executive"
-              className={`w-full px-3 py-2 text-sm border rounded-lg text-main placeholder:text-muted outline-none transition-all ${(isEdit || isViewMode)
-                ? "bg-[var(--disabled-bg)] cursor-not-allowed opacity-70 border-[var(--border)]"
-                : "bg-app focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                } ${errors.role
+              className={`w-full px-3 py-2 text-sm border rounded-lg text-main placeholder:text-muted outline-none transition-all ${
+                isEdit || isViewMode
+                  ? "bg-[var(--disabled-bg)] cursor-not-allowed opacity-70 border-[var(--border)]"
+                  : "bg-app focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              } ${
+                errors.role
                   ? "border-[var(--danger)]"
                   : "border-[var(--border)]"
-                }`}
+              }`}
             />
             {errors.role && (
               <p className="text-[10px] text-[var(--danger)] mt-1">
@@ -345,14 +391,14 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
             const moduleEntry = getPermissionActions(module);
             const hasAny = moduleHasAnyPermission(module);
 
-
             return (
               <div
                 key={module}
-                className={`rounded-xl border transition-all ${hasAny
-                  ? "border-primary/20 bg-primary/3"
-                  : "border-[var(--border)] bg-card"
-                  }`}
+                className={`rounded-xl border transition-all ${
+                  hasAny
+                    ? "border-primary/20 bg-primary/3"
+                    : "border-[var(--border)] bg-card"
+                }`}
               >
                 {/* Module row */}
                 <div className="flex items-center gap-2 p-1">
@@ -374,15 +420,23 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
                     {/* Tri-state checkbox for submodules */}
                     <button
                       type="button"
-                      onClick={isViewMode ? undefined : () => {
-                        const allSubsChecked = subModules.every((sub) => {
-                          const e = getPermissionActions(sub.key);
-                          return e && getActiveKeys(e).length === PERMISSION_KEYS.length;
-                        });
+                      onClick={
+                        isViewMode
+                          ? undefined
+                          : () => {
+                              const allSubsChecked = subModules.every((sub) => {
+                                const e = getPermissionActions(sub.key);
+                                return (
+                                  e &&
+                                  getActiveKeys(e).length ===
+                                    PERMISSION_KEYS.length
+                                );
+                              });
 
-                        selectAllSubModules(module, !allSubsChecked);
-                        onPermissionChange();
-                      }}
+                              selectAllSubModules(module, !allSubsChecked);
+                              onPermissionChange();
+                            }
+                      }
                       disabled={isViewMode}
                       className={`flex items-center gap-2 min-w-[160px] group ${isViewMode ? "cursor-not-allowed" : ""}`}
                     >
@@ -391,19 +445,34 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
                           const e = getPermissionActions(sub.key);
                           return e && getActiveKeys(e).length > 0;
                         }).length;
-                        const allChecked = checkedSubs === subModules.length && subModules.length > 0;
+                        const allChecked =
+                          checkedSubs === subModules.length &&
+                          subModules.length > 0;
                         const someChecked = checkedSubs > 0 && !allChecked;
                         return (
                           <>
-                            <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all ${allChecked
-                              ? "bg-primary border-primary"
-                              : someChecked
-                                ? "bg-primary/30 border-primary"
-                                : "border-[var(--border)] bg-app"
-                              }`}>
+                            <div
+                              className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all ${
+                                allChecked
+                                  ? "bg-primary border-primary"
+                                  : someChecked
+                                    ? "bg-primary/30 border-primary"
+                                    : "border-[var(--border)] bg-app"
+                              }`}
+                            >
                               {allChecked && (
-                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 8 8">
-                                  <path d="M1 4l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                <svg
+                                  className="w-2.5 h-2.5 text-white"
+                                  fill="none"
+                                  viewBox="0 0 8 8"
+                                >
+                                  <path
+                                    d="M1 4l2 2 4-4"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
                                 </svg>
                               )}
                               {someChecked && (
@@ -429,7 +498,9 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        subModules.forEach((sub) => clearModulePermissions(sub.key));
+                        subModules.forEach((sub) =>
+                          clearModulePermissions(sub.key),
+                        );
 
                         onPermissionChange();
                       }}
@@ -451,14 +522,20 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            onClick={() => { selectAllSubModules(module, true); onPermissionChange(); }}
+                            onClick={() => {
+                              selectAllSubModules(module, true);
+                              onPermissionChange();
+                            }}
                             className="text-[10px] font-bold text-[var(--success)] hover:bg-[var(--success)]/10 px-2 py-0.5 rounded transition-colors"
                           >
                             All
                           </button>
                           <button
                             type="button"
-                            onClick={() => { selectAllSubModules(module, false); onPermissionChange(); }}
+                            onClick={() => {
+                              selectAllSubModules(module, false);
+                              onPermissionChange();
+                            }}
                             className="text-[10px] font-bold text-muted hover:text-[var(--danger)] hover:bg-[var(--danger)]/10 px-2 py-0.5 rounded transition-colors"
                           >
                             Clear
@@ -476,9 +553,18 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
                           entry={subEntry}
                           indent
                           disabled={isViewMode}
-                          onToggle={(key) => { toggleAction(sub.key, key); onPermissionChange(); }}
-                          onSelectAll={() => { toggleModuleLevel(sub.key, true); onPermissionChange(); }}
-                          onClearAll={() => { toggleModuleLevel(sub.key, false); onPermissionChange(); }}
+                          onToggle={(key) => {
+                            toggleAction(sub.key, key);
+                            onPermissionChange();
+                          }}
+                          onSelectAll={() => {
+                            toggleModuleLevel(sub.key, true);
+                            onPermissionChange();
+                          }}
+                          onClearAll={() => {
+                            toggleModuleLevel(sub.key, false);
+                            onPermissionChange();
+                          }}
                         />
                       );
                     })}

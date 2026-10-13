@@ -6,7 +6,7 @@ import SearchSelect2, {
   type Option,
 } from "../../../../components/ui/modal/SearchSelect2";
 import { getAllProjects } from "../../../../api/project/projectapi/project.api";
-import { getAllActivityTypes } from "../../../../api/project/projectapi/Activity/activityType.api";
+import { getAllActivityTypes } from "../../../../api/project/Activity/activityType.api";
 import type { CalendarSummaryCell } from "../../../../types/Project_Management/Timesheet/Table/timesheet.types";
 import type { DayOffLookup } from "./dayOff.types";
 import DayOffChip, { DAY_OFF_TONE } from "./DayOffChip";

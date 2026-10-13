@@ -18,7 +18,7 @@ import {
   type TaskTreeEntry,
 } from "../../../../api/project/task/taskapi";
 import { getMyLoggableTaskNames } from "../../../../api/project/todo/todo.api";
-import { getAllActivityTypes } from "../../../../api/project/projectapi/Activity/activityType.api";
+import { getAllActivityTypes } from "../../../../api/project/Activity/activityType.api";
 import { useCompanyDefaultsStore } from "../../../../store/Companydefaultsstore";
 import { getExchangeRate } from "../../../../api/BankAccountApi";
 import { fireManagedSwal } from "../../../../utils/swalManager";

@@ -3,6 +3,10 @@ import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "../../axiosInstance";
 import { buildListParams } from "../../../api/utils/queryBuilder";
 import { ERP_BASE, API } from "../../../config/api";
+import type {
+  CreatedProject,
+  ProjectPayload,
+} from "../../../types/Project_Management/project_modal/Projectformmodal";
 
 const api = createAxiosInstance(ERP_BASE);
 
@@ -16,6 +20,7 @@ const PROJECT_FIELDS = [
   "percent_complete",
   "expected_start_date",
   "expected_end_date",
+  "customer",
   // "estimated_costing",
   "priority",
   "is_active",
@@ -42,3 +47,15 @@ export async function getAllProjects(
 
   return resp.data?.data ?? [];
 }
+
+export const getProjectById = async (projectId: string) => {
+  const res = await api.get(`${ProjectAPI.list}/${encodeURIComponent(projectId)}`);
+  return res.data; // { data: { name, project_name, users: [...], ... } }
+};
+
+export const createProject = async (
+  payload: ProjectPayload,
+): Promise<CreatedProject> => {
+  const res = await api.post(ProjectAPI.list, payload);
+  return { name: res.data?.data?.name ?? "" };
+};

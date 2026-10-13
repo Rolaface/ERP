@@ -50,6 +50,7 @@ export const MODULE_STRUCTURE: Record<string, { key: string; label: string }[]> 
     { key: "Project", label: "Project" },
     { key: "Task", label: "Task" },
     { key: "Timesheet", label: "Timesheet" },
+    { key: "Report", label: "Report" },
   ],
   Settings: [
     { key: "Company", label: "Company" },
