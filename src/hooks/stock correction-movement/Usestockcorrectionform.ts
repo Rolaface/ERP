@@ -91,12 +91,10 @@ export const REASON_OPTIONS: Option[] = [
   { label: "Other", value: "other" },
 ];
 
-// 8 columns: Warehouse, Batch, Expiry, Available Qty, Valuation Rate, Adjustment, Updated Qty, remove-btn
-export const CORRECTION_COLS = "1fr 1fr 0.75fr 0.75fr 0.85fr 0.75fr 0.75fr 36px";
-// "From" given more breathing room than "To" / "Move Qty" for better readability.
-export const MOVEMENT_COLS = "1.4fr 1fr 0.9fr 36px";
-export const CONSUME_COLS = "2fr 1.1fr 0.8fr 0.7fr 0.7fr 36px";
-export const PRODUCE_COLS = "2fr 1.3fr 0.8fr";
+export const CORRECTION_COLS = "1.35fr 1.15fr 0.95fr 0.7fr 0.75fr 0.85fr 0.7fr";
+export const MOVEMENT_COLS = "1.3fr 1.2fr 1.3fr 0.8fr 0.75fr 28px";
+export const CONSUME_COLS = "1.5fr 1.15fr 1.15fr 0.75fr 0.85fr 28px";
+export const PRODUCE_COLS = "1.5fr 1.15fr 0.9fr";
 export const ROWS_PAGE_SIZE = 5;
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
