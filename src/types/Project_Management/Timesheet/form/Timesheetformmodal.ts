@@ -3,6 +3,7 @@ import type {
   fetchProjectOptions,
   TimesheetModalRestrictions,
 } from "../../../../hooks/project_management/timeheet/form/useTimesheetModal";
+import type { ProjectRange } from "../../../../hooks/project_management/timeheet/form/validate";
 
 export type TimesheetModalState = ReturnType<typeof useTimesheetModal>;
 export type TimesheetForm = TimesheetModalState["form"];
@@ -61,4 +62,5 @@ export interface RowHandlers {
   ) => void;
   onToggleActions: (id: string) => void;
   registerTrigger: (id: string, el: HTMLButtonElement | null) => void;
+  getRange?: (projectId: string) => ProjectRange | undefined;
 }

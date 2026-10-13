@@ -68,6 +68,10 @@ export const API = {
     update: `${ERP_BASE}/api/method/custom_api.api.pdc.api.update`,
   },
 
+  subscription:{
+   mysubscription: `${ERP_BASE}/api/resource/Custom Subscription Details`
+  },
+
   /* =========================
    * CUSTOMER DASHBOARD
    * ========================= */
@@ -776,7 +780,10 @@ export const API = {
 
   project: {
     task: {
-      list: `${ERP_BASE}/api/resource/Task`,
+      list:`${ERP_BASE}/api/method/custom_hrms.api.task.api.get_assigned_tasks`,
+      getassigned:`${ERP_BASE}/api/method/custom_hrms.api.task.api.get_assigned_tasks`,
+      projectAssignees: `${ERP_BASE}/api/method/custom_hrms.api.task.api.get_project_assignees`,
+      frappe_task: `${ERP_BASE}/api/resource/Task`,
       create: `${ERP_BASE}/api/resource/Task`,
      
       assign: `${ERP_BASE}/api/method/frappe.desk.form.assign_to.add`,

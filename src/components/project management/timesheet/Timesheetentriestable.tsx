@@ -1,5 +1,13 @@
 import React from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Copy,
+  CopyPlus,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import type { DayOff } from "../../../views/project_management/timesheet/components/dayOff.types";
 import EntriesToolbar from "./Entriestoolbar";
 import TimesheetRow from "./Timesheetrow";
@@ -19,6 +27,8 @@ const COL_HOURS = "w-16";
 const COL_BILLABLE = "w-16";
 const COL_DONE = "w-14";
 const COL_ACTIONS = "w-16";
+
+type DuplicatePosition = "after" | "end";
 
 interface SelectionState {
   selectedIds: Set<string>;
@@ -51,6 +61,7 @@ interface TimesheetEntriesTableProps {
   fetchProjects: FetchProjects;
   handlers: RowHandlers;
   onAddRow: () => void;
+  onDuplicateSelected: (ids: string[], position: DuplicatePosition) => void;
 }
 
 const sortIcon = (dir: SortDir) =>
@@ -94,8 +105,13 @@ const TimesheetEntriesTable: React.FC<TimesheetEntriesTableProps> = ({
   fetchProjects,
   handlers,
   onAddRow,
+  onDuplicateSelected,
 }) => {
   const SortIcon = sortIcon(sort.sortDir);
+  const selectedCount = selection.selectedIds.size;
+
+  const duplicateSelected = (position: DuplicatePosition) =>
+    onDuplicateSelected(Array.from(selection.selectedIds), position);
   const columnCount =
     BASE_COLUMNS + (hasHeaderProject ? 0 : 1) + (isEmployee ? 0 : 1);
 
@@ -135,10 +151,18 @@ const TimesheetEntriesTable: React.FC<TimesheetEntriesTableProps> = ({
                   disabled={lines.length === 0}
                 />
               </th>
-              {!hasHeaderProject && <th className="p-2">Project</th>}
-              <th className="p-2">Task</th>
+              {!hasHeaderProject && (
+                <th className="p-2">
+                  Project<span className="text-red-500">*</span>
+                </th>
+              )}
+              <th className="p-2">
+                Task<span className="text-red-500">*</span>
+              </th>
               <th className="p-2">Worked On</th>
-              <th className="p-2">Activity Type</th>
+              <th className="p-2">
+                Activity Type<span className="text-red-500">*</span>
+              </th>
               <th className="p-2">
                 <button
                   onClick={sort.toggleSort}
@@ -179,15 +203,37 @@ const TimesheetEntriesTable: React.FC<TimesheetEntriesTableProps> = ({
         </table>
 
         {lines.length > 0 && (
-          <div className="p-3 flex items-center gap-2">
+          <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 border-t border-theme bg-card p-3">
             <AddRowButton onClick={onAddRow} />
-            {selection.selectedIds.size > 0 && (
-              <button
-                onClick={selection.deleteSelected}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 rounded-lg text-xs font-semibold transition-colors"
-              >
-                <Trash2 size={12} /> Delete ({selection.selectedIds.size})
-              </button>
+
+            {selectedCount > 0 && (
+              <div className="ml-auto flex flex-wrap items-center gap-2">
+                <span className="rounded border border-primary/20 bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                  {selectedCount} selected
+                </span>
+                <button
+                  onClick={() => duplicateSelected("after")}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-theme bg-app px-3 py-1.5 text-xs font-semibold text-main transition-colors hover:bg-app/60"
+                  title="Insert a copy below each selected row"
+                >
+                  <Copy size={12} className="text-primary" />
+                  Duplicate Below
+                </button>
+                <button
+                  onClick={() => duplicateSelected("end")}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-theme bg-app px-3 py-1.5 text-xs font-semibold text-main transition-colors hover:bg-app/60"
+                  title="Append copies of the selected rows at the end"
+                >
+                  <CopyPlus size={12} className="text-primary" />
+                  Duplicate at End
+                </button>
+                <button
+                  onClick={selection.deleteSelected}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 bg-danger/10 px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/20"
+                >
+                  <Trash2 size={12} /> Delete ({selectedCount})
+                </button>
+              </div>
             )}
           </div>
         )}

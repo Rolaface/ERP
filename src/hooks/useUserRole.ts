@@ -47,6 +47,9 @@ export const MODULE_STRUCTURE: Record<string, { key: string; label: string }[]> 
     { key: "Leave Policy Assignment", label: "Leave Policy Assignment" },
     { key: "Holiday List", label: "Holiday List" },
     { key: "Shift Type", label: "Shift Type" },
+    { key: "Project", label: "Project" },
+    { key: "Task", label: "Task" },
+    { key: "Timesheet", label: "Timesheet" },
   ],
   Settings: [
     { key: "Company", label: "Company" },

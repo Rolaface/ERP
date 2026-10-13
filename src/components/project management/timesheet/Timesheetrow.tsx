@@ -1,6 +1,7 @@
 import React from "react";
 import { MoreVertical } from "lucide-react";
 import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
+import TaskSelect from "../../../components/selects/project/Taskselect";
 import {
   fetchActivityTypeOptions,
   fetchTaskOptions,
@@ -63,6 +64,7 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
   onMonthChange,
 }) => {
   const off = getDayOff(line.date) ?? getDayOff(line.to_date);
+  const range = handlers.getRange?.(line.project);
 
   return (
     <tr
@@ -78,18 +80,23 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
             fetchOptions={fetchProjects}
             onChange={(val, opt) => handlers.onProject(line.id, val, opt)}
             placeholder="Project"
+            required
           />
         </td>
       )}
 
       <td className="p-2 ts-field min-w-0">
-        <SearchSelect2
+        <TaskSelect
           label=""
           value={line.task_name}
+          selectedValue={line.task}
           disabled={!line.project}
-         fetchOptions={(q) => fetchTaskOptions(line.project, q, isEmployee)}
+          fetchOptions={(q) => fetchTaskOptions(line.project, q, isEmployee)}
           onChange={(val, opt) => handlers.onTask(line.id, val, opt)}
-          placeholder={line.project ? "Task" : "Select project first"}
+          placeholder={line.project ? "Search task" : "Select project first"}
+          dropdownMinWidth={400}
+          dropdownMaxWidth={480}
+          required
         />
       </td>
 
@@ -113,6 +120,7 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
           fetchOptions={fetchActivityTypeOptions}
           onChange={(value, opt) => handlers.onActivity(line.id, value, opt)}
           placeholder={isEmployee ? "Auto from task" : "Activity Type"}
+          required
         />
       </td>
 
@@ -125,6 +133,8 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
             to_time={line.to_time}
             getDayOff={getDayOff}
             onMonthChange={onMonthChange}
+            minDate={range?.start ?? undefined}
+            maxDate={range?.end ?? undefined}
             onApply={(date, from, to, toDate) =>
               handlers.onApplyTime(line.id, date, from, to, toDate)
             }
@@ -149,7 +159,9 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
       {!isEmployee && (
         <CheckboxCell
           checked={line.is_billable}
-          onChange={(is_billable) => handlers.onUpdate(line.id, { is_billable })}
+          onChange={(is_billable) =>
+            handlers.onUpdate(line.id, { is_billable })
+          }
         />
       )}
 

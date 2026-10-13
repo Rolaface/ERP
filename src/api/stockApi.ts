@@ -58,6 +58,7 @@ export async function getStockReport(
   search?: string,
   taxCategory?: string,
   get_service_item?: number,
+  get_product_item?: number,
 ): Promise<any> {
   const resp = await api.get(StockAPI.stockReport, {
     params: {
@@ -66,6 +67,7 @@ export async function getStockReport(
       search,
       taxCategory: taxCategory ?? "", 
       get_service_item,
+      get_product_item,
     },
   });
 

@@ -14,7 +14,11 @@ interface Pos {
 
 interface BulkAssignConfig {
   fetchOptions: (q: string) => Promise<Option[]>;
-  onSubmit: (emails: string[], mode: BulkAssignMode) => Promise<boolean>;
+  onSubmit: (
+    emails: string[],
+    mode: BulkAssignMode,
+    description?: string,
+  ) => Promise<boolean>;
 }
 
 interface BulkActionsMenuProps {
@@ -95,7 +99,11 @@ interface BulkAssignPopoverProps {
   count: number;
   saving: boolean;
   fetchOptions: (q: string) => Promise<Option[]>;
-  onSubmit: (emails: string[], mode: BulkAssignMode) => void;
+  onSubmit: (
+    emails: string[],
+    mode: BulkAssignMode,
+    description: string,
+  ) => void;
   onCancel: () => void;
 }
 
@@ -115,6 +123,7 @@ const BulkAssignPopover: React.FC<BulkAssignPopoverProps> = ({
   const [pendingEmails, setPendingEmails] = useState<string[]>([]);
   const [optionsMap, setOptionsMap] = useState<Record<string, Option>>({});
   const [mode, setMode] = useState<BulkAssignMode>("add");
+  const [description, setDescription] = useState("");
 
   const requestIdRef = useRef(0);
   const fetchOptionsRef = useRef(fetchOptions);
@@ -239,6 +248,17 @@ const BulkAssignPopover: React.FC<BulkAssignPopoverProps> = ({
         )}
       </div>
 
+      <div className="px-3 py-2 border-t border-theme">
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          disabled={saving}
+          rows={2}
+          placeholder="Description (optional)"
+          className="w-full resize-none bg-transparent border border-theme rounded px-2 py-1 text-[12px] text-main outline-none focus:border-[var(--input-border-focus)] disabled:opacity-50"
+        />
+      </div>
+
       <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-theme">
         <button
           type="button"
@@ -250,7 +270,7 @@ const BulkAssignPopover: React.FC<BulkAssignPopoverProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => onSubmit(pendingEmails, mode)}
+          onClick={() => onSubmit(pendingEmails, mode, description)}
           disabled={saving || pendingEmails.length === 0}
           className="text-[11px] font-medium text-white bg-primary hover:opacity-90 px-3 py-1 rounded disabled:opacity-50"
         >
@@ -322,10 +342,14 @@ const BulkActionsMenu: React.FC<BulkActionsMenuProps> = ({
     onAddLog?.();
   };
 
-  const submitAssign = async (emails: string[], mode: BulkAssignMode) => {
+  const submitAssign = async (
+    emails: string[],
+    mode: BulkAssignMode,
+    description: string,
+  ) => {
     if (!assign || saving) return;
     setSaving(true);
-    const ok = await assign.onSubmit(emails, mode);
+    const ok = await assign.onSubmit(emails, mode, description.trim() || undefined);
     setSaving(false);
     if (ok) setAssignOpen(false);
   };

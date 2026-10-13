@@ -6,12 +6,11 @@ import {
   updateTaskById,
   updateTaskAssignees,
 } from "../../../../api/project/task/taskapi";
-import type {
-  TaskEntry,
-  TaskFilters,
+import {
+  taskDetailToEntry,
+  type TaskEntry,
+  type TaskFilters,
 } from "../../../../types/Project_Management/task/table/Task.types";
-
-// ── List ─────────────────────────────────────────────────────────
 
 export function useTaskList(filters: TaskFilters) {
   const [tasks, setTasks] = useState<TaskEntry[]>([]);
@@ -69,22 +68,27 @@ export function useTaskList(filters: TaskFilters) {
   return { tasks, total, isLoading, error, refresh: loadTasks, updateLocalAssignees };
 }
 
-// ── Single record ────────────────────────────────────────────────
-
-export function useTaskDetail(id?: string) {
+export function useTaskDetail(id: string) {
   const [task, setTask] = useState<TaskEntry | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadTask = useCallback(async () => {
     if (!id) return;
+
     setIsLoading(true);
     setError(null);
+
     try {
       const response = await getTaskById(id);
-      setTask(response);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load task");
+
+      setTask(response ? taskDetailToEntry(response) : null);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load task",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -94,10 +98,13 @@ export function useTaskDetail(id?: string) {
     loadTask();
   }, [loadTask]);
 
-  return { task, isLoading, error, refresh: loadTask };
+  return {
+    task,
+    isLoading,
+    error,
+    refresh: loadTask,
+  };
 }
-
-// ── Mutations ────────────────────────────────────────────────────
 
 export function useTaskActions() {
   const [isSaving, setIsSaving] = useState(false);
@@ -129,11 +136,20 @@ export function useTaskActions() {
     [runAction],
   );
 
-  const assign = useCallback(
-    (taskName: string, emails: string[]) =>
-      runAction(() => updateTaskAssignees(taskName, emails)),
-    [runAction],
-  );
-
+const assign = useCallback(
+  (
+    taskName: string,
+    previousEmails: string[],
+    nextEmails: string[],
+  ) =>
+    runAction(() =>
+      updateTaskAssignees(
+        taskName,
+        previousEmails,
+        nextEmails,
+      ),
+    ),
+  [runAction],
+);
   return { create, update, assign, isSaving, error };
 }

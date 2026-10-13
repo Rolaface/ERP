@@ -5,9 +5,13 @@ import {
   useTimesheetModal,
   fetchProjectOptions,
   isSlotTaken,
-  OVERLAP_MSG,
 } from "../../../hooks/project_management/timeheet/form/useTimesheetModal";
+import {
+  isWithinProjectRange,
+  formatRangeMsg,
+} from "../../../hooks/project_management/timeheet/form/validate";
 import { showApiError } from "../../../utils/alert";
+
 import TimesheetSummary from "./TimesheetSummary";
 import EmployeeHeader from "./Employeeheader";
 import RowActionsPopover from "./Rowactionspopover";
@@ -69,6 +73,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     conflictIds,
     isSaving,
     isEditMode,
+    getProjectRange,
     setTitle,
     setProject,
     setCustomer,
@@ -148,13 +153,28 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     to,
     toDate,
   ) => {
+    const line = form.lines.find((l) => l.id === id);
+    const range = line ? getProjectRange(line.project) : undefined;
+    if (range && !isWithinProjectRange(range, date, toDate)) {
+      showApiError(formatRangeMsg(range));
+      return;
+    }
     const slot = { date, to_date: toDate, from_time: from, to_time: to };
     if (isSlotTaken(form.lines, id, slot)) {
-      showApiError(OVERLAP_MSG);
       return;
     }
     dayOffs.warnIfDayOff(date, toDate);
     updateLine(id, slot);
+  };
+
+  const handleDuplicateSelected = (
+    ids: string[],
+    position: Parameters<typeof duplicateLine>[1],
+  ) => {
+    const selected = new Set(ids);
+    form.lines
+      .filter((l) => selected.has(l.id))
+      .forEach((l) => duplicateLine(l.id, position));
   };
 
   const handleSave = async () => {
@@ -169,6 +189,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
     onApplyTime: handleApplyTime,
     onToggleActions: rowActions.toggle,
     registerTrigger: rowActions.registerTrigger,
+    getRange: getProjectRange,
   };
 
   const activeLine = form.lines.find((l) => l.id === rowActions.openId) ?? null;
@@ -248,6 +269,7 @@ const TimesheetFormModal: React.FC<TimesheetFormModalProps> = ({
               fetchProjects={fetchProjects}
               handlers={rowHandlers}
               onAddRow={() => addLine(undefined, prefillDate)}
+              onDuplicateSelected={handleDuplicateSelected}
             />
           </div>
         </div>

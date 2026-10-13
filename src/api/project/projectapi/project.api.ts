@@ -16,7 +16,7 @@ const PROJECT_FIELDS = [
   "percent_complete",
   "expected_start_date",
   "expected_end_date",
-  "estimated_costing",
+  // "estimated_costing",
   "priority",
   "is_active",
 ];

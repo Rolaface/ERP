@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   createTimesheet,
   updateTimesheetById,
@@ -13,11 +13,17 @@ import type { Option } from "../../../../components/ui/modal/SearchSelect2";
 import { showApiError, showSuccess } from "../../../../utils/alert";
 import { getEmployees } from "../../../../api/utils/frappeUtilsApi";
 import { getAllProjects } from "../../../../api/project/projectapi/project.api";
-import { getAllTasks } from "../../../../api/project/task/taskapi";
+import {
+  getTaskTree,
+  type TaskTreeEntry,
+} from "../../../../api/project/task/taskapi";
+import { getMyLoggableTaskNames } from "../../../../api/project/todo/todo.api";
 import { getAllActivityTypes } from "../../../../api/project/projectapi/Activity/activityType.api";
 import { useCompanyDefaultsStore } from "../../../../store/Companydefaultsstore";
 import { getExchangeRate } from "../../../../api/BankAccountApi";
 import { fireManagedSwal } from "../../../../utils/swalManager";
+import { validateTimesheet, OVERLAP_MSG } from "./validate";
+import type { ProjectRange } from "./validate";
 
 export async function fetchActivityTypeOptions(
   search: string,
@@ -54,8 +60,13 @@ export async function fetchProjectOptions(
     label: project.project_name,
     value: project.name,
     subLabel: project.name,
+    meta: {
+      expected_start_date: project.expected_start_date ?? null,
+      expected_end_date: project.expected_end_date ?? null,
+    },
   }));
 }
+
 function getCurrentUserEmail(): string | undefined {
   try {
     const raw = localStorage.getItem("auth_user");
@@ -67,10 +78,19 @@ function getCurrentUserEmail(): string | undefined {
     return undefined;
   }
 }
+
 export async function fetchEmployeeOptions(search: string): Promise<Option[]> {
   return getEmployees(search);
 }
 
+const taskPath = (task: TaskTreeEntry): string =>
+  (task.ancestors ?? []).map((a) => a.subject || a.name).join(" / ");
+
+/**
+ * Task picker options straight from the backend hierarchy. Time can only be
+ * logged on non-group tasks, so groups are not listed; they show up as the
+ * path (e.g. "Module / backend") under each task.
+ */
 export async function fetchTaskOptions(
   projectId: string,
   search: string,
@@ -78,18 +98,25 @@ export async function fetchTaskOptions(
 ): Promise<Option[]> {
   if (!projectId) return [];
 
-const tasks = await getAllTasks(projectId, search, {
-  excludeGroups: true,
-  excludeStatuses: ["Cancelled"],
-  assignee: onlyMine ? getCurrentUserEmail() : undefined,
-});
+  const email = onlyMine ? getCurrentUserEmail() : undefined;
+  const loggable = email ? new Set(await getMyLoggableTaskNames(email)) : null;
 
-  return tasks.map((task) => ({
-    label: task.subject,
-    value: task.name,
-    subLabel: task.name,
-    meta: { activity_type: task.custom_activity_type ?? "" },
-  }));
+  const rows = await getTaskTree(projectId, search);
+
+  return rows
+    .filter((t) => !t.is_group && (!loggable || loggable.has(t.name)))
+    .map((t) => ({
+      label: t.subject || t.name,
+      value: t.name,
+      subLabel: taskPath(t) || undefined,
+      meta: {
+        activity_type: t.custom_activity_type ?? "",
+        ancestors: (t.ancestors ?? []).map((a) => ({
+          name: a.name,
+          subject: a.subject || a.name,
+        })),
+      },
+    }));
 }
 
 interface InitialTask {
@@ -120,9 +147,6 @@ type SlotFields = Pick<
 >;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-export const OVERLAP_MSG =
-  "This time slot overlaps with another entry. Please choose a different time.";
 
 function lineRange(l: SlotFields): { s: number; e: number } | null {
   if (!l.date || !l.to_date || !l.from_time || !l.to_time) return null;
@@ -366,32 +390,114 @@ export function useTimesheetModal(
   const [isSaving, setIsSaving] = useState(false);
   const [editingName, setEditingName] = useState<string | undefined>(undefined);
   const [customTitle, setCustomTitle] = useState<string | null>(null);
+  const [projectRanges, setProjectRanges] = useState<
+    Record<string, ProjectRange>
+  >({});
+  const requestedRangesRef = useRef<Set<string>>(new Set());
 
   const reset = useCallback(() => {
     setForm(emptyForm(restrictions));
     setEditingName(undefined);
     setCustomTitle(null);
+    setProjectRanges({});
+    requestedRangesRef.current = new Set();
   }, [restrictions]);
 
-  const loadFromDetail = useCallback((detail: TimesheetDetail) => {
-    setEditingName(detail.name);
-    setCustomTitle(detail.title ?? null);
-    setForm({
-      project: "",
-      project_name: "",
-      customer: detail.customer ?? "",
-      customer_name: detail.customer_name ?? detail.customer ?? "",
-      employee: detail.employee,
-      employee_name: detail.employee_name,
-      department: detail.department ?? "",
-      currency: detail.currency,
-      exchange_rate: detail.exchange_rate ?? 1,
-      start_date: detail.start_date,
-      custom_timesheet_start_date: detail.custom_timesheet_start_date ?? "",
-      custom_timesheet_end_date: detail.custom_timesheet_end_date ?? "",
-      lines: detail.time_logs.map(mapTimeLogToLine),
-    });
+  const ensureProjectRanges = useCallback(async (ids: string[]) => {
+    const missing = [...new Set(ids.filter(Boolean))].filter(
+      (id) => !requestedRangesRef.current.has(id),
+    );
+    if (missing.length === 0) return;
+    missing.forEach((id) => requestedRangesRef.current.add(id));
+
+    try {
+      const entries = await Promise.all(
+        missing.map(async (id) => {
+          const projects = await getAllProjects(id);
+          const match = projects.find((p) => p.name === id);
+          return match
+            ? ([
+                id,
+                {
+                  start: match.expected_start_date ?? null,
+                  end: match.expected_end_date ?? null,
+                },
+              ] as const)
+            : null;
+        }),
+      );
+
+      const found = entries.filter(
+        (e): e is NonNullable<typeof e> => e !== null,
+      );
+      if (found.length === 0) return;
+
+      setProjectRanges((r) => {
+        const next = { ...r };
+        found.forEach(([id, range]) => {
+          next[id] = range;
+        });
+        return next;
+      });
+    } catch {
+      missing.forEach((id) => requestedRangesRef.current.delete(id));
+    }
   }, []);
+
+  const rememberRange = useCallback(
+    (id: string, opt: Option) => {
+      if (!id) return;
+      const m = opt.meta as
+        | {
+            expected_start_date?: string | null;
+            expected_end_date?: string | null;
+          }
+        | undefined;
+      if (!m || !("expected_start_date" in m || "expected_end_date" in m)) {
+        void ensureProjectRanges([id]);
+        return;
+      }
+      requestedRangesRef.current.add(id);
+      setProjectRanges((r) => ({
+        ...r,
+        [id]: {
+          start: m.expected_start_date ?? null,
+          end: m.expected_end_date ?? null,
+        },
+      }));
+    },
+    [ensureProjectRanges],
+  );
+
+  const getProjectRange = useCallback(
+    (projectId: string): ProjectRange | undefined =>
+      projectId ? projectRanges[projectId] : undefined,
+    [projectRanges],
+  );
+
+  const loadFromDetail = useCallback(
+    (detail: TimesheetDetail) => {
+      setEditingName(detail.name);
+      setCustomTitle(detail.title ?? null);
+      setForm({
+        project: "",
+        project_name: "",
+        customer: detail.customer ?? "",
+        customer_name: detail.customer_name ?? detail.customer ?? "",
+        employee: detail.employee,
+        employee_name: detail.employee_name,
+        department: detail.department ?? "",
+        currency: detail.currency,
+        exchange_rate: detail.exchange_rate ?? 1,
+        start_date: detail.start_date,
+        custom_timesheet_start_date: detail.custom_timesheet_start_date ?? "",
+        custom_timesheet_end_date: detail.custom_timesheet_end_date ?? "",
+        lines: detail.time_logs.map(mapTimeLogToLine),
+      });
+      void ensureProjectRanges(detail.time_logs.map((l) => l.project));
+    },
+    [ensureProjectRanges],
+  );
 
   const isEditMode = Boolean(editingName);
 
@@ -433,22 +539,26 @@ export function useTimesheetModal(
     }
   }, []);
 
-  const setProject = useCallback((value: string, opt: Option) => {
-    setForm((f) => ({
-      ...f,
-      project: value,
-      project_name: opt.label,
-      lines: f.lines.map((l) =>
-        l.projectManuallySet
-          ? l
-          : {
-              ...clearTaskFields(l),
-              project: value,
-              project_name: opt.label,
-            },
-      ),
-    }));
-  }, []);
+  const setProject = useCallback(
+    (value: string, opt: Option) => {
+      rememberRange(value, opt);
+      setForm((f) => ({
+        ...f,
+        project: value,
+        project_name: opt.label,
+        lines: f.lines.map((l) =>
+          l.projectManuallySet
+            ? l
+            : {
+                ...clearTaskFields(l),
+                project: value,
+                project_name: opt.label,
+              },
+        ),
+      }));
+    },
+    [rememberRange],
+  );
 
   const setCustomer = useCallback(
     async (value: string, opt: Option) => {
@@ -523,38 +633,43 @@ export function useTimesheetModal(
         ...f,
         lines: [
           ...f.lines,
-          placeLine(
-            emptyLine(
-              f.project
-                ? { project: f.project, project_name: f.project_name }
-                : undefined,
-              initialTask,
-              initialDate,
-            ),
-            f.lines,
+          emptyLine(
+            f.project
+              ? { project: f.project, project_name: f.project_name }
+              : undefined,
+            initialTask,
+            initialDate,
           ),
         ],
       }));
+
+      if (initialTask?.project) {
+        void ensureProjectRanges([initialTask.project]);
+      }
+
       if (initialTask?.activity_type) {
         void syncActivityRates([initialTask.activity_type]);
       }
     },
-    [syncActivityRates],
+    [syncActivityRates, ensureProjectRanges],
   );
 
   const addLines = useCallback(
     (tasks: InitialTask[], initialDate?: string) => {
       if (tasks.length === 0) return;
-      setForm((f) => {
-        const lines = [...f.lines];
-        tasks.forEach((t) =>
-          lines.push(placeLine(emptyLine(undefined, t, initialDate), lines)),
-        );
-        return { ...f, lines };
-      });
-      void syncActivityRates(tasks.map((t) => t.activity_type ?? ""));
+
+      setForm((f) => ({
+        ...f,
+        lines: [
+          ...f.lines,
+          ...tasks.map((task) => emptyLine(undefined, task, initialDate)),
+        ],
+      }));
+
+      void ensureProjectRanges(tasks.map((task) => task.project));
+      void syncActivityRates(tasks.map((task) => task.activity_type ?? ""));
     },
-    [syncActivityRates],
+    [syncActivityRates, ensureProjectRanges],
   );
 
   const updateLine = useCallback(
@@ -589,6 +704,7 @@ export function useTimesheetModal(
 
   const setLineProject = useCallback(
     (id: string, value: string, opt: Option) => {
+      rememberRange(value, opt);
       setForm((f) => ({
         ...f,
         lines: f.lines.map((l) =>
@@ -603,7 +719,7 @@ export function useTimesheetModal(
         ),
       }));
     },
-    [],
+    [rememberRange],
   );
 
   const setLineTask = useCallback(
@@ -671,20 +787,21 @@ export function useTimesheetModal(
   const duplicateLine = useCallback(
     (id: string, position: DuplicatePosition = "after") => {
       setForm((f) => {
-        const idx = f.lines.findIndex((l) => l.id === id);
+        const idx = f.lines.findIndex((line) => line.id === id);
         if (idx === -1) return f;
-        const src = f.lines[idx];
-        const copy = placeLine(
-          {
-            ...src,
-            id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            logName: undefined,
-          },
-          f.lines,
-          slotDurationMs(src),
-        );
+
+        const source = f.lines[idx];
+
+        const copy: TimesheetLineDraft = {
+          ...source,
+          id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          logName: undefined,
+          isEditing: true,
+        };
+
         const lines = [...f.lines];
         lines.splice(position === "end" ? lines.length : idx + 1, 0, copy);
+
         return { ...f, lines };
       });
     },
@@ -827,13 +944,17 @@ export function useTimesheetModal(
     [form, editingName, restrictions?.employee, title, autoTitle],
   );
 
-  const validate = useCallback((): string | null => {
-    if (form.lines.length === 0) return "Add at least one time entry.";
-    if (form.lines.some((l) => l.hours <= 0))
-      return "Check from/to times — some rows compute to 0 hours.";
-    if (getConflictingLineIds(form.lines).size > 0) return OVERLAP_MSG;
-    return null;
-  }, [form]);
+  const validate = useCallback(
+    () =>
+      validateTimesheet({
+        form,
+        title,
+        restrictions,
+        getConflictingLineIds,
+        getProjectRange,
+      }),
+    [form, title, restrictions, getProjectRange],
+  );
 
   const save = useCallback(async (): Promise<boolean> => {
     const err = validate();
@@ -923,6 +1044,8 @@ export function useTimesheetModal(
     isSaving,
     isEditMode,
     restrictions,
+    projectRanges,
+    getProjectRange,
     setTitle,
     setProject,
     setCustomer,

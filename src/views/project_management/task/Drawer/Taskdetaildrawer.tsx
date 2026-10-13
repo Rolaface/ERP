@@ -12,6 +12,9 @@ import type {
 import DateDisplay from "../../../../components/UI_Utils/Datedisplay";
 import { parseAssignedEmails } from "../../../../api/project/task/taskapi";
 import { fireManagedSwal } from "../../../../utils/swalManager";
+import type { DependencyInfo } from "../../../../hooks/project_management/task/table/Usetaskdrawer";
+import AssigneeCell from "../components/AssigneeCell";
+import { fetchProjectAssigneeOptions } from "../components/Taskoptionfetchers";
 const STATUS_MAP: Record<string, string> = {
   Open: "bg-draft",
   Working: "bg-info",
@@ -21,6 +24,9 @@ const STATUS_MAP: Record<string, string> = {
   Completed: "bg-success",
   Cancelled: "bg-danger",
 };
+
+const statusClassOf = (status?: string): string =>
+  STATUS_MAP[status ?? "Open"] ?? "bg-draft";
 
 const STATUS_OPTIONS: TaskStatus[] = [
   "Open",
@@ -44,10 +50,22 @@ interface Props {
   data: TaskDetail | null;
   loading?: boolean;
   canEditStatus?: boolean;
-  showFinancials?: boolean; // default true
+  showFinancials?: boolean;
   onClose: () => void;
   onStatusChange?: (taskName: string, nextStatus: string) => void;
+  onDependencyClick?: (taskName: string) => void;
+  canAssign?: boolean;
+  assignOnlyOwn?: boolean;
+  currentUserEmail?: string;
+  dependencyInfo?: Record<string, DependencyInfo>;
+  onAssigneesChange?: (
+    taskName: string,
+    emails: string[],
+    description?: string,
+  ) => Promise<void>;
   actionLoading?: boolean;
+  assignmentNotes?: { user: string; text: string }[];
+  showNoteUser?: boolean;
 }
 
 const getDisplayName = (email: string): string => {
@@ -75,13 +93,55 @@ const TaskDetailDrawer: React.FC<Props> = ({
   showFinancials = true,
   onClose,
   onStatusChange,
+  onDependencyClick,
+  canAssign,
+  assignOnlyOwn,
+  currentUserEmail,
+  dependencyInfo = {},
+  onAssigneesChange,
   actionLoading,
+  assignmentNotes,
+  showNoteUser,
 }) => {
   if (!open) return null;
 
-  const statusCls = STATUS_MAP[data?.status ?? "Open"] ?? "bg-draft";
+  const statusCls = statusClassOf(data?.status);
   const assignees = parseAssignedEmails(data?._assign ?? null);
   const dependencies = data?.depends_on ?? [];
+
+  const renderAssignee = (
+    taskName: string,
+    project: string | null | undefined,
+    status: string | undefined,
+    assign: string | null | undefined,
+  ) => {
+    const emails = parseAssignedEmails(assign ?? null);
+
+    if (
+      assignOnlyOwn &&
+      (!currentUserEmail || !emails.includes(currentUserEmail))
+    ) {
+      return null;
+    }
+
+    if (status === "Completed" || status === "Cancelled") {
+      return <span className="text-xs text-muted">—</span>;
+    }
+
+    return (
+      <AssigneeCell
+        emails={emails}
+        disabled={!canAssign || !project || !onAssigneesChange}
+        currentUserEmail={currentUserEmail}
+        fetchOptions={(q) => fetchProjectAssigneeOptions(project ?? "", q)}
+        onChange={(nextValues, description) =>
+          onAssigneesChange
+            ? onAssigneesChange(taskName, nextValues, description)
+            : Promise.resolve()
+        }
+      />
+    );
+  };
 
   const renderFooter = () => {
     if (!data) return null;
@@ -284,15 +344,23 @@ const TaskDetailDrawer: React.FC<Props> = ({
                 marginBottom: 7,
               }}
             >
-              {/* <F
-                label="Assigned To"
-                value={
-                  assignees.length > 0
-                    ? assignees.map(getDisplayName).join(", ")
-                    : "Unassigned"
-                }
-              /> */}
               <F label="Created By" value={data.owner} />
+              <div>
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: "var(--muted)",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    display: "block",
+                    marginBottom: 3,
+                  }}
+                >
+                  Assigned To
+                </span>
+                {renderAssignee(data.name, data.project, data.status, data._assign)}
+              </div>
             </div>
 
             <S title="Timeline" />
@@ -406,6 +474,58 @@ const TaskDetailDrawer: React.FC<Props> = ({
                 )}
               </div>
             </div>
+
+            {assignmentNotes && assignmentNotes.length > 0 && (
+              <>
+                <S title="Assignment Notes" />
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    marginBottom: 7,
+                  }}
+                >
+                  {assignmentNotes.map((note, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        background: "var(--bg)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        padding: "8px 10px",
+                      }}
+                    >
+                      {showNoteUser && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: "var(--muted)",
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            display: "block",
+                            marginBottom: 3,
+                          }}
+                        >
+                          {note.user}
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text)",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {note.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {showFinancials && (
@@ -590,44 +710,106 @@ const TaskDetailDrawer: React.FC<Props> = ({
                   overflow: "hidden",
                 }}
               >
-                {dependencies.map((dep, i) => (
-                  <div
-                    key={dep.name ?? i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "8px 10px",
-                      borderTop: i === 0 ? "none" : "1px solid var(--border)",
-                    }}
-                  >
-                    <span
+                {dependencies.map((dep, i) => {
+                  const target = dep.task;
+                  const handler = onDependencyClick;
+                  const activate =
+                    handler && target ? () => handler(target) : undefined;
+                  const info = target ? dependencyInfo[target] : undefined;
+
+                  return (
+                    <div
+                      key={dep.name ?? i}
+                      role={activate ? "button" : undefined}
+                      tabIndex={activate ? 0 : undefined}
+                      title={activate ? "Find in task list" : undefined}
+                      className={
+                        activate
+                          ? "transition-colors hover:bg-row-hover"
+                          : undefined
+                      }
+                      onClick={activate}
+                      onKeyDown={
+                        activate
+                          ? (e) => {
+                              if (e.target !== e.currentTarget) return;
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                activate();
+                              }
+                            }
+                          : undefined
+                      }
                       style={{
-                        fontSize: 12,
-                        fontFamily: "monospace",
-                        color: "var(--primary)",
-                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "8px 10px",
+                        borderTop: i === 0 ? "none" : "1px solid var(--border)",
+                        cursor: activate ? "pointer" : "default",
                       }}
                     >
-                      {dep.task}
-                    </span>
-                    {dep.subject && (
                       <span
                         style={{
+                          flexShrink: 0,
+                          fontSize: 12,
+                          fontFamily: "monospace",
+                          color: "var(--primary)",
+                          fontWeight: 600,
+                          textDecoration: activate ? "underline" : "none",
+                        }}
+                      >
+                        {dep.task}
+                      </span>
+                      <span
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
                           fontSize: 12,
                           color: "var(--muted)",
-                          maxWidth: "60%",
                           textAlign: "right",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {dep.subject}
+                        {dep.subject ?? ""}
                       </span>
-                    )}
-                  </div>
-                ))}
+                      {info?.status && (
+                        <span
+                          className={`idm-btn ${statusClassOf(info.status)}`}
+                          style={{
+                            flexShrink: 0,
+                            cursor: "inherit",
+                            padding: "2px 9px",
+                            fontSize: 10,
+                            borderRadius: 20,
+                          }}
+                        >
+                          {info.status}
+                        </span>
+                      )}
+                      {target && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          style={{ flexShrink: 0, width: 130, cursor: "default" }}
+                        >
+                          {info ? (
+                            renderAssignee(
+                              target,
+                              info.project,
+                              info.status,
+                              info.assign,
+                            )
+                          ) : (
+                            <span className="text-xs text-muted">…</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
