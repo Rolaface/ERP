@@ -68,7 +68,7 @@ const formatDate = (raw: string) => {
 
 /*  REPORT TYPE OPTIONS  */
 
-const REPORT_TYPE_OPTIONS: { label: string; value: ReportType | "All" }[] = [
+const REPORT_TYPE_OPTIONS: { label: string; value: ReportType }[] = [
   { label: "Quotations", value: "Quotations" },
   { label: "Proforma Invoice", value: "Proforma Invoice" },
   { label: "Invoices", value: "Invoices" },
@@ -81,8 +81,7 @@ export default function ReportTable() {
   const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [rows, setRows] = useState<ReportRow[]>([]);
+const [statusFilter, setStatusFilter] = useState<string[]>([]);  const [rows, setRows] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -250,8 +249,11 @@ export default function ReportTable() {
         if (!matches) return false;
       }
 
-      if (statusFilter !== "All" && String(row.status ?? "") !== statusFilter)
-        return false;
+      if (
+  statusFilter.length > 0 &&
+  !statusFilter.includes(String(row.status ?? ""))
+)
+  return false;
 
       const rowDate = dateStringForInput(row.date);
       if (dateFrom && rowDate && rowDate < dateFrom) return false;
@@ -259,7 +261,7 @@ export default function ReportTable() {
 
       return true;
     });
-  }, [rows, searchTerm, statusFilter, dateFrom, dateTo]);
+  }, [rows, searchTerm, statusFilter, dateFrom, dateTo, reportTypes]);
 
   /* ── Reset page on filter change ── */
 
