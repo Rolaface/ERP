@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Plus } from "lucide-react";
 import { usePermission } from "../../../../hooks/permission/usePermission";
 import { useHRView } from "../../../../hooks/permission/useHRView";
 import {
@@ -24,6 +25,7 @@ import {
   fetchProjectOptions,
   fetchUserOptions,
 } from "../components/Taskoptionfetchers";
+import { openTaskFormModal } from "../../../../components/project management/task/Taskform.modal ";
 import {
   CONTENT_HEIGHT,
   EMPLOYEE_DEFAULT_VIEW,
@@ -57,6 +59,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
   const isEmployee = viewMode === "employee";
 
   const canWriteTask = can(TASK_MODULE, "write");
+  const canCreateTask = can(TASK_MODULE, "create");
   const canLogTime = can(TIMESHEET_MODULE, "create");
   const canBulkSelect = canLogTime || canWriteTask;
 
@@ -297,12 +300,32 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     setView(next);
   };
 
+  const handleAddTask = () => openTaskFormModal({ onSuccess: refreshAll });
+
   const viewSelector = (
     <ViewSelector
       value={view}
       options={VIEW_OPTIONS}
       onChange={handleViewChange}
     />
+  );
+
+  const addTaskButton = canCreateTask ? (
+    <button
+      type="button"
+      onClick={handleAddTask}
+      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+    >
+      <Plus size={14} />
+      Add Task
+    </button>
+  ) : null;
+
+  const toolbarActions = (
+    <>
+      {addTaskButton}
+      {viewSelector}
+    </>
   );
 
   const hasActiveFilters =
@@ -353,7 +376,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
             canEdit={canWriteTask}
             canEditTask={() => canWriteTask}
             onView={drawer.handleView}
-            toolbarRight={viewSelector}
+            toolbarRight={toolbarActions}
             taskNames={isEmployee ? assigned.assignedNames : undefined}
             showProgress={!isEmployee}
           />
@@ -429,7 +452,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
                       />
                     </>
                   )}
-                  {viewSelector}
+                  {toolbarActions}
                 </div>
 
                 <ClearFiltersButton
