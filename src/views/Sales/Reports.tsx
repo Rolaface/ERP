@@ -18,10 +18,11 @@ import {
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+import MultiSelectFilter from "../../components/ui/modal/MultiSelectFilter";
+
 /*  TYPES  */
 
 type ReportType =
-  | "All"
   | "Quotations"
   | "Proforma Invoice"
   | "Invoices"
@@ -68,7 +69,6 @@ const formatDate = (raw: string) => {
 /*  REPORT TYPE OPTIONS  */
 
 const REPORT_TYPE_OPTIONS: { label: string; value: ReportType | "All" }[] = [
-  { label: "All Types", value: "All" },
   { label: "Quotations", value: "Quotations" },
   { label: "Proforma Invoice", value: "Proforma Invoice" },
   { label: "Invoices", value: "Invoices" },
@@ -78,7 +78,7 @@ const REPORT_TYPE_OPTIONS: { label: string; value: ReportType | "All" }[] = [
 
 export default function ReportTable() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [reportType, setReportType] = useState<ReportType | "All">("All");
+  const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -95,44 +95,34 @@ export default function ReportTable() {
     const load = async () => {
       setLoading(true);
       try {
-        const fetchAll = reportType === "All";
+
 
         const [qRes, pRes, iRes, cRes, dRes] = await Promise.all([
-          fetchAll || reportType === "Quotations"
-            ? getAllQuotations(1, 1000, {})
-            : Promise.resolve(null),
-          fetchAll || reportType === "Proforma Invoice"
-            ? getAllProformaInvoices(1, 1000)
-            : Promise.resolve(null),
-          fetchAll || reportType === "Invoices"
-            ? getAllSalesInvoices(1, 1000)
-            : Promise.resolve(null),
-          fetchAll || reportType === "Credit Notes"
-            ? getAllCreditNotes(1, 1000)
-            : Promise.resolve(null),
-          fetchAll || reportType === "Debit Notes"
-            ? getAllDebitNotes(1, 1000)
-            : Promise.resolve(null),
+          getAllQuotations(1, 1000, {}),
+          getAllProformaInvoices(1, 1000),
+          getAllSalesInvoices(1, 1000),
+          getAllCreditNotes(1, 1000),
+          getAllDebitNotes(1, 1000),
         ]);
 
         const mappedQuotations: ReportRow[] = Array.isArray(
           qRes?.data?.quotations,
         )
           ? qRes.data.quotations.map((q: any) => ({
-              type: "Quotations" as ReportType,
-              documentNo: q?.id ?? q?.quotationNumber ?? "",
-              customerName:
-                q?.customerName ??
-                q?.customer?.name ??
-                q?.clientName ??
-                q?.name ??
-                "",
-              date: q?.transactionDate ?? q?.quotationDate ?? "",
-              dueDate: q?.validTill ?? q?.validUntil ?? "",
-              currency: q?.currency ?? q?.currencyCode ?? "",
-              amount: Number(q?.grandTotal ?? q?.totalAmount ?? 0),
-              status: q?.status ?? q?.invoiceStatus,
-            }))
+            type: "Quotations" as ReportType,
+            documentNo: q?.id ?? q?.quotationNumber ?? "",
+            customerName:
+              q?.customerName ??
+              q?.customer?.name ??
+              q?.clientName ??
+              q?.name ??
+              "",
+            date: q?.transactionDate ?? q?.quotationDate ?? "",
+            dueDate: q?.validTill ?? q?.validUntil ?? "",
+            currency: q?.currency ?? q?.currencyCode ?? "",
+            amount: Number(q?.grandTotal ?? q?.totalAmount ?? 0),
+            status: q?.status ?? q?.invoiceStatus,
+          }))
           : [];
 
         const mappedProforma: ReportRow[] = Array.isArray(pRes?.data)
@@ -210,21 +200,11 @@ export default function ReportTable() {
           : [];
 
         const all = [
-          ...(reportType === "All" || reportType === "Quotations"
-            ? mappedQuotations
-            : []),
-          ...(reportType === "All" || reportType === "Proforma Invoice"
-            ? mappedProforma
-            : []),
-          ...(reportType === "All" || reportType === "Invoices"
-            ? mappedInvoices
-            : []),
-          ...(reportType === "All" || reportType === "Credit Notes"
-            ? mappedCreditNotes
-            : []),
-          ...(reportType === "All" || reportType === "Debit Notes"
-            ? mappedDebitNotes
-            : []),
+          ...mappedQuotations,
+          ...mappedProforma,
+          ...mappedInvoices,
+          ...mappedCreditNotes,
+          ...mappedDebitNotes,
         ];
 
         if (!cancelled) setRows(all);
@@ -237,7 +217,7 @@ export default function ReportTable() {
     return () => {
       cancelled = true;
     };
-  }, [reportType]);
+  }, []);
 
   /* ── Unique statuses for filter ── */
 
@@ -255,6 +235,7 @@ export default function ReportTable() {
   const filteredData = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return rows.filter((row) => {
+      if (reportTypes.length > 0 && !reportTypes.includes(row.type)) return false;
       if (term) {
         const matches =
           String(row.customerName ?? "")
@@ -284,7 +265,7 @@ export default function ReportTable() {
 
   useEffect(() => {
     setPage(1);
-  }, [reportType, dateFrom, dateTo, statusFilter, searchTerm, pageSize]);
+  }, [reportTypes, dateFrom, dateTo, statusFilter, searchTerm, pageSize]);
 
   /* ── Pagination ── */
 
@@ -346,7 +327,8 @@ export default function ReportTable() {
         new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }),
-        `Sales_Report_${reportType.replace(/\s+/g, "_")}.xlsx`,
+        `Sales_Report_${reportTypes.length ? reportTypes.join("_").replace(/\s+/g, "_") : "All"
+        }.xlsx`,
       );
 
       closeSwal();
@@ -465,17 +447,13 @@ export default function ReportTable() {
   const extraFilters = (
     <div className="flex flex-wrap gap-2 items-center">
       {/* Report Type */}
-      <select
-        className="bg-card border border-theme rounded-lg text-sm text-main shadow-sm focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition px-3 py-2 appearance-none"
-        value={reportType}
-        onChange={(e) => setReportType(e.target.value as ReportType | "All")}
-      >
-        {REPORT_TYPE_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <MultiSelectFilter
+        options={REPORT_TYPE_OPTIONS}
+        values={reportTypes}
+        onChange={(v) => setReportTypes(v as ReportType[])}
+        placeholder="Type"
+        panelTitle="Report Type"
+      />
       <DateRangeFilter
         from={dateFrom}
         to={dateTo}

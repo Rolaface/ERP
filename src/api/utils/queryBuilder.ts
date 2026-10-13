@@ -44,8 +44,9 @@ export function buildListParams({
     ]);
     params.append("or_filters", JSON.stringify(orFilters));
   }
-  if (status) {
-    params.append("or_filters", JSON.stringify({ status }));
-  }
-  return params.toString();
+  const statusList = Array.isArray(status) ? status : status ? [status] : [];
+  if (statusList.length) {
+  params.append("filters", JSON.stringify([["status", "in", statusList]]));
+}
+return params.toString();
 }

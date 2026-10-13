@@ -122,8 +122,10 @@ export async function getExpenseClaims(
 ): Promise<{ data: ExpenseClaimRecord[]; pagination: { total_pages: number; total: number } }> {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
-  if (employeeId)  params.append("employee",  employeeId); 
-  if (approvalStatus) params.append("approval_status", approvalStatus);
+  if (employeeId) params.append("employee", employeeId);
+  if (approvalStatus?.length) {
+    params.append("approval_status", approvalStatus.join(","));
+  }
   params.append("page", String(page));
   params.append("page_size", String(pageSize));
   const resp: AxiosResponse = await api.get(`${ExpenseClaimAPI.getExpenseClaims}?${params.toString()}`);
@@ -388,7 +390,7 @@ export async function getAllAdvances(
       pageSize,
       search,
       searchFields: ["employee_name", "purpose", "name"],
-      status: status,
+      status: status?.length ? status : undefined,
     });
 
     const resp = await api.get(`${ExpenseClaimAPI.advance}?${query}`);
@@ -403,7 +405,7 @@ export async function getAdvanceById(id: string): Promise<any> {
   params.append("filters", JSON.stringify({ name: id }));
 
   const resp: AxiosResponse = await api.get(
-    `${ExpenseClaimAPI.advance}?${params.toString()}`
+    `${ExpenseClaimAPI.advance}?${params.toString()}`,
   );
 
   const raw: any[] = resp?.data?.data ?? [];
@@ -411,13 +413,13 @@ export async function getAdvanceById(id: string): Promise<any> {
 }
 export async function deleteEmployeeAdvance(id: string): Promise<any> {
   const resp: AxiosResponse = await api.delete(
-    `${ExpenseClaimAPI.advance}/${encodeURIComponent(id)}`
+    `${ExpenseClaimAPI.advance}/${encodeURIComponent(id)}`,
   );
   return resp.data || null;
 }
 export async function updateAdvanceStatus(
   id: string,
-  action: "submit" | "cancel"
+  action: "submit" | "cancel",
 ): Promise<any> {
   const resp: AxiosResponse = await api.post(
     ExpenseClaimAPI.changeAdvanceStatus,
@@ -425,7 +427,7 @@ export async function updateAdvanceStatus(
       docnames: JSON.stringify([id]),
       action,
       doctype: "Employee Advance",
-    }
+    },
   );
   return resp.data || null;
 }
