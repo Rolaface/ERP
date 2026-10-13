@@ -6,6 +6,7 @@ import { useCompanyStore } from "../store/companyStore";
 import { resetPasswordApi } from "../api/authService";
 import { getCurrencyList }
   from "../api/lookupApi";
+  import { getModuleList } from "../utils/productClassifier";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 // const LMS_URL = import.meta.env.VITE_LMS_URL as string;
 
@@ -74,8 +75,8 @@ export const useLogin = () => {
 
     // ── only lms forward sid ─────────────
     if (products.length === 1 && products[0] === "lms") {
-       const lendingEnabled = basicUser.subscribedModules?.lending?.enabled === true;
-      const losEnabled = basicUser.subscribedModules?.los?.enabled === true;
+     const lendingEnabled = getModuleList(basicUser.subscribedModules, "LMS").length > 0;
+const losEnabled = getModuleList(basicUser.subscribedModules, "LOS").length > 0;
 
       // Pure lending-only or pure los-only — go straight to LMS with the
       // right mode, no picker needed.
