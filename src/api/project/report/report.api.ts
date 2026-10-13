@@ -40,7 +40,6 @@ export interface DocFieldMeta {
 
 export interface TimesheetActivityEntry {
   timesheet: string;
-timesheet_title: string | null;
   employee: string | null;
   employee_name: string | null;
   status: string;

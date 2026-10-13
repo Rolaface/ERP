@@ -32,7 +32,6 @@ const startOfMonth = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 };
 
-
 const labelCls = "text-[9px] font-black uppercase tracking-widest text-muted";
 const thCls =
   "px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)]";
