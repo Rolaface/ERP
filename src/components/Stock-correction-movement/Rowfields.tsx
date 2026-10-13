@@ -1,47 +1,30 @@
-import React from "react";
-// import StockItemNameCodeSelect from "../../components/selects/StockCorrectionItemSelect";
-import { ModalInput, ModalSelect, NumericInput, ToggleSwitch } from "../../components/ui/modal/modalComponent";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ArrowRightLeft, Check, ChevronDown, Factory, Wrench } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { NumericInput, ToggleSwitch } from "../../components/ui/modal/modalComponent";
 import type {
   CorrectionRow,
+  ManufactureRow,
   Mode,
   MovementRow,
   Option,
   StockEntryType,
   StockItemSelectPayload,
 } from "../../hooks/stock correction-movement/Usestockcorrectionform";
-import { RemoveRowButton, SectionLabel } from "../../components/Stock-correction-movement/Summaryui";
+import { FieldLabel, RemoveRowButton, TextCell } from "../../components/Stock-correction-movement/Summaryui";
 import StockItemSelect from "../../components/selects/StockItemSelect";
+import ItemSelect from "../../components/selects/ItemSelect";
+import type { SelectedStockItem } from "../../components/selects/ItemSelect";
 
 import WarehouseSelect from "../selects/WarehouseSelect";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
-// ─── Item picker + Correction/Movement toggle ──────────────────────────────
+const NUM_INPUT = "h-[28px] text-[12px] w-full text-right tabular-nums";
 
-const ModeButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({
-  active,
-  onClick,
-  children,
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={[
-      "h-9 rounded-md text-[11px] font-bold uppercase tracking-wide transition-all border leading-none",
-      active ? "text-white shadow-sm border-transparent" : "text-muted hover:text-main border-theme bg-row-hover/40",
-    ].join(" ")}
-    style={active ? { background: "var(--primary,#1c3f6e)" } : undefined}
-  >
-    {children}
-  </button>
-);
+const fmtQty = (n: number | null | undefined) => (n == null ? "—" : n.toLocaleString());
 
-interface ItemAndModeHeaderProps {
-  mode: Mode;
-  onModeChange: (mode: Mode) => void;
-  itemSelectResetKey: number;
-  itemPrefillName: string;
-  onItemPicked: (payload: StockItemSelectPayload) => void;
-  onItemClear: () => void;
-}
+// ─── Item picker + transaction type ─────────────────────────────────────────
 
 export const ItemPicker: React.FC<{
   mode: Mode;
@@ -50,41 +33,137 @@ export const ItemPicker: React.FC<{
   onItemClear: () => void;
 }> = ({ mode, selectedItem, onItemPicked, onItemClear }) => (
   <div>
-    <SectionLabel>Item</SectionLabel>
-    <div className="mt-2">
-      <StockItemSelect
-        itemName={selectedItem?.label}
-        onChange={onItemPicked}
-        onClear={onItemClear}
-        invoiceType="Product"
-        // correction ke liye 0-stock items bhi pick karne dena hai (loss/damage likhne ke liye),
-        // movement ke liye sirf stock wale items — isQuotation=true disable check ko bypass kar deta hai
-        isQuotation={mode === "correction"}
-        // Sirf is Stock Correction/Movement modal ke liye — dropdown me item pick karte hi
-        // "Select item" box me ItemName-BatchNo-Warehouse format me dikhta hai.
-        // StockItemSelect ke andar formatDisplayName na diya jaye to default behavior
-        // (sirf item name) hi chalta hai, isliye baaki jagah kuch nahi badalta.
-        formatDisplayName={(row: any) =>
-          [row.itemName, row.batchNo, row.warehouse].filter(Boolean).join("-")
-        }
-      />
-    </div>
+    <FieldLabel>Item</FieldLabel>
+    <StockItemSelect
+      itemName={selectedItem?.label}
+      onChange={onItemPicked}
+      onClear={onItemClear}
+      invoiceType="Product"
+      // correction ke liye 0-stock items bhi pick karne dena hai (loss/damage likhne ke liye),
+      // movement ke liye sirf stock wale items — isQuotation=true disable check ko bypass kar deta hai
+      isQuotation={mode === "correction"}
+      // Sirf is Stock Correction/Movement modal ke liye — dropdown me item pick karte hi
+      // "Select item" box me ItemName-BatchNo-Warehouse format me dikhta hai.
+      // StockItemSelect ke andar formatDisplayName na diya jaye to default behavior
+      // (sirf item name) hi chalta hai, isliye baaki jagah kuch nahi badalta.
+      formatDisplayName={(row: any) =>
+        [row.itemName, row.batchNo, row.warehouse].filter(Boolean).join("-")
+      }
+    />
   </div>
 );
 
-export const TransactionTypeToggle: React.FC<{ mode: Mode; onModeChange: (mode: Mode) => void }> = ({
+export const MODE_META: Record<Mode, { label: string; sub: string; headline: string; icon: LucideIcon }> = {
+  correction: {
+    label: "Correction",
+    sub: "Fix stock levels in a warehouse",
+    headline: "Adjust stock levels with batch-level traceability.",
+    icon: Wrench,
+  },
+  movement: {
+    label: "Movement",
+    sub: "Transfer or issue stock",
+    headline: "Move stock between warehouses or issue it out.",
+    icon: ArrowRightLeft,
+  },
+  manufacture: {
+    label: "Manufacture",
+    sub: "Consume materials, produce goods",
+    headline: "Turn raw materials into finished products.",
+    icon: Factory,
+  },
+};
+
+const MODES: Mode[] = ["correction", "movement", "manufacture"];
+
+export const TransactionTypeSelect: React.FC<{ mode: Mode; onModeChange: (mode: Mode) => void }> = ({
   mode,
   onModeChange,
-}) => (
-  <ToggleSwitch
-    name="transactionType"
-    label="Transaction Type"
-    checked={mode === "movement"}
-    offLabel="Correction"
-    onLabel="Movement"
-    onChange={(e) => onModeChange(e.target.checked ? "movement" : "correction")}
-  />
-);
+}) => {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const Current = MODE_META[mode].icon;
+
+  useEffect(() => {
+    if (!rect) return;
+    const close = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (btnRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      setRect(null);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setRect(null);
+    const onResize = () => setRect(null);
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [rect]);
+
+  return (
+    <div className="w-[170px]">
+      <FieldLabel>Transaction Type</FieldLabel>
+      <button
+        ref={btnRef}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={!!rect}
+        onClick={() => setRect(rect ? null : btnRef.current!.getBoundingClientRect())}
+        className={[
+          "w-full h-[28px] flex items-center gap-2 px-2 border rounded bg-card text-[12px] font-semibold text-main transition-colors",
+          rect ? "border-primary ring-2 ring-primary/20" : "border-theme hover:border-primary",
+        ].join(" ")}
+      >
+        <Current className="w-3.5 h-3.5 text-primary" />
+        <span className="flex-1 text-left truncate">{MODE_META[mode].label}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-muted transition-transform ${rect ? "rotate-180" : ""}`} />
+      </button>
+
+      {rect &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="listbox"
+            className="fixed p-1 rounded-[10px] border border-theme bg-card shadow-xl"
+            style={{ top: rect.bottom + 4, left: rect.left, minWidth: Math.max(rect.width, 240), zIndex: 9999 }}
+          >
+            {MODES.map((m) => {
+              const meta = MODE_META[m];
+              const Icon = meta.icon;
+              const active = m === mode;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => {
+                    setRect(null);
+                    onModeChange(m);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left hover:bg-app transition-colors"
+                >
+                  <span className="grid place-items-center w-7 h-7 rounded-md bg-primary/10 text-primary">
+                    <Icon className="w-[15px] h-[15px]" />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <b className="block text-[12px] font-semibold text-main">{meta.label}</b>
+                    <i className="block not-italic text-[11px] text-muted">{meta.sub}</i>
+                  </span>
+                  <Check className={`w-[15px] h-[15px] text-primary ${active ? "opacity-100" : "opacity-0"}`} />
+                </button>
+              );
+            })}
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+};
 
 export const StockEntryTypeToggle: React.FC<{
   stockEntryType: StockEntryType;
@@ -100,53 +179,24 @@ export const StockEntryTypeToggle: React.FC<{
   />
 );
 
+// ─── Correction row ─────────────────────────────────────────────────────────
+
 interface CorrectionRowFieldsProps {
   row: CorrectionRow;
-  branchOptions: Option[];
-  batchOptionsForRow?: Option[];
   isOpeningStock: boolean;
   onChange: (id: string, field: "branch" | "batchNo" | "correctQty" | "valuationRate", value: string) => void;
-  onRemove: (id: string) => void;
-  removeDisabled: boolean;
 }
 
-export const CorrectionRowFields: React.FC<CorrectionRowFieldsProps> = ({
-  row,
-  branchOptions,
-  isOpeningStock,
-  onChange,
-  onRemove,
-  removeDisabled,
-}) => (
-  <>
-    <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-      <WarehouseSelect
-        value={row.branch}
-        compact
-        onChange={(e) => onChange(row.id, "branch", e.target.value)}
-        readOnlyField
-        disabled
-      />
-    </div>
-    <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-      <ModalInput
-        label=""
-        type="text"
-        value={row.batchNo || ""}
-        placeholder="—"
-        disabled
-        readOnly
-      />
-    </div>
-    <div className="scm-cell scm-cell-border text-[12px] text-muted" style={{ padding: "6px 10px" }}>
-      {row.expiryDate || "—"}
-    </div>
-    <div className="scm-cell scm-cell-border text-[12px] font-semibold text-main" style={{ padding: "6px 10px" }}>
-      {row.availableQty === null ? "—" : row.availableQty.toLocaleString()}
-    </div>
+export const CorrectionRowFields: React.FC<CorrectionRowFieldsProps> = ({ row, isOpeningStock, onChange }) => {
+  const finalQty = row.finalQty === "" ? null : Number(row.finalQty);
+  const touched = row.correctQty !== "" && row.correctQty !== "-";
 
-    {/* Valuation Rate — editable only when this is an Opening Stock entry, otherwise derived from the batch */}
-    <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
+  return (
+    <>
+      <TextCell>{getGLNameWithoutAbbreviation(row.branch) || "—"}</TextCell>
+      <TextCell>{row.batchNo || "—"}</TextCell>
+      <TextCell muted>{row.expiryDate || "—"}</TextCell>
+      <TextCell align="right" muted>{fmtQty(row.availableQty)}</TextCell>
       {isOpeningStock ? (
         <NumericInput
           value={row.valuationRate}
@@ -154,48 +204,37 @@ export const CorrectionRowFields: React.FC<CorrectionRowFieldsProps> = ({
           decimalScale={2}
           placeholder="0.00"
           onChange={(v) => onChange(row.id, "valuationRate", v === null ? "" : String(v))}
-          className="h-[28px] text-[11px] w-full"
+          className={NUM_INPUT}
         />
       ) : (
-        <span className="text-[12px] font-semibold text-main">
-          {row.valuationRate != null ? row.valuationRate.toLocaleString() : "—"}
-        </span>
+        <TextCell align="right" muted>{fmtQty(row.valuationRate)}</TextCell>
       )}
-    </div>
-
-    {/* Correct Qty — signed delta, e.g. -30 to decrease, 20 to increase */}
-    <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
       <NumericInput
-        value={row.correctQty === "" || row.correctQty === "-" ? null : Number(row.correctQty)}
+        value={touched ? Number(row.correctQty) : null}
         allowNegative
         decimalScale={0}
-        placeholder="0"
+        placeholder="+ / −"
         onChange={(v) => onChange(row.id, "correctQty", v === null ? "" : String(v))}
-        className="h-[28px] text-[11px] w-full"
+        className={NUM_INPUT}
       />
-    </div>
+      <TextCell
+        align="right"
+        className={touched && finalQty != null ? (finalQty < 0 ? "text-danger font-bold" : "text-success font-bold") : ""}
+      >
+        {touched ? fmtQty(finalQty) : "—"}
+      </TextCell>
+    </>
+  );
+};
 
-    {/* Final Qty — read-only, auto-calculated from Available Stock + Correct Qty */}
-    <div className="scm-cell scm-cell-border text-[12px] font-semibold text-main" style={{ padding: "6px 10px" }}>
-      {row.finalQty === "" ? "—" : Number(row.finalQty).toLocaleString()}
-    </div>
-
-    <div className="scm-cell" style={{ justifyContent: "center", padding: "6px 10px" }}>
-      <RemoveRowButton onClick={() => onRemove(row.id)} disabled={removeDisabled} />
-    </div>
-  </>
-);
-
-// ─── Movement row fields ─────────────────────────────────────────────────────
+// ─── Movement row ───────────────────────────────────────────────────────────
 
 interface MovementRowFieldsProps {
   row: MovementRow;
   stockEntryType: StockEntryType;
-  onChange: (
-    id: string,
-    field: keyof Omit<MovementRow, "id">,
-    value: string
-  ) => void;
+  batchNo?: string;
+  availableQty?: number | null;
+  onChange: (id: string, field: keyof Omit<MovementRow, "id">, value: string) => void;
   onRemove: (id: string) => void;
   removeDisabled: boolean;
 }
@@ -203,43 +242,105 @@ interface MovementRowFieldsProps {
 export const MovementRowFields: React.FC<MovementRowFieldsProps> = ({
   row,
   stockEntryType,
+  batchNo,
+  availableQty,
   onChange,
   onRemove,
   removeDisabled,
 }) => {
   const isIssue = stockEntryType === "Material Issue";
+  const exceeds = availableQty != null && Number(row.qty) > availableQty;
 
   return (
     <>
-      <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-        <WarehouseSelect
-          value={row.from}
-          compact
-          onChange={(e) => onChange(row.id, "from", e.target.value)}
-        />
-      </div>
-      <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-        <WarehouseSelect
-          value={isIssue ? "" : row.to}
-          compact
-          disabled={isIssue}
-          readOnlyField={isIssue}
-          onChange={(e) => onChange(row.id, "to", e.target.value)}
-        />
-      </div>
-      <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-        <NumericInput
-          value={row.qty === "" ? null : Number(row.qty)}
-          allowNegative={false}
-          decimalScale={0}
-          placeholder="0"
-          onChange={(v) => onChange(row.id, "qty", v === null ? "" : String(v))}
-          className="h-[28px] text-[11px] w-full"
-        />
-      </div>
-      <div className="scm-cell" style={{ justifyContent: "center", padding: "6px 10px" }}>
-        <RemoveRowButton onClick={() => onRemove(row.id)} disabled={removeDisabled} />
-      </div>
+      <WarehouseSelect value={row.from} compact onChange={(e) => onChange(row.id, "from", e.target.value)} />
+      <TextCell>{batchNo || "—"}</TextCell>
+      {isIssue ? (
+        <TextCell muted>Issued out of stock</TextCell>
+      ) : (
+        <WarehouseSelect value={row.to} compact onChange={(e) => onChange(row.id, "to", e.target.value)} />
+      )}
+      <NumericInput
+        value={row.qty === "" ? null : Number(row.qty)}
+        allowNegative={false}
+        decimalScale={0}
+        placeholder="0"
+        onChange={(v) => onChange(row.id, "qty", v === null ? "" : String(v))}
+        className={NUM_INPUT}
+      />
+      <TextCell align="right" muted={!exceeds} className={exceeds ? "text-danger font-bold" : ""}>
+        {fmtQty(availableQty)}
+      </TextCell>
+      <RemoveRowButton onClick={() => onRemove(row.id)} disabled={removeDisabled} />
     </>
   );
 };
+
+// ─── Manufacture rows ───────────────────────────────────────────────────────
+
+interface ConsumeRowFieldsProps {
+  row: ManufactureRow;
+  onItemPicked: (id: string, payload: StockItemSelectPayload) => void;
+  onItemClear: (id: string) => void;
+  onQtyChange: (id: string, value: string) => void;
+  onRemove: (id: string) => void;
+  removeDisabled: boolean;
+}
+
+export const ConsumeRowFields: React.FC<ConsumeRowFieldsProps> = ({
+  row,
+  onItemPicked,
+  onItemClear,
+  onQtyChange,
+  onRemove,
+  removeDisabled,
+}) => {
+  const exceeds = row.itemCode !== "" && Number(row.qty) > Number(row.availableQty ?? 0);
+
+  return (
+    <>
+      <StockItemSelect
+        itemName={row.itemName}
+        onChange={(p: StockItemSelectPayload) => onItemPicked(row.id, p)}
+        onClear={() => onItemClear(row.id)}
+        invoiceType="Product"
+        formatDisplayName={(r: any) => [r.itemName, r.batchNo, r.warehouse].filter(Boolean).join("-")}
+      />
+      <TextCell>{getGLNameWithoutAbbreviation(row.warehouse) || "—"}</TextCell>
+      <TextCell>{row.batchNo && row.batchNo !== "-" ? row.batchNo : "—"}</TextCell>
+      <TextCell align="right" muted={!exceeds} className={exceeds ? "text-danger font-bold" : ""}>
+        {fmtQty(row.availableQty)}
+      </TextCell>
+      <NumericInput
+        value={row.qty === "" ? null : Number(row.qty)}
+        allowNegative={false}
+        decimalScale={2}
+        placeholder="0"
+        onChange={(v) => onQtyChange(row.id, v === null ? "" : String(v))}
+        className={NUM_INPUT}
+      />
+      <RemoveRowButton onClick={() => onRemove(row.id)} disabled={removeDisabled} />
+    </>
+  );
+};
+
+interface ProduceRowFieldsProps {
+  row: ManufactureRow;
+  onItemPicked: (item: SelectedStockItem) => void;
+  onChange: (field: "warehouse" | "qty", value: string) => void;
+}
+
+export const ProduceRowFields: React.FC<ProduceRowFieldsProps> = ({ row, onItemPicked, onChange }) => (
+  <>
+    <ItemSelect value={row.itemCode} onChange={onItemPicked} />
+    <WarehouseSelect value={row.warehouse} compact onChange={(e) => onChange("warehouse", e.target.value)} />
+    <NumericInput
+      value={row.qty === "" ? null : Number(row.qty)}
+      allowNegative={false}
+      decimalScale={2}
+      placeholder="0"
+      onChange={(v) => onChange("qty", v === null ? "" : String(v))}
+      className={NUM_INPUT}
+    />
+  </>
+);

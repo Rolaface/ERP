@@ -5,7 +5,7 @@
 // in the hook implementation.
 // ─────────────────────────────────────────────────────────────────────────
 
-export type Mode = "correction" | "movement";
+export type Mode = "correction" | "movement" | "manufacture";
 
 /** Stock Entry sub-type for the Movement tab — mirrors Frappe's Stock Entry Type. */
 export type StockEntryType = "Material Transfer" | "Material Issue";
@@ -49,6 +49,17 @@ export interface MovementRow {
   id: string;
   from: string;
   to: string; // ignored / cleared when stockEntryType is "Material Issue" (no target warehouse)
+  qty: string;
+}
+
+export interface ManufactureRow {
+  id: string;
+  itemCode: string;
+  itemName: string;
+  warehouse: string;
+  batchNo: string;
+  availableQty: number | null;
+  unit: string;
   qty: string;
 }
 
@@ -145,4 +156,15 @@ export interface StockCorrectionSubmitPayload {
     qty: number;
     batchNo?: string;
   }>;
+  consumeRows?: Array<{
+    itemCode: string;
+    warehouse: string;
+    batchNo?: string;
+    qty: number;
+  }>;
+  produceRow?: {
+    itemCode: string;
+    warehouse: string;
+    qty: number;
+  };
 }

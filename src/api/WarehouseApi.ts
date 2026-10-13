@@ -32,6 +32,7 @@ export interface CreateWarehousePayload {
   parent: string;
   doctype: "Warehouse";
   is_root: "false" | "true";
+  custom_warehouse_code?: string;
 }
 
 export async function createWarehouseNode(
@@ -52,10 +53,13 @@ export async function deleteWarehouseById(id: string): Promise<any> {
 export async function updateWarehouseById(id: string, payload: any): Promise<any> {
   const url = `${WarehouseAPI.update}/${id}`;
   
-  const data = {
+  const data: Record<string, any> = {
     is_group: payload.is_group,
     parent_warehouse: payload.parent 
   };
+  if (payload.custom_warehouse_code !== undefined) {
+    data.custom_warehouse_code = payload.custom_warehouse_code;
+  }
 
   const resp: AxiosResponse = await api.put(url, data);
   return resp;
