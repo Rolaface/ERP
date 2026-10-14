@@ -1,4 +1,3 @@
-// → src/hooks/project_management/task/modal/form/useTaskFormOptions.ts
 import { useEffect, useMemo, useState } from "react";
 import type {
   TaskFormOptions,
@@ -6,25 +5,33 @@ import type {
 } from "../../../../../types/Project_Management/task/modal/Taskformmodal.types";
 import { getAllProjects } from "../../../../../api/project/projectapi/project.api";
 import { getAllTasks } from "../../../../../api/project/task/taskapi";
+import { getAllDepartments } from "../../../../../api/utils/frappeUtilsApi";
 import { showApiError } from "../../../../../utils/alert";
-// Activity types already come from the project form's options hook, so reuse it.
 import { useProjectFormOptions } from "../../../project/modal/form/useProjectFormOptions";
 
 export const useTaskFormOptions = (isOpen: boolean, project: string) => {
   const { options: projectOptions } = useProjectFormOptions(isOpen);
   const [projects, setProjects] = useState<TaskSelectOption[]>([]);
+  const [departments, setDepartments] = useState<TaskSelectOption[]>([]);
   const [parentTasks, setParentTasks] = useState<TaskSelectOption[]>([]);
+  const [dependencyTasks, setDependencyTasks] = useState<TaskSelectOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     let alive = true;
     setIsLoading(true);
-    getAllProjects()
-      .then((list) => {
+    Promise.all([getAllProjects(), getAllDepartments()])
+      .then(([projectList, departmentList]) => {
         if (!alive) return;
         setProjects(
-          list.map((p) => ({ label: p.project_name || p.name, value: p.name })),
+          projectList.map((p) => ({
+            label: p.project_name || p.name,
+            value: p.name,
+          })),
+        );
+        setDepartments(
+          departmentList.map((d) => ({ label: d.label, value: d.value })),
         );
       })
       .catch(showApiError)
@@ -34,19 +41,20 @@ export const useTaskFormOptions = (isOpen: boolean, project: string) => {
     };
   }, [isOpen]);
 
-  // Only group tasks can be parents, and only within the selected project.
   useEffect(() => {
     setParentTasks([]);
+    setDependencyTasks([]);
     if (!isOpen || !project) return;
     let alive = true;
     getAllTasks(project, undefined, { pageSize: 500 })
       .then((list) => {
         if (!alive) return;
-        setParentTasks(
-          list
-            .filter((t) => t.is_group === 1)
-            .map((t) => ({ label: `${t.subject} (${t.name})`, value: t.name })),
-        );
+        const toOption = (t: (typeof list)[number]): TaskSelectOption => ({
+          label: `${t.subject} (${t.name})`,
+          value: t.name,
+        });
+        setParentTasks(list.filter((t) => t.is_group === 1).map(toOption));
+        setDependencyTasks(list.map(toOption));
       })
       .catch(showApiError);
     return () => {
@@ -60,6 +68,13 @@ export const useTaskFormOptions = (isOpen: boolean, project: string) => {
     [projectOptions.activityTypes],
   );
 
-  const options: TaskFormOptions = { projects, parentTasks, activityTypes };
+  const options: TaskFormOptions = {
+    projects,
+    parentTasks,
+    dependencyTasks,
+    activityTypes,
+    departments,
+  };
+
   return { options, isLoading };
 };

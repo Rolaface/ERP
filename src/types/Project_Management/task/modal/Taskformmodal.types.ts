@@ -1,4 +1,3 @@
-
 import type {
   TaskPriority,
   TaskStatus,
@@ -14,6 +13,7 @@ export interface TaskFormValues {
   status: TaskStatus;
   priority: TaskPriority;
   activityType: string;
+  department: string;
   issue: string;
   startDate: string;
   endDate: string;
@@ -23,6 +23,7 @@ export interface TaskFormValues {
   isGroup: TaskFlag;
   isMilestone: TaskFlag;
   taskWeight: string;
+  dependsOn: string[];
 }
 
 export type TaskFieldKey = keyof TaskFormValues;
@@ -46,7 +47,9 @@ export interface TaskSelectOption {
 export interface TaskFormOptions {
   projects: TaskSelectOption[];
   parentTasks: TaskSelectOption[];
+  dependencyTasks: TaskSelectOption[];
   activityTypes: TaskSelectOption[];
+  departments: TaskSelectOption[];
 }
 
 export interface TaskFormModalProps {

@@ -1,4 +1,3 @@
-// → src/components/project management/task_modal/TaskFormModal.tsx
 import React, { useEffect, useMemo, useRef } from "react";
 import { ClipboardList } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
@@ -12,8 +11,6 @@ import { useTaskFormModal } from "../../../hooks/project_management/task/table/m
 import { useTaskFormOptions } from "../../../hooks/project_management/task/table/modal/Usetaskformoptions";
 import TaskDetailsStep from "./Taskdetailsstep";
 import TaskAdditionalStep from "./Taskadditionalstep";
-
-
 
 const FORM_MODAL_HEIGHT = "min(94dvh, 680px)";
 
@@ -125,7 +122,7 @@ const TaskFormModal: React.FC<TaskFormModalProps> = ({
           ) : (
             <TaskAdditionalStep
               values={form.values}
-              getFieldError={form.getFieldError}
+              options={options}
               onChange={form.setField}
             />
           )}

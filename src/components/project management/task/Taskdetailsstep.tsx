@@ -1,13 +1,16 @@
-// → src/components/project management/task_modal/TaskDetailsStep.tsx
 import React, { useMemo } from "react";
 import type {
   SetTaskFieldHandler,
   TaskFieldKey,
+  TaskFlag,
   TaskFormOptions,
   TaskFormValues,
 } from "../../../types/Project_Management/task/modal/Taskformmodal.types";
 import type { TaskPriority, TaskStatus } from "../../../types/Project_Management/task/table/Task.types";
-import { TASK_PRIORITY_OPTIONS } from "../../../utils/project_management/task/Taskformmodal.utils";
+import {
+  TASK_FLAG_OPTIONS,
+  TASK_PRIORITY_OPTIONS,
+} from "../../../utils/project_management/task/Taskformmodal.utils";
 import { noop } from "../../../utils/project_management/project/Projectformmodal.utils";
 import {
   ModalInput,
@@ -15,10 +18,8 @@ import {
   ToggleSwitch,
 } from "../../../components/ui/modal/modalComponent";
 import DatePickerInput from "../../../components/calendar/DatePickerInput";
-
 import { STATUS_OPTIONS } from "../../../views/project_management/task/components/Tasktable.config";
 import TaskDescriptionEditor from "../task/Taskdescriptioneditor";
-
 
 interface TaskDetailsStepProps {
   values: TaskFormValues;
@@ -34,8 +35,9 @@ interface SectionProps {
 
 const GRID =
   "grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-12";
-const SPAN_6 = "sm:col-span-2 lg:col-span-6";
-const SPAN_3 = "lg:col-span-3";
+const SPAN_12 = "min-w-0 sm:col-span-2 lg:col-span-12";
+const SPAN_6 = "min-w-0 sm:col-span-2 lg:col-span-6";
+const SPAN_3 = "min-w-0 lg:col-span-3";
 
 const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
   <div className="mb-2.5 flex items-baseline justify-between border-b border-theme pb-1">
@@ -135,12 +137,59 @@ const TaskDetailsStep: React.FC<TaskDetailsStepProps> = ({
           />
         </div>
         <div className={SPAN_3}>
+          <ModalSelect
+            label="Department"
+            name="department"
+            placeholder="Select department"
+            value={values.department}
+            options={options.departments}
+            onChange={(e) => onChange("department", e.target.value)}
+          />
+        </div>
+        <div className={SPAN_12}>
           <ModalInput
             label="Issue"
             name="issue"
             placeholder="Enter issue (optional)"
             value={values.issue}
             onChange={(e) => onChange("issue", e.target.value)}
+          />
+        </div>
+      </Section>
+
+      <Section title="Task settings">
+        <div className={SPAN_3}>
+          <ToggleSwitch
+            name="isGroup"
+            label="Is Group"
+            checked={false}
+            onChange={noop}
+            options={TASK_FLAG_OPTIONS}
+            value={String(values.isGroup)}
+            onValueChange={(v) => onChange("isGroup", Number(v) as TaskFlag)}
+          />
+        </div>
+        <div className={SPAN_3}>
+          <ToggleSwitch
+            name="isMilestone"
+            label="Is Milestone"
+            checked={false}
+            onChange={noop}
+            options={TASK_FLAG_OPTIONS}
+            value={String(values.isMilestone)}
+            onValueChange={(v) => onChange("isMilestone", Number(v) as TaskFlag)}
+          />
+        </div>
+        <div className={SPAN_3}>
+          <ModalInput
+            label="Task Weight"
+            name="taskWeight"
+            type="number"
+            min={0}
+            placeholder="0"
+            value={values.taskWeight}
+            error={getFieldError("taskWeight")}
+            onChange={(e) => onChange("taskWeight", e.target.value)}
           />
         </div>
       </Section>
@@ -154,7 +203,7 @@ const TaskDetailsStep: React.FC<TaskDetailsStepProps> = ({
             onChange={(_, value) => onChange("startDate", value)}
           />
         </div>
-        <div className={`min-w-0 ${SPAN_3}`}>
+        <div className={SPAN_3}>
           <DatePickerInput
             label="Expected End Date"
             name="endDate"
