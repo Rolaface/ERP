@@ -31,7 +31,26 @@ const SalesTaxTemplate: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [sortBy, setSortBy] = useState<string>("title");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const { can } = usePermission();
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    title: "title",
+    tax_category: "tax_category",
+  };
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: direction,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(direction);
+    setPage(1);
+  };
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -51,10 +70,13 @@ const SalesTaxTemplate: React.FC = () => {
   const fetchTemplates = useCallback(async () => {
     try {
       setLoading(true);
+      const apiSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
       const res = await getAllTemplates(
         page,
         pageSize,
         searchTerm || undefined,
+        apiSortBy,
+        sortOrder
       );
       const list: SalesTaxTemplateSummary[] = res?.data?.templates ?? [];
       const pagination = res?.data?.pagination;
@@ -67,7 +89,7 @@ const SalesTaxTemplate: React.FC = () => {
       setLoading(false);
       setInitialLoad(false);
     }
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchTemplates();
@@ -297,6 +319,7 @@ const SalesTaxTemplate: React.FC = () => {
       key: "title",
       header: "Title",
       align: "left",
+      sortable: true,
       render: (tc) => (
         <Tooltip content={tc.title}>
           <div className="py-1.5">
@@ -311,6 +334,7 @@ const SalesTaxTemplate: React.FC = () => {
       key: "tax_category",
       header: "Category",
       align: "left",
+      sortable: true,
       render: (tc) => (
         <div className="py-1.5">
           <span className="text-xs text-muted">
@@ -521,6 +545,9 @@ const SalesTaxTemplate: React.FC = () => {
         setSearchTerm(val);
         setPage(1);
       }}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      onSortChange={handleSortChange}
       enableAdd={can(SALES_TAX_TEMPLATE_MODULE, "create")}
       addLabel="Add Sales Tax Template"
       onAdd={openCreate}
