@@ -23,19 +23,21 @@ interface AttendanceRowData {
   status: string;
 }
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  employee: "employee_name",
+  date: "time",
+  clockIn: "time",
+  clockOut: "time",
+};
+
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
 const formatTableData = (apiData: any[]): AttendanceRowData[] => {
   if (!apiData || !apiData.length) return [];
 
-  // 1. Sort logs chronologically
-  const sortedLogs = [...apiData].sort(
-    (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
-  );
-
-  // 2. Group by Employee AND Date
+  // 1. Group by Employee AND Date preserving API order
   const grouped: Record<string, any> = {};
-  sortedLogs.forEach((log) => {
+  apiData.forEach((log) => {
     const [date, time] = log.time.split(" ");
     const key = `${log.employee}_${date}`;
     
@@ -55,10 +57,13 @@ const formatTableData = (apiData: any[]): AttendanceRowData[] => {
     }
   });
 
-  // 3. Process each group into a table row
+  // 2. Process each group into a table row
   const tableRows: AttendanceRowData[] = Object.values(grouped).map((group) => {
-    const ins = group.logs.filter((l: any) => l.log_type === "IN");
-    const outs = group.logs.filter((l: any) => l.log_type === "OUT");
+    const groupLogs = [...group.logs].sort(
+      (a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime()
+    );
+    const ins = groupLogs.filter((l: any) => l.log_type === "IN");
+    const outs = groupLogs.filter((l: any) => l.log_type === "OUT");
 
     const firstIn = ins.length > 0 ? ins[0] : null;
     const lastOut = outs.length > 0 ? outs[outs.length - 1] : null;
@@ -69,7 +74,7 @@ const formatTableData = (apiData: any[]): AttendanceRowData[] => {
     let currentIn: any = null;
     let totalDurationMs = 0;
 
-    group.logs.forEach((log: any) => {
+    groupLogs.forEach((log: any) => {
       if (log.log_type === "IN") {
         if (!currentIn) currentIn = log;
       } else if (log.log_type === "OUT" && currentIn) {
@@ -119,8 +124,7 @@ const formatTableData = (apiData: any[]): AttendanceRowData[] => {
     };
   });
 
-  // Sort latest dates first
-  return tableRows.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return tableRows;
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -132,6 +136,8 @@ const HrAttendanceView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState<string>("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   // const [filters, setFilters] = useState({ from_date: "", to_date: "" });
   const [filters, setFilters] = useState(() => {
     const today = new Date();
@@ -145,9 +151,21 @@ const HrAttendanceView: React.FC = () => {
     return { from_date: toYMD(from), to_date: toYMD(to) };
   });
 
+  const handleSortChange = ({
+    sortBy: nextSortBy,
+    sortOrder: nextSortOrder,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(nextSortBy);
+    setSortOrder(nextSortOrder);
+    setPage(1);
+  };
+
  useEffect(() => {
     fetchAttendanceData();
-  }, [filters.from_date, filters.to_date]);
+  }, [filters.from_date, filters.to_date, sortBy, sortOrder]);
 
   useEffect(() => {
     let result = [...data];
@@ -183,7 +201,8 @@ const HrAttendanceView: React.FC = () => {
         apiFilters.push(["time", "<=", `${filters.to_date} 23:59:59`]);
       }
 
-      const response = await getAllEmployee(apiFilters);
+      const backendSortField = SORT_FIELD_MAP[sortBy] || sortBy;
+      const response = await getAllEmployee(apiFilters, backendSortField, sortOrder);
       const rawLogs = response?.data?.data || response?.data;
 
       if (Array.isArray(rawLogs) && rawLogs.length > 0) {
@@ -204,6 +223,7 @@ const HrAttendanceView: React.FC = () => {
       key: "employee",
       header: "Employee",
       align: "left",
+      sortable: true,
       render: (row) => (
         <div>
           <div className="font-medium text-gray-900">{row.employee_name || "—"}</div>
@@ -215,6 +235,7 @@ const HrAttendanceView: React.FC = () => {
       key: "date",
       header: "Date",
       align: "left",
+      sortable: true,
       render: (row) => (
         <span className="font-medium text-gray-700">
           {new Date(row.date).toLocaleDateString("en-GB", {
@@ -229,12 +250,14 @@ const HrAttendanceView: React.FC = () => {
       key: "clockIn", 
       header: "Clock In", 
       align: "left",
+      sortable: true,
       render: (row) => <span className="text-gray-600">{row.clockIn}</span>
     },
     { 
       key: "clockOut", 
       header: "Clock Out", 
       align: "left",
+      sortable: true,
       render: (row) => <span className="text-gray-600">{row.clockOut}</span>
     },
     { 
@@ -309,6 +332,9 @@ const HrAttendanceView: React.FC = () => {
         setPage(1);
       }}
       onPageChange={setPage}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      onSortChange={handleSortChange}
     />
   );
 };
