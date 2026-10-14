@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
-import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
+import ActionButton, { ActionGroup } from "../../components/ui/Table/ActionButton";
 import PermissionGate from "../PermissionGate";
 import { usePermission } from "../../hooks/permission/usePermission";
 import { openUserModal } from "../../store/modalStore";
@@ -11,10 +11,7 @@ import { getUsers, updateUser, deleteUser, createUser } from "../../api/RoleMana
 import type { UserRow } from "../../api/RoleManagement/CreateUserApi";
 import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
 
-// The module name that controls User Management permissions
 const USER_MODULE = "User";
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 const CreateUserPage: React.FC = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -24,16 +21,16 @@ const CreateUserPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-
+  const [sortBy, setSortBy] = useState("username");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const { can } = usePermission();
-
   const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
 
-  const fetchUsers = async (search?: string, currentPage?: number, currentPageSize?: number) => {
+  const fetchUsers = async (search?: string, currentPage = page, currentPageSize = pageSize) => {
     setLoading(true);
     try {
-      const response = await getUsers(search, currentPage, currentPageSize);
+      const response = await getUsers(search, currentPage, currentPageSize, sortBy, sortOrder);
       if (response.status !== "success") throw new Error(response.message ?? "Failed to fetch users");
       setUsers(response.data);
       setTotalItems(response.pagination.total);
@@ -47,14 +44,14 @@ const CreateUserPage: React.FC = () => {
 
   useEffect(() => {
     fetchUsers(searchQuery, page, pageSize);
-  }, [page, pageSize]);
+  }, [page, pageSize, sortBy, sortOrder]);
 
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(REFRESH_KEYS.CREATE_USER_LIST, () => {
       fetchUsers(searchQuery, page, pageSize);
     });
     return () => unsubscribe();
-  }, [subscribeToRefresh]);
+  }, [subscribeToRefresh, page, pageSize, sortBy, sortOrder]);
 
   const handleAdd = () => {
     openUserModal(null, false, {
@@ -75,11 +72,10 @@ const CreateUserPage: React.FC = () => {
     });
   };
 
- const handleView = (row: UserRow, e?: React.MouseEvent) => {
-  e?.stopPropagation();
-  openUserModal(row, true, { isViewMode: true });
-};
-
+  const handleView = (row: UserRow, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    openUserModal(row, true, { isViewMode: true });
+  };
 
   const handleDelete = async (userId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,11 +94,11 @@ const CreateUserPage: React.FC = () => {
     }
   };
 
-  // ── Columns ────────────────────────────────────────────────────────────────
   const columns: Column<UserRow>[] = [
     {
       key: "username",
       header: "Username",
+      sortable: true,
       render: (row) => (
         <span className="font-semibold text-main text-sm">{row.username}</span>
       ),
@@ -110,11 +106,13 @@ const CreateUserPage: React.FC = () => {
     {
       key: "email",
       header: "Email",
+      sortable: true,
       render: (row) => <span className="text-sm text-muted">{row.email}</span>,
     },
     {
       key: "name",
       header: "Name",
+      sortable: true,
       render: (row) => <span className="text-sm text-main">{row.name || "—"}</span>,
     },
     {
@@ -122,10 +120,11 @@ const CreateUserPage: React.FC = () => {
       header: "Status",
       render: (row) => (
         <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${row.enabled
-            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-            : "bg-red-50 text-red-600 border-red-200"
-            }`}
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+            row.enabled
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : "bg-red-50 text-red-600 border-red-200"
+          }`}
         >
           {row.enabled ? "Active" : "Inactive"}
         </span>
@@ -137,17 +136,13 @@ const CreateUserPage: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
-
           <ActionButton
             type="view"
             onClick={(e) => handleView(row, e as React.MouseEvent)}
             iconOnly
             title="View User"
           />
-          {/* ── EDIT button — only if user has `write` on User module ── */}
           <PermissionGate module={USER_MODULE} action="write">
-
-
             <ActionButton
               type="edit"
               onClick={(e) => handleEdit(row, e as React.MouseEvent)}
@@ -155,27 +150,11 @@ const CreateUserPage: React.FC = () => {
               title="Edit User"
             />
           </PermissionGate>
-
-          {/* 
-          <ActionMenu
-            customActions={[
-              // Delete — only if user has `delete`
-              ...(can(USER_MODULE, "delete")
-                ? [
-                    {
-                      label: "Delete",
-                      onClick: (e: React.MouseEvent) => handleDelete(row.id, e),
-                    },
-                  ]
-                : []),
-            ]}
-          /> */}
         </ActionGroup>
       ),
     },
   ];
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="h-full min-h-0">
       <Table
@@ -192,18 +171,23 @@ const CreateUserPage: React.FC = () => {
           setPage(1);
           fetchUsers(q, 1, pageSize);
         }}
-        // ── Add button: only show if user can create ──────────────────────
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={({ sortBy: k, sortOrder: o }) => {
+          setSortBy(k);
+          setSortOrder(o);
+          setPage(1);
+        }}
         enableAdd={can(USER_MODULE, "create")}
         addLabel="Add User"
         onAdd={handleAdd}
         enableColumnSelector
-        // ── Export: only show if user has export permission ───────────────
         enableExport={can(USER_MODULE, "export")}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-         pageSizeOptions={[20, 50, 100,200]}
+        pageSizeOptions={[20, 50, 100, 200]}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);

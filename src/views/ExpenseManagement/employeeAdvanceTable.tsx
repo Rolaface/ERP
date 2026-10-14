@@ -140,6 +140,15 @@ const EmployeeAdvanceTable: React.FC = () => {
     setClaimsPageSize(10);
   };
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  id: "name",
+  posting_date: "posting_date",
+  employee_name: "employee_name",
+  purpose: "purpose",
+  amount: "advance_amount",
+  status: "status",
+};
+
   const [employeeAdvances, setEmployeeAdvances] = useState<EmployeeAdvance[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -160,7 +169,8 @@ const EmployeeAdvanceTable: React.FC = () => {
     setIsFetching(true);
     try {
       const start = (page - 1) * pageSize;
-      const res = await getAllAdvances(start, pageSize, searchTerm, filters.status);
+      const backendSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
+      const res = await getAllAdvances(start, pageSize, searchTerm, filters.status, backendSortBy, sortOrder);
 
       if (!mountedRef.current) return;
       setEmployeeAdvances(
@@ -372,11 +382,13 @@ const EmployeeAdvanceTable: React.FC = () => {
     () => [
       {
         key: "id",
-        header: "Name"
+        header: "Name",
+        sortable: true,
       },
       {
         key: "posting_date",
         header: "Posting Date",
+        sortable: true,
         align: "left",
         render: (ea) => (
           <div className="py-1.5">
@@ -388,6 +400,7 @@ const EmployeeAdvanceTable: React.FC = () => {
       {
         key: "employee_name",
         header: "Employee Name",
+        sortable: true,
         align: "left",
         render: (ea) => (
           <div className="py-1.5">
@@ -399,6 +412,7 @@ const EmployeeAdvanceTable: React.FC = () => {
       {
         key: "purpose",
         header: "Purpose",
+        sortable: true,
         align: "left",
         render: (ea) => (
           <div className="py-1.5">
@@ -410,6 +424,7 @@ const EmployeeAdvanceTable: React.FC = () => {
       {
         key: "amount",
         header: "Amount",
+        sortable: true,
         align: "center",
         render: (ea) => (
           <div className="py-1.5">
