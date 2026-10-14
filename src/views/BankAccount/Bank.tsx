@@ -32,6 +32,14 @@ const BankPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("bank_name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    bank_name: "bank_name",
+    swift_number: "swift_number",
+  };
+
   const { can } = usePermission();
   const refreshKey = useDataRefreshStore(
     (state) => state.refreshFlags[REFRESH_KEYS.Bank],
@@ -41,7 +49,13 @@ const BankPage: React.FC = () => {
   const fetchBanks = useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await getAllBanks(page, pageSize, search);
+      const resp = await getAllBanks(
+        page,
+        pageSize,
+        search,
+        SORT_FIELD_MAP[sortBy] || sortBy,
+        sortOrder,
+      );
       setBanks(resp.data ?? []);
       setTotalItems(resp.pagination?.total ?? 0);
     } catch (err) {
@@ -51,7 +65,19 @@ const BankPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search]);
+  }, [page, pageSize, search, sortBy, sortOrder]);
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
+  };
 
   useEffect(() => {
     fetchBanks();
@@ -200,6 +226,9 @@ const handleView = async (row: Bank, e?: React.MouseEvent) => {
             setSearch(value);
             setPage(1);
           }}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
           onRowDoubleClick={(row) => handleView(row)}
         />
       </AppPageBody>

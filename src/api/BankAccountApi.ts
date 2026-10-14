@@ -100,6 +100,9 @@ type BankAccountFilters = {
   search?: string;
   page?: number;
   page_size?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  order_by?: string;
 };
 
 
@@ -211,6 +214,7 @@ export async function getAllBankAccounts(
   if (filters?.search) params.append("search", filters.search);
   if (filters?.party_type) params.append("party_type", filters.party_type);
   if (filters?.party) params.append("party", filters.party);
+  if (filters?.order_by) params.append("order_by", filters.order_by);
 
   const url = params.toString()
     ? `${Account.getAllBankAccounts}?${params.toString()}`
@@ -321,7 +325,9 @@ export async function getAllModeOfPayment(
   page = 1,
   page_size = 10,
   search?: string,
-  enabled?: 0 | 1
+  enabled?: 0 | 1,
+  sortBy?: string,
+  sortOrder: "asc" | "desc" = "asc"
 ) {
   try {
     const params = new URLSearchParams({
@@ -334,6 +340,9 @@ export async function getAllModeOfPayment(
     }
     if (search?.trim()) {
       params.append("search", search.trim());
+    }
+    if (sortBy) {
+      params.append("order_by", `${sortBy} ${sortOrder}`);
     }
 
     const url = `${Account.GetModeOfPayment}?${params.toString()}`;
