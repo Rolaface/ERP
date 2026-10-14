@@ -112,16 +112,16 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
         />
       </td>
 
-   <td className="p-2 ts-field min-w-0">
-  <SearchSelect2
-    label=""
-    value={line.activity_type}
-    fetchOptions={fetchActivityTypeOptions}
-    onChange={(value, opt) => handlers.onActivity(line.id, value, opt)}
-    placeholder="Select Activity Type"
-    required
-  />
-</td>
+      <td className="p-2 ts-field min-w-0">
+        <SearchSelect2
+          label=""
+          value={line.activity_type}
+          fetchOptions={fetchActivityTypeOptions}
+          onChange={(value, opt) => handlers.onActivity(line.id, value, opt)}
+          placeholder="Select Activity Type"
+          required
+        />
+      </td>
 
       <td className="p-2 min-w-0">
         <div className={`relative ts-picker ${off ? "ts-has-off" : ""}`}>

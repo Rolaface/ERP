@@ -12,6 +12,7 @@ import type {
   StockSummaryRow,
   CorrectionRow,
   MovementRow,
+  ManufactureRow,
   StockCorrectionModalProps,
   StockCorrectionSubmitPayload,
   StockItemSelectPayload,
@@ -26,6 +27,7 @@ export type {
   StockSummaryRow,
   CorrectionRow,
   MovementRow,
+  ManufactureRow,
   StockItemBatch,
   StockItemSelectPayload,
   SelectedBatch,
@@ -89,10 +91,10 @@ export const REASON_OPTIONS: Option[] = [
   { label: "Other", value: "other" },
 ];
 
-// 8 columns: Warehouse, Batch, Expiry, Available Qty, Valuation Rate, Adjustment, Updated Qty, remove-btn
-export const CORRECTION_COLS = "1fr 1fr 0.75fr 0.75fr 0.85fr 0.75fr 0.75fr 36px";
-// "From" given more breathing room than "To" / "Move Qty" for better readability.
-export const MOVEMENT_COLS = "1.4fr 1fr 0.9fr 36px";
+export const CORRECTION_COLS = "1.35fr 1.15fr 0.95fr 0.7fr 0.75fr 0.85fr 0.7fr";
+export const MOVEMENT_COLS = "1.3fr 1.2fr 1.3fr 0.8fr 0.75fr 28px";
+export const CONSUME_COLS = "1.5fr 1.15fr 1.15fr 0.75fr 0.85fr 28px";
+export const PRODUCE_COLS = "1.5fr 1.15fr 0.9fr";
 export const ROWS_PAGE_SIZE = 5;
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -118,6 +120,17 @@ const emptyMovementRow = (): MovementRow => ({
   id: genId(),
   from: "",
   to: "",
+  qty: "",
+});
+
+const emptyManufactureRow = (): ManufactureRow => ({
+  id: genId(),
+  itemCode: "",
+  itemName: "",
+  warehouse: "",
+  batchNo: "",
+  availableQty: null,
+  unit: "",
   qty: "",
 });
 
@@ -177,6 +190,11 @@ export function useStockCorrectionForm({
     }
   };
 
+  const [consumeRows, setConsumeRows] = useState<ManufactureRow[]>([
+    emptyManufactureRow(),
+  ]);
+  const [produceRow, setProduceRow] = useState<ManufactureRow>(emptyManufactureRow());
+
   const [correctionDate, setCorrectionDate] = useState(todayISO());
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
@@ -201,6 +219,8 @@ export function useStockCorrectionForm({
     setStockSummary([]);
     setCorrectionRows([emptyCorrectionRow()]);
     setMovementRows([emptyMovementRow()]);
+    setConsumeRows([emptyManufactureRow()]);
+    setProduceRow(emptyManufactureRow());
     setCorrectionDate(todayISO());
     setReason("");
     setItemSelectResetKey((k) => k + 1);
@@ -421,6 +441,53 @@ export function useStockCorrectionForm({
       prev.length === 1 ? prev : prev.filter((r) => r.id !== id),
     );
 
+  const pickConsumeItem = (id: string, payload: StockItemSelectPayload) =>
+    setConsumeRows((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              itemCode: payload.itemCode,
+              itemName: payload.itemName,
+              warehouse: payload.warehouse || "",
+              batchNo: payload.batchNo || "",
+              availableQty: Number(payload.qty ?? 0),
+              unit: payload.stockUom || "",
+              qty: "",
+            }
+          : r,
+      ),
+    );
+
+  const clearConsumeItem = (id: string) =>
+    setConsumeRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...emptyManufactureRow(), id } : r)),
+    );
+
+  const updateConsumeQty = (id: string, value: string) =>
+    setConsumeRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, qty: value } : r)),
+    );
+
+  const addConsumeRow = () =>
+    setConsumeRows((prev) => [...prev, emptyManufactureRow()]);
+
+  const removeConsumeRow = (id: string) =>
+    setConsumeRows((prev) =>
+      prev.length === 1 ? prev : prev.filter((r) => r.id !== id),
+    );
+
+  const pickProduceItem = (item: { itemCode: string; itemName: string; stockUom?: string }) =>
+    setProduceRow((prev) => ({
+      ...prev,
+      itemCode: item.itemCode,
+      itemName: item.itemName,
+      unit: item.stockUom || "",
+    }));
+
+  const updateProduceRow = (field: "warehouse" | "qty", value: string) =>
+    setProduceRow((prev) => ({ ...prev, [field]: value }));
+
   const selectedBranchForFilter = useMemo(() => {
     const picked = correctionRows.map((r) => r.branch).filter(Boolean);
     if (picked.length === 0) return "";
@@ -461,6 +528,15 @@ export function useStockCorrectionForm({
     [movementRows],
   );
 
+  const totalConsumedQty = useMemo(
+    () =>
+      consumeRows.reduce((sum, r) => {
+        const n = Number(r.qty);
+        return sum + (isNaN(n) ? 0 : n);
+      }, 0),
+    [consumeRows],
+  );
+
   /** Reason → summed qty, for the "Reason Summary" card. Only rows with both a reason and a qty count. */
   const reasonSummary = useMemo(() => {
     const totals = new Map<string, number>();
@@ -482,6 +558,22 @@ export function useStockCorrectionForm({
   // ── Validation ───────────────────────────────────────────────────────────
 
   const isValid = useMemo(() => {
+    if (mode === "manufacture") {
+      if (!correctionDate) return false;
+      const filled = consumeRows.filter((r) => r.itemCode);
+      const consumeOk =
+        filled.length > 0 &&
+        filled.every(
+          (r) =>
+            r.warehouse &&
+            Number(r.qty) > 0 &&
+            Number(r.qty) <= Number(r.availableQty ?? 0),
+        );
+      const produceOk =
+        !!produceRow.itemCode && !!produceRow.warehouse && Number(produceRow.qty) > 0;
+      return consumeOk && produceOk;
+    }
+
     if (!selectedItem || !correctionDate) return false;
 
     if (mode === "correction") {
@@ -504,7 +596,7 @@ export function useStockCorrectionForm({
       if (stockEntryType === "Material Issue") return true; // no target warehouse needed
       return !!r.to && r.from !== r.to;
     });
-  }, [mode, selectedItem, correctionDate, correctionRows, movementRows, isOpeningStock, stockEntryType]);
+  }, [mode, selectedItem, correctionDate, correctionRows, movementRows, isOpeningStock, stockEntryType, consumeRows, produceRow]);
 
   // ── Save ─────────────────────────────────────────────────────────────────
 
@@ -532,6 +624,22 @@ export function useStockCorrectionForm({
                 valuationRate: r.valuationRate,
               })),
           }
+        : mode === "manufacture"
+        ? {
+            consumeRows: consumeRows
+              .filter((r) => r.itemCode)
+              .map((r) => ({
+                itemCode: r.itemCode,
+                warehouse: r.warehouse,
+                batchNo: r.batchNo && r.batchNo !== "-" ? r.batchNo : undefined,
+                qty: Number(r.qty),
+              })),
+            produceRow: {
+              itemCode: produceRow.itemCode,
+              warehouse: produceRow.warehouse,
+              qty: Number(produceRow.qty),
+            },
+          }
         : {
             stockEntryType,
             movementRows: movementRows
@@ -550,7 +658,9 @@ export function useStockCorrectionForm({
   showLoading(
     mode === "correction"
       ? "Saving stock correction..."
-      : "Saving stock movement...",
+      : mode === "manufacture"
+        ? "Saving manufacture entry..."
+        : "Saving stock movement...",
   );
   const apiPayload = buildCorrectionPayload(payload);
 
@@ -565,7 +675,9 @@ export function useStockCorrectionForm({
   showSuccess(
     mode === "correction"
       ? "Stock correction saved successfully"
-      : "Stock movement saved successfully",
+      : mode === "manufacture"
+        ? "Manufacture entry saved successfully"
+        : "Stock movement saved successfully",
   );
   resetForm();
   onClose();
@@ -606,6 +718,16 @@ export function useStockCorrectionForm({
     updateMovementRow,
     addMovementRow,
     removeMovementRow,
+    consumeRows,
+    pickConsumeItem,
+    clearConsumeItem,
+    updateConsumeQty,
+    addConsumeRow,
+    removeConsumeRow,
+    produceRow,
+    pickProduceItem,
+    updateProduceRow,
+    totalConsumedQty,
     correctionDate,
     setCorrectionDate,
     reason,

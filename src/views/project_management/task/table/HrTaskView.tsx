@@ -300,32 +300,12 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
     setView(next);
   };
 
-  const handleAddTask = () => openTaskFormModal({ onSuccess: refreshAll });
-
   const viewSelector = (
     <ViewSelector
       value={view}
       options={VIEW_OPTIONS}
       onChange={handleViewChange}
     />
-  );
-
-  const addTaskButton = canCreateTask ? (
-    <button
-      type="button"
-      onClick={handleAddTask}
-      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-    >
-      <Plus size={14} />
-      Add Task
-    </button>
-  ) : null;
-
-  const toolbarActions = (
-    <>
-      {addTaskButton}
-      {viewSelector}
-    </>
   );
 
   const hasActiveFilters =
@@ -452,7 +432,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
                       />
                     </>
                   )}
-                  {toolbarActions}
+                  {viewSelector}
                 </div>
 
                 <ClearFiltersButton
