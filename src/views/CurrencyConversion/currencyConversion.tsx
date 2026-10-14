@@ -38,12 +38,28 @@ const CurrencyConversion: React.FC = () => {
     setPagination,
     search,
     setSearch,
+    sortBy,
+    setSortBy,
+    sortOrder,
+    setSortOrder,
     addConversion,
     updateConversion,
     actionLoading,
     deleteConversion,
   } = useCurrencyConversion();
   const { can } = usePermission();
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
 
   const handleAdd = () =>
     openCurrencyExchangeModal(null, false, {
@@ -85,6 +101,7 @@ const CurrencyConversion: React.FC = () => {
     {
       key: "date",
       header: "Date",
+      sortable: true,
       render: (row) => (
         <span className="text-xs text-muted">
           {new Date(row.date).toLocaleDateString("en-GB", {
@@ -98,6 +115,7 @@ const CurrencyConversion: React.FC = () => {
     {
       key: "fromCurrency",
       header: "Currency Pair",
+      sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2 font-medium text-sm">
           <span>{row.fromCurrency}</span>
@@ -109,6 +127,7 @@ const CurrencyConversion: React.FC = () => {
     {
       key: "exchangeRate",
       header: "Exchange Rate",
+      sortable: true,
       render: (row) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold">
           {row.exchangeRate.toLocaleString()}
@@ -136,6 +155,7 @@ const CurrencyConversion: React.FC = () => {
     {
       key: "createdAt",
       header: "Created At",
+      sortable: true,
       render: (row) =>
         row.createdAt ? (
           <span className="text-xs text-muted">
@@ -220,6 +240,9 @@ const CurrencyConversion: React.FC = () => {
           tableId="currency-exchange"
           rowKey={(r) => r.id}
           showToolbar
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
           enableAdd={can(CURRENCY_EXCHANGE_MODULE, "create")}
           addLabel="Add Currency Exchange"
           onAdd={
