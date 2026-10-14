@@ -39,6 +39,17 @@ interface Props {
 const SUPPLIER_MODULE = "Supplier";
 const PAYMENT_MODULE = "Payment Entry";
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  supplierID: "name",
+  supplierName: "supplier_name",
+  taxCategory: "tax_category",
+  phoneNo: "mobile_no",
+  tpin: "tax_id",
+  currency: "default_currency",
+};
+
+const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? field;
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
@@ -66,9 +77,23 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Filters
+  // ── Filters & Sorting
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SupplierFilters>({});
+  const [sortBy, setSortBy] = useState("supplierID");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
+  };
 
   // ── Reset page on search change (debounced → filters)
   useEffect(() => {
@@ -93,7 +118,13 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     setIsFetching(true);
 
     try {
-      const res = await getSuppliers(page, pageSize, filters);
+      const mappedSort = mapSortField(sortBy);
+      const res = await getSuppliers(page, pageSize, {
+        ...filters,
+        sortBy: mappedSort,
+        sortOrder,
+        order_by: `${mappedSort} ${sortOrder}`,
+      });
 
       if (!mountedRef.current) return;
 
@@ -123,7 +154,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, filters]);
+  }, [page, pageSize, filters, sortBy, sortOrder]);
 
   // Initial fetch
   useEffect(() => {
@@ -136,7 +167,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   useEffect(() => {
     if (isInitialLoad) return;
     fetchSuppliers();
-  }, [page, pageSize, filters]);
+  }, [page, pageSize, filters, sortBy, sortOrder]);
 
   // Auto-refresh on external events
   useEffect(() => {
@@ -376,8 +407,9 @@ const handleEnableSupplier = async (
         key: "supplierID",
         header: "Supplier ID",
         align: "left",
+        sortable: true,
         render: (supplier) => (
-          <span className="font-medium whitespace-nowrap">
+          <span className="font-medium block break-words">
             {supplier.supplierId ?? "—"}
           </span>
         ),
@@ -387,8 +419,9 @@ const handleEnableSupplier = async (
         key: "supplierName",
         header: "Name",
         align: "left",
+        sortable: true,
         render: (supplier) => (
-          <span className="font-medium block">{supplier.supplierName ?? "—"}</span>
+          <span className="font-medium block break-words">{supplier.supplierName ?? "—"}</span>
         ),
         tooltip: (supplier) => supplier.supplierName,
       },
@@ -396,16 +429,18 @@ const handleEnableSupplier = async (
         key: "taxCategory",
         header: "Tax Category",
         align: "left",
+        sortable: true,
         render: (supplier) => (
-          <span className="whitespace-nowrap">{supplier.taxCategory ?? "—"}</span>
+          <span className="block break-words">{supplier.taxCategory ?? "—"}</span>
         ),
       },
       {
         key: "phoneNo",
         header: "Phone",
         align: "left",
+        sortable: true,
         render: (supplier) => (
-          <span className="text-muted whitespace-nowrap">
+          <span className="text-muted block break-words">
             {supplier.phoneNo ?? "—"}
           </span>
         ),
@@ -414,8 +449,9 @@ const handleEnableSupplier = async (
         key: "tpin",
         header: "TPIN",
         align: "left",
+        sortable: true,
         render: (supplier) => (
-          <span className="font-mono text-sm tabular-nums whitespace-nowrap">
+          <span className="font-mono text-sm tabular-nums block break-all">
             {supplier.tpin ?? "—"}
           </span>
         ),
@@ -425,6 +461,7 @@ const handleEnableSupplier = async (
         key: "currency",
         header: "Currency",
         align: "center",
+        sortable: true,
         render: (supplier) => (
           <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
             {supplier.currency ?? "—"}
@@ -549,8 +586,11 @@ const handleEnableSupplier = async (
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={totalItems}
-           pageSizeOptions={[20, 50, 100,200]}
+          pageSizeOptions={[20, 50, 100, 200]}
           onPageChange={setPage}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
           onRowDoubleClick={handleRowClick}
           onPageSizeChange={(size) => {
             setPageSize(size);
