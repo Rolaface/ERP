@@ -38,7 +38,9 @@ export async function getAllLeaveApplications(
   filters?: any[][],
   limit_start: number = 0,
   limit_page_length: number = 10,
-   search = ""
+  search = "",
+  sortBy?: string,
+  sortOrder: "asc" | "desc" = "desc",
 ): Promise<LeaveApplication[]> {
   try {
     const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> =
@@ -49,6 +51,7 @@ export async function getAllLeaveApplications(
           // filters: JSON.stringify(filters),
           limit_start: limit_start,
           limit_page_length: limit_page_length,
+          order_by: sortBy ? `${sortBy} ${sortOrder}` : "creation desc",
           filters: filters ? JSON.stringify(filters) : undefined,
           or_filters: search
             ? JSON.stringify([
