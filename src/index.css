@@ -676,7 +676,108 @@
   --font-heading: "Plus Jakarta Sans", "Inter", sans-serif;
   --font-body: "Inter", sans-serif;
 }
+/* test3 */
+:root[data-theme="aurora"] {
+  /* BRAND */
+  --primary: #a78bfa;
+  --primary-600: #8b5cf6;
+  --primary-700: #7c3aed;
 
+  /* BACKGROUND */
+  --bg: #0a0814;
+  --card: #141126;
+
+  /* TEXT */
+  --text: #ede9fe;
+  --muted: #a39cc4;
+
+  /* SIDEBAR */
+  --sidebar-bg: #07050f;
+  --sidebar-text: #ddd6fe;
+
+  /* TABLE */
+  --table-head: #1e1a38;
+  --table-head-text: #c4b5fd;
+
+  /* UI BASICS */
+  --border: rgba(167, 139, 250, 0.16);
+  --row-hover: rgba(167, 139, 250, 0.08);
+
+  /* STATUS */
+  --success: #34d399;
+  --danger: #fb7185;
+  --warning: #fbbf24;
+  --info: #60a5fa;
+
+  /* INPUTS */
+  --input-bg: #141126;
+  --input-border: rgba(167, 139, 250, 0.18);
+  --input-border-hover: rgba(167, 139, 250, 0.35);
+  --input-border-focus: var(--primary);
+  --input-focus-ring: rgba(167, 139, 250, 0.25);
+  --input-bg-filled: #1a1632;
+  --input-bg-error: rgba(251, 113, 133, 0.1);
+  --input-bg-disabled: #1a1632;
+  --input-text-disabled: #6b6490;
+
+  /* TYPOGRAPHY */
+  --font-heading: "Sora", "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  /* GRADIENTS / GLOW */
+  --gradient-primary-raw: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+
+  --gradient-subtle-raw: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.08),
+    rgba(236, 72, 153, 0.04) 60%,
+    transparent
+  );
+
+  --gradient-hero-raw: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.2),
+    rgba(236, 72, 153, 0.12)
+  );
+
+  --radial-glow-raw: radial-gradient(
+    circle at 50% 0%,
+    rgba(139, 92, 246, 0.22),
+    transparent 60%
+  );
+
+  --glow-primary-raw:
+    0 0 0 1px rgba(167, 139, 250, 0.35), 0 8px 30px rgba(139, 92, 246, 0.35);
+
+  /* Surfaces */
+  --surface-3: #1a1632;
+  --surface-elevated: rgba(20, 17, 38, 0.8);
+
+  /* Shadows tuned for dark */
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55);
+
+  --skeleton-base: #1e1a38;
+}
+
+/* Aurora extras */
+[data-theme="aurora"] .bg-card {
+  border: 1px solid var(--border);
+}
+[data-theme="aurora"] .btn-primary {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+[data-theme="aurora"] .skeleton-shimmer::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(167, 139, 250, 0.15) 50%,
+    transparent 100%
+  );
+}
+/* test1 */
 /* Layer Components */
 @layer components {
   /* Buttons */

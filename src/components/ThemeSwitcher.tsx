@@ -13,6 +13,7 @@ const themes: { value: Theme; label: string }[] = [
   { value: "clinical-sanctuary", label: "🧪 Clinical Sanctuary" },
   { value: "rola-theme", label: "🟠 rola-theme" },
   { value: "udvell-theme", label: "🟣 udvell-theme" },
+   { value: "aurora", label: "🟣 Aura-theme" },
 ];
 
 export function ThemeSwitcher() {

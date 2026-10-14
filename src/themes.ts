@@ -9,7 +9,8 @@ export type Theme =
   | "clinical-sanctuary"
   | "saas-indigo"
   | "rola-theme"
-  | "udvell-theme";
+  | "udvell-theme"
+  | "aurora";
 
 
 
