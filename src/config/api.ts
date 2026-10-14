@@ -816,6 +816,7 @@ export const API = {
   run: `${ERP_BASE}/api/method/frappe.desk.query_report.run`,
   DOCTYPE_META_URL: `${ERP_BASE}/api/method/frappe.desk.form.load.getdoctype`,
   CUSTOM_FIELD_DATA_URL: `${ERP_BASE}/api/method/frappe.desk.query_report.get_data_for_custom_field`,
+  TIMESHEET_ACTIVITY: `${ERP_BASE}/api/method/custom_hrms.api.timesheet.report.api.get_timesheet_report`,
 },
   },
 

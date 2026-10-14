@@ -74,6 +74,13 @@ export const PROJECT_REPORT_OPTIONS: ReportOption[] = [
     filters: [DATE_RANGE],
   },
   {
+  key: "timesheet-activity",
+  label: "Timesheet Activity Report",
+  reportName: "Timesheet Activity Report",
+  permission: { module: "Timesheet", action: "report" },
+  filters: [DATE_RANGE],
+},
+  {
     key: "timesheet-billing-summary",
     label: "Timesheet Billing Summary",
     reportName: "Timesheet Billing Summary",
