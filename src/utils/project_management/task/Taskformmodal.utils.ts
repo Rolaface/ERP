@@ -1,4 +1,3 @@
-
 import type {
   TaskFormValues,
   TaskStepKey,
@@ -7,7 +6,7 @@ import type {
 
 export const TASK_STEPS: { key: TaskStepKey; label: string }[] = [
   { key: "details", label: "Task Details" },
-  { key: "additional", label: "Additional Info" },
+  { key: "additional", label: "Dependencies" },
 ];
 
 export const TASK_PRIORITY_OPTIONS = [
@@ -28,6 +27,7 @@ export const INITIAL_TASK_VALUES: TaskFormValues = {
   status: "Open",
   priority: "Medium",
   activityType: "",
+  department: "",
   issue: "",
   startDate: "",
   endDate: "",
@@ -37,6 +37,7 @@ export const INITIAL_TASK_VALUES: TaskFormValues = {
   isGroup: 0,
   isMilestone: 0,
   taskWeight: "",
+  dependsOn: [],
 };
 
 export const buildTaskSubtitle = (taskCode?: string): string =>
@@ -71,14 +72,22 @@ export const validateTask = (v: TaskFormValues): TaskValidationIssue | null => {
       message: "Cannot be negative",
     };
   }
+  if (v.taskWeight !== "" && Number(v.taskWeight) < 0) {
+    return {
+      step: "details",
+      field: "taskWeight",
+      message: "Cannot be negative",
+    };
+  }
   return null;
 };
 
 const num = (value: string): number | undefined =>
   value === "" || isNaN(Number(value)) ? undefined : Number(value);
 
-/** Frappe Task fieldnames; empty values are left out so server defaults apply. */
 export const buildTaskPayload = (v: TaskFormValues) => {
+  const dependencies = v.dependsOn.filter(Boolean).map((task) => ({ task }));
+
   const payload: Record<string, unknown> = {
     subject: v.subject.trim(),
     project: v.project,
@@ -89,12 +98,14 @@ export const buildTaskPayload = (v: TaskFormValues) => {
     progress: num(v.progress) ?? 0,
     parent_task: v.parentTask || undefined,
     custom_activity_type: v.activityType || undefined,
+    department: v.department || undefined,
     issue: v.issue.trim() || undefined,
     exp_start_date: v.startDate || undefined,
     exp_end_date: v.endDate || undefined,
     expected_time: num(v.expectedTime),
     task_weight: num(v.taskWeight),
     description: v.description || undefined,
+    depends_on: dependencies.length ? dependencies : undefined,
   };
 
   return Object.fromEntries(

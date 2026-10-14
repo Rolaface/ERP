@@ -1,4 +1,3 @@
-// → src/hooks/project_management/task/modal/form/useTaskFormModal.ts
 import { useCallback, useEffect, useState } from "react";
 import type {
   SetTaskFieldHandler,
@@ -42,8 +41,7 @@ export const useTaskFormModal = ({ isOpen, onSuccess }: UseTaskFormModalArgs) =>
         ({
           ...prev,
           [key]: value,
-          // a parent task belongs to one project
-          ...(key === "project" ? { parentTask: "" } : {}),
+          ...(key === "project" ? { parentTask: "", dependsOn: [] } : {}),
         }) as TaskFormValues,
     );
     setIssue((prev) => (prev?.field === key ? null : prev));
