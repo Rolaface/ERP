@@ -3,7 +3,10 @@ import { showApiError } from "../../../../utils/alert";
 import { getTaskList } from "../../../../api/project/task/taskapi";
 import type { TaskEntry } from "../../../../types/Project_Management/task/table/Task.types";
 import type { TaskMode } from "../../../../views/project_management/task/components/Taskviewtoggle";
-import { SEARCH_DEBOUNCE_MS } from "../../../../views/project_management/task/components/Tasktable.config";
+import {
+  SEARCH_DEBOUNCE_MS,
+  isContextTask,
+} from "../../../../views/project_management/task/components/Tasktable.config";
 import { useIsMounted } from "./Useismounted";
 
 interface Args {
@@ -11,6 +14,17 @@ interface Args {
   isEmployee: boolean;
   currentUserEmail?: string;
 }
+
+const withoutContextRows = (rows: TaskEntry[]): TaskEntry[] => {
+  const visible = rows.filter((row) => !isContextTask(row));
+  const names = new Set(visible.map((row) => row.name));
+
+  return visible.map((row) =>
+    row.parent_task && !names.has(row.parent_task)
+      ? ({ ...row, parent_task: null } as TaskEntry)
+      : row,
+  );
+};
 
 export const useTaskList = ({ view, isEmployee, currentUserEmail }: Args) => {
   const mountedRef = useIsMounted();
@@ -77,7 +91,9 @@ export const useTaskList = ({ view, isEmployee, currentUserEmail }: Args) => {
 
       if (!isLatest()) return;
 
-      setTasks(res.data ?? []);
+      const rows = res.data ?? [];
+
+      setTasks(isEmployee ? withoutContextRows(rows) : rows);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total ?? res.data?.length ?? 0);
       setLoadVersion((v) => v + 1);

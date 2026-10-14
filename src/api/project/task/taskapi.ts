@@ -254,7 +254,6 @@ export async function getTaskTree(
   return [...rows.values()];
 }
 
-
 export async function getAllTasks(
   project?: string,
   search?: string,

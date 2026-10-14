@@ -3,6 +3,30 @@ import type { StockCorrectionSubmitPayload } from "../hooks/stock correction-mov
 export const buildCorrectionPayload = (
   payload: StockCorrectionSubmitPayload,
 ) => {
+  if (payload.mode === "manufacture") {
+    return {
+      stock_entry_type: "Repack",
+      posting_date: payload.date,
+      posting_time: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+      remarks: payload.reason,
+      items: [
+        ...(payload.consumeRows ?? []).map((row) => ({
+          item_code: row.itemCode,
+          qty: Number(row.qty),
+          role: "consume",
+          source_warehouse: row.warehouse,
+          batch_no: row.batchNo,
+        })),
+        {
+          item_code: payload.produceRow!.itemCode,
+          qty: Number(payload.produceRow!.qty),
+          role: "produce",
+          target_warehouse: payload.produceRow!.warehouse,
+        },
+      ],
+    };
+  }
+
   if (payload.mode === "movement") {
     return {
       stock_entry_type: payload.stockEntryType,
