@@ -40,6 +40,7 @@ export interface DocFieldMeta {
 
 export interface TimesheetActivityEntry {
   timesheet: string;
+timesheet_title: string | null;
   employee: string | null;
   employee_name: string | null;
   status: string;
@@ -87,8 +88,16 @@ export interface TimesheetActivityResponse {
     total_billable_amount: number;
     total_costing_amount: number;
   };
-  grouped_data: TimesheetActivityGroup[];
+  pagination: PaginationMeta;
   data: TimesheetActivityEntry[];
+}
+export interface PaginationMeta {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
 }
 
 export async function fetchTimesheetActivityReport(
