@@ -33,7 +33,6 @@ const BankDetails: React.FC = () => {
     accountNo: "bank_account_no",
     accountHolderName: "account_name",
     sortCode: "branch_code",
-    currency: "account_currency",
     isDefault: "is_default",
   };
 
@@ -195,7 +194,6 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
       key: "currency",
       header: "Currency",
       align: "center",
-      sortable: true,
       tooltip: (row) => row.currency || "—",
       render: (row) => (
         <div className="py-1.5">
