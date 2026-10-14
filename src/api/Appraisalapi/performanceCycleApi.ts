@@ -96,10 +96,14 @@ export async function getCycleList({
   page = 1,
   pageSize = 20,
   search = "",
+  sortBy,
+  sortOrder,
 }: {
   page?: number;
   pageSize?: number;
   search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }): Promise<GetCycleListResponse> {
   const start = (page - 1) * pageSize;
 
@@ -109,6 +113,8 @@ export async function getCycleList({
     pageSize,
     search,
     searchFields: ["cycle_name","name","status"],
+    sortBy,
+    sortOrder,
   });
 
   const resp: AxiosResponse = await api.get(
