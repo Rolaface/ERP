@@ -35,7 +35,7 @@ const allTabs = [
 const DEFAULT_TAB = "gl";
 
 const AccountingModule: React.FC = () => {
-   const { can } = usePermission();
+  const { can } = usePermission();
 
   const accountingTabs = useMemo(
     () => allTabs.filter((tab) => !tab.module || can(tab.module, tab.action)),
