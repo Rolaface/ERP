@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo } from "react";
+import React, { Suspense, useMemo, useState } from "react";
 import {
   PiggyBank,
   Wallet,
@@ -17,7 +17,8 @@ import { HrContentFrame, HrPrimaryTabs } from "../hr/components/HrTabLayout";
 import { useUrlTab } from "../../hooks/useUrlTab";
 import { usePermission } from "../../hooks/permission/usePermission";
 import Budget from "../BudgetManagement/Budget/budget";
-import { openBudgetModal } from "../BudgetManagement/Budget/budgetmodal"; 
+import CreateBudget from "../BudgetManagement/Budget/addBudgetModal";
+
 
 
 
@@ -44,6 +45,8 @@ const BUDGET_TABS = [
 
 const BudgetManagement: React.FC = () => {
   const { canAccessAnyOf, permissions, isAdmin } = usePermission();
+  const [creating, setCreating] = useState(false);
+
 
   const tabs = useMemo(
     () => BUDGET_TABS.filter((t) => canAccessAnyOf(t.modules)),
@@ -70,12 +73,18 @@ const BudgetManagement: React.FC = () => {
       <AppPageBody>
         <Suspense fallback={<AppSkeleton />}>
           <HrContentFrame>
-            {tab === "budget" && (
-  <Budget
-    onAddBudget={() => openBudgetModal({})}
-  />
-)}
-            {tab === "view" && <TabPlaceholder title="View" />}
+            {tab === "budget" &&
+  (creating ? (
+    <CreateBudget
+  onBack={() => setCreating(false)}
+  workflowName="Tier 2 Ledger Policy"
+/>
+  ) : (
+    <Budget onAddBudget={() => setCreating(true)} />
+  ))}
+{tab === "view" && <TabPlaceholder title="View" />}
+
+
             {tab === "transfer" && <TabPlaceholder title="Transfer" />}
             {tab === "supplementary" && <TabPlaceholder title="Supplementary Budget" />}
             {tab === "variance" && <TabPlaceholder title="Variance" />}
