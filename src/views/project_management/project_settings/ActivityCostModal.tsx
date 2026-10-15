@@ -7,20 +7,7 @@ import {
   showSuccess,
   showValidationError,
 } from "../../../utils/alert";
-import {
-  DarkTotal,
-  Field,
-  NotSavedBadge,
-  RateInput,
-  SelectInput,
-  SideCard,
-  SummaryRow,
-  fmtMoney,
-  toNum,
-  useModalForm,
-  useModalId,
-  usePmLinkOptions,
-} from "./PmModalParts";
+import { ModalSelect, NumericInput } from "../../../components/ui/modal/modalComponent";
 
 interface Props {
   isOpen: boolean;
@@ -28,31 +15,56 @@ interface Props {
   onSuccess?: () => void;
 }
 
+interface Option {
+  label: string;
+  value: string | number;
+}
+
 // TODO: bind these to your default currency (e.g. from useDefault) if needed
 const CURRENCY = { symbol: "$", code: "USD" };
 
+interface FormValues {
+  activityType: string;
+  employee: string;
+  billingRate: number | null;
+  costingRate: number | null;
+}
+
+const INITIAL: FormValues = {
+  activityType: "",
+  employee: "",
+  billingRate: null,
+  costingRate: null,
+};
+
 const ActivityCostModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
-  const modalId = useModalId("activity-cost-create");
+  const modalId = "activity-cost-create";
   const [submitting, setSubmitting] = useState(false);
+  const [values, setValues] = useState<FormValues>(INITIAL);
 
-  const activityTypeOptions = usePmLinkOptions("Activity Type");
-  const employeeOptions = usePmLinkOptions("Employee", "employee_name");
+  // TODO: load from API (Activity Type / Employee link options)
+  const activityTypeOptions: Option[] = [];
+  const employeeOptions: Option[] = [];
 
-  const { values, set, reset, confirmClose } = useModalForm({
-    activityType: "",
-    employee: "",
-    billingRate: "",
-    costingRate: "",
-  });
+  const set = <K extends keyof FormValues>(key: K, v: FormValues[K]) =>
+    setValues((prev) => ({ ...prev, [key]: v }));
 
-  const handleClose = confirmClose(onClose);
+  const reset = () => setValues(INITIAL);
+
+  const isDirty = JSON.stringify(values) !== JSON.stringify(INITIAL);
+
+  const handleClose = () => {
+    if (isDirty && !window.confirm("Discard unsaved changes?")) return;
+    reset();
+    onClose();
+  };
 
   // live calculations
-  const billing = toNum(values.billingRate);
-  const costing = toNum(values.costingRate);
+  const billing = values.billingRate ?? 0;
+  const costing = values.costingRate ?? 0;
   const spread = billing - costing;
   const marginPct = billing > 0 ? (spread / billing) * 100 : 0;
-  const money = (n: number) => fmtMoney(n, CURRENCY.symbol);
+  const money = (n: number) => `${CURRENCY.symbol}${n.toFixed(2)}`;
 
   const handleSave = async () => {
     if (submitting) return;
@@ -72,6 +84,7 @@ const ActivityCostModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
       // });
       showSuccess("Activity Cost saved successfully");
       onSuccess?.();
+      reset();
       onClose();
     } catch (error: any) {
       showApiError(error);
@@ -91,12 +104,7 @@ const ActivityCostModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
       modalId={modalId}
       isOpen={isOpen}
       onClose={handleClose}
-      title={
-        <span className="inline-flex items-center">
-          New Activity Cost
-          <NotSavedBadge />
-        </span>
-      }
+      title={isDirty ? "New Activity Cost (Not Saved)" : "New Activity Cost"}
       subtitle="Add and manage activity cost records"
       icon={FileText}
       footer={
@@ -120,33 +128,29 @@ const ActivityCostModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
         className="h-full overflow-y-auto px-3 py-2"
         autoComplete="off"
       >
-        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_260px]">
-          {/* ───────── Left: form ───────── */}
+        <div className="grid grid-cols-1 items-start gap-3">
           <div className="flex flex-col gap-3 rounded-lg border border-theme bg-card p-3">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <Field label="Activity Type" required right="Browse list">
-                <SelectInput
-                  value={values.activityType}
-                  onChange={(v) => set("activityType", v)}
-                  options={activityTypeOptions}
-                  placeholder="Select Activity Type..."
-                  icon={<Briefcase size={12} />}
-                />
-              </Field>
+              <ModalSelect
+                label="Activity Type"
+                required
+                icon={<Briefcase size={12} />}
+                value={values.activityType}
+                onChange={(e) => set("activityType", e.target.value)}
+                options={activityTypeOptions}
+                placeholder="Select Activity Type..."
+                className="w-full"
+              />
 
-              <Field
-                label="Employee"
-                right="Optional Override"
-                hint="Applies uniformly if left empty"
-              >
-                <SelectInput
-                  value={values.employee}
-                  onChange={(v) => set("employee", v)}
-                  options={employeeOptions}
-                  placeholder="Select Employee... (optional)"
-                  icon={<User size={12} />}
-                />
-              </Field>
+              <ModalSelect
+                label="Employee (Optional Override)"
+                icon={<User size={12} />}
+                value={values.employee}
+                onChange={(e) => set("employee", e.target.value)}
+                options={employeeOptions}
+                placeholder="Select Employee... (optional)"
+                className="w-full"
+              />
             </div>
 
             <div>
@@ -156,26 +160,30 @@ const ActivityCostModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
                   <div className="mb-1 flex items-center gap-1 text-[11px] text-muted">
-                    Billing Rate {infoIcon("Rate billed to the client per hour")}
+                    Billing Rate ({CURRENCY.code}){" "}
+                    {infoIcon("Rate billed to the client per hour")}
                   </div>
-                  <RateInput
-                    prefix={CURRENCY.symbol}
-                    suffix={CURRENCY.code}
+                  <NumericInput
+                    name="billingRate"
                     value={values.billingRate}
                     onChange={(v) => set("billingRate", v)}
+                    decimalScale={2}
+                    className="w-full"
                   />
                   <p className="mt-0.5 text-[10px] text-muted">per hour</p>
                 </div>
 
                 <div>
                   <div className="mb-1 flex items-center gap-1 text-[11px] text-muted">
-                    Costing Rate {infoIcon("Internal cost per hour")}
+                    Costing Rate ({CURRENCY.code}){" "}
+                    {infoIcon("Internal cost per hour")}
                   </div>
-                  <RateInput
-                    prefix={CURRENCY.symbol}
-                    suffix={CURRENCY.code}
+                  <NumericInput
+                    name="costingRate"
                     value={values.costingRate}
                     onChange={(v) => set("costingRate", v)}
+                    decimalScale={2}
+                    className="w-full"
                   />
                   <p className="mt-0.5 text-[10px] text-muted">per hour</p>
                 </div>
@@ -207,8 +215,6 @@ const ActivityCostModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
               </div>
             </div>
           </div>
-
-          
         </div>
       </form>
     </MinimizableModal>

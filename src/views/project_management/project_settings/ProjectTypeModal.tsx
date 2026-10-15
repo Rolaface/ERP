@@ -7,39 +7,42 @@ import {
   showSuccess,
   showValidationError,
 } from "../../../utils/alert";
-import {
-  Field,
-  HintWithIcon,
-  ModalTabs,
-  TextInput,
-  inputCls,
-  useModalForm,
-  useModalId,
-} from "./PmModalParts";
-
+import { ModalInput, ModalTextarea } from "../../../components/ui/modal/modalComponent";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void; // called after save → reload the list
+  onSuccess?: () => void; 
 }
-
-const TABS = [{ id: "details", label: "Details" }] as const;
-
-type TabId = (typeof TABS)[number]["id"];
 
 const MAX_DESC = 500;
 
+interface FormValues {
+  projectType: string;
+  description: string;
+}
+
+const INITIAL: FormValues = {
+  projectType: "",
+  description: "",
+};
+
 const ProjectTypeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
-  const modalId = useModalId("project-type-create");
-  const [activeTab, setActiveTab] = useState<TabId>("details");
+  const modalId = "project-type-create";
   const [submitting, setSubmitting] = useState(false);
+  const [values, setValues] = useState<FormValues>(INITIAL);
 
-  const { values, set, reset, confirmClose } = useModalForm({
-    projectType: "",
-    description: "",
-  });
+  const set = <K extends keyof FormValues>(key: K, v: FormValues[K]) =>
+    setValues((prev) => ({ ...prev, [key]: v }));
 
-  const handleClose = confirmClose(onClose);
+  const reset = () => setValues(INITIAL);
+
+  const isDirty = JSON.stringify(values) !== JSON.stringify(INITIAL);
+
+  const handleClose = () => {
+    if (isDirty && !window.confirm("Discard unsaved changes?")) return;
+    reset();
+    onClose();
+  };
 
   const handleSave = async () => {
     if (submitting) return;
@@ -50,10 +53,9 @@ const ProjectTypeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
 
     try {
       setSubmitting(true);
-      // TODO: API → create "Project Type"
-      // await createProjectType({ name: values.projectType.trim(), description: values.description });
       showSuccess("Project Type saved successfully");
       onSuccess?.();
+      reset();
       onClose();
     } catch (error: any) {
       showApiError(error);
@@ -75,8 +77,8 @@ const ProjectTypeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
           onCancel={handleClose}
           onReset={reset}
           onSave={handleSave}
-          currentTab={TABS.findIndex((t) => t.id === activeTab)}
-          totalTabs={TABS.length}
+          currentTab={0}
+          totalTabs={1}
           saving={submitting}
         />
       }
@@ -91,45 +93,30 @@ const ProjectTypeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
         className="h-full flex flex-col"
         autoComplete="off"
       >
-        <ModalTabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
-
         <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
-          {activeTab === "details" && (
-            <div className="flex flex-col gap-3 rounded-lg border border-theme bg-card p-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <Field label="Project Type" required className="w-full sm:w-[320px]">
-                  <TextInput
-                    name="projectType"
-                    value={values.projectType}
-                    onChange={(e) => set("projectType", e.target.value)}
-                    placeholder="e.g. Software Development"
-                  />
-                </Field>
-                <div className="sm:mt-5">
-                  <HintWithIcon>
-                    Define standard taxonomy for resource allocation, governance,
-                    and cost tracking.
-                  </HintWithIcon>
-                </div>
-              </div>
-
-              <Field
-                label="Description"
-                right={`${values.description.length} / ${MAX_DESC}`}
-                hint="Provide contextual guidance for project managers regarding scope, budget codes, and default milestones."
-              >
-                <textarea
-                  name="description"
-                  value={values.description}
-                  maxLength={MAX_DESC}
-                  onChange={(e) => set("description", e.target.value)}
-                  placeholder="Add a description for this project type..."
-                  className={`${inputCls} h-[96px] resize-none py-2`}
-                />
-              </Field>
+          <div className="flex flex-col gap-3 rounded-lg border border-theme bg-card p-3">
+            <div className="w-full sm:w-[320px]">
+              <ModalInput
+                label="Project Type"
+                name="projectType"
+                required
+                value={values.projectType}
+                onChange={(e) => set("projectType", e.target.value)}
+                placeholder="e.g. Software Development"
+                className="w-full"
+              />
             </div>
-          )}
 
+            <ModalTextarea
+              label={`Description (${values.description.length} / ${MAX_DESC})`}
+              name="description"
+              value={values.description}
+              maxLength={MAX_DESC}
+              onChange={(e) => set("description", e.target.value)}
+              placeholder="Add a description for this project type..."
+              className="!h-[96px] py-2"
+            />
+          </div>
         </div>
       </form>
     </MinimizableModal>

@@ -12,7 +12,7 @@ import {
   type BucketId,
 } from "../../../hooks/project_management/project/Useprojectdashboard";
 
-/* ---------- small building blocks ---------- */
+
 
 const Panel: React.FC<{ children: React.ReactNode; className?: string }> = ({
   children,
@@ -61,7 +61,7 @@ const relativeDue = (due: string, today: string) => {
   return `Due in ${diff} day${diff === 1 ? "" : "s"}`;
 };
 
-/* ---------- date-bucket filters for the table ---------- */
+
 
 const bucketFilters = (id: BucketId, today: string) => {
   const t = new Date(today);
@@ -87,24 +87,24 @@ const bucketFilters = (id: BucketId, today: string) => {
   }
 };
 
-/* ---------- main ---------- */
+
 
 const ProjectDashboard: React.FC = () => {
   const { loading, error, updatedAt, stats, reload } = useProjectDashboard();
   const [bucket, setBucket] = useState<BucketId | null>(null);
   const projectActions = useProjectActions();
 
-  // Same table config as before, plus the selected deadline bucket.
+
   const tableConfig = useMemo(
     () =>
       bucket
         ? {
-            ...DASHBOARD_LIST,
-            baseFilters: [
-              ...(DASHBOARD_LIST.baseFilters ?? []),
-              ...bucketFilters(bucket, stats.today),
-            ],
-          }
+          ...DASHBOARD_LIST,
+          baseFilters: [
+            ...(DASHBOARD_LIST.baseFilters ?? []),
+            ...bucketFilters(bucket, stats.today),
+          ],
+        }
         : DASHBOARD_LIST,
     [bucket, stats.today],
   );
@@ -115,16 +115,16 @@ const ProjectDashboard: React.FC = () => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-4">
-      {/* Header */}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-         
+
           <p className="text-xs text-muted" aria-live="polite">
             {updatedAt
               ? `Updated ${updatedAt.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}`
+                hour: "2-digit",
+                minute: "2-digit",
+              })}`
               : "Loading…"}
           </p>
         </div>
@@ -132,14 +132,14 @@ const ProjectDashboard: React.FC = () => {
           type="button"
           onClick={reload}
           disabled={loading}
-          className="rounded-md border px-3 py-1.5 text-xs font-bold text-main transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 disabled:opacity-50"
+          className="rounded-md border px-3 py-1.5 text-xs font-bold text-main transition-colors hover:bg-black/5 focus-visible:outline disabled:opacity-50"
           style={{ borderColor: "var(--border)" }}
         >
           {loading ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 
-      {/* Error */}
+
       {error && (
         <Panel>
           <p className="text-sm font-bold text-main">
@@ -157,7 +157,7 @@ const ProjectDashboard: React.FC = () => {
         </Panel>
       )}
 
-      {/* KPIs */}
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {loading && !updatedAt ? (
           Array.from({ length: 4 }).map((_, i) => (
@@ -190,7 +190,7 @@ const ProjectDashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Deadline radar + attention list */}
+
       <div className="grid gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Panel>
           <div className="flex items-baseline justify-between">
@@ -206,7 +206,7 @@ const ProjectDashboard: React.FC = () => {
             </p>
           ) : (
             <>
-              {/* segmented bar */}
+
               <div
                 className="mt-4 flex h-10 w-full gap-1 overflow-hidden rounded-md"
                 role="group"
@@ -223,7 +223,7 @@ const ProjectDashboard: React.FC = () => {
                       aria-label={`${b.label}: ${stats.counts[b.id]} projects`}
                       title={`${b.label}: ${stats.counts[b.id]}`}
                       onClick={() => toggle(b.id)}
-                      className="min-w-[8px] transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                      className="min-w-[8px] transition-all focus-visible:outline  focus-visible:outline-offset-2"
                       style={{
                         flexGrow: stats.counts[b.id],
                         flexBasis: 0,
@@ -235,7 +235,7 @@ const ProjectDashboard: React.FC = () => {
                 })}
               </div>
 
-              {/* legend doubles as filter buttons (works for keyboard + small segments) */}
+
               <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
                 {BUCKETS.map((b) => {
                   const n = stats.counts[b.id];
@@ -247,7 +247,7 @@ const ProjectDashboard: React.FC = () => {
                         disabled={n === 0}
                         aria-pressed={selected}
                         onClick={() => toggle(b.id)}
-                        className="w-full rounded-md border px-2.5 py-2 text-left transition-colors hover:bg-black/5 focus-visible:outline focus-visible:outline-2 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="w-full rounded-md border px-2.5 py-2 text-left transition-colors hover:bg-black/5 focus-visible:outline  disabled:cursor-not-allowed disabled:opacity-40"
                         style={{
                           borderColor: selected ? b.color : "var(--border)",
                           boxShadow: selected ? `inset 0 0 0 1px ${b.color}` : undefined,
@@ -318,8 +318,7 @@ const ProjectDashboard: React.FC = () => {
         </Panel>
       </div>
 
-      {/* Table */}
-      <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
         <div className="flex min-h-[28px] items-center justify-between">
           <h2 className="text-sm font-bold text-main">
             {activeBucket ? `Projects: ${activeBucket.label}` : "Active projects"}
@@ -328,13 +327,13 @@ const ProjectDashboard: React.FC = () => {
             <button
               type="button"
               onClick={() => setBucket(null)}
-              className="rounded-md px-2 py-1 text-xs font-bold text-main underline focus-visible:outline focus-visible:outline-2"
+              className="rounded-md px-2 py-1 text-xs font-bold text-main underline focus-visible:outline"
             >
               Clear filter
             </button>
           )}
         </div>
-        {/* key remounts the table so it refetches cleanly when the filter changes */}
+
         <PmListTable
           key={bucket ?? "all"}
           config={tableConfig}
