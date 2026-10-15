@@ -116,10 +116,9 @@ const TimesheetRow: React.FC<TimesheetRowProps> = ({
         <SearchSelect2
           label=""
           value={line.activity_type}
-          disabled={isEmployee}
           fetchOptions={fetchActivityTypeOptions}
           onChange={(value, opt) => handlers.onActivity(line.id, value, opt)}
-          placeholder={isEmployee ? "Auto from task" : "Activity Type"}
+          placeholder="Select Activity Type"
           required
         />
       </td>

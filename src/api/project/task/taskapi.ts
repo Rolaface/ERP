@@ -112,6 +112,7 @@ interface CustomTaskListPayload {
     page_size?: number;
     total?: number;
     total_pages?: number;
+    total_tasks?: number;
     has_more?: boolean;
     has_next?: boolean;
     has_prev?: boolean;
@@ -147,7 +148,7 @@ const toTaskEntry = (row: ApiTaskRow): TaskEntry =>
     ...(row.context_only !== undefined ? { context_only: row.context_only } : {}),
     ...(row.is_assigned !== undefined ? { is_assigned: row.is_assigned } : {}),
     ...(row.depth !== undefined ? { depth: row.depth } : {}),
-        ...(row.ancestors ? { ancestors: row.ancestors } : {}),
+    ...(row.ancestors ? { ancestors: row.ancestors } : {}),
   }) as TaskEntry;
 
 const unwrapTaskPayload = (response: any): CustomTaskListPayload => {
@@ -193,10 +194,11 @@ const listTasks = async (
   const pageSize = Number(
     payload.pagination?.page_size ?? params.page_size ?? 20,
   );
-  const total = Number(payload.pagination?.total ?? data.length);
+  const rootTotal = Number(payload.pagination?.total ?? data.length);
+  const total = Number(payload.pagination?.total_tasks ?? rootTotal);
   const totalPages = Number(
     payload.pagination?.total_pages ??
-      Math.ceil(total / Math.max(pageSize, 1)),
+      Math.ceil(rootTotal / Math.max(pageSize, 1)),
   );
 
   return {
@@ -214,9 +216,6 @@ const listTasks = async (
     },
   };
 };
-
-
-
 
 const TASK_TREE_PAGE_SIZE = 200;
 
@@ -253,7 +252,6 @@ export async function getTaskTree(
 
   return [...rows.values()];
 }
-
 
 export async function getAllTasks(
   project?: string,

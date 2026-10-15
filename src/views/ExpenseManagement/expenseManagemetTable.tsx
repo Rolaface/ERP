@@ -6,7 +6,8 @@ import React, {
   useMemo,
 } from "react";
 import { Ban, CheckCircle2, XCircle } from "lucide-react";
-import { FilterSelect } from "../../components/ui/modal/modalComponent";
+// import { FilterSelect } from "../../components/ui/modal/modalComponent";
+import MultiSelectFilter from "../../components/ui/modal/MultiSelectFilter";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionMenu,
@@ -82,7 +83,7 @@ const ExpenseHistory: React.FC = () => {
   const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   const [filters, setFilters] = useState<{
-    status?: string;
+    status?: string[];
     category?: string;
     from_date?: string;
     to_date?: string;
@@ -647,18 +648,18 @@ const SORT_FIELD_MAP: Record<string, string> = {
           setPage(1);
         }}
         extraFilters={
-          <>
-            <FilterSelect
-              value={filters.status ?? ""}
-              options={statusOptions}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  status: e.target.value || undefined,
-                }))
-              }
-            />
-          </>
+          <MultiSelectFilter
+            options={statusOptions}
+            values={filters.status ?? []}
+            onChange={(v) =>
+              setFilters((prev) => ({
+                ...prev,
+                status: v.length ? v : undefined,
+              }))
+            }
+            placeholder="Status"
+            panelTitle="Status"
+          />
         }
       />
       {detailClaim !== null && (

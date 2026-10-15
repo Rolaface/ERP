@@ -18,6 +18,7 @@ import ActionButton, { ActionGroup, ActionMenu } from "../../../components/ui/Ta
 import { openLeaveApplyModal } from "../../../store/modalStore";
 import LeaveBalanceTable from "./LeaveBalanceTable";
 import { useUrlTab } from "../../../hooks/useUrlTab";
+import MultiSelectFilter from "../../../components/ui/modal/MultiSelectFilter";
 
 interface MenuAction {
   label: string;
@@ -35,6 +36,12 @@ const SORT_FIELD_MAP: Record<string, string> = {
   total_leave_days: "total_leave_days",
   description: "description",
 };
+const STATUS_OPTIONS = [
+  { label: "Pending Approval", value: "Open" },
+  { label: "Approved", value: "Approved" },
+  { label: "Rejected", value: "Rejected" },
+  { label: "Cancelled", value: "Cancelled" },
+];
 
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function LeaveApproval() {
@@ -50,7 +57,11 @@ export default function LeaveApproval() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showHistory] = useState(false);
   // const [filters, setFilters] = useState({ from_date: "", to_date: "" });
-  const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "Open" });
+  const [filters, setFilters] = useState<{
+  from_date: string;
+  to_date: string;
+  status: string[];
+}>({ from_date: "", to_date: "", status: ["Open"] });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [sortBy, setSortBy] = useState<string>("from_date");
@@ -96,9 +107,9 @@ const leaveTabs = useMemo(
       if (!isAdmin) {
         apiFilters.push(["leave_approver", "=", user?.email]);
       }
-      if (filters.status) {
-        apiFilters.push(["status", "=", filters.status]);
-      }
+      if (filters.status.length > 0) {
+  apiFilters.push(["status", "in", filters.status]);
+}
       // else if (showHistory) {
       //     apiFilters.push([
       //       "status",
@@ -330,21 +341,16 @@ const leaveTabs = useMemo(
                 setPage(1);
               }}
             />
-            <select
-              value={filters.status}
-              // disabled={!showHistory} 
-              onChange={(e) => {
-                setFilters((prev) => ({ ...prev, status: e.target.value }));
-                setPage(1);
-              }}
-              className="border-gray-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 py-1 px-2 border outline-none"
-            >
-              <option value="">All Statuses</option>
-              <option value="Open">Pending Approval</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-                      <option value="Cancelled">Cancelled</option>
-            </select>
+            <MultiSelectFilter
+  options={STATUS_OPTIONS}
+  values={filters.status}
+  onChange={(v) => {
+    setFilters((prev) => ({ ...prev, status: v }));
+    setPage(1);
+  }}
+  placeholder="Status"
+  panelTitle="Status"
+/>
                        <button
               type="button"
               onClick={() => setViewMode("balance")}
