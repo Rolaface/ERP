@@ -38,6 +38,7 @@ export interface WarehouseNode {
   is_group: number;
   bin_count: number;
   company: string;
+  custom_warehouse_code?: string | null;
   children?: WarehouseNode[];
 }
 

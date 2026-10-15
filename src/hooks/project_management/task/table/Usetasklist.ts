@@ -63,6 +63,9 @@ export const useTaskList = ({ view, isEmployee, currentUserEmail }: Args) => {
     const isLatest = () =>
       mountedRef.current && requestId === requestIdRef.current;
 
+    // Employees only ever see their own tasks. Professionals see everything
+    // unless they pick an assignee; never send their own email by default,
+    // otherwise the backend drops out of "all tasks" mode.
     const assignees = isEmployee
       ? [currentUserEmail as string]
       : assigneeFilter.length
