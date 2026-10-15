@@ -1,13 +1,3 @@
-/**
- * Builds a `fetchRows` function for usePmList.
- *
- * usePmList calls  config.fetchRows(search)  and expects a plain array of rows.
- * It does the filtering, sorting and paging itself, so we only load rows here.
- *
- * TODO: this uses the standard Frappe REST endpoint with the session cookie.
- * If your project uses an axios instance / token (like getAllProjects does),
- * replace the fetch() inside this one function. Nothing else needs to change.
- */
 export const makeFetchRows =
   <T>(doctype: string, fields: string[], searchFields: string[]) =>
   async (search?: string): Promise<T[]> => {
