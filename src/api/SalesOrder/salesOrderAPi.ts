@@ -45,14 +45,19 @@ export async function getAllSalesOrders(
   search?: string,
   filters?: SalesOrderFilters
 ): Promise<any> {
+  const computedOrderBy = sortBy
+    ? `${sortBy} ${sortOrder ?? "asc"}`
+    : filters?.order_by;
+
+  const { order_by: _ignoredOrderBy, ...restFilters } = filters || {};
+
   const resp: AxiosResponse = await api.get(SalesOrderAPI.getAll, {
     params: {
       page,
       page_size,
-      sortBy,
-      sortOrder,
-      search,
-      ...filters,
+      ...(computedOrderBy && { order_by: computedOrderBy }),
+      ...(search?.trim() ? { search: search.trim() } : {}),
+      ...restFilters,
     },
   });
   return resp.data;

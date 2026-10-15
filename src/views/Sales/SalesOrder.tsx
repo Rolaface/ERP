@@ -57,6 +57,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
   transactionDate: "transaction_date",
   deliveryDate: "delivery_date",
   grandTotal: "grand_total",
+  total: "grand_total",
 };
 
 interface SalesOrderTableProps {
