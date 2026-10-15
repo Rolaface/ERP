@@ -1,989 +1,135 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  Building2,
-  ChevronDown,
-  ChevronRight,
-  ClipboardList,
-  FileText,
-  Lock,
-  Paperclip,
-  Pencil,
-  Plus,
-  Receipt,
-  Save,
-  Send,
-  Trash2,
-  Upload,
-  X,
-} from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ChevronDown, ChevronRight, Lock, Plus, Save, Search, Trash2 } from "lucide-react";
 import { ModalInput } from "../../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
-import { useCurrencySymbols } from "../../../hooks/Usecurrencysymbols";
 import { showApiError, showSuccess } from "../../../utils/alert";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Opt = { value: string; label: string };
-export type ItemStatus = "Pending" | "Approved" | "Rejected";
 
-export interface BudgetItem {
+export interface Branch {
+  code: string;
+  name: string;
+  zone: string;
+  region: string;
+}
+
+/** A budget head line, as set up under a budget head name in Setup */
+export interface HeadRef {
   id: string;
-  category: string;
-  account: Opt | null; // GL / expense account (optional, drives variance later)
-  includes: string;
-  amount: number | ""; // total for the whole financial year
-  lastYear: number | ""; // reference for the approver (optional)
-  periods: number[]; // amount per period; [] when phasing is "Annual"
-  justification: string;
-  status: ItemStatus;
+  name: string;
+  glCode: string;
+  costCentre: string;
+  programme: string;
+  group: string; // id of the budget head name it belongs to
 }
 
-export interface BudgetPayload {
-  title: string;
-  budget_type: string;
+export interface BudgetPlanPayload {
+  name: string;
   financial_year: string;
-  budget_level: string; // Company | Branch | Department | Cost Center | Project
-  scope_id: string;
-  scope_name: string;
-  parent_budget_id: string; // higher-level budget this one rolls up into
-  phasing: string; // Annual | Monthly | Quarterly | Half-Yearly
-  currency: string;
-  overspend_action: string; // Warn | Stop | Ignore
-  notes: string;
-  items: BudgetItem[];
-  attachments: File[];
-  total: number;
-  submit: boolean; // false = save as draft
+  budget_type: string;
+  budget_period: string;
+  budget_head_id: string; // the budget head name chosen from Setup
+  budget_head_name: string;
+  /** Extra heads added for one branch only (on top of the heads under budget_head_id) */
+  branch_heads: { branch_code: string; head_ids: string[] }[];
+  scope: string; // Single Branch | Selected Branches | All Branches
+  branch_codes: string[]; // empty when scope is All Branches (server resolves)
+  start_date: string;
+  end_date: string;
+  description: string;
+  owner: string;
+  action: "draft" | "create"; // publishing for branch inputs is a separate step
 }
 
-interface CreateBudgetProps {
+interface CreateBudgetPlanProps {
   onBack: () => void;
-  onSaved?: (payload: BudgetPayload) => void;
-  preparedBy?: string;
-  workflowName?: string; // e.g. "Tier 2 Ledger Policy" – from your workflow config
-  defaultCurrency?: string;
-  /** Month the financial year starts (1-12). April = 4 (India), January = 1. */
+  onSaved?: (payload: BudgetPlanPayload) => void;
+  currentUser?: string;
+  /** Only MIS officers (or similar) may create plans */
+  canCreate?: boolean;
+  /** Only users with this right can change the budget owner */
+  canChangeOwner?: boolean;
+  /** Month the financial year starts (1-12). April = 4 for India. */
   fyStartMonth?: number;
-  /** Pass to pre-fill when you later reuse this screen for edit */
-  initial?: Partial<BudgetPayload>;
+  initial?: Partial<BudgetPlanPayload>;
 }
 
-// ─── Static options (nothing here is organisation-specific) ───────────────────
+// ─── Static options and illustrative data ─────────────────────────────────────
 
-const LEVELS = ["Company", "Branch", "Department", "Cost Center", "Project"];
-const TYPES = ["Operational", "Capital", "Revenue", "Project"];
-const PHASE_ANNUAL = "Annual (no split)";
-const PHASING = [PHASE_ANNUAL, "Monthly", "Quarterly", "Half-Yearly"];
-const CURRENCIES = ["INR", "USD", "EUR", "GBP", "AED"];
-const OVERSPEND = [
-  { value: "Warn", label: "Warn and allow" },
-  { value: "Stop", label: "Stop the transaction" },
-  { value: "Ignore", label: "Ignore" },
-];
-// TODO: load from chart of accounts / expense heads
-const DEFAULT_CATEGORIES = [
-  "Salaries & Benefits",
-  "Operations",
-  "Technology",
-  "Marketing",
-  "Travel",
-  "Training",
-  "Utilities",
-  "Equipment",
-  "Other",
-];
-const MAX_FILE_MB = 10;
+const BUDGET_TYPES = ["Operating", "Capital Expenditure", "Project", "Special"];
+const PERIODS = ["Annual", "Quarterly", "Monthly"];
+const SCOPES = ["Single Branch", "Selected Branches", "All Branches"];
 
-const buildFinancialYears = () => {
-  const y = new Date().getFullYear();
-  return [y - 1, y, y + 1].map(
-    (s) => `${s}-${String((s + 1) % 100).padStart(2, "0")}`,
-  );
-};
+// TODO: replace with master-data APIs. Illustrative only.
+const BRANCHES: Branch[] = [
+  { code: "BR-0101", name: "Meerut Main", zone: "Zone North", region: "Western UP" },
+  { code: "BR-0102", name: "Meerut Cantt", zone: "Zone North", region: "Western UP" },
+  { code: "BR-0201", name: "Dehradun Central", zone: "Zone Hills", region: "Uttarakhand" },
+  { code: "BR-0202", name: "Dehradun Rajpur Road", zone: "Zone Hills", region: "Uttarakhand" },
+  { code: "BR-0301", name: "Haridwar", zone: "Zone Hills", region: "Uttarakhand" },
+  { code: "BR-0302", name: "Roorkee", zone: "Zone Hills", region: "Uttarakhand" },
+  { code: "BR-0401", name: "Agra Sadar", zone: "Zone Central", region: "Braj" },
+  { code: "BR-0402", name: "Mathura", zone: "Zone Central", region: "Braj" },
+];
+// TODO: replace with API that returns active budget head names from Setup → Budget heads
+const BUDGET_HEAD_NAMES: Opt[] = [
+  { value: "BH-001", label: "Operating Expenses" },
+  { value: "BH-002", label: "Capital Expenditure Items" },
+  { value: "BH-003", label: "Staff Costs" },
+];
+
+// TODO: replace with API – heads under each budget head name (Setup → Budget heads). Dummy data.
+const BUDGET_HEADS_DATA: HeadRef[] = [
+  { id: "H-101", name: "Office Rent", glCode: "5101001", costCentre: "CC-101 Branch Operations", programme: "PRG-01 Branch Operations", group: "BH-001" },
+  { id: "H-102", name: "Electricity", glCode: "5101002", costCentre: "CC-101 Branch Operations", programme: "PRG-01 Branch Operations", group: "BH-001" },
+  { id: "H-103", name: "Housekeeping & Security", glCode: "5101003", costCentre: "CC-101 Branch Operations", programme: "PRG-01 Branch Operations", group: "BH-001" },
+  { id: "H-104", name: "Stationery & Printing", glCode: "5101004", costCentre: "CC-101 Branch Operations", programme: "PRG-01 Branch Operations", group: "BH-001" },
+  { id: "H-201", name: "IT Equipment", glCode: "1201001", costCentre: "CC-201 Information Technology", programme: "PRG-02 Digital Banking", group: "BH-002" },
+  { id: "H-202", name: "Furniture & Fixtures", glCode: "1201002", costCentre: "CC-101 Branch Operations", programme: "PRG-01 Branch Operations", group: "BH-002" },
+  { id: "H-203", name: "Cash Handling Machines", glCode: "1201003", costCentre: "CC-101 Branch Operations", programme: "PRG-01 Branch Operations", group: "BH-002" },
+  { id: "H-301", name: "Staff Training", glCode: "5201001", costCentre: "CC-301 Human Resources", programme: "PRG-03 People Development", group: "BH-003" },
+  { id: "H-302", name: "Travel Expenses", glCode: "5201002", costCentre: "CC-301 Human Resources", programme: "PRG-03 People Development", group: "BH-003" },
+  { id: "H-303", name: "Overtime", glCode: "5201003", costCentre: "CC-301 Human Resources", programme: "PRG-03 People Development", group: "BH-003" },
+];
+const HEAD_BY_ID: Record<string, HeadRef> = Object.fromEntries(BUDGET_HEADS_DATA.map((h) => [h.id, h]));
+
+const PAGE_SIZE = 8;
 
 const filterStatic = (list: (string | Opt)[], search: string): Opt[] =>
   list
     .map((o) => (typeof o === "string" ? { value: o, label: o } : o))
     .filter((o) => o.label.toLowerCase().includes((search || "").toLowerCase()));
+const staticFetcher = (list: (string | Opt)[]) => (search: string) =>
+  Promise.resolve(filterStatic(list, search));
 
-const uid = () => Math.random().toString(36).slice(2, 10);
-
-// Labels for each period of the financial year, e.g. Apr…Mar, Q1…Q4, H1/H2
-const periodLabels = (phasing: string, fyStartMonth: number): string[] => {
-  if (phasing === "Monthly")
-    return Array.from({ length: 12 }, (_, i) =>
-      new Date(2000, (fyStartMonth - 1 + i) % 12, 1).toLocaleString("en", {
-        month: "short",
-      }),
-    );
-  if (phasing === "Quarterly") return ["Q1", "Q2", "Q3", "Q4"];
-  if (phasing === "Half-Yearly") return ["H1", "H2"];
-  return [];
+const pad = (n: number) => String(n).padStart(2, "0");
+const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fyLabel = (startYear: number) => `FY ${startYear}–${pad((startYear + 1) % 100)}`;
+const fyStartYear = (label: string) => parseInt(label.slice(3, 7), 10);
+const fyRange = (label: string, startMonth: number) => {
+  const y = fyStartYear(label);
+  return {
+    start: ymd(new Date(y, startMonth - 1, 1)),
+    end: ymd(new Date(y + 1, startMonth - 1, 0)), // day before next FY starts
+  };
 };
-
-// Even split in paise so the parts always add up exactly to the total
-const splitEven = (total: number, n: number): number[] => {
-  if (!n) return [];
-  const cents = Math.round(total * 100);
-  const base = Math.floor(cents / n);
-  const arr = Array(n).fill(base);
-  arr[n - 1] += cents - base * n;
-  return arr.map((c) => c / 100);
-};
-
-const STATUS_STYLE: Record<ItemStatus, string> = {
-  Pending: "bg-amber-50 text-amber-700",
-  Approved: "bg-emerald-50 text-emerald-700",
-  Rejected: "bg-red-50 text-red-700",
+const currentFyStartYear = (startMonth: number) => {
+  const now = new Date();
+  return now.getMonth() + 1 >= startMonth ? now.getFullYear() : now.getFullYear() - 1;
 };
 
 const inputCls =
   "w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-main placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary";
+const sectionCard = "rounded-xl border border-[var(--border)] bg-[var(--card,#fff)]";
+const btnGhost =
+  "rounded-lg border border-[var(--border)] px-4 py-2 text-sm text-main hover:bg-[var(--border)]/20 disabled:opacity-50";
+const btnPrimary =
+  "inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50";
 
-// ─── Add / edit item modal ────────────────────────────────────────────────────
+// ─── Small shared pieces ──────────────────────────────────────────────────────
 
-interface ItemModalProps {
-  initial: BudgetItem | null;
-  currency: string;
-  labels: string[]; // period labels; empty when phasing is Annual
-  onClose: () => void;
-  onSave: (item: BudgetItem) => void;
-}
-
-const ItemModal: React.FC<ItemModalProps> = ({
-  initial,
-  currency,
-  labels,
-  onClose,
-  onSave,
-}) => {
-  const n = labels.length;
-  const [category, setCategory] = useState(initial?.category ?? "");
-  const [account, setAccount] = useState<Opt | null>(initial?.account ?? null);
-  const [includes, setIncludes] = useState(initial?.includes ?? "");
-  const [amount, setAmount] = useState<number | "">(initial?.amount ?? "");
-  const [lastYear, setLastYear] = useState<number | "">(initial?.lastYear ?? "");
-  const [justification, setJustification] = useState(initial?.justification ?? "");
-  const [periods, setPeriods] = useState<string[]>(() =>
-    initial && initial.periods.length === n
-      ? initial.periods.map(String)
-      : splitEven(Number(initial?.amount || 0), n).map(String),
-  );
-  // Once the user edits a period by hand, stop auto-splitting on amount change
-  const [manual, setManual] = useState(!!initial && n > 0);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  const fetchCategories = useCallback(
-    async (search: string) => filterStatic(DEFAULT_CATEGORIES, search),
-    [],
-  );
-  // TODO: replace with API – GL / expense accounts from your chart of accounts
-  const fetchAccounts = useCallback(async (_search: string) => [] as Opt[], []);
-
-  const fmt = (x: number) => `${currency} ${x.toLocaleString()}`;
-  const allocated = periods.reduce((s, p) => s + Number(p || 0), 0);
-  const diff = Math.round((Number(amount || 0) - allocated) * 100) / 100;
-  const balanced = Math.abs(diff) < 0.005;
-
-  const onAmountChange = (v: number | "") => {
-    setAmount(v);
-    setErrors((p) => ({ ...p, amount: "", periods: "" }));
-    if (!manual && n) setPeriods(splitEven(Number(v || 0), n).map(String));
-  };
-
-  const resplit = () => {
-    setManual(false);
-    setPeriods(splitEven(Number(amount || 0), n).map(String));
-    setErrors((p) => ({ ...p, periods: "" }));
-  };
-
-  const submit = () => {
-    const e: Record<string, string> = {};
-    if (!category) e.category = "Select a category";
-    if (!includes.trim()) e.includes = "Describe what this line covers";
-    if (amount === "" || Number(amount) <= 0)
-      e.amount = "Enter an amount greater than 0";
-    if (!justification.trim())
-      e.justification = "Add a justification for the approver";
-    if (n && !e.amount && !balanced)
-      e.periods = `Periods add up to ${fmt(allocated)}, but the amount is ${fmt(Number(amount))}`;
-    setErrors(e);
-    if (Object.keys(e).length) return;
-    onSave({
-      id: initial?.id ?? uid(),
-      category,
-      account,
-      includes: includes.trim(),
-      amount,
-      lastYear,
-      periods: n ? periods.map((p) => Number(p || 0)) : [],
-      justification: justification.trim(),
-      status: initial?.status ?? "Pending",
-    });
-  };
-
-  const gridCols = n === 12 ? "grid-cols-4" : n === 4 ? "grid-cols-4" : "grid-cols-2";
-
-  return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="flex max-h-[92vh] w-full max-w-lg flex-col rounded-xl bg-[var(--card,#fff)] shadow-xl"
-      >
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
-          <h3 className="text-base font-semibold text-main">
-            {initial ? "Edit budget item" : "Add budget item"}
-          </h3>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-muted hover:text-main">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-4 overflow-y-auto px-5 py-4">
-          <div className="grid grid-cols-2 gap-4 items-start">
-            <SearchSelect2
-              label="Category"
-              required
-              value={category}
-              onChange={(val) => {
-                setCategory(val || "");
-                setErrors((p) => ({ ...p, category: "" }));
-              }}
-              fetchOptions={fetchCategories}
-              placeholder="Select category"
-              error={errors.category}
-            />
-            <SearchSelect2
-              label="Cost Center"
-              value={account?.label ?? ""}
-              onChange={(v, opt) => setAccount(v ? { value: v, label: opt?.label || v } : null)}
-              fetchOptions={fetchAccounts}
-              placeholder="Optional"
-            />
-          </div>
-
-          <ModalInput
-            label="What it includes"
-            name="includes"
-            value={includes}
-            onChange={(e) => {
-              setIncludes(e.target.value);
-              setErrors((p) => ({ ...p, includes: "" }));
-            }}
-            error={errors.includes}
-            required
-            placeholder="For example: laptops, licences, annual maintenance"
-          />
-
-          <div className="grid grid-cols-2 gap-4 items-start">
-            <ModalInput
-              label={`${n ? "Amount" : "Amount"} (${currency || "—"})`}
-              name="amount"
-              type="number"
-              value={amount}
-              onChange={(e) => onAmountChange(e.target.value === "" ? "" : Number(e.target.value))}
-              error={errors.amount}
-              required
-              placeholder="0.00"
-              className="no-spinner"
-            />
-          </div>
-
-          {n > 0 && (
-            <div className="rounded-lg border border-[var(--border)] p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-muted">Split across periods</span>
-                <button type="button" onClick={resplit} className="text-xs text-primary hover:underline">
-                  Split evenly
-                </button>
-              </div>
-              <div className={`grid gap-2 ${gridCols}`}>
-                {labels.map((l, i) => (
-                  <div key={l} className="flex flex-col gap-0.5">
-                    <label className="text-[10px] text-muted">{l}</label>
-                    <input
-                      type="number"
-                      value={periods[i] ?? ""}
-                      onChange={(e) => {
-                        setManual(true);
-                        setPeriods((prev) => prev.map((p, j) => (j === i ? e.target.value : p)));
-                        setErrors((p) => ({ ...p, periods: "" }));
-                      }}
-                      className={`${inputCls} no-spinner px-2 py-1.5`}
-                    />
-                  </div>
-                ))}
-              </div>
-              <p className={`mt-2 text-xs ${balanced ? "text-muted" : "text-danger"}`}>
-                Allocated {fmt(allocated)} of {fmt(Number(amount || 0))}
-                {!balanced && ` (${diff > 0 ? "short" : "over"} by ${fmt(Math.abs(diff))})`}
-              </p>
-              {errors.periods && <p className="text-[10px] text-danger">{errors.periods}</p>}
-            </div>
-          )}
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted">
-              Justification <span className="text-danger">*</span>
-            </label>
-            <textarea
-              value={justification}
-              onChange={(e) => {
-                setJustification(e.target.value);
-                setErrors((p) => ({ ...p, justification: "" }));
-              }}
-              rows={3}
-              placeholder="Why is this needed? The approver will read this."
-              className={`${inputCls} resize-none`}
-            />
-            {errors.justification && <span className="text-[10px] text-danger">{errors.justification}</span>}
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 border-t border-[var(--border)] px-5 py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm text-main hover:bg-[var(--border)]/20"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={submit}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-          >
-            {initial ? "Save item" : "Add item"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-const CreateBudget: React.FC<CreateBudgetProps> = ({
-  onBack,
-  onSaved,
-  preparedBy = "",
-  workflowName,
-  defaultCurrency = "INR",
-  fyStartMonth = 4,
-  initial,
-}) => {
-  // Header fields
-  const [title, setTitle] = useState(initial?.title ?? "");
-  const [budgetType, setBudgetType] = useState(initial?.budget_type ?? "Operational");
-  const [financialYear, setFinancialYear] = useState(
-    initial?.financial_year ?? buildFinancialYears()[1],
-  );
-  const [level, setLevel] = useState(initial?.budget_level ?? "Department");
-  const [scope, setScope] = useState<Opt | null>(
-    initial?.scope_id
-      ? { value: initial.scope_id, label: initial.scope_name ?? initial.scope_id }
-      : null,
-  );
-  const [parent, setParent] = useState<Opt | null>(null);
-  const [phasing, setPhasing] = useState(initial?.phasing ?? "Monthly");
-  const [currency, setCurrency] = useState(initial?.currency ?? defaultCurrency);
-  const [overspend, setOverspend] = useState(initial?.overspend_action ?? "Warn");
-  const [notes, setNotes] = useState(initial?.notes ?? "");
-
-  // Items + attachments
-  const [items, setItems] = useState<BudgetItem[]>(initial?.items ?? []);
-  const [expanded, setExpanded] = useState<string[]>([]);
-  const [itemModal, setItemModal] = useState<{ open: boolean; item: BudgetItem | null }>({
-    open: false,
-    item: null,
-  });
-  const [files, setFiles] = useState<File[]>(initial?.attachments ?? []);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState<"draft" | "submit" | null>(null);
-  const [dirty, setDirty] = useState(false);
-
-  const touch = (key?: string) => {
-    setDirty(true);
-    if (key) setErrors((p) => ({ ...p, [key]: "" }));
-  };
-
-  const labels = useMemo(() => periodLabels(phasing, fyStartMonth), [phasing, fyStartMonth]);
-
-  // Currency formatting (re-uses your existing hook)
-  const currencyCodes = useMemo(() => (currency ? [currency] : []), [currency]);
-  const { formatAmount } = useCurrencySymbols(currencyCodes);
-  const money = (n: number) =>
-    currency ? formatAmount(currency, n, { withSymbol: true }) : n.toLocaleString();
-
-  const total = useMemo(
-    () => items.reduce((s, i) => s + Number(i.amount || 0), 0),
-    [items],
-  );
-  const sumBy = (st: ItemStatus) =>
-    items.filter((i) => i.status === st).reduce((s, i) => s + Number(i.amount || 0), 0);
-
-  // Option fetchers
-  const fetchStatic = (list: (string | Opt)[]) => (search: string) =>
-    Promise.resolve(filterStatic(list, search));
-  const fetchLevels = useCallback(fetchStatic(LEVELS), []);
-  const fetchTypes = useCallback(fetchStatic(TYPES), []);
-  const fetchYears = useCallback(fetchStatic(buildFinancialYears()), []);
-  const fetchPhasing = useCallback(fetchStatic(PHASING), []);
-  const fetchCurrencies = useCallback(fetchStatic(CURRENCIES), []);
-  const fetchOverspend = useCallback(fetchStatic(OVERSPEND), []);
-
-  // TODO: replace with API – branches / departments / cost centers / projects by `level`
-  const fetchScope = useCallback(
-    async (_search: string) => {
-      try {
-        return [] as Opt[];
-      } catch (err) {
-        showApiError(err);
-        return [];
-      }
-    },
-    [level],
-  );
-
-  // TODO: replace with API – approved higher-level budgets for the same year
-  // (e.g. a Department budget rolls up into a Branch budget)
-  const fetchParents = useCallback(
-    async (_search: string) => {
-      try {
-        return [] as Opt[];
-      } catch (err) {
-        showApiError(err);
-        return [];
-      }
-    },
-    [financialYear, level],
-  );
-
-  // Changing phasing re-splits every line evenly into the new periods
-  const changePhasing = (v: string) => {
-    if (!v || v === phasing) return;
-    if (items.length && !window.confirm("Changing phasing will re-split every item evenly. Continue?"))
-      return;
-    const n = periodLabels(v, fyStartMonth).length;
-    setPhasing(v);
-    setItems((prev) =>
-      prev.map((i) => ({ ...i, periods: splitEven(Number(i.amount || 0), n) })),
-    );
-    touch();
-  };
-
-  // Attachments
-  const addFiles = (list: FileList | null) => {
-    if (!list) return;
-    const ok: File[] = [];
-    let err = "";
-    Array.from(list).forEach((f) => {
-      if (f.size > MAX_FILE_MB * 1024 * 1024) err = `"${f.name}" is over ${MAX_FILE_MB} MB`;
-      else ok.push(f);
-    });
-    setErrors((p) => ({ ...p, files: err }));
-    if (ok.length) {
-      setFiles((p) => [...p, ...ok]);
-      setDirty(true);
-    }
-  };
-
-  // Validation + save
-  const validate = (forSubmit: boolean) => {
-    const e: Record<string, string> = {};
-    if (!title.trim()) e.title = "Budget title is required";
-    if (forSubmit) {
-      if (!budgetType) e.budgetType = "Select a budget type";
-      if (!financialYear) e.financialYear = "Select a financial year";
-      if (!level) e.level = "Select what this budget is for";
-      if (level !== "Company" && !scope) e.scope = `Select a ${level.toLowerCase()}`;
-      if (!phasing) e.phasing = "Select how the budget is phased";
-      if (!currency) e.currency = "Select a currency";
-      if (items.length === 0) e.items = "Add at least one budget item";
-    }
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const save = async (submit: boolean) => {
-    if (!validate(submit)) return;
-    const payload: BudgetPayload = {
-      title: title.trim(),
-      budget_type: budgetType,
-      financial_year: financialYear,
-      budget_level: level,
-      scope_id: scope?.value ?? "",
-      scope_name: scope?.label ?? "",
-      parent_budget_id: parent?.value ?? "",
-      phasing,
-      currency,
-      overspend_action: overspend,
-      notes,
-      items,
-      attachments: files,
-      total,
-      submit,
-    };
-    setSaving(submit ? "submit" : "draft");
-    try {
-      // TODO: call create budget API with `payload`, then upload `payload.attachments`.
-      //   submit=false → status "Draft", submit=true → status "Pending Approval".
-      //   The server assigns the budget number (e.g. BUD-0001).
-      showSuccess(submit ? "Budget submitted for approval" : "Budget saved as draft");
-      setDirty(false);
-      onSaved?.(payload);
-      onBack();
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setSaving(null);
-    }
-  };
-
-  const handleBack = () => {
-    if (dirty && !window.confirm("Discard this budget? Unsaved changes will be lost.")) return;
-    onBack();
-  };
-
-  const upsertItem = (item: BudgetItem) => {
-    setItems((prev) =>
-      prev.some((i) => i.id === item.id)
-        ? prev.map((i) => (i.id === item.id ? item : i))
-        : [...prev, item],
-    );
-    setItemModal({ open: false, item: null });
-    touch("items");
-  };
-
-  const toggleExpand = (id: string) =>
-    setExpanded((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-
-  const sectionCard = "rounded-xl border border-[var(--border)] bg-[var(--card,#fff)]";
-  const colCount = 8;
-
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-4">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="mb-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-        >
-          <ArrowLeft size={14} /> Back to budgets
-        </button>
-
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-xl font-semibold text-main">Create budget</h2>
-              <span className="rounded-full bg-[var(--border)]/40 px-2 py-0.5 text-xs text-muted">Draft</span>
-            </div>
-            <p className="mt-1 max-w-2xl text-sm text-muted">
-              Plan spending for a branch, department, cost center or project.
-              Lines are reviewed by the approver before the budget goes live.
-            </p>
-          </div>
-        </div>
-
-        {/* Details */}
-        <section className={`${sectionCard} mb-4 p-5`}>
-          <div className="mb-4 flex items-center gap-2 border-b border-[var(--border)] pb-3 text-sm font-semibold text-main">
-            <Building2 size={16} className="text-primary" /> Budget details
-          </div>
-
-          <div className="grid grid-cols-12 items-start gap-4">
-            <div className="col-span-12 md:col-span-6">
-              <ModalInput
-                label="Budget title"
-                name="title"
-                value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  touch("title");
-                }}
-                error={errors.title}
-                required
-                placeholder="For example: Core infrastructure FY budget"
-              />
-            </div>
-            <div className="col-span-6 md:col-span-3">
-              <SearchSelect2
-                label="Budget type"
-                required
-                value={budgetType}
-                onChange={(v) => { setBudgetType(v || ""); touch("budgetType"); }}
-                fetchOptions={fetchTypes}
-                placeholder="Select type"
-                error={errors.budgetType}
-              />
-            </div>
-            <div className="col-span-6 md:col-span-3">
-              <SearchSelect2
-                label="Financial year"
-                required
-                value={financialYear}
-                onChange={(v) => { setFinancialYear(v || ""); touch("financialYear"); }}
-                fetchOptions={fetchYears}
-                placeholder="Select year"
-                error={errors.financialYear}
-              />
-            </div>
-
-            <div className="col-span-12 md:col-span-3">
-              <SearchSelect2
-                label="Budget for"
-                required
-                value={level}
-                onChange={(v) => {
-                  setLevel(v || "");
-                  setScope(null);
-                  touch("level");
-                }}
-                fetchOptions={fetchLevels}
-                placeholder="Select level"
-                error={errors.level}
-              />
-            </div>
-            <div className="col-span-12 md:col-span-5">
-              {level === "Company" ? (
-                <ReadOnlyField label="Applies to" value="Entire company" />
-              ) : (
-                <SearchSelect2
-                  key={level /* remount so options reload for the new level */}
-                  label={level || "Scope"}
-                  required
-                  value={scope?.label ?? ""}
-                  onChange={(v, opt) => {
-                    setScope(v ? { value: v, label: opt?.label || v } : null);
-                    touch("scope");
-                  }}
-                  fetchOptions={fetchScope}
-                  placeholder={`Select ${level.toLowerCase() || "scope"}`}
-                  error={errors.scope}
-                />
-              )}
-            </div>
-            <div className="col-span-12 md:col-span-4">
-              <SearchSelect2
-                label="Rolls up into"
-                value={parent?.label ?? ""}
-                onChange={(v, opt) => {
-                  setParent(v ? { value: v, label: opt?.label || v } : null);
-                  touch();
-                }}
-                fetchOptions={fetchParents}
-                placeholder="Higher-level budget (optional)"
-              />
-            </div>
-
-            <div className="col-span-6 md:col-span-3">
-              <SearchSelect2
-                label="Phasing"
-                required
-                value={phasing}
-                onChange={(v) => changePhasing(v || "")}
-                fetchOptions={fetchPhasing}
-                placeholder="Select phasing"
-                error={errors.phasing}
-              />
-            </div>
-            <div className="col-span-6 md:col-span-3">
-              <SearchSelect2
-                label="Currency"
-                required
-                value={currency}
-                onChange={(v) => { setCurrency(v || ""); touch("currency"); }}
-                fetchOptions={fetchCurrencies}
-                placeholder="Select currency"
-                error={errors.currency}
-              />
-            </div>
-            <div className="col-span-12 md:col-span-3">
-              <SearchSelect2
-                label="If spending exceeds budget"
-                value={OVERSPEND.find((o) => o.value === overspend)?.label ?? ""}
-                onChange={(v) => { setOverspend(v || "Warn"); touch(); }}
-                fetchOptions={fetchOverspend}
-                placeholder="Select action"
-              />
-            </div>
-            <div className="col-span-12 md:col-span-3">
-              <ReadOnlyField label="Prepared by" value={preparedBy || "You"} locked />
-            </div>
-
-            <div className="col-span-12">
-              <label className="mb-1 block text-xs font-medium text-muted">Notes</label>
-              <textarea
-                value={notes}
-                onChange={(e) => { setNotes(e.target.value); touch(); }}
-                rows={2}
-                placeholder="Assumptions or context for the approver"
-                className={`${inputCls} resize-none`}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Items */}
-        <section className={`${sectionCard} mb-4`}>
-          <div className="flex items-center justify-between gap-3 p-5 pb-3">
-            <div>
-              <div className="flex items-center gap-2 text-sm font-semibold text-main">
-                <ClipboardList size={16} className="text-primary" /> Budget items
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setItemModal({ open: true, item: null })}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-white hover:opacity-90"
-            >
-              <Plus size={14} /> Add item
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[960px] text-sm">
-              <thead>
-                <tr className="bg-[var(--border)]/15 text-left text-xs font-medium text-muted">
-                  <th className="px-5 py-2.5">Category</th>
-                  <th className="px-3 py-2.5">What it includes</th>
-                  <th className="px-3 py-2.5 text-right">Amount ({currency || "—"})</th>
-                  <th className="px-3 py-2.5 text-right">Change</th>
-                  <th className="px-3 py-2.5 text-center">Status</th>
-                  <th className="px-3 py-2.5">Justification</th>
-                  <th className="px-5 py-2.5 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((it) => {
-                  const ly = Number(it.lastYear || 0);
-                  const amt = Number(it.amount || 0);
-                  const pct = ly > 0 ? ((amt - ly) / ly) * 100 : null;
-                  const isOpen = expanded.includes(it.id);
-                  return (
-                    <React.Fragment key={it.id}>
-                      <tr className="border-t border-[var(--border)] text-main">
-                        <td className="px-5 py-2.5">
-                          <div className="flex items-center gap-1.5">
-                            {it.periods.length > 0 ? (
-                              <button
-                                type="button"
-                                aria-label={isOpen ? "Hide period split" : "Show period split"}
-                                onClick={() => toggleExpand(it.id)}
-                                className="text-muted hover:text-primary"
-                              >
-                                {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                              </button>
-                            ) : (
-                              <span className="w-[14px]" />
-                            )}
-                            <div>
-                              <div className="font-medium">{it.category}</div>
-                              {it.account && <div className="text-xs text-muted">{it.account.label}</div>}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="max-w-[200px] truncate px-3 py-2.5" title={it.includes}>
-                          {it.includes}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-right text-muted">
-                          {ly > 0 ? money(ly) : "—"}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-right font-medium">{money(amt)}</td>
-                        <td
-                          className={`whitespace-nowrap px-3 py-2.5 text-right text-xs ${
-                            pct !== null && pct > 20 ? "text-amber-600" : "text-muted"
-                          }`}
-                        >
-                          {pct === null ? "—" : `${pct > 0 ? "+" : ""}${pct.toFixed(0)}%`}
-                        </td>
-                        <td className="px-3 py-2.5 text-center">
-                          <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLE[it.status]}`}>
-                            {it.status}
-                          </span>
-                        </td>
-                        <td className="max-w-[220px] truncate px-3 py-2.5 text-muted" title={it.justification}>
-                          {it.justification}
-                        </td>
-                        <td className="px-5 py-2.5">
-                          <div className="flex items-center justify-center gap-3">
-                            <button
-                              type="button"
-                              aria-label="Edit item"
-                              onClick={() => setItemModal({ open: true, item: it })}
-                              className="text-muted hover:text-primary"
-                            >
-                              <Pencil size={15} />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label="Remove item"
-                              onClick={() => {
-                                setItems((p) => p.filter((i) => i.id !== it.id));
-                                touch();
-                              }}
-                              className="text-muted hover:text-danger"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {isOpen && it.periods.length > 0 && (
-                        <tr className="bg-[var(--border)]/10">
-                          <td colSpan={colCount} className="px-5 py-3">
-                            <div className="flex flex-wrap gap-x-6 gap-y-2 pl-5 text-xs">
-                              {labels.map((l, i) => (
-                                <div key={l}>
-                                  <div className="text-muted">{l}</div>
-                                  <div className="font-medium text-main">{money(it.periods[i] ?? 0)}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            {items.length === 0 && (
-              <div className="flex flex-col items-center gap-1 border-t border-[var(--border)] py-12 text-center">
-                <p className="mt-1 text-sm font-medium text-main">No budget items yet</p>
-                <p className="text-xs text-muted">
-                  Select Add item to start listing what this budget will cover.
-                </p>
-              </div>
-            )}
-          </div>
-          {errors.items && (
-            <p className="border-t border-[var(--border)] px-5 py-2 text-xs text-danger">{errors.items}</p>
-          )}
-        </section>
-
-        {/* Attachments */}
-        <section className={`${sectionCard} p-5`}>
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-main">
-            <Paperclip size={16} className="text-primary" /> Supporting documents
-          </div>
-          <div
-            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-            onDragLeave={() => setIsDragOver(false)}
-            onDrop={(e) => { e.preventDefault(); setIsDragOver(false); addFiles(e.dataTransfer.files); }}
-            onClick={() => fileRef.current?.click()}
-            className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed py-4 transition-colors ${
-              isDragOver
-                ? "border-primary bg-primary/5"
-                : "border-[var(--border)] bg-[var(--border)]/10 hover:border-primary/50"
-            }`}
-          >
-            <Upload size={20} className="text-muted" />
-            <p className="text-sm text-muted">
-              Drag and drop files, or <span className="font-medium text-primary">Browse</span>
-            </p>
-            <p className="text-xs text-muted">Quotes, last year's report, approvals. Max {MAX_FILE_MB} MB per file</p>
-          </div>
-          <input
-            ref={fileRef}
-            type="file"
-            multiple
-            accept="image/*,application/pdf,.xlsx,.xls,.csv,.doc,.docx"
-            className="hidden"
-            onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
-          />
-          {errors.files && <p className="mt-1 text-xs text-danger">{errors.files}</p>}
-          {files.length > 0 && (
-            <div className="mt-3 flex flex-col gap-2">
-              {files.map((f, i) => (
-                <div
-                  key={`${f.name}-${i}`}
-                  className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10 px-3 py-2"
-                >
-                  <FileText size={16} className="shrink-0 text-primary" />
-                  <span className="flex-1 truncate text-sm text-main">{f.name}</span>
-                  <span className="shrink-0 text-xs text-muted">{(f.size / 1024).toFixed(0)} KB</span>
-                  <button
-                    type="button"
-                    aria-label={`Remove ${f.name}`}
-                    onClick={() => { setFiles((p) => p.filter((_, j) => j !== i)); setDirty(true); }}
-                    className="ml-1 text-muted hover:text-danger"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-
-      {/* Sticky summary + actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] bg-[var(--card,#fff)] px-5 py-3">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <div className="text-sm text-muted">
-            Items <span className="font-semibold text-main">{items.length}</span>
-          </div>
-          <div className="text-sm text-muted">
-            Total budget <span className="text-lg font-semibold text-main">{money(total)}</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5 text-xs">
-            {(["Approved", "Pending", "Rejected"] as ItemStatus[]).map((s) => (
-              <span key={s} className={`rounded-full px-2 py-0.5 ${STATUS_STYLE[s]}`}>
-                {s}: {money(sumBy(s))}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            disabled={!!saving}
-            onClick={() => save(false)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-4 py-2 text-sm text-main hover:bg-[var(--border)]/20 disabled:opacity-50"
-          >
-            <Save size={14} /> {saving === "draft" ? "Saving…" : "Save draft"}
-          </button>
-          <button
-            type="button"
-            disabled={!!saving}
-            onClick={() => save(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-          >
-            <Send size={14} /> {saving === "submit" ? "Submitting…" : "Submit for approval"}
-          </button>
-        </div>
-      </div>
-
-      {itemModal.open && (
-        <ItemModal
-          initial={itemModal.item}
-          currency={currency}
-          labels={labels}
-          onClose={() => setItemModal({ open: false, item: null })}
-          onSave={upsertItem}
-        />
-      )}
-    </div>
-  );
-};
-
-// Small read-only field that matches the inputs' look
 const ReadOnlyField: React.FC<{ label: string; value: string; locked?: boolean }> = ({
   label,
   value,
@@ -998,4 +144,816 @@ const ReadOnlyField: React.FC<{ label: string; value: string; locked?: boolean }
   </div>
 );
 
-export default CreateBudget;
+const ConfirmDialog: React.FC<{
+  title: string;
+  children: React.ReactNode;
+  confirmLabel: string;
+  busy?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ title, children, confirmLabel, busy, onConfirm, onCancel }) => {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCancel();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4"
+      onMouseDown={(e) => e.target === e.currentTarget && onCancel()}
+    >
+      <div role="alertdialog" aria-modal="true" aria-label={title} className="w-full max-w-md rounded-xl bg-[var(--card,#fff)] p-5 shadow-xl">
+        <h3 className="text-base font-semibold text-main">{title}</h3>
+        <div className="mt-2 text-sm text-muted">{children}</div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" onClick={onCancel} className={btnGhost}>
+            Cancel
+          </button>
+          <button type="button" disabled={busy} onClick={onConfirm} className={btnPrimary}>
+            {busy ? "Working…" : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+const CreateBudgetPlan: React.FC<CreateBudgetPlanProps> = ({
+  onBack,
+  onSaved,
+  currentUser = "",
+  canCreate = true,
+  canChangeOwner = false,
+  fyStartMonth = 4,
+  initial,
+}) => {
+  const fyOptions = useMemo(() => {
+    const y = currentFyStartYear(fyStartMonth);
+    return [y - 1, y, y + 1, y + 2].map(fyLabel);
+  }, [fyStartMonth]);
+
+  // Option fetchers
+  const fetchYears = useMemo(() => staticFetcher(fyOptions), [fyOptions]);
+  const fetchTypes = useMemo(() => staticFetcher(BUDGET_TYPES), []);
+  const fetchPeriods = useMemo(() => staticFetcher(PERIODS), []);
+  const fetchScopes = useMemo(() => staticFetcher(SCOPES), []);
+  // TODO: replace with API – active budget head names
+  const fetchBudgetHeads = useMemo(() => staticFetcher(BUDGET_HEAD_NAMES), []);
+
+  // Details
+  const [name, setName] = useState(initial?.name ?? "");
+  const [financialYear, setFinancialYear] = useState(initial?.financial_year ?? fyOptions[1]);
+  const [budgetType, setBudgetType] = useState(initial?.budget_type ?? "Operating");
+  const [period, setPeriod] = useState(initial?.budget_period ?? "Annual");
+  const [budgetHead, setBudgetHead] = useState<Opt | null>(
+    initial?.budget_head_id
+      ? { value: initial.budget_head_id, label: initial.budget_head_name ?? initial.budget_head_id }
+      : null,
+  );
+  const [scope, setScope] = useState(initial?.scope ?? "Selected Branches");
+  const initialRange = fyRange(financialYear, fyStartMonth);
+  const [startDate, setStartDate] = useState(initial?.start_date ?? initialRange.start);
+  const [endDate, setEndDate] = useState(initial?.end_date ?? initialRange.end);
+  const datesEdited = useRef(!!initial?.start_date);
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [owner, setOwner] = useState(initial?.owner ?? currentUser);
+
+  // Branch selection
+  const [selected, setSelected] = useState<string[]>(initial?.branch_codes ?? []);
+  const [branchSearch, setBranchSearch] = useState("");
+  const [zoneFilter, setZoneFilter] = useState("");
+  const [regionFilter, setRegionFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [allExpanded, setAllExpanded] = useState(false);
+  const [expandedBranches, setExpandedBranches] = useState<string[]>([]);
+  // Branch-specific heads: branch code → ids of extra heads added for that branch only
+  const [branchHeads, setBranchHeads] = useState<Record<string, string[]>>(
+    Object.fromEntries((initial?.branch_heads ?? []).map((b) => [b.branch_code, b.head_ids])),
+  );
+
+  // Page state
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState<"draft" | "create" | null>(null);
+  const [confirm, setConfirm] = useState<null | "create" | "discard">(null);
+
+  const touch = (key?: string) => {
+    setDirty(true);
+    if (key) setErrors((p) => ({ ...p, [key]: "" }));
+  };
+
+  // ── Derived ──
+  const zones = useMemo(() => Array.from(new Set(BRANCHES.map((b) => b.zone))).sort(), []);
+  const regions = useMemo(
+    () => Array.from(new Set(BRANCHES.filter((b) => !zoneFilter || b.zone === zoneFilter).map((b) => b.region))).sort(),
+    [zoneFilter],
+  );
+  const filtered = useMemo(() => {
+    const q = branchSearch.trim().toLowerCase();
+    return BRANCHES.filter(
+      (b) =>
+        (!zoneFilter || b.zone === zoneFilter) &&
+        (!regionFilter || b.region === regionFilter) &&
+        (!q || b.code.toLowerCase().includes(q) || b.name.toLowerCase().includes(q)),
+    );
+  }, [branchSearch, zoneFilter, regionFilter]);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  useEffect(() => setPage(1), [branchSearch, zoneFilter, regionFilter]);
+
+  const single = scope === "Single Branch";
+
+  const allOnPageSelected = pageRows.length > 0 && pageRows.every((b) => selected.includes(b.code));
+  const toggleBranch = (code: string) => {
+    touch("branches");
+    setSelected((p) => (single ? [code] : p.includes(code) ? p.filter((c) => c !== code) : [...p, code]));
+  };
+  const togglePage = () => {
+    touch("branches");
+    const codes = pageRows.map((b) => b.code);
+    setSelected((p) => (allOnPageSelected ? p.filter((c) => !codes.includes(c)) : Array.from(new Set([...p, ...codes]))));
+  };
+  const selectAllFiltered = () => {
+    touch("branches");
+    setSelected((p) => Array.from(new Set([...p, ...filtered.map((b) => b.code)])));
+  };
+
+  const allocatedHeads = useMemo(
+    () => (budgetHead ? BUDGET_HEADS_DATA.filter((h) => h.group === budgetHead.value) : []),
+    [budgetHead],
+  );
+  const isCovered = (code: string) => scope === "All Branches" || selected.includes(code);
+  const coveredCodes = scope === "All Branches" ? BRANCHES.map((b) => b.code) : selected;
+  const extraTotal = coveredCodes.reduce((n, c) => n + (branchHeads[c]?.length ?? 0), 0);
+
+  const toggleExpand = (code: string) =>
+    setExpandedBranches((p) => (p.includes(code) ? p.filter((c) => c !== code) : [...p, code]));
+  const addBranchHead = (code: string, headId: string) => {
+    setBranchHeads((p) => ({ ...p, [code]: [...(p[code] ?? []), headId] }));
+    setDirty(true);
+  };
+  const removeBranchHead = (code: string, headId: string) => {
+    setBranchHeads((p) => ({ ...p, [code]: (p[code] ?? []).filter((id) => id !== headId) }));
+    setDirty(true);
+  };
+  const changeBudgetHead = (opt: Opt | null) => {
+    setBudgetHead(opt);
+    // Heads that now belong to the chosen name no longer need to be branch-specific
+    if (opt) {
+      setBranchHeads((p) =>
+        Object.fromEntries(
+          Object.entries(p).map(([code, ids]) => [code, ids.filter((id) => HEAD_BY_ID[id]?.group !== opt.value)]),
+        ),
+      );
+    }
+    touch("budgetHead");
+  };
+
+  const renderBranchDetail = (b: Branch) => {
+    const ids = branchHeads[b.code] ?? [];
+    return (
+      <BranchHeadsPanel
+        branch={b}
+        groupName={budgetHead?.label ?? ""}
+        allocated={allocatedHeads}
+        extras={ids.map((id) => HEAD_BY_ID[id]).filter(Boolean)}
+        available={BUDGET_HEADS_DATA.filter((h) => h.group !== budgetHead?.value && !ids.includes(h.id))}
+        onAdd={(id) => addBranchHead(b.code, id)}
+        onRemove={(id) => removeBranchHead(b.code, id)}
+      />
+    );
+  };
+  const branchTableProps = {
+    isCovered,
+    expanded: expandedBranches,
+    onToggleExpand: toggleExpand,
+    counts: (code: string) => ({ allocated: allocatedHeads.length, extra: branchHeads[code]?.length ?? 0 }),
+    renderDetail: renderBranchDetail,
+  };
+
+  // ── Handlers ──
+  const changeFY = (v: string) => {
+    setFinancialYear(v);
+    if (v && !datesEdited.current) {
+      const r = fyRange(v, fyStartMonth);
+      setStartDate(r.start);
+      setEndDate(r.end);
+    }
+    touch("financialYear");
+  };
+
+  const changeScope = (v: string) => {
+    if (!v) return;
+    setScope(v);
+    if (v === "Single Branch") setSelected((p) => p.slice(0, 1));
+    touch("scope");
+    setErrors((p) => ({ ...p, branches: "" }));
+  };
+
+  const validate = (forCreate: boolean) => {
+    const e: Record<string, string> = {};
+    if (!name.trim()) e.name = "Budget name is required";
+    if (forCreate) {
+      if (!financialYear) e.financialYear = "Select a financial year";
+      if (!budgetType) e.budgetType = "Select a budget type";
+      if (!budgetHead) e.budgetHead = "Select a budget head";
+      if (!period) e.period = "Select a budget period";
+      if (!scope) e.scope = "Select a scope";
+      if (!startDate) e.startDate = "Select a start date";
+      if (!endDate) e.endDate = "Select an end date";
+      if (startDate && endDate && endDate < startDate) e.endDate = "End date must be after the start date";
+      if (scope !== "All Branches" && selected.length === 0)
+        e.branches = single ? "Select a branch" : "Select at least one branch";
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const save = async (action: "draft" | "create") => {
+    const payload: BudgetPlanPayload = {
+      name: name.trim(),
+      financial_year: financialYear,
+      budget_type: budgetType,
+      budget_period: period,
+      budget_head_id: budgetHead?.value ?? "",
+      budget_head_name: budgetHead?.label ?? "",
+      scope,
+      branch_codes: scope === "All Branches" ? [] : selected,
+      branch_heads: coveredCodes
+        .filter((c) => (branchHeads[c]?.length ?? 0) > 0)
+        .map((c) => ({ branch_code: c, head_ids: branchHeads[c] })),
+      start_date: startDate,
+      end_date: endDate,
+      description,
+      owner,
+      action,
+    };
+    setSaving(action);
+    try {
+      // TODO: call create-plan API with `payload`.
+      //   The server should reject a duplicate active plan for the same
+      //   financial year / type / scope where bank rules require it, assign the
+      //   plan ID (e.g. BUD-2027-001) and set status "Draft".
+      //   The plan picks up every budget head under `budget_head_id`.
+      //   Publishing for branch inputs happens on the next screen.
+      showSuccess(action === "create" ? "Budget plan created" : "Budget plan saved as draft");
+      setDirty(false);
+      onSaved?.(payload);
+      onBack();
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setSaving(null);
+      setConfirm(null);
+    }
+  };
+
+  const onDraft = () => validate(false) && save("draft");
+  const onCreate = () => validate(true) && setConfirm("create");
+  const handleBack = () => (dirty ? setConfirm("discard") : onBack());
+
+  if (!canCreate) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+        <Lock size={22} className="text-muted" />
+        <p className="text-sm font-medium text-main">You don't have permission to create budget plans</p>
+        <p className="max-w-sm text-xs text-muted">Budget plans are created by the MIS office. Ask your administrator to grant access.</p>
+        <button type="button" onClick={onBack} className={`${btnGhost} mt-2`}>
+          Back to budget plans
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-4">
+        <button type="button" onClick={handleBack} className="mb-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline">
+          <ArrowLeft size={14} /> Back to budget plans
+        </button>
+
+        <div className="mb-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-xl font-semibold text-main">Create budget plan</h2>
+            <span className="rounded-full bg-[var(--border)]/40 px-2 py-0.5 text-xs text-muted">Draft</span>
+          </div>
+          <p className="mt-1 max-w-2xl text-sm text-muted">
+            Set up the plan for the year. Branches submit their requirements after you publish the plan, and nothing is allocated until final approval.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {/* Basic information */}
+          <section className={`${sectionCard} p-5`}>
+            <div className="mb-4 border-b border-[var(--border)] pb-3 text-sm font-semibold text-main">Basic information</div>
+            <div className="grid grid-cols-12 items-start gap-4">
+              <div className="col-span-12 md:col-span-6">
+                <ModalInput
+                  label="Budget name"
+                  name="name"
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); touch("name"); }}
+                  error={errors.name}
+                  required
+                  placeholder="For example: Annual Operating Budget"
+                />
+              </div>
+              <div className="col-span-6 md:col-span-3">
+                <SearchSelect2
+                  label="Financial year"
+                  required
+                  value={financialYear}
+                  onChange={(v) => changeFY(v || "")}
+                  fetchOptions={fetchYears}
+                  placeholder="Select year"
+                  error={errors.financialYear}
+                />
+              </div>
+              <div className="col-span-6 md:col-span-3">
+                <SearchSelect2
+                  label="Budget type"
+                  required
+                  value={budgetType}
+                  onChange={(v) => { setBudgetType(v || ""); touch("budgetType"); }}
+                  fetchOptions={fetchTypes}
+                  placeholder="Select type"
+                  error={errors.budgetType}
+                />
+              </div>
+
+              <div className="col-span-12 md:col-span-6">
+                <SearchSelect2
+                  label="Budget head"
+                  required
+                  value={budgetHead?.label ?? ""}
+                  onChange={(v, opt) => changeBudgetHead(v ? { value: v, label: opt?.label || v } : null)}
+                  fetchOptions={fetchBudgetHeads}
+                  placeholder="Select budget head"
+                  error={errors.budgetHead}
+                />
+                <p className="mt-1 text-[11px] text-muted">
+                  The plan includes every budget head set up under this name in Setup.
+                </p>
+              </div>
+              <div className="col-span-6 md:col-span-3">
+                <SearchSelect2
+                  label="Budget period"
+                  required
+                  value={period}
+                  onChange={(v) => { setPeriod(v || ""); touch("period"); }}
+                  fetchOptions={fetchPeriods}
+                  placeholder="Select period"
+                  error={errors.period}
+                />
+              </div>
+              <div className="col-span-6 md:col-span-3">
+                <SearchSelect2
+                  label="Scope"
+                  required
+                  value={scope}
+                  onChange={(v) => changeScope(v || "")}
+                  fetchOptions={fetchScopes}
+                  placeholder="Select scope"
+                  error={errors.scope}
+                />
+              </div>
+
+              <div className="col-span-6 md:col-span-3">
+                <ModalInput
+                  label="Start date"
+                  name="startDate"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => { datesEdited.current = true; setStartDate(e.target.value); touch("startDate"); }}
+                  error={errors.startDate}
+                  required
+                />
+              </div>
+              <div className="col-span-6 md:col-span-3">
+                <ModalInput
+                  label="End date"
+                  name="endDate"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => { datesEdited.current = true; setEndDate(e.target.value); touch("endDate"); }}
+                  error={errors.endDate}
+                  required
+                />
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                {canChangeOwner ? (
+                  <ModalInput
+                    label="Budget owner"
+                    name="owner"
+                    value={owner}
+                    onChange={(e) => { setOwner(e.target.value); touch(); }}
+                  />
+                ) : (
+                  <ReadOnlyField label="Budget owner" value={owner || "You"} locked />
+                )}
+              </div>
+
+              <div className="col-span-12">
+                <label className="mb-1 block text-xs font-medium text-muted">Description and planning notes</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => { setDescription(e.target.value); touch(); }}
+                  rows={2}
+                  placeholder="Context or planning assumptions for this cycle"
+                  className={`${inputCls} resize-none`}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Branch selection */}
+          <section className={sectionCard}>
+            <div className="flex flex-wrap items-center justify-between gap-2 p-5 pb-3">
+              <div className="text-sm font-semibold text-main">Participating branches</div>
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary" aria-live="polite">
+                {scope === "All Branches"
+                  ? `All ${BRANCHES.length} branches`
+                  : `${selected.length} of ${BRANCHES.length} selected`}
+              </span>
+            </div>
+
+            {scope === "All Branches" ? (
+              <div className="px-5 pb-5">
+                <p className="text-sm text-muted">
+                  This plan covers every active branch, including branches opened later in the year. You don't need to select them one by one.
+                </p>
+                <button
+                  type="button"
+                  aria-expanded={allExpanded}
+                  onClick={() => setAllExpanded((v) => !v)}
+                  className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  {allExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  {allExpanded ? "Hide branch list" : `View all ${BRANCHES.length} branches`}
+                </button>
+                {allExpanded && (
+                  <div className="mt-3 max-h-72 overflow-auto rounded-lg border border-[var(--border)]">
+                    <BranchTable rows={BRANCHES} {...branchTableProps} />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="px-5 pb-5">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <div className="relative min-w-[220px] flex-1">
+                    <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                    <input
+                      value={branchSearch}
+                      onChange={(e) => setBranchSearch(e.target.value)}
+                      placeholder="Search by branch code or name"
+                      aria-label="Search branches"
+                      className={`${inputCls} pl-8`}
+                    />
+                  </div>
+                  <select
+                    value={zoneFilter}
+                    onChange={(e) => { setZoneFilter(e.target.value); setRegionFilter(""); }}
+                    aria-label="Filter by zone"
+                    className={`${inputCls} w-auto`}
+                  >
+                    <option value="">All zones</option>
+                    {zones.map((z) => <option key={z}>{z}</option>)}
+                  </select>
+                  <select
+                    value={regionFilter}
+                    onChange={(e) => setRegionFilter(e.target.value)}
+                    aria-label="Filter by region"
+                    className={`${inputCls} w-auto`}
+                  >
+                    <option value="">All regions</option>
+                    {regions.map((r) => <option key={r}>{r}</option>)}
+                  </select>
+                  {!single && filtered.length > 0 && (
+                    <button type="button" onClick={selectAllFiltered} className="text-sm text-primary hover:underline">
+                      Select all {filtered.length} shown
+                    </button>
+                  )}
+                  {selected.length > 0 && (
+                    <button type="button" onClick={() => { setSelected([]); touch("branches"); }} className="text-sm text-muted hover:text-main hover:underline">
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-[360px] overflow-auto rounded-lg border border-[var(--border)]">
+                  <BranchTable
+                    rows={pageRows}
+                    selectable
+                    selected={selected}
+                    single={single}
+                    onToggle={toggleBranch}
+                    allOnPageSelected={allOnPageSelected}
+                    onTogglePage={togglePage}
+                    {...branchTableProps}
+                  />
+                  {pageRows.length === 0 && (
+                    <p className="py-10 text-center text-sm text-muted">No branches match these filters.</p>
+                  )}
+                </div>
+
+                <div className="mt-2 flex items-center justify-between text-xs text-muted">
+                  <span>
+                    {filtered.length} branch{filtered.length === 1 ? "" : "es"} · Page {page} of {pageCount}
+                  </span>
+                  <div className="flex gap-2">
+                    <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded border border-[var(--border)] px-2 py-1 disabled:opacity-40">
+                      Previous
+                    </button>
+                    <button type="button" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)} className="rounded border border-[var(--border)] px-2 py-1 disabled:opacity-40">
+                      Next
+                    </button>
+                  </div>
+                </div>
+                {errors.branches && <p role="alert" className="mt-2 text-xs text-danger">{errors.branches}</p>}
+                <p className="mt-2 text-[11px] text-muted">
+                  Select a branch, then use the arrow on its right to see its budget heads or add branch-specific ones. Branch list and heads are dummy data until connected to master data.
+                </p>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+
+      {/* Sticky summary + actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] bg-[var(--card,#fff)] px-5 py-3">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-muted">
+          <span>
+            Branches <span className="font-semibold text-main">{scope === "All Branches" ? BRANCHES.length : selected.length}</span>
+          </span>
+          <span>
+            Budget head <span className="font-semibold text-main">{budgetHead?.label ?? "Not selected"}</span>
+          </span>
+          <span>
+            Branch-specific heads <span className="font-semibold text-main">{extraTotal}</span>
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={handleBack} disabled={!!saving} className={btnGhost}>
+            Cancel
+          </button>
+          <button type="button" onClick={onDraft} disabled={!!saving} className={`${btnGhost} inline-flex items-center gap-1.5`}>
+            <Save size={14} /> {saving === "draft" ? "Saving…" : "Save as draft"}
+          </button>
+          <button type="button" onClick={onCreate} disabled={!!saving} className={btnPrimary}>
+            Create plan
+          </button>
+        </div>
+      </div>
+
+      {confirm === "create" && (
+        <ConfirmDialog title="Create this budget plan?" confirmLabel="Create plan" busy={saving === "create"} onConfirm={() => save("create")} onCancel={() => setConfirm(null)}>
+          “{name.trim()}” for {financialYear} will be created as a draft. Branches can't see it until you publish it for inputs.
+        </ConfirmDialog>
+      )}
+      {confirm === "discard" && (
+        <ConfirmDialog title="Discard this plan?" confirmLabel="Discard" onConfirm={onBack} onCancel={() => setConfirm(null)}>
+          Unsaved changes will be lost.
+        </ConfirmDialog>
+      )}
+    </div>
+  );
+};
+
+// ─── Branch table (selection + expandable budget heads) ───────────────────────
+
+interface BranchTableProps {
+  rows: Branch[];
+  selectable?: boolean;
+  selected?: string[];
+  single?: boolean;
+  allOnPageSelected?: boolean;
+  onToggle?: (code: string) => void;
+  onTogglePage?: () => void;
+  /** Whether the branch is part of this plan (only these rows can be expanded) */
+  isCovered: (code: string) => boolean;
+  expanded: string[];
+  onToggleExpand: (code: string) => void;
+  counts: (code: string) => { allocated: number; extra: number };
+  renderDetail: (b: Branch) => React.ReactNode;
+}
+
+const BranchTable: React.FC<BranchTableProps> = ({
+  rows,
+  selectable,
+  selected = [],
+  single,
+  allOnPageSelected,
+  onToggle,
+  onTogglePage,
+  isCovered,
+  expanded,
+  onToggleExpand,
+  counts,
+  renderDetail,
+}) => {
+  const colSpan = (selectable ? 1 : 0) + 6;
+  return (
+    <table className="w-full text-sm">
+      <thead className="sticky top-0 z-[1] bg-[var(--card,#fff)]">
+        <tr className="border-b border-[var(--border)] text-left text-xs font-medium text-muted">
+          {selectable && (
+            <th className="w-10 px-3 py-2">
+              {!single && (
+                <input type="checkbox" aria-label="Select all branches on this page" checked={!!allOnPageSelected} onChange={onTogglePage} />
+              )}
+            </th>
+          )}
+          <th className="px-3 py-2">Branch code</th>
+          <th className="px-3 py-2">Branch name</th>
+          <th className="px-3 py-2">Zone</th>
+          <th className="px-3 py-2">Region</th>
+          <th className="px-3 py-2">Budget heads</th>
+          <th className="w-12 px-3 py-2">
+            <span className="sr-only">Show budget heads</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((b) => {
+          const checked = selected.includes(b.code);
+          const covered = isCovered(b.code);
+          const open = covered && expanded.includes(b.code);
+          const c = counts(b.code);
+          return (
+            <React.Fragment key={b.code}>
+              <tr
+                onClick={selectable ? () => onToggle?.(b.code) : undefined}
+                className={`border-t border-[var(--border)] text-main ${selectable ? "cursor-pointer hover:bg-[var(--border)]/10" : ""} ${checked ? "bg-primary/5" : ""}`}
+              >
+                {selectable && (
+                  <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type={single ? "radio" : "checkbox"}
+                      name="branch-select"
+                      aria-label={`Select ${b.name}`}
+                      checked={checked}
+                      onChange={() => onToggle?.(b.code)}
+                    />
+                  </td>
+                )}
+                <td className="whitespace-nowrap px-3 py-2">{b.code}</td>
+                <td className="px-3 py-2 font-medium">{b.name}</td>
+                <td className="px-3 py-2 text-muted">{b.zone}</td>
+                <td className="px-3 py-2 text-muted">{b.region}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-xs text-muted">
+                  {covered ? (
+                    <>
+                      {c.allocated} allocated
+                      {c.extra > 0 && <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-primary">+{c.extra} branch-specific</span>}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="px-3 py-2 text-right" onClick={(e) => e.stopPropagation()}>
+                  {covered && (
+                    <button
+                      type="button"
+                      aria-expanded={open}
+                      aria-label={`${open ? "Hide" : "Show"} budget heads for ${b.name}`}
+                      onClick={() => onToggleExpand(b.code)}
+                      className="rounded p-1 text-muted hover:bg-[var(--border)]/30 hover:text-primary"
+                    >
+                      {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+                  )}
+                </td>
+              </tr>
+              {open && (
+                <tr className="bg-[var(--border)]/10">
+                  <td colSpan={colSpan} className="px-5 py-3">
+                    {renderDetail(b)}
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+};
+
+// ─── Expanded panel: allocated + branch-specific budget heads ────────────────
+
+const HeadsTable: React.FC<{ rows: HeadRef[]; onRemove?: (id: string) => void }> = ({ rows, onRemove }) => (
+  <div className="overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--card,#fff)]">
+    <table className="w-full min-w-[560px] text-xs">
+      <thead>
+        <tr className="bg-[var(--border)]/15 text-left font-medium text-muted">
+          <th className="px-3 py-1.5">Budget head</th>
+          <th className="px-3 py-1.5">GL code</th>
+          <th className="px-3 py-1.5">Cost centre</th>
+          <th className="px-3 py-1.5">Programme</th>
+          {onRemove && <th className="w-10 px-3 py-1.5" />}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((h) => (
+          <tr key={h.id} className="border-t border-[var(--border)] text-main">
+            <td className="px-3 py-1.5 font-medium">{h.name}</td>
+            <td className="whitespace-nowrap px-3 py-1.5">{h.glCode}</td>
+            <td className="px-3 py-1.5">{h.costCentre}</td>
+            <td className="px-3 py-1.5">{h.programme}</td>
+            {onRemove && (
+              <td className="px-3 py-1.5 text-center">
+                <button type="button" aria-label={`Remove ${h.name}`} onClick={() => onRemove(h.id)} className="text-muted hover:text-danger">
+                  <Trash2 size={14} />
+                </button>
+              </td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+const BranchHeadsPanel: React.FC<{
+  branch: Branch;
+  groupName: string;
+  allocated: HeadRef[];
+  extras: HeadRef[];
+  available: HeadRef[];
+  onAdd: (headId: string) => void;
+  onRemove: (headId: string) => void;
+}> = ({ branch, groupName, allocated, extras, available, onAdd, onRemove }) => {
+  const [pick, setPick] = useState("");
+
+  // Group the heads that can still be added by the budget head name they come from
+  const groups = useMemo(() => {
+    const names: Record<string, string> = Object.fromEntries(BUDGET_HEAD_NAMES.map((g) => [g.value, g.label]));
+    const byGroup: Record<string, HeadRef[]> = {};
+    available.forEach((h) => (byGroup[h.group] ??= []).push(h));
+    return Object.entries(byGroup).map(([id, list]) => ({ id, label: names[id] ?? id, list }));
+  }, [available]);
+
+  return (
+    <div className="flex flex-col gap-4 pl-1">
+      <div>
+        <div className="mb-1.5 flex flex-wrap items-baseline gap-2">
+          <h4 className="text-xs font-semibold text-main">Allocated budget heads</h4>
+          {groupName && <span className="text-[11px] text-muted">From {groupName}, same for every branch in this plan</span>}
+        </div>
+        {allocated.length > 0 ? (
+          <HeadsTable rows={allocated} />
+        ) : (
+          <p className="text-xs text-muted">Choose a budget head above to see the heads allocated to this branch.</p>
+        )}
+      </div>
+
+      <div>
+        <div className="mb-1.5 flex flex-wrap items-baseline gap-2">
+          <h4 className="text-xs font-semibold text-main">Branch-specific budget heads</h4>
+          <span className="text-[11px] text-muted">Only for {branch.name}</span>
+        </div>
+        {extras.length > 0 ? (
+          <HeadsTable rows={extras} onRemove={onRemove} />
+        ) : (
+          <p className="text-xs text-muted">No extra heads for this branch yet.</p>
+        )}
+
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <select
+            value={pick}
+            onChange={(e) => setPick(e.target.value)}
+            aria-label={`Add a budget head for ${branch.name}`}
+            className={`${inputCls} w-auto min-w-[260px] py-1.5 text-xs`}
+          >
+            <option value="">Select a budget head to add</option>
+            {groups.map((g) => (
+              <optgroup key={g.id} label={g.label}>
+                {g.list.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name} ({h.glCode})
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={!pick}
+            onClick={() => {
+              onAdd(pick);
+              setPick("");
+            }}
+            className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+          >
+            <Plus size={13} /> Add head
+          </button>
+          {groups.length === 0 && <span className="text-[11px] text-muted">No other budget heads available.</span>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CreateBudgetPlan;

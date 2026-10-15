@@ -6,6 +6,7 @@ import {
   ArrowLeftRight,
   PlusCircle,
   TrendingUp,
+  Settings2,
 } from "lucide-react";
 import {
   AppPage,
@@ -17,6 +18,8 @@ import { HrContentFrame, HrPrimaryTabs } from "../hr/components/HrTabLayout";
 import { useUrlTab } from "../../hooks/useUrlTab";
 import { usePermission } from "../../hooks/permission/usePermission";
 import Budget from "../BudgetManagement/Budget/budget";
+import BudgetHeadTable from "./budgethead/budgetHead";
+
 import CreateBudget from "../BudgetManagement/Budget/addBudgetModal";
 
 
@@ -34,6 +37,7 @@ const BUDGET_BASE_PATH = "/Budget-Management";
 
 
 const BUDGET_TABS = [
+    { id: "setup", label: "Setup", icon: <Settings2 size={14} />, modules: ["Budget Head"] },
   { id: "budget", label: "Budget", icon: <Wallet size={14} />, modules: ["Budget"] },
   { id: "view", label: "View", icon: <Eye size={14} />, modules: ["Budget"] },
   { id: "transfer", label: "Transfer", icon: <ArrowLeftRight size={14} />, modules: ["Budget"] },
@@ -72,8 +76,10 @@ const BudgetManagement: React.FC = () => {
       <HrPrimaryTabs tabs={tabs} activeTab={tab} onChange={setTab} />
       <AppPageBody>
         <Suspense fallback={<AppSkeleton />}>
-          <HrContentFrame>
-            {tab === "budget" &&
+       <HrContentFrame>
+{tab === "setup" && <BudgetHeadTable />}
+
+{tab === "budget" &&
   (creating ? (
     <CreateBudget
   onBack={() => setCreating(false)}
