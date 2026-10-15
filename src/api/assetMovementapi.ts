@@ -37,6 +37,8 @@ export async function getAssetMovements(paramsObj?: {
   search?: string;
   page?: number;
   page_size?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }) {
   try {
     const start = paramsObj?.page && paramsObj?.page_size
@@ -49,6 +51,8 @@ export async function getAssetMovements(paramsObj?: {
       pageSize: paramsObj?.page_size,
       search: paramsObj?.search,
       searchFields: ["name", "company", "purpose"],
+      sortBy: paramsObj?.sortBy,
+      sortOrder: paramsObj?.sortOrder,
     });
 
     const resp: AxiosResponse = await api.get(`${API.Assets.Movement}?${query}`);

@@ -98,6 +98,7 @@ export interface TrialBalanceFilters {
   show_zero_values?: boolean;
   with_period_closing_entry?: number;
   show_closing_entries?: number;
+  order_by?: string;
 }
 
 export async function getTrialBalance(
@@ -168,6 +169,7 @@ export interface AccountsPayableFilters {
   status?: any;
   page?: number;
   page_size?: number;
+  order_by?: string;
 }
 
 export async function getAllPayables(
@@ -201,6 +203,7 @@ export interface AccountsReceivableFilters {
   status?: any;
   page?: number;
   page_size?: number;
+  order_by?: string;
 }
 
 export async function getAllReceivables(

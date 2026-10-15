@@ -3,9 +3,11 @@ import {
   useReactTable,
   getCoreRowModel,
   getExpandedRowModel,
+  getSortedRowModel,
   flexRender,
   type ColumnDef,
   type ExpandedState,
+  type SortingState,
 } from "@tanstack/react-table";
 import {
   getTrialBalance,
@@ -233,6 +235,7 @@ const TrialBalance: React.FC = () => {
   const [fiscalYearEndDate, setFiscalYearEndDate] = useState<string>("");
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allExpanded, setAllExpanded] = useState(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [company, setCompany] = useState<any>(null);
 
   const tableData: TBAccount[] = useMemo(() => {
@@ -366,6 +369,7 @@ const TrialBalance: React.FC = () => {
     () => [
       {
         id: "account_name",
+        accessorKey: "account_name",
         header: "Account",
         size: 260,
         cell: ({ row }) => {
@@ -414,6 +418,7 @@ const TrialBalance: React.FC = () => {
       },
       {
         id: "opening_debit",
+        accessorKey: "opening_debit",
         header: "Opening Debit",
         size: 130,
         meta: { align: "right" },
@@ -425,6 +430,7 @@ const TrialBalance: React.FC = () => {
       },
       {
         id: "opening_credit",
+        accessorKey: "opening_credit",
         header: "Opening Credit",
         size: 130,
         meta: { align: "right" },
@@ -436,6 +442,7 @@ const TrialBalance: React.FC = () => {
       },
       {
         id: "debit",
+        accessorKey: "debit",
         header: "Debit",
         size: 130,
         meta: { align: "right" },
@@ -447,6 +454,7 @@ const TrialBalance: React.FC = () => {
       },
       {
         id: "credit",
+        accessorKey: "credit",
         header: "Credit",
         size: 130,
         meta: { align: "right" },
@@ -458,6 +466,7 @@ const TrialBalance: React.FC = () => {
       },
       {
         id: "closing_debit",
+        accessorKey: "closing_debit",
         header: "Closing Debit",
         size: 130,
         meta: { align: "right" },
@@ -469,6 +478,7 @@ const TrialBalance: React.FC = () => {
       },
       {
         id: "closing_credit",
+        accessorKey: "closing_credit",
         header: "Closing Credit",
         size: 130,
         meta: { align: "right" },
@@ -485,14 +495,16 @@ const TrialBalance: React.FC = () => {
   const table = useReactTable({
     data: tableData,
     columns,
-    state: { expanded },
+    state: { expanded, sorting },
     onExpandedChange: (updater) => {
       setExpanded(updater);
       setAllExpanded(false);
     },
+    onSortingChange: setSorting,
     getSubRows: (row) => row.children,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
 
   /* ── States ── */
@@ -550,12 +562,33 @@ const TrialBalance: React.FC = () => {
                     return (
                       <th
                         key={header.id}
-                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align}`}
+                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align} ${
+                          header.column.getCanSort()
+                            ? "cursor-pointer select-none hover:text-main"
+                            : ""
+                        }`}
+                        onClick={header.column.getToggleSortingHandler()}
                       >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                        <div
+                          className={`inline-flex items-center gap-1 ${
+                            align === "text-right"
+                              ? "justify-end"
+                              : "justify-start"
+                          }`}
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                          {header.column.getCanSort() && (
+                            <span className="text-[10px] text-muted">
+                              {{
+                                asc: " ↑",
+                                desc: " ↓",
+                              }[header.column.getIsSorted() as string] ?? " ↕"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                     );
                   })}

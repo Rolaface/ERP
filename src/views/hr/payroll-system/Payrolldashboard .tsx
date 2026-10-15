@@ -38,6 +38,12 @@ interface Props {
   toDate?: string;
   onDateRangeChange: (range: { from_date?: string; to_date?: string }) => void;
   setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
+  pageSize?: number;
+  totalItems?: number;
+  onPageSizeChange?: (size: number) => void;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  onSortChange?: (sort: { sortBy: string; sortOrder: "asc" | "desc" }) => void;
 }
 
 // ── Status color map
@@ -70,6 +76,12 @@ export const PayrollDashboard: React.FC<Props> = ({
   fromDate,
   toDate,
   onDateRangeChange,
+  pageSize = 10,
+  totalItems = 0,
+  onPageSizeChange,
+  sortBy,
+  sortOrder,
+  onSortChange,
 }) => {
   const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
 
@@ -98,6 +110,7 @@ export const PayrollDashboard: React.FC<Props> = ({
    {
   key: "start_date",
   header: "Start Date",
+  sortable: true,
   width: "130px",
   minWidth: "130px",
   render: (row) => (
@@ -107,6 +120,7 @@ export const PayrollDashboard: React.FC<Props> = ({
 {
   key: "end_date",
   header: "End Date",
+  sortable: true,
   width: "130px",
   minWidth: "130px",
   render: (row) => (
@@ -138,6 +152,7 @@ export const PayrollDashboard: React.FC<Props> = ({
     {
       key: "total_net_payable",
       header: "Total Payable",
+      sortable: true,
       align: "left",
       render: (row) => (
         <span className="whitespace-nowrap">
@@ -242,11 +257,16 @@ export const PayrollDashboard: React.FC<Props> = ({
       enableColumnSelector
       data={records}
       loading={loading}
-      totalItems={records.length}
+      totalItems={totalItems || records.length}
       currentPage={currentPage}
       totalPages={totalPages}
       onPageChange={onPageChange}
-      pageSize={10}
+      pageSize={pageSize}
+      pageSizeOptions={[10, 20, 50, 100]}
+      onPageSizeChange={onPageSizeChange}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      onSortChange={onSortChange}
       onRowDoubleClick={(row) => setDetailEntryId((row as any).name)}
       searchValue={searchTerm}
       onSearch={(q) => {

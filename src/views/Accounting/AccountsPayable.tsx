@@ -8,8 +8,10 @@ import React, {
 import {
   useReactTable,
   getCoreRowModel,
+  getSortedRowModel,
   flexRender,
   type ColumnDef,
+  type SortingState,
 } from "@tanstack/react-table";
 import {
   FaDownload,
@@ -367,6 +369,7 @@ const AccountsPayable = () => {
   const [pageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const [company, setCompany] = useState<any | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -692,6 +695,7 @@ const AccountsPayable = () => {
         id: "status",
         accessorKey: "status",
         header: "Status",
+        enableSorting: false,
         cell: ({ row }) =>
           row.original.isSummary ? null : (
             <StatusBadge status={row.original.status} />
@@ -700,6 +704,7 @@ const AccountsPayable = () => {
       {
         id: "actions",
         header: "Actions",
+        enableSorting: false,
         meta: { align: "center" },
         cell: ({ row }) =>
           row.original.isSummary ? null : (
@@ -720,7 +725,10 @@ const AccountsPayable = () => {
   const table = useReactTable({
     data: payables,
     columns,
+    state: { sorting },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     manualPagination: true,
     pageCount: totalPages,
   });
@@ -1030,12 +1038,33 @@ const AccountsPayable = () => {
                     return (
                       <th
                         key={header.id}
-                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align}`}
+                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align} ${
+                          header.column.getCanSort()
+                            ? "cursor-pointer select-none hover:text-main"
+                            : ""
+                        }`}
+                        onClick={header.column.getToggleSortingHandler()}
                       >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                        <div
+                          className={`inline-flex items-center gap-1 ${
+                            align === "text-right"
+                              ? "justify-end"
+                              : "justify-start"
+                          }`}
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                          {header.column.getCanSort() && (
+                            <span className="text-[10px] text-muted">
+                              {{
+                                asc: " ↑",
+                                desc: " ↓",
+                              }[header.column.getIsSorted() as string] ?? " ↕"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                     );
                   })}

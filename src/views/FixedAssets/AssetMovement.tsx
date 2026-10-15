@@ -37,9 +37,17 @@ const AssetMovement: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({ from_date: "", to_date: "" });
-  const [sortBy, setSortBy] = useState<keyof AssetMovementRecord | null>(null);
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState<keyof AssetMovementRecord | null>("id");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { can } = usePermission();
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    id: "name",
+    company: "company",
+    purpose: "purpose",
+    transactionDate: "transaction_date",
+    status: "docstatus",
+  };
 
 
   /* ── delete ── */
@@ -65,24 +73,12 @@ const AssetMovement: React.FC = () => {
     });
   }, [records, searchTerm, filters]);
 
-  /* ── sort ── */
-  const sortedData = useMemo(() => {
-    if (!sortBy) return filteredData;
-    return [...filteredData].sort((a, b) => {
-      const vA = a[sortBy] as string;
-      const vB = b[sortBy] as string;
-      if (vA < vB) return sortOrder === "asc" ? -1 : 1;
-      if (vA > vB) return sortOrder === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [filteredData, sortBy, sortOrder]);
-
   /* ── pagination ── */
-  const totalItems = sortedData.length;
+  const totalItems = filteredData.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   const paginatedData = useMemo(
-    () => sortedData.slice((page - 1) * pageSize, page * pageSize),
-    [sortedData, page, pageSize],
+    () => filteredData.slice((page - 1) * pageSize, page * pageSize),
+    [filteredData, page, pageSize],
   );
 
   /* ── sort handler ── */
@@ -102,6 +98,9 @@ const AssetMovement: React.FC = () => {
   const fetchMovements = async () => {
     try {
       setLoading(true);
+      const backendSortField = sortBy
+        ? SORT_FIELD_MAP[sortBy] || sortBy
+        : undefined;
 
       const data = await getAssetMovements({
         fields: [
@@ -111,7 +110,9 @@ const AssetMovement: React.FC = () => {
           "transaction_date",
           "docstatus",
         ],
-         search: searchTerm,
+        search: searchTerm,
+        sortBy: backendSortField,
+        sortOrder,
       });
 
       const mapped = data.map((item: any) => ({
@@ -141,7 +142,7 @@ const AssetMovement: React.FC = () => {
   );
   useEffect(() => {
     fetchMovements();
-  }, [refreshKey, searchTerm]);
+  }, [refreshKey, searchTerm, sortBy, sortOrder]);
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 
@@ -157,7 +158,7 @@ const AssetMovement: React.FC = () => {
   };
 
 const handleExportExcel = () => {
-    if (!sortedData.length) {
+    if (!filteredData.length) {
       fireManagedSwal({
         icon: "info",
         title: "No Data",
@@ -168,7 +169,7 @@ const handleExportExcel = () => {
 
     try {
       const worksheet = XLSX.utils.json_to_sheet(
-        sortedData.map((r) => ({
+        filteredData.map((r) => ({
           "Movement ID": r.id,
           Company: r.company,
           Purpose: r.purpose,
@@ -195,6 +196,7 @@ const handleExportExcel = () => {
     {
       key: "id",
       header: "Movement ID",
+      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span className="font-mono text-xs" style={{ color: "var(--primary)" }}>
@@ -206,10 +208,12 @@ const handleExportExcel = () => {
     {
       key: "company",
       header: "Company",
+      sortable: true,
     },
     {
       key: "purpose",
       header: "Purpose",
+      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span className="badge">
@@ -221,6 +225,7 @@ const handleExportExcel = () => {
     {
       key: "transactionDate",
       header: "Transaction Date",
+      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span style={{ color: "var(--muted)", fontSize: 12 }}>
@@ -232,6 +237,7 @@ const handleExportExcel = () => {
     {
       key: "status",
       header: "Status",
+      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span

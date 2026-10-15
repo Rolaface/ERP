@@ -86,15 +86,29 @@ const buildPayload = (
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  name: "name",
+  start_date: "start_date",
+  end_date: "end_date",
+  employee_count: "number_of_employees",
+  currency: "currency",
+  total_net_payable: "total_net_payable",
+  status: "status",
+};
+
 export default function PayrollManagement() {
   const { can } = usePermission();
   const canCreate = can("Payroll Entry", "create");
   const canWrite = can("Payroll Entry", "write");
 
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sortBy, setSortBy] = useState("start_date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<PayrollRecord | null>(
@@ -118,15 +132,19 @@ export default function PayrollManagement() {
   const loadPayrollEntries = async () => {
     try {
       setLoading(true);
+      const backendSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
       const resp = await getAllPayrollEntries(
         page,
-        10,
+        pageSize,
         searchTerm,
         fromDate,
         toDate,
+        backendSortBy,
+        sortOrder,
       );
       setPayrollRecords(resp?.data || []);
       setTotalPages(resp?.pagination?.total_pages || 1);
+      setTotalItems(resp?.pagination?.total || resp?.data?.length || 0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -135,7 +153,7 @@ export default function PayrollManagement() {
   };
   useEffect(() => {
     loadPayrollEntries();
-  }, [page, searchTerm, fromDate, toDate]);
+  }, [page, pageSize, searchTerm, fromDate, toDate, sortBy, sortOrder]);
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
 
@@ -363,6 +381,20 @@ export default function PayrollManagement() {
         currentPage={page}
         totalPages={totalPages}
         onPageChange={setPage}
+        pageSize={pageSize}
+        pageSizeOptions={[10, 20, 50, 100]}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
+        totalItems={totalItems}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={({ sortBy: col, sortOrder: ord }) => {
+          setSortBy(col);
+          setSortOrder(ord);
+          setPage(1);
+        }}
         onQuickCreate={() => setShowCreateModal(true)}
         canCreate={canCreate}
         canWrite={canWrite}
