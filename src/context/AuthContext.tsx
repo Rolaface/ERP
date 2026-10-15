@@ -4,6 +4,7 @@ import { loginApi, logoutApi, fetchLoginUser } from "../api/authService";
 import type { AuthUser } from "../api/authService";
 import { useCompanyStore } from "../store/companyStore";
 import { useHRViewStore } from "../store/hrViewStore";
+import { isLegacySubscriptionShape } from "../utils/productClassifier";
 
 const SID_KEY = "session_id";
 const USER_KEY = "auth_user";
@@ -14,7 +15,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
-  refreshPermissions: () => Promise<void>; 
+  refreshPermissions: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,9 +31,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (sid && storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        if (!parsed?.subscribedModules || isLegacySubscriptionShape(parsed.subscribedModules)) {
+          localStorage.removeItem(SID_KEY);
+          localStorage.removeItem(USER_KEY);
+        } else {
+          setUser(parsed);
+        }
       } catch {
-        // corrupt storage — clear it
         localStorage.removeItem(SID_KEY);
         localStorage.removeItem(USER_KEY);
       }
@@ -41,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, []);
 
-  // ── Login — call loginApi then fetchLoginUser for permissions ────────────
+  // ── Login ────────────────────────────────────────────────────────────────
   const login = useCallback(async (email: string, password: string) => {
     const basicUser = await loginApi(email, password);
     setUser(basicUser);

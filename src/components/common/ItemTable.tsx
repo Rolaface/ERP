@@ -140,8 +140,7 @@ const ServiceInvoiceColGroup: React.FC = () => (
 
 const InvoiceColGroup: React.FC<InvoiceHeadersProps> = (props) => {
   // const isService = props.isSalesInvoice && props.invoiceType === "Service";
-  const isService =
-    props.invoiceType === "Service" || props.invoiceType === "RVAT";
+  const isService = props.invoiceType === "Service";
 
   if (isService) {
     return <ServiceInvoiceColGroup />;
@@ -156,7 +155,7 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
   invoiceType = "Product",
 }) => {
   // const isService = isSalesInvoice && invoiceType === "Service";
-  const isService = invoiceType === "Service" || invoiceType === "RVAT";
+  const isService = invoiceType === "Service";
   return (
     <tr className="border-b border-theme">
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
@@ -397,7 +396,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
   });
 
   // const isService = isSalesInvoice && invoiceType === "Service";
-  const isService = invoiceType === "Service" || invoiceType === "RVAT";
+  const isService = invoiceType === "Service";
 
   const handleCopyRow = (absoluteIndex: number) => {
     actions.duplicateItem(absoluteIndex);

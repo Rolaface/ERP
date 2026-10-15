@@ -8,12 +8,14 @@ import type { CreateWarehousePayload } from "../../api/WarehouseApi";
 import { getCompanyById } from "../../api/companySetupApi";
 import { createWarehouseNode, updateWarehouseById } from "../../api/WarehouseApi";
 import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
+import { useCompanyStore } from "../../store/companyStore";
 
 const emptyForm = {
   warehouse_name: "",
   is_group: "0",
   company: "",
   parent: "",
+  custom_warehouse_code: "",
 };
 
 const inputClass =
@@ -41,6 +43,7 @@ const WarehouseModal: React.FC<{
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
   const COMPANY_ID = import.meta.env.VITE_COMPANY_ID as string;
 
@@ -69,6 +72,7 @@ const WarehouseModal: React.FC<{
           is_group: initialData.is_group ? "1" : "0",
           company: initialData.company || prev.company,
           parent: getGLNameWithoutAbbreviation(initialData.parent || initialData.parent_warehouse || ""),
+          custom_warehouse_code: initialData.custom_warehouse_code || "",
         }));
       } else {
         setForm((prev) => ({
@@ -115,6 +119,10 @@ const WarehouseModal: React.FC<{
         is_root: "false",
       };
 
+      if (isZraEnabled) {
+        payload.custom_warehouse_code = form.custom_warehouse_code.trim();
+      }
+
       if (isEditMode && initialData?.name) {
         payload.id = initialData.name;
         payload.name = initialData.name;
@@ -158,6 +166,7 @@ const WarehouseModal: React.FC<{
         is_group: initialData.is_group ? "1" : "0",
         company: initialData.company || prev.company,
         parent: initialData.parent || initialData.parent_warehouse || "",
+        custom_warehouse_code: initialData.custom_warehouse_code || "",
       }));
     } else {
       setForm((prev) => ({
@@ -235,6 +244,20 @@ const WarehouseModal: React.FC<{
               </span>
             )}
           </label>
+
+          {isZraEnabled && (
+            <label>
+              <span className={labelClass}>Code</span>
+              <input
+                type="text"
+                name="custom_warehouse_code"
+                value={form.custom_warehouse_code}
+                onChange={handleChange}
+                disabled={isViewMode}
+                className={`${inputClass} ${isViewMode ? "opacity-60 cursor-not-allowed" : ""}`}
+              />
+            </label>
+          )}
 
           <label className="flex flex-col gap-0.5">
             <span className={labelClass}>Group Node</span>
