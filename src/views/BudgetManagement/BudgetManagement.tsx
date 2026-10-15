@@ -20,6 +20,7 @@ import { usePermission } from "../../hooks/permission/usePermission";
 import Budget from "../BudgetManagement/Budget/budget";
 import BudgetHeadTable from "./budgethead/budgetHead";
 import BudgetSetup from "./BudgetSetup";
+import BranchBudgetRequest from "./request/request";
 
 import CreateBudget from "../BudgetManagement/Budget/addBudgetModal";
 
@@ -38,8 +39,9 @@ const BUDGET_BASE_PATH = "/Budget-Management";
 
 
 const BUDGET_TABS = [
-    { id: "setup", label: "Setup", icon: <Settings2 size={14} />, modules: ["Budget Head"] },
+  { id: "setup", label: "Setup", icon: <Settings2 size={14} />, modules: ["Budget Head"] },
   { id: "budget", label: "Budget", icon: <Wallet size={14} />, modules: ["Budget"] },
+  { id: "request", label: "Request", icon: <Settings2 size={14} />, modules: ["Request"] },
   { id: "transfer", label: "Transfer", icon: <ArrowLeftRight size={14} />, modules: ["Budget"] },
   { id: "supplementary", label: "Supplementary Budget", icon: <PlusCircle size={14} />, modules: ["Budget"] },
   { id: "variance", label: "Variance", icon: <TrendingUp size={14} />, modules: ["Budget"] },
@@ -78,7 +80,7 @@ const BudgetManagement: React.FC = () => {
         <Suspense fallback={<AppSkeleton />}>
        <HrContentFrame>
 {tab === "setup" && <BudgetSetup />}
-
+{tab === "request" && <BranchBudgetRequest/>}
 {tab === "budget" &&
   (creating ? (
     <CreateBudget
