@@ -4,14 +4,12 @@ import ProjectDetailView from "./Projectdetailview";
 import { PROJECT_LIST } from "./pmLists.config";
 import { useProjectActions } from "../../../hooks/project_management/project/Useprojectactions";
 
-/**
- * Projects tab: table  <->  full detail view (same pattern as CustomerManagement).
- */
+
 const ProjectsView: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const baseActions = useProjectActions();
 
-  // Same row actions as before, but the eye icon opens the detail view
+  
   const getActions = useCallback(
     (row: { name: string; status: string }, ctx: { reload: () => void }) => ({
       ...baseActions(row, ctx),

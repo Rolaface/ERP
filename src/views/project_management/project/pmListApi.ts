@@ -22,7 +22,7 @@ export const makeFetchRows =
     const json = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      // showApiError in usePmList will display this message
+      
       throw new Error(
         json?.exception || json?.message || `Failed to load ${doctype}`,
       );

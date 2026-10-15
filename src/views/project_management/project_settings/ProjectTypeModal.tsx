@@ -11,7 +11,7 @@ import { ModalInput, ModalTextarea } from "../../../components/ui/modal/modalCom
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void; // called after save → reload the list
+  onSuccess?: () => void; 
 }
 
 const MAX_DESC = 500;
@@ -53,8 +53,6 @@ const ProjectTypeModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
 
     try {
       setSubmitting(true);
-      // TODO: API → create "Project Type"
-      // await createProjectType({ name: values.projectType.trim(), description: values.description });
       showSuccess("Project Type saved successfully");
       onSuccess?.();
       reset();

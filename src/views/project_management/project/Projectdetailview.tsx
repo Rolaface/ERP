@@ -33,7 +33,6 @@ import {
 import PmListTable from "./projecttabe";
 import { UPDATE_LIST } from "./pmLists.config";
 
-/* ───────────────────────── types ───────────────────────── */
 
 interface ProjectDetail {
   name: string;
@@ -58,22 +57,15 @@ interface Props {
   projectId: string;
   onBack: () => void;
   onProjectSelect: (id: string) => void;
-  /** Shows an Edit button in the header when provided */
-  onEdit?: (id: string) => void;
-  /**
-   * Plug your existing task / timesheet views in here, filtered by project.
-   * Without them the tabs show an empty state.
-   */
-  renderTasks?: (projectId: string) => React.ReactNode;
+    onEdit?: (id: string) => void;
+    renderTasks?: (projectId: string) => React.ReactNode;
   renderTimesheets?: (projectId: string) => React.ReactNode;
-  /** Wire these to your create forms / modals; each tab's Add button calls its handler */
-  onAddTask?: (projectId: string) => void;
+    onAddTask?: (projectId: string) => void;
   onAddTimesheet?: (projectId: string) => void;
   onAddUpdate?: (projectId: string) => void;
   onAddMember?: (projectId: string) => void;
 }
 
-/* ───────────────────────── helpers ───────────────────────── */
 
 const SIDEBAR_PAGE_SIZE = 10;
 
@@ -252,7 +244,6 @@ const ALL_TABS = [
 
 type TabId = (typeof ALL_TABS)[number]["id"];
 
-/* ───────────── sidebar parts (outside main to avoid remounts) ───────────── */
 
 const SidebarSearchInput: React.FC<{
   value: string;
@@ -329,7 +320,6 @@ const SidebarList: React.FC<{
   </div>
 );
 
-/* ───────────────────────── main ───────────────────────── */
 
 const ProjectDetailView: React.FC<Props> = ({
   projectId,
@@ -419,8 +409,7 @@ const ProjectDetailView: React.FC<Props> = ({
     [projectId],
   );
 
-  /* ── derived ── */
-  const percentRaw = Math.min(100, Math.max(0, Number(project?.percent_complete ?? 0)));
+    const percentRaw = Math.min(100, Math.max(0, Number(project?.percent_complete ?? 0)));
   const percentLabel = `${Math.round(percentRaw * 10) / 10}%`;
   const days = daysFromToday(project?.expected_end_date);
   const due = dueMessage(days, project?.status ?? "");
@@ -473,8 +462,7 @@ const ProjectDetailView: React.FC<Props> = ({
 
   return (
     <div className="flex flex-col bg-app text-main overflow-hidden flex-1 min-h-0 h-full">
-      {/* HEADER */}
-      <header className="bg-card px-3 sm:px-4 py-2.5 flex items-center justify-between border-b border-theme shrink-0 gap-2 min-w-0">
+            <header className="bg-card px-3 sm:px-4 py-2.5 flex items-center justify-between border-b border-theme shrink-0 gap-2 min-w-0">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
           <button
             onClick={() => setMobileDrawer(true)}
@@ -541,8 +529,7 @@ const ProjectDetailView: React.FC<Props> = ({
         </div>
       </header>
 
-      {/* BODY */}
-      <div className="flex-1 flex overflow-hidden min-h-0 h-0 relative">
+            <div className="flex-1 flex overflow-hidden min-h-0 h-0 relative">
         {mobileDrawer && (
           <>
             <div
@@ -602,10 +589,8 @@ const ProjectDetailView: React.FC<Props> = ({
           )}
         </aside>
 
-        {/* MAIN */}
-        <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
-          {/* Tabs */}
-          <div className="bg-card border-b border-theme px-2 sm:px-4 shrink-0 z-10">
+                <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+                    <div className="bg-card border-b border-theme px-2 sm:px-4 shrink-0 z-10">
             <div className="flex overflow-x-auto no-scrollbar">
               {visibleTabs.map((tab) => (
                 <button
@@ -624,14 +609,11 @@ const ProjectDetailView: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 min-h-0 overflow-auto">
-            {/* ───── OVERVIEW (compact) ───── */}
-            {activeTab === "overview" && (
+                    <div className="flex-1 min-h-0 overflow-auto">
+                        {activeTab === "overview" && (
               <div className="p-3 sm:p-4 space-y-3">
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 items-stretch">
-                  {/* Status & completion */}
-                  <section className="lg:col-span-2 bg-card rounded-2xl border border-theme p-4 sm:p-5 flex flex-col justify-between gap-5">
+                                    <section className="lg:col-span-2 bg-card rounded-2xl border border-theme p-4 sm:p-5 flex flex-col justify-between gap-5">
                     <div className="flex items-center justify-between gap-2">
                       <h4 className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-widest">
                         <Activity size={12} className="text-primary" />
@@ -668,8 +650,7 @@ const ProjectDetailView: React.FC<Props> = ({
                     </div>
                   </section>
 
-                  {/* Details */}
-                  <section className="lg:col-span-3 bg-card rounded-2xl border border-theme overflow-hidden flex flex-col">
+                                    <section className="lg:col-span-3 bg-card rounded-2xl border border-theme overflow-hidden flex flex-col">
                     <div className="flex items-center gap-2 px-4 sm:px-5 py-3 border-b border-theme shrink-0">
                       <Tag size={12} className="text-primary" />
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">
@@ -689,8 +670,7 @@ const ProjectDetailView: React.FC<Props> = ({
                   </section>
                 </div>
 
-                {/* Costing strip */}
-                <section className="bg-card rounded-2xl border border-theme overflow-hidden">
+                                <section className="bg-card rounded-2xl border border-theme overflow-hidden">
                   <div className="flex items-center gap-2 px-4 sm:px-5 py-3 border-b border-theme">
                     <Banknote size={12} className="text-primary" />
                     <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">
@@ -737,8 +717,7 @@ const ProjectDetailView: React.FC<Props> = ({
               </div>
             )}
 
-            {/* ───── TEAM ───── */}
-            {activeTab === "team" && (
+                        {activeTab === "team" && (
               <div className="p-3 sm:p-4 space-y-3">
                 <TabToolbar
                   title="Team"
@@ -774,8 +753,7 @@ const ProjectDetailView: React.FC<Props> = ({
               </div>
             )}
 
-            {/* ───── TASKS ───── */}
-            {activeTab === "tasks" && (
+                        {activeTab === "tasks" && (
               <div className="p-3 sm:p-4 space-y-3 w-full min-w-0">
                 <TabToolbar
                   title="Tasks"
@@ -791,8 +769,7 @@ const ProjectDetailView: React.FC<Props> = ({
               </div>
             )}
 
-            {/* ───── TIMESHEETS ───── */}
-            {activeTab === "timesheets" && (
+                        {activeTab === "timesheets" && (
               <div className="p-3 sm:p-4 space-y-3 w-full min-w-0">
                 <TabToolbar
                   title="Timesheets"
@@ -808,8 +785,7 @@ const ProjectDetailView: React.FC<Props> = ({
               </div>
             )}
 
-            {/* ───── UPDATES ───── */}
-            {activeTab === "updates" && (
+                        {activeTab === "updates" && (
               <div className="p-3 sm:p-4 space-y-3 w-full min-w-0">
                 <TabToolbar
                   title="Updates"

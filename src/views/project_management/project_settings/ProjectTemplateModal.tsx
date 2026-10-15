@@ -32,7 +32,7 @@ interface Option {
   value: string | number;
 }
 
-let rowSeq = 1; // row 1 is the initial row
+let rowSeq = 1; 
 const newRow = (): TaskRow => ({ id: ++rowSeq, task: "", subject: "" });
 
 const makeInitial = (): FormValues => ({
@@ -56,7 +56,7 @@ const ProjectTemplateModal: React.FC<Props> = ({
   const [initial] = useState<FormValues>(makeInitial);
   const [values, setValues] = useState<FormValues>(initial);
 
-  // TODO: load from API ("Project Type" link options)
+  
   const projectTypeOptions: Option[] = [];
 
   const set = <K extends keyof FormValues>(key: K, v: FormValues[K]) =>
@@ -75,8 +75,7 @@ const ProjectTemplateModal: React.FC<Props> = ({
     onClose();
   };
 
-  /* ── task table helpers ── */
-  const updateRow = (id: number, patch: Partial<TaskRow>) =>
+     const updateRow = (id: number, patch: Partial<TaskRow>) =>
     set(
       "tasks",
       values.tasks.map((r) => (r.id === id ? { ...r, ...patch } : r)),
@@ -112,7 +111,6 @@ const ProjectTemplateModal: React.FC<Props> = ({
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
-  /* ── save ── */
   const handleSave = async () => {
     if (submitting) return;
 
@@ -121,7 +119,6 @@ const ProjectTemplateModal: React.FC<Props> = ({
       return;
     }
 
-    // ignore fully empty rows; a row with a subject but no task title is invalid
     const tasks = values.tasks.filter((r) => r.task.trim() || r.subject.trim());
     const bad = tasks.findIndex((r) => !r.task.trim());
     if (bad >= 0) {
@@ -131,13 +128,7 @@ const ProjectTemplateModal: React.FC<Props> = ({
 
     try {
       setSubmitting(true);
-      // TODO: API → create "Project Template"
-      // await createProjectTemplate({
-      //   name: values.name.trim(),
-      //   project_type: values.projectType,
-      //   disabled: values.disabled ? 1 : 0,
-      //   tasks: tasks.map(({ task, subject }) => ({ task, subject })),
-      // });
+
       showSuccess("Project Template saved successfully");
       onSuccess?.();
       reset();
@@ -180,7 +171,6 @@ const ProjectTemplateModal: React.FC<Props> = ({
       >
         <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
           <div className="flex flex-col gap-3">
-            {/* Name / Project Type / Disabled */}
             <div className="flex flex-wrap items-end gap-3">
               <div className="w-full sm:w-[240px]">
                 <ModalInput

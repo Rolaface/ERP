@@ -1,19 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Info } from "lucide-react";
 
-/* ───────────────────────── styles ───────────────────────── */
 
-// Same look as the inputs in SalesOrderModal (border-theme, bg-card, text-xs)
+
 export const inputCls =
   "w-full h-8 rounded-md border border-theme bg-card px-2 text-xs text-main placeholder:text-muted focus:border-primary focus:outline-none disabled:opacity-60";
 
-/* ───────────────────────── field wrapper ───────────────────────── */
 
 interface FieldProps {
   label: string;
   required?: boolean;
-  right?: React.ReactNode; // small text on the right of the label row
-  hint?: React.ReactNode; // helper text under the input
+  right?: React.ReactNode; 
+  hint?: React.ReactNode; 
   className?: string;
   children: React.ReactNode;
 }
@@ -39,7 +37,6 @@ export const Field: React.FC<FieldProps> = ({
   </div>
 );
 
-/* ───────────────────────── inputs ───────────────────────── */
 
 export const TextInput: React.FC<
   React.InputHTMLAttributes<HTMLInputElement> & { icon?: React.ReactNode }
@@ -110,7 +107,7 @@ export const CheckboxField: React.FC<{
   </label>
 );
 
-// "$ [ 0.00 ] USD" style input used for rates
+
 export const RateInput: React.FC<{
   prefix: string;
   suffix?: string;
@@ -133,7 +130,6 @@ export const RateInput: React.FC<{
   </div>
 );
 
-/* ───────────────────────── tabs (same markup as SalesOrderModal) ───────────────────────── */
 
 export const ModalTabs = <T extends string>({
   tabs,
@@ -164,7 +160,6 @@ export const ModalTabs = <T extends string>({
   </div>
 );
 
-/* ───────────────────────── small UI pieces ───────────────────────── */
 
 export const NotSavedBadge: React.FC<{
   text?: string;
@@ -214,7 +209,7 @@ export const SummaryRow: React.FC<{
   </div>
 );
 
-// Dark highlighted total (same style as "Grand Total" in SalesOrderModal)
+
 export const DarkTotal: React.FC<{ label: string; value: React.ReactNode }> = ({
   label,
   value,
@@ -233,13 +228,12 @@ export const toNum = (v: string) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-/* ───────────────────────── hooks ───────────────────────── */
 
-// Unique id so MinimizableModal can track each open modal (same idea as SalesOrderModal)
+
 export const useModalId = (prefix: string) =>
   useState(() => `${prefix}-${Date.now()}`)[0];
 
-// Form state + dirty check + reset + "discard changes?" confirm
+
 export function useModalForm<T extends object>(initial: T) {
   const initialRef = useRef(initial);
   const [values, setValues] = useState<T>(initial);
@@ -250,7 +244,7 @@ export function useModalForm<T extends object>(initial: T) {
   const dirty = JSON.stringify(values) !== JSON.stringify(initialRef.current);
   const reset = () => setValues(initialRef.current);
 
-  // TODO: swap window.confirm for your app's confirm dialog (the one inside handleCloseWithConfirm)
+  
   const confirmClose = (onClose: () => void) => () => {
     if (dirty && !window.confirm("You have unsaved changes. Discard them?"))
       return;
@@ -260,8 +254,8 @@ export function useModalForm<T extends object>(initial: T) {
   return { values, set, setValues, dirty, reset, confirmClose };
 }
 
-// Loads dropdown options for a Link field (Project Type, Activity Type, Employee).
-// TODO: replace this fetch with your own API helper if /api/resource needs a token.
+
+
 export function usePmLinkOptions(doctype: string, labelField?: string) {
   const [options, setOptions] = useState<Option[]>([]);
 
