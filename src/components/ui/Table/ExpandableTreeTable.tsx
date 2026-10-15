@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { ChevronRight, ChevronDown, Folder, FolderOpen, FileText } from "lucide-react";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import { Layers, RefreshCw } from "lucide-react";
 import type { Column } from "./type";
 
@@ -126,6 +126,11 @@ export interface ExpandableTreeTableProps<T extends Record<string, any>> {
   // ── State ──
   loading?: boolean;
   emptyMessage?: string;
+
+  // ── Sorting ──
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  onSortChange?: (params: { sortBy: string; sortOrder: "asc" | "desc" }) => void;
 
   // ── Row ──
   onRowClick?: (node: T) => void;
@@ -365,6 +370,9 @@ function ExpandableTreeTable<T extends Record<string, any>>({
 
   loading = false,
   emptyMessage = "No records found.",
+  sortBy: externalSortBy,
+  sortOrder: externalSortOrder,
+  onSortChange,
   onRowClick,
   expandIconRender,
   rowClassName,
@@ -372,6 +380,55 @@ function ExpandableTreeTable<T extends Record<string, any>>({
 
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [allExpanded, setAllExpanded] = useState(false);
+  const [internalSortBy, setInternalSortBy] = useState<string | undefined>(externalSortBy);
+  const [internalSortOrder, setInternalSortOrder] = useState<"asc" | "desc">(externalSortOrder || "asc");
+
+  const sortBy = externalSortBy !== undefined ? externalSortBy : internalSortBy;
+  const sortOrder = externalSortOrder !== undefined ? externalSortOrder : internalSortOrder;
+
+  const handleHeaderSort = (key: string) => {
+    const newOrder = sortBy === key ? (sortOrder === "asc" ? "desc" : "asc") : "asc";
+    if (onSortChange) {
+      onSortChange({ sortBy: key, sortOrder: newOrder });
+    }
+    setInternalSortBy(key);
+    setInternalSortOrder(newOrder);
+  };
+
+  const sortedData = useMemo(() => {
+    if (!sortBy) return data;
+    const order = sortOrder || "asc";
+
+    const sortNodes = (nodes: T[]): T[] => {
+      return [...nodes]
+        .sort((a, b) => {
+          const valA = a[sortBy];
+          const valB = b[sortBy];
+          if (valA === undefined || valA === null) return 1;
+          if (valB === undefined || valB === null) return -1;
+          if (typeof valA === "number" && typeof valB === "number") {
+            return order === "asc" ? valA - valB : valB - valA;
+          }
+          const comp = String(valA).localeCompare(String(valB), undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+          return order === "asc" ? comp : -comp;
+        })
+        .map((node) => {
+          const children = node[childrenKey];
+          if (Array.isArray(children) && children.length > 0) {
+            return {
+              ...node,
+              [childrenKey]: sortNodes(children),
+            };
+          }
+          return node;
+        });
+    };
+
+    return sortNodes(data);
+  }, [data, sortBy, sortOrder, childrenKey]);
 
   const activeTerm = showToolbar ? searchValue : (externalSearchTerm ?? "");
 
@@ -495,19 +552,41 @@ function ExpandableTreeTable<T extends Record<string, any>>({
             {/* ── thead ── */}
             <thead className="sticky top-0 z-30 shadow-sm">
               <tr>
-                {columns.map((col) => (
-                  <th
-                    key={col.key}
-                    className={[
-                      "px-3 sm:px-5 py-3.5 sm:py-4",
-                      "text-[10px] font-black uppercase tracking-[0.08em] sm:tracking-[0.12em]",
-                      "text-muted border-b border-[var(--border)] bg-card whitespace-nowrap",
-                      getAlignment(col.align),
-                    ].join(" ")}
-                  >
-                    {col.header}
-                  </th>
-                ))}
+                {columns.map((col) => {
+                  const isSortable = col.sortable ?? false;
+                  const isCurrentSort = sortBy === col.key;
+                  const isAsc = isCurrentSort && sortOrder === "asc";
+                  const isDesc = isCurrentSort && sortOrder === "desc";
+
+                  return (
+                    <th
+                      key={col.key}
+                      onClick={isSortable ? () => handleHeaderSort(col.key) : undefined}
+                      className={[
+                        "px-3 sm:px-5 py-3.5 sm:py-4",
+                        "text-[10px] font-black uppercase tracking-[0.08em] sm:tracking-[0.12em]",
+                        "text-muted border-b border-[var(--border)] bg-card whitespace-nowrap",
+                        isSortable ? "cursor-pointer select-none hover:text-main transition-colors" : "",
+                        getAlignment(col.align),
+                      ].join(" ")}
+                    >
+                      <span className="inline-flex max-w-full items-center gap-1.5 overflow-hidden whitespace-nowrap">
+                        <span className="min-w-0 truncate">{col.header}</span>
+                        {isSortable && (
+                          <span className="inline-flex shrink-0 opacity-60">
+                            {isAsc ? (
+                              <FaSortUp size={10} className="text-primary translate-y-[2px]" />
+                            ) : isDesc ? (
+                              <FaSortDown size={10} className="text-primary -translate-y-[2px]" />
+                            ) : (
+                              <FaSort size={10} className="text-muted/40 hover:text-muted" />
+                            )}
+                          </span>
+                        )}
+                      </span>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
 
@@ -517,7 +596,7 @@ function ExpandableTreeTable<T extends Record<string, any>>({
                 Array.from({ length: 6 }).map((_, idx) => (
                   <SkeletonRow key={idx} columnsCount={columns.length} />
                 ))
-              ) : data.length === 0 ? (
+              ) : sortedData.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-6 py-24 text-center">
                     <p className="text-xs font-bold text-muted uppercase tracking-widest opacity-40">
@@ -526,7 +605,7 @@ function ExpandableTreeTable<T extends Record<string, any>>({
                   </td>
                 </tr>
               ) : (
-                data.map((node, idx) => (
+                sortedData.map((node, idx) => (
                   <TreeRow
                     key={nodeKey(node)}
                     node={node}
