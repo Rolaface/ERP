@@ -17,14 +17,18 @@ import {
   PROJECT_TEMPLATE_LIST,
   PROJECT_TYPE_LIST,
 } from "./pmLists.config";
-
+// NEW: the four modals (adjust the path if you place them elsewhere)
+import ActivityTypeModal from "../project_settings/ActivityTypeModal";
+import ActivityCostModal from "../project_settings/ActivityCostModal";
+import ProjectTemplateModal from "../project_settings/ProjectTemplateModal";
+import ProjectTypeModal from "../project_settings/ProjectTypeModal";
 interface SettingsTab {
   id: string;
   label: string;
   description: string;
   module: string;
   icon: LucideIcon;
-  render: () => React.ReactNode;
+  render: (onAdd: AddHandler) => React.ReactNode; // CHANGED: receives onAdd
 }
 
 const SETTINGS_TABS: SettingsTab[] = [
@@ -34,8 +38,13 @@ const SETTINGS_TABS: SettingsTab[] = [
     description: "Work categories",
     module: "Activity Type",
     icon: Activity,
-    render: () => (
-      <PmListTable config={ACTIVITY_TYPE_LIST} height={CONTENT_HEIGHT} />
+    render: (onAdd) => (
+      <PmListTable
+        config={ACTIVITY_TYPE_LIST}
+        height={CONTENT_HEIGHT}
+        addLabel="Add Activity Type"
+        onAdd={onAdd}
+      />
     ),
   },
   {
@@ -44,8 +53,13 @@ const SETTINGS_TABS: SettingsTab[] = [
     description: "Billing and costing rates",
     module: "Activity Cost",
     icon: Coins,
-    render: () => (
-      <PmListTable config={ACTIVITY_COST_LIST} height={CONTENT_HEIGHT} />
+    render: (onAdd) => (
+      <PmListTable
+        config={ACTIVITY_COST_LIST}
+        height={CONTENT_HEIGHT}
+        addLabel="Add Activity Cost"
+        onAdd={onAdd}
+      />
     ),
   },
   {
@@ -54,8 +68,13 @@ const SETTINGS_TABS: SettingsTab[] = [
     description: "Reusable project plans",
     module: "Project Template",
     icon: LayoutTemplate,
-    render: () => (
-      <PmListTable config={PROJECT_TEMPLATE_LIST} height={CONTENT_HEIGHT} />
+    render: (onAdd) => (
+      <PmListTable
+        config={PROJECT_TEMPLATE_LIST}
+        height={CONTENT_HEIGHT}
+        addLabel="Add Project Template"
+        onAdd={onAdd}
+      />
     ),
   },
   {
@@ -64,8 +83,13 @@ const SETTINGS_TABS: SettingsTab[] = [
     description: "Project classification",
     module: "Project Type",
     icon: FolderTree,
-    render: () => (
-      <PmListTable config={PROJECT_TYPE_LIST} height={CONTENT_HEIGHT} />
+    render: (onAdd) => (
+      <PmListTable
+        config={PROJECT_TYPE_LIST}
+        height={CONTENT_HEIGHT}
+        addLabel="Add Project Type"
+        onAdd={onAdd}
+      />
     ),
   },
 ];
@@ -77,6 +101,12 @@ const PmSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState(SETTINGS_TABS[0].id);
   const [collapsed, setCollapsed] = useState(false);
 
+  // NEW: which modal is open (and how to refresh that tab's list afterwards)
+  const [addTarget, setAddTarget] = useState<{
+    tab: string;
+    reload: () => void;
+  } | null>(null);
+
   const tabs = useMemo(
     () => SETTINGS_TABS.filter((t) => can(t.module, "read")),
     [can, permissions, isAdmin],
@@ -84,6 +114,8 @@ const PmSettings: React.FC = () => {
 
   if (tabs.length === 0) return null;
   const current = tabs.find((t) => t.id === activeTab) ?? tabs[0];
+
+  const closeAdd = () => setAddTarget(null);
 
   return (
     <div className="flex min-h-0 flex-1 gap-3">
@@ -159,8 +191,40 @@ const PmSettings: React.FC = () => {
       )}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        {current.render()}
+        {current.render((ctx) =>
+          setAddTarget({ tab: current.id, reload: ctx.reload }),
+        )}
       </div>
+
+      {/* NEW: modals mount only while open, so each open starts with a fresh form */}
+      {addTarget?.tab === "activity-type" && (
+        <ActivityTypeModal
+          isOpen
+          onClose={closeAdd}
+          onSuccess={addTarget.reload}
+        />
+      )}
+      {addTarget?.tab === "activity-cost" && (
+        <ActivityCostModal
+          isOpen
+          onClose={closeAdd}
+          onSuccess={addTarget.reload}
+        />
+      )}
+      {addTarget?.tab === "project-template" && (
+        <ProjectTemplateModal
+          isOpen
+          onClose={closeAdd}
+          onSuccess={addTarget.reload}
+        />
+      )}
+      {addTarget?.tab === "project-type" && (
+        <ProjectTypeModal
+          isOpen
+          onClose={closeAdd}
+          onSuccess={addTarget.reload}
+        />
+      )}
     </div>
   );
 };

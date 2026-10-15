@@ -3,6 +3,7 @@ import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import DateDisplay from "../../../components/UI_Utils/Datedisplay";
 import type { Column } from "../../../components/ui/Table/type";
 import type { PmListConfig } from "../../../hooks/project_management/project/usePmList";
+import { makeFetchRows } from "./pmListApi";
 
 interface ProjectRow {
   name: string;
@@ -280,7 +281,13 @@ export const ACTIVITY_TYPE_LIST: PmListConfig<ActivityTypeRow> = {
         <StatusBadge status={r.disabled ? "Disabled" : "Active"} />
       ),
     },
-  ],
+    
+    ],
+  fetchRows: makeFetchRows<ActivityTypeRow>(
+    "Activity Type",
+    ["name", "billing_rate", "costing_rate", "disabled"],
+    ["name"],
+  ),
 };
 
 export const ACTIVITY_COST_LIST: PmListConfig<ActivityCostRow> = {
@@ -331,6 +338,11 @@ export const ACTIVITY_COST_LIST: PmListConfig<ActivityCostRow> = {
       render: (r) => rateCell(r.costing_rate),
     },
   ],
+    fetchRows: makeFetchRows<ActivityCostRow>(
+    "Activity Cost",
+    ["name", "employee", "employee_name", "activity_type", "billing_rate", "costing_rate"],
+    ["employee", "employee_name", "activity_type"],
+  ),
 };
 
 export const PROJECT_TEMPLATE_LIST: PmListConfig<ProjectTemplateRow> = {
@@ -359,6 +371,11 @@ export const PROJECT_TEMPLATE_LIST: PmListConfig<ProjectTemplateRow> = {
       render: (r) => muted(r.project_type),
     },
   ],
+    fetchRows: makeFetchRows<ProjectTypeRow>(
+    "Project Type",
+    ["name", "description"],
+    ["name", "description"],
+  ),
 };
 
 export const PROJECT_TYPE_LIST: PmListConfig<ProjectTypeRow> = {
