@@ -68,6 +68,8 @@ export interface GetEmailTemplateParams {
   search?: string;
   page: number;
   pageSize: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 // ─────────────────────────────────────────────
@@ -131,6 +133,7 @@ export async function deleteEmailTemplates(
 export async function getEmailTemplates(
   params: GetEmailTemplateParams,
 ): Promise<{ data: EmailTemplate[]; total: number; totalPages: number }> {
+  const orderBy = params.sortBy && params.sortOrder ? `${params.sortBy} ${params.sortOrder}` : undefined;
   const resp: AxiosResponse<EmailTemplateListResponse> = await api.get(
     API.Email.get_email_templates,
     {
@@ -138,6 +141,7 @@ export async function getEmailTemplates(
         search: params.search ?? "",
         page: params.page,
         page_size: params.pageSize,
+        ...(orderBy ? { order_by: orderBy } : {}),
       },
     },
   );

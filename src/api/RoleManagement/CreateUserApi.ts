@@ -91,7 +91,9 @@ export interface GetUsersResponse {
 export async function getUsers(
     search?: string,
     page = 1,
-    pageSize = 10
+    pageSize = 10,
+    sortBy?: string,
+    sortOrder: "asc" | "desc" = "asc"
 ): Promise<GetUsersResponse> {
     const resp: AxiosResponse<GetUsersResponse> = await api.get(
         API.RoleManagement.getUser,
@@ -100,6 +102,9 @@ export async function getUsers(
                 search: search || undefined,
                 page,
                 page_size: pageSize,
+                ...(sortBy && {
+                    order_by: `${sortBy} ${sortOrder}`,
+                }),
             },
         }
     );

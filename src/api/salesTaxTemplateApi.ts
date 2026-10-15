@@ -23,13 +23,16 @@ export async function createTemplate(payload: any): Promise<any> {
 export async function getAllTemplates(
   page: number,
   pageSize: number,
-  search?: string
+  search?: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc"
 ): Promise<any> {
+  const orderBy = sortBy && sortOrder ? `${sortBy} ${sortOrder}` : "title asc";
   const resp: AxiosResponse = await api.get(TemplateAPI.getsalesTemplates, {
     params: {
       page,
       page_size: pageSize,
-      order_by: "title",
+      order_by: orderBy,
       ...(search ? { search } : {}), 
     },
   });

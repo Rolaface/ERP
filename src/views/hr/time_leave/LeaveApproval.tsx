@@ -27,6 +27,15 @@ interface MenuAction {
   dividerBefore?: boolean;
 }
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  employee_name: "employee_name",
+  leave_type: "leave_type",
+  from_date: "from_date",
+  to_date: "to_date",
+  total_leave_days: "total_leave_days",
+  description: "description",
+};
+
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function LeaveApproval() {
   const { can } = usePermission();
@@ -44,6 +53,8 @@ export default function LeaveApproval() {
   const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "Open" });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState<string>("from_date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 const leaveTabs = useMemo(
    () => [{ id: "applications" }, { id: "balance" }] as const,
    [],
@@ -54,13 +65,25 @@ const leaveTabs = useMemo(
    param: "view",
  });
 
+  const handleSortChange = ({
+    sortBy: nextSortBy,
+    sortOrder: nextSortOrder,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(nextSortBy);
+    setSortOrder(nextSortOrder);
+    setPage(1);
+  };
+
   // useEffect(() => {
   //   getAllLeaveApplied();
   // // }, [showHistory, filters.from_date, filters.to_date]); 
   // }, [showHistory, filters.from_date, filters.to_date, filters.status]);
   useEffect(() => {
     getAllLeaveApplied();
-  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize, searchTerm]);
+  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize, searchTerm, sortBy, sortOrder]);
 
   const getAllLeaveApplied = async () => {
     try {
@@ -96,9 +119,17 @@ const leaveTabs = useMemo(
       // const response = await getAllLeaveApplications(apiFilters);
       const limit_start = (page - 1) * pageSize;
       const limit_page_length = pageSize;
+      const backendSortField = SORT_FIELD_MAP[sortBy] || sortBy;
 
       // Pass the pagination params to your API call
-      const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length, searchTerm);
+      const response = await getAllLeaveApplications(
+        apiFilters,
+        limit_start,
+        limit_page_length,
+        searchTerm,
+        backendSortField,
+        sortOrder,
+      );
     
       setData(response || []);
     } catch (err) {
@@ -167,27 +198,35 @@ const leaveTabs = useMemo(
       key: "employee_name",
       header: "Employee Name",
       align: "left",
+      sortable: true,
       render: (e) => <span className=" font-base">{e.employee_name || "-"}</span>,
     },
     {
       key: "leave_type",
       header: "Leave Type",
       align: "left",
+      sortable: true,
       render: (e) => <span className="font-base">{e.leave_type || "-"}</span>,
     },
-    { key: "from_date", header: "From Date", align: "left",
+    {
+      key: "from_date",
+      header: "From Date",
+      align: "left",
+      sortable: true,
       render: (e) => (formatDate(e.from_date) || "-"),
-     },
+    },
     {
       key: "to_date",
       header: "To Date",
       align: "left",
+      sortable: true,
       render: (e) => (e.half_day === 1 ? formatDate(e.from_date) : formatDate(e.to_date) || "-"),
     },
     {
       key: "total_leave_days",
       header: "No of Days",
       align: "left",
+      sortable: true,
       // render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
       render: (e) => <span className="font-medium">{e.total_leave_days || "—"}</span>,
     },
@@ -195,6 +234,7 @@ const leaveTabs = useMemo(
       key: "description",
       header: "Reason",
       align: "left",
+      sortable: true,
       render: (e) => (
         <div className=" font-base" title={e.description}>
           {e.description || "-"}
@@ -338,6 +378,9 @@ const leaveTabs = useMemo(
           setPage(1);
         }}
         onPageChange={setPage}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         onRowDoubleClick={(row) =>
           openLeaveApplyModal({ ...row, _isView: true } as any, true, { onSuccess: getAllLeaveApplied })
         }

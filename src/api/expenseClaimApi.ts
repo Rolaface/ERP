@@ -118,7 +118,9 @@ export async function getExpenseClaims(
   page = 1,
   pageSize = 10,
   employeeId?: string,
-   approvalStatus?: string,                                    
+  approvalStatus?: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<{ data: ExpenseClaimRecord[]; pagination: { total_pages: number; total: number } }> {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
@@ -126,6 +128,10 @@ export async function getExpenseClaims(
   if (approvalStatus) params.append("approval_status", approvalStatus);
   params.append("page", String(page));
   params.append("page_size", String(pageSize));
+  if (sortBy) {
+    params.append("sort_by", sortBy);
+    params.append("sort_order", sortOrder || "asc");
+  }
   const resp: AxiosResponse = await api.get(`${ExpenseClaimAPI.getExpenseClaims}?${params.toString()}`);
   return resp.data || null;
 }
@@ -138,12 +144,18 @@ export async function getExpenseClaims(
 export async function getExpenseClaimTypes(
   search?: string,
   page = 1,
-  pageSize = 10
+  pageSize = 10,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<{ data: ExpenseClaimType[]; pagination: { total_pages: number; total: number } }> {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
   params.append("page", String(page));
   params.append("page_size", String(pageSize));
+  if (sortBy) {
+    params.append("sort_by", sortBy);
+    params.append("sort_order", sortOrder || "asc");
+  }
   const resp: AxiosResponse = await api.get(`${ExpenseClaimAPI.getExpenseType}?${params.toString()}`);
   return resp.data || null;
 }
@@ -372,7 +384,8 @@ export async function getAllAdvances(
   pageSize: number,
   search: string,
   status?: string,
-  
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<{ data: any[]; pagination: { total_pages: number; total: number } }> {
   try {
     const query = buildListParams({
@@ -389,6 +402,8 @@ export async function getAllAdvances(
       search,
       searchFields: ["employee_name", "purpose", "name"],
       status: status,
+      sortBy,
+      sortOrder,
     });
 
     const resp = await api.get(`${ExpenseClaimAPI.advance}?${query}`);

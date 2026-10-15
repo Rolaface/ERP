@@ -35,6 +35,8 @@ export async function getAllBanks(
   page = 1,
   pageSize = 10,
   search = "",
+  sortBy?: string,
+  sortOrder: "asc" | "desc" = "asc",
 ): Promise<BankListResponse> {
   const start = (page - 1) * pageSize;
 
@@ -44,8 +46,10 @@ export async function getAllBanks(
     ? `&or_filters=[["bank_name","like","%${encodedSearch}%"],["swift_number","like","%${encodedSearch}%"]]`
     : "";
 
+  const orderByParam = sortBy ? `&order_by=${encodeURIComponent(`${sortBy} ${sortOrder}`)}` : "";
+
   const resp: AxiosResponse = await api.get(
-    `${BANK_URL}?fields=["name","bank_name","swift_number"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}${searchFilters}`,
+    `${BANK_URL}?fields=["name","bank_name","swift_number"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}${searchFilters}${orderByParam}`,
   );
 
   return {

@@ -86,11 +86,19 @@ const AssetRegister: React.FC = () => {
     to_date: "",
   });
 
-  const [sortBy, setSortBy] = useState<keyof Asset | null>(null);
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState<keyof Asset | null>("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const refreshKey = useDataRefreshStore(
     (state) => state.refreshFlags[REFRESH_KEYS.FIXED_ASSET_LIST],
   );
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    name: "name",
+    category: "asset_category",
+    location: "location",
+    purchaseDate: "available_for_use_date",
+    value: "net_purchase_amount",
+  };
 
   // ─── Add Asset ───
   const handleAddAsset = (asset: Omit<Asset, "id">) => {
@@ -156,24 +164,6 @@ const AssetRegister: React.FC = () => {
     });
   }, [assets, filters]);
 
-  // ─── SORT ───
-  const sortedData = useMemo(() => {
-    if (!sortBy) return filteredData;
-
-    return [...filteredData].sort((a, b) => {
-      const valA = a[sortBy];
-      const valB = b[sortBy];
-
-      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [filteredData, sortBy, sortOrder]);
-
-  const paginatedData = useMemo(() => {
-    return sortedData.slice((page - 1) * pageSize, page * pageSize);
-  }, [sortedData, page, pageSize]);
-
   // ─── SORT HANDLER ───
   const handleSortChange = ({
     sortBy: colKey,
@@ -190,6 +180,9 @@ const AssetRegister: React.FC = () => {
   const fetchAssets = useCallback(async () => {
     try {
       setLoading(true);
+      const backendSortField = sortBy
+        ? SORT_FIELD_MAP[sortBy] || sortBy
+        : undefined;
 
       const data = await getAssets({
         fields: [
@@ -202,6 +195,8 @@ const AssetRegister: React.FC = () => {
         page,
         page_size: pageSize,
         search: searchTerm,
+        sortBy: backendSortField,
+        sortOrder,
       });
 
       setAssets(
@@ -222,7 +217,7 @@ const AssetRegister: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm, sortBy, sortOrder]);
   useEffect(() => {
     fetchAssets();
   }, [fetchAssets, refreshKey]);
@@ -279,7 +274,7 @@ const AssetRegister: React.FC = () => {
   };
   const handleExportExcel = () => {
     try {
-      if (!sortedData.length) {
+      if (!filteredData.length) {
         fireManagedSwal({
           icon: "info",
           title: "No Data",
@@ -289,7 +284,7 @@ const AssetRegister: React.FC = () => {
       }
 
       const worksheet = XLSX.utils.json_to_sheet(
-        sortedData.map((a) => ({
+        filteredData.map((a) => ({
           "Asset Name": a.name,
           Category: a.category,
           Location: a.location,
@@ -320,23 +315,28 @@ const AssetRegister: React.FC = () => {
     {
       key: "name",
       header: "Asset Name",
+      sortable: true,
     },
     {
       key: "category",
       header: "Category",
+      sortable: true,
     },
     {
       key: "location",
       header: "Location",
+      sortable: true,
     },
     {
       key: "purchaseDate",
       header: "Purchase Date",
+      sortable: true,
       render: (row) => formatDate(row.purchaseDate),
     },
     {
       key: "value",
       header: "Value",
+      sortable: true,
       render: (row) => ` ${row.value.toLocaleString()}`,
     },
     {
@@ -387,7 +387,7 @@ const AssetRegister: React.FC = () => {
     <div className="h-full min-h-0">
       <Table
         columns={columns}
-        data={paginatedData}
+        data={filteredData}
         rowKey={(row) => row.id}
         tableId="fixed-assets"
         loading={loading}

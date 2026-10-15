@@ -42,6 +42,24 @@ const TaxCategory: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [sortBy, setSortBy] = useState<string>("title");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    title: "title",
+  };
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: direction,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(direction);
+    setPage(1);
+  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -58,10 +76,15 @@ const TaxCategory: React.FC = () => {
 
     setIsFetching(true);
     try {
+      const apiSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
       const res = await getAllTaxCategories(
         page,
         pageSize,
         searchTerm || undefined,
+        undefined,
+        `${apiSortBy} ${sortOrder}`,
+        apiSortBy,
+        sortOrder
       );
 
       if (!mountedRef.current) return;
@@ -82,7 +105,7 @@ const TaxCategory: React.FC = () => {
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm, sortBy, sortOrder]);
 
   // Initial fetch on mount only
   useEffect(() => {
@@ -105,7 +128,7 @@ const TaxCategory: React.FC = () => {
     );
 
     return () => clearTimeout(timer);
-  }, [page, pageSize, searchTerm, isInitialLoad]);
+  }, [page, pageSize, searchTerm, sortBy, sortOrder, isInitialLoad]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
@@ -181,6 +204,7 @@ const TaxCategory: React.FC = () => {
         key: "title",
         header: "Title",
         align: "left",
+        sortable: true,
         render: (tc) => (
           <div className="inline-flex w-fit">
             <Tooltip content={tc.title}>
@@ -274,6 +298,9 @@ const TaxCategory: React.FC = () => {
           setSearchTerm(val);
           setPage(1);
         }}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         enableAdd={can(TAX_CATEGORY_MODULE, "create")}
         addLabel="Add Tax Category"
         onAdd={() =>

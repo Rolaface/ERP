@@ -31,6 +31,8 @@ export const useCurrencyConversion = () => {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<string>("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
     pageSize: 10,
@@ -38,15 +40,26 @@ export const useCurrencyConversion = () => {
     totalPages: 1,
   });
 
-
+  const SORT_FIELD_MAP: Record<string, string> = {
+    date: "date",
+    fromCurrency: "from_currency",
+    exchangeRate: "exchange_rate",
+    createdAt: "creation",
+  };
 
   const fetchConversions = useCallback(async () => {
     setLoading(true);
     try {
+      const backendSortBy = SORT_FIELD_MAP[sortBy] || "date";
       const resp = await getAllCurrencyExchanges(
         pagination.page,
         pagination.pageSize,
-        search.trim()
+        search.trim(),
+        undefined,
+        undefined,
+        undefined,
+        backendSortBy,
+        sortOrder
       );
 
       const items = resp?.message?.data?.data ?? [];
@@ -78,7 +91,7 @@ export const useCurrencyConversion = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.pageSize, search]);
+  }, [pagination.page, pagination.pageSize, search, sortBy, sortOrder]);
 
 
   useEffect(() => {
@@ -157,6 +170,10 @@ export const useCurrencyConversion = () => {
     setPagination,
     search,
     setSearch,
+    sortBy,
+    setSortBy,
+    sortOrder,
+    setSortOrder,
     fetchConversions,
     addConversion,
     updateConversion,

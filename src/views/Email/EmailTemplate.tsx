@@ -48,12 +48,37 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
     const [pageSize, setPageSize] = useState(20);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+    const [sortBy, setSortBy] = useState<string>("template_name");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
+    const SORT_FIELD_MAP: Record<string, string> = {
+        template_name: "name",
+        subject: "subject",
+    };
+
+    const handleSortChange = ({
+        sortBy: colKey,
+        sortOrder: direction,
+    }: {
+        sortBy: string;
+        sortOrder: "asc" | "desc";
+    }) => {
+        setSortBy(colKey);
+        setSortOrder(direction);
+        setPage(1);
+    };
 
     const fetchTemplates = useCallback(async () => {
         try {
             setLoading(true);
-            const result = await getEmailTemplates({ page, pageSize, search: searchTerm });
+            const apiSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
+            const result = await getEmailTemplates({
+                page,
+                pageSize,
+                search: searchTerm,
+                sortBy: apiSortBy,
+                sortOrder,
+            });
             setTemplates(result.data);
             setTotalItems(result.total);
             setTotalPages(result.totalPages);
@@ -63,7 +88,7 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
         } finally {
             setLoading(false);
         }
-    }, [page, pageSize, searchTerm]);
+    }, [page, pageSize, searchTerm, sortBy, sortOrder]);
 
     // Debounce search
     useEffect(() => {
@@ -76,7 +101,7 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
 
     useEffect(() => {
         fetchTemplates();
-    }, [page, pageSize]);
+    }, [page, pageSize, sortBy, sortOrder]);
 
     // Subscribe to global refresh events
     const subscribeToRefresh = useDataRefreshStore(
@@ -144,6 +169,7 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
             key: "template_name",
             header: "Name",
             align: "left",
+            sortable: true,
             render: (t) => (
                 <div className="py-1.5">
                     <span className="block"> {t.id || "—"}</span>
@@ -154,6 +180,7 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
             key: "subject",
             header: "Subject",
             align: "left",
+            sortable: true,
             render: (t) => (
                 <div className="py-1.5">
                     <span className="block text-muted truncate max-w-xs">
@@ -226,6 +253,9 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
                     loading={loading}
                     searchValue={searchTerm}
                     onSearch={setSearchTerm}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSortChange={handleSortChange}
                     enableAdd={can(ET_MODULE, "create")}
                     addLabel="Add Email Template"
                     onAdd={handleAddClick}

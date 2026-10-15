@@ -135,6 +135,8 @@ export type GetAssetCategoryParams = {
   search?: string;
   page?: number;
   page_size?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 };
 
 export async function getAssetCategories(
@@ -151,6 +153,8 @@ export async function getAssetCategories(
       pageSize: paramsObj?.page_size,
       search: paramsObj?.search,
       searchFields: ["asset_category_name", "name"],
+      sortBy: paramsObj?.sortBy,
+      sortOrder: paramsObj?.sortOrder,
     });
 
     const resp: AxiosResponse = await api.get(`${API.AssetsTypes.getall}?${query}`);

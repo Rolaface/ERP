@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import CustomerDetailView from "./CustomerDetailView";
 import { openPaymentEntryModal } from "../../store/modalStore";
@@ -44,6 +44,15 @@ interface Props {
 const CUSTOMER_MODULE = "Customer";
 const PAYMENT_MODULE = "Payment Entry";
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  id: "name",
+  name: "customer_name",
+  type: "customer_type",
+  tpin: "tax_id",
+  customerTaxCategory: "tax_category",
+  currency: "default_currency",
+};
+
 const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const { openCustomerCreate, openCustomerEdit } =
     useOutletContext<OutletContextType>();
@@ -56,6 +65,8 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("id");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerDetail | null>(null);
@@ -76,6 +87,9 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         pageSize,
         taxCategory || undefined,
         searchTerm || undefined,
+        undefined,
+        SORT_FIELD_MAP[sortBy] || sortBy,
+        sortOrder,
       );
       setCustomers(response?.data || []);
       setTotalPages(response?.pagination?.total_pages || 1);
@@ -91,7 +105,19 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
   useEffect(() => {
     fetchCustomers();
-  }, [page, pageSize, taxCategory, searchTerm]);
+  }, [page, pageSize, taxCategory, searchTerm, sortBy, sortOrder]);
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
+  };
 
   useEffect(() => {
     setPage(1);
@@ -288,9 +314,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "id",
       header: "Customer ID",
       align: "left",
+      sortable: true,
       render: (customer) => (
         <div className="py-1.5">
-          <span className="font-medium whitespace-nowrap">{customer.id}</span>
+          <span className="font-medium block break-words">{customer.id}</span>
         </div>
       ),
       tooltip: (customer) => customer.id,
@@ -299,9 +326,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "name",
       header: "Name",
       align: "left",
+      sortable: true,
       render: (customer) => (
         <div className="py-1.5">
-          <span className="cursor-pointer font-medium block">
+          <span className="cursor-pointer font-medium block break-words">
             {customer.name}
           </span>
         </div>
@@ -312,9 +340,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "type",
       header: "Type",
       align: "left",
+      sortable: true,
       render: (customer) => (
         <div className="py-1.5">
-          <span className="text-muted whitespace-nowrap">
+          <span className="text-muted block break-words">
             {customer.type ?? "-"}
           </span>
         </div>
@@ -325,9 +354,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "tpin",
       header: "TPIN",
       align: "left",
+      sortable: true,
       render: (customer) => (
         <div className="py-1.5">
-          <span className="font-mono text-sm tabular-nums whitespace-nowrap block text-left">
+          <span className="font-mono text-sm tabular-nums block break-all text-left">
             {customer.tpin}
           </span>
         </div>
@@ -338,9 +368,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "customerTaxCategory",
       header: "Tax Category",
       align: "left",
+      sortable: true,
       render: (customer) => (
         <div className="py-1.5">
-          <span className="whitespace-nowrap">
+          <span className="block break-words">
             {customer.customerTaxCategory ?? "-"}
           </span>
         </div>
@@ -351,6 +382,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       key: "currency",
       header: "Currency",
       align: "center",
+      sortable: true,
       render: (customer) => (
         <div className="py-1.5">
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main whitespace-nowrap block text-center">
@@ -441,7 +473,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
             showToolbar
             loading={custLoading || initialLoad}
             onPageSizeChange={(size) => setPageSize(size)}
-             pageSizeOptions={[20, 50, 100,200]}
+            pageSizeOptions={[20, 50, 100, 200]}
             searchValue={searchTerm}
             onSearch={(q) => {
               setSearchTerm(q);
@@ -458,6 +490,9 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
             pageSize={pageSize}
             totalItems={totalItems}
             onPageChange={setPage}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortChange={handleSortChange}
             onRowDoubleClick={handleRowClick}
           />
         </div>

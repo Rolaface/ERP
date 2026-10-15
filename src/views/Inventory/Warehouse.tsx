@@ -271,6 +271,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
       key: "warehouse_name",
       header: "Warehouse Name",
       align: "left",
+      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span
@@ -287,6 +288,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
       key: "name",
       header: "ID",
       align: "left",
+      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span className="text-xs text-muted">{getGLNameWithoutAbbreviation(row.name)}</span>
@@ -297,6 +299,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
       key: "company",
       header: "Company",
       align: "left",
+      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span className="text-xs text-muted">{row.company}</span>
@@ -307,6 +310,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
       key: "bin_count",
       header: "Bins",
       align: "center",
+      sortable: true,
       render: (row) => {
         if (row.bin_count === 0)
           return <span className="text-muted text-xs">—</span>;

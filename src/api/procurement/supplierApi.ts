@@ -11,6 +11,9 @@ export interface SupplierFilters {
   search?: string;
   status?: string;
   currency?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  order_by?: string;
 }
 
 
@@ -20,11 +23,16 @@ export async function getSuppliers(
   page_size: number = 10,
   filters?: SupplierFilters
 ): Promise<any> {
+  const { sortBy, sortOrder, order_by, ...rest } = filters || {};
+  const computedOrderBy =
+    order_by || (sortBy ? `${sortBy} ${sortOrder ?? "asc"}` : undefined);
+
   const resp: AxiosResponse = await api.get(SupplierAPI.getAll, {
     params: {
       page,
       page_size,
-      ...filters,
+      ...rest,
+      ...(computedOrderBy && { order_by: computedOrderBy }),
     },
   });
 

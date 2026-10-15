@@ -35,16 +35,26 @@ interface AssetCategory {
   accounts: any[];
 }
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  id: "name",
+  assetCategoryName: "asset_category_name",
+  nonDepreciableCategory: "non_depreciable_category",
+};
+
 const getAssetCategories = async (
   page: number,
   pageSize: number,
-  filters: any
+  filters: any,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc"
 ) => {
   const data = await fetchAssetCategoriesAPI({
     fields: ["name", "asset_category_name", "non_depreciable_category"],
     page,
     page_size: pageSize,
     search: filters?.search,
+    sortBy,
+    sortOrder,
   });
 
   return {
@@ -79,9 +89,23 @@ const AssetCategoryTable: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const [sortBy, setSortBy] = useState<string>("id");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { can } = usePermission();
   const { openModal } = useModalStore();
   const { subscribeToRefresh } = useDataRefreshStore();
+
+  const handleSortChange = ({
+    sortBy: nextSortBy,
+    sortOrder: nextSortOrder,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(nextSortBy);
+    setSortOrder(nextSortOrder);
+    setPage(1);
+  };
 
   // ── Debounced search ────────────────────────────────────────
   useEffect(() => {
@@ -96,7 +120,14 @@ const AssetCategoryTable: React.FC = () => {
   const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getAssetCategories(page, pageSize, filters);
+      const backendSortField = SORT_FIELD_MAP[sortBy] || sortBy;
+      const res = await getAssetCategories(
+        page,
+        pageSize,
+        filters,
+        backendSortField,
+        sortOrder
+      );
 
       if (!res?.data || res.data.length === 0) {
         setRows([]);
@@ -114,7 +145,7 @@ const AssetCategoryTable: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, filters]);
+  }, [page, pageSize, filters, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchCategories();
@@ -237,6 +268,7 @@ const AssetCategoryTable: React.FC = () => {
       key: "id",
       header: "Name",
       align: "center",
+      sortable: true,
       render: (o) => {
         const id = o.id || "";
         const handleCopy = (e: React.MouseEvent) => {
@@ -264,6 +296,7 @@ const AssetCategoryTable: React.FC = () => {
       key: "assetCategoryName",
       header: "Category Name",
       align: "center",
+      sortable: true,
       render: (o) => (
         <div
           className="py-1.5 cursor-pointer hover:underline"
@@ -288,6 +321,7 @@ const AssetCategoryTable: React.FC = () => {
       key: "nonDepreciableCategory",
       header: "Non-Depreciable",
       align: "center",
+      sortable: true,
       render: (o) => (
         <div className="py-1.5">
           <StatusBadge status={o.nonDepreciableCategory ? "Yes" : "No"} />
@@ -340,7 +374,9 @@ const AssetCategoryTable: React.FC = () => {
         onPageChange={setPage}
         onPageSizeChange={(size) => setPageSize(size)}
         pageSizeOptions={[pageSize, 25, 50, 100, pageSize]}
-        
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
       />
     </div>
   );

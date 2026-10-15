@@ -11,15 +11,18 @@ export async function getAllTaxCategories(
   page_size: number = 10,
   search?: string,
   disabled?: 0 | 1,
-  order_by: string = "modified desc"
+  order_by?: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc"
 ): Promise<any> {
+  const orderByParam = sortBy && sortOrder ? `${sortBy} ${sortOrder}` : (order_by || "title asc");
   const resp: AxiosResponse = await api.get(
     TaxCategoryAPI.getAllTaxCategories,
     {
       params: {
         page,
         page_size,
-        order_by,
+        order_by: orderByParam,
         ...(search ? { search } : {}),
         ...(disabled !== undefined ? { disabled } : {}),
       },

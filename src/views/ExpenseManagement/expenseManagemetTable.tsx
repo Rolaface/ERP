@@ -88,6 +88,17 @@ const ExpenseHistory: React.FC = () => {
     to_date?: string;
   }>({});
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  claimName: "name",
+  date: "posting_date",
+  expenseDate: "expense_date",
+  approver: "expense_approver",
+  name: "employee_name",
+  category: "expense_type",
+  amount: "total_claimed_amount",
+  status: "approval_status",
+};
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
@@ -108,12 +119,15 @@ const ExpenseHistory: React.FC = () => {
     if (!mountedRef.current) return;
     setIsFetching(true);
     try {
+      const backendSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
       const res = await getExpenseClaims(
         searchTerm,
         page,
         pageSize,
         isEmployeeView ? (user?.employeeId ?? undefined) : undefined,
         filters.status,
+        backendSortBy,
+        sortOrder,
       );
       if (!mountedRef.current) return;
       setExpenses(
@@ -400,6 +414,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "claimName",
         header: "Name",
+        sortable: true,
         align: "left",
         render: (exp) => (
           <div className="py-1.5">
@@ -411,6 +426,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "date",
         header: "Date",
+        sortable: true,
         align: "center",
         render: (exp) => (
           <div className="py-1.5">
@@ -418,19 +434,21 @@ const ExpenseHistory: React.FC = () => {
           </div>
         ),
       },
-          {
-     key: "expenseDate",
-     header: "Expense Date",
-    align: "center",
-    render: (exp) => (
-       <div className="py-1.5">
-         <span className="block">{formatDate(exp.expenseDate)}</span>
-        </div>
-     ),
-    },
+      {
+        key: "expenseDate",
+        header: "Expense Date",
+        sortable: true,
+        align: "center",
+        render: (exp) => (
+          <div className="py-1.5">
+            <span className="block">{formatDate(exp.expenseDate)}</span>
+          </div>
+        ),
+      },
       {
         key: "approver",
         header: "Approver",
+        sortable: true,
         align: "left",
         render: (exp) => (
           <div className="py-1.5">
@@ -442,6 +460,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "name",
         header: "EMP Name",
+        sortable: true,
         align: "left",
         render: (exp) => (
           <div className="py-1.5">
@@ -454,6 +473,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "category",
         header: "Category",
+        sortable: true,
         align: "center",
         render: (exp) => (
           <div className="py-1.5">
@@ -465,6 +485,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "amount",
         header: "Amount",
+        sortable: true,
         align: "center",
         render: (exp) => (
           <div className="py-1.5">
