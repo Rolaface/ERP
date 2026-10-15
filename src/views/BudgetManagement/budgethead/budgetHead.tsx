@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Power, PowerOff } from "lucide-react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -8,10 +8,14 @@ import ActionButton, { ActionMenu } from "../../../components/ui/Table/ActionBut
 import type { Column } from "../../../components/ui/Table/type";
 import PermissionGate from "../../PermissionGate";
 import { usePermission } from "../../../hooks/permission/usePermission";
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../../utils/alert";
+import { showApiError, showSuccess } from "../../../utils/alert";
 import { fireManagedSwal } from "../../../utils/swalManager";
 
-import BudgetHeadModal, { type BudgetHeadDetail, type BudgetHeadStatus } from "../budgethead/budgetHeadModal";
+import BudgetHeadModal, {
+  type BudgetHeadDetail,
+  type BudgetHeadStatus,
+  type ControlLevel,
+} from "../budgethead/budgetHeadModal";
 
 // ─── Types / constants ────────────────────────────────────────────────────────
 
@@ -21,15 +25,6 @@ interface BudgetHeadSummary extends BudgetHeadDetail {
 }
 
 const BUDGET_MODULE = "Budget Head";
-
-const SORT_FIELD_MAP: Record<string, string> = {
-  headName: "head_name",
-  glCode: "gl_code",
-  costCentre: "cost_centre",
-  programme: "programme",
-  updatedAt: "modified",
-};
-const mapSortField = (f: string) => SORT_FIELD_MAP[f] ?? f;
 
 const statusOptions = [
   { label: "Active", value: "Active" },
@@ -41,19 +36,16 @@ const STATUS_STYLE: Record<BudgetHeadStatus, string> = {
   Inactive: "bg-gray-100 text-gray-600",
 };
 
-const mapRow = (h: any): BudgetHeadSummary => ({
-  id: h.id,
-  headName: h.head_name ?? h.headName ?? "",
-  subHead: h.sub_head ?? h.subHead ?? "",
-  glCode: h.gl_code ?? h.glCode ?? "",
-  costCentre: h.cost_centre ?? h.costCentre ?? "",
-  programme: h.programme ?? "",
-  projectCode: h.project_code ?? h.projectCode ?? "",
-  instructions: h.instructions ?? "",
-  status: h.status === "Inactive" ? "Inactive" : "Active",
-  usageCount: Number(h.usage_count ?? h.usageCount ?? 0),
-  updatedAt: h.modified ?? h.updatedAt ?? "",
-});
+const CONTROL_STYLE: Record<ControlLevel, string> = {
+  Free: "bg-gray-100 text-gray-700",
+  Capped: "bg-amber-50 text-amber-700",
+  Fixed: "bg-blue-50 text-blue-700",
+};
+
+// Dummy data. Everything on this screen works on local state only.
+const SEED_HEADS: BudgetHeadSummary[] = [
+  { id: "BH-1001", headName: "Office Rent", parentHead: "Operating Expenses", headType: "Operating", glCode: "5101001", controlLevel: "Fixed", defaultCap: "", costCentre: "CC-101 Branch Operations", programme: "PRG-01 Branch Operations", projectCode: "", attachmentRequired: false, instructions: "Amount comes from the lease register.", status: "Active", usageCount: 3, updatedAt: "2026-10-12" },
+];
 
 const formatDate = (date: string) => {
   if (!date) return "—";
@@ -62,78 +54,51 @@ const formatDate = (date: string) => {
   return `${String(d).padStart(2, "0")}-${months[m - 1]}-${y}`;
 };
 
-const isOk = (res: any) => (res?.message?.status_code ?? res?.status_code) === 200;
+const today = () => new Date().toISOString().slice(0, 10);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const BudgetHeadTable: React.FC = () => {
-  const mountedRef = useRef(true);
   const { can } = usePermission();
 
-  const [heads, setHeads] = useState<BudgetHeadSummary[]>([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
+  const [heads, setHeads] = useState<BudgetHeadSummary[]>(SEED_HEADS);
 
   const [filters, setFilters] = useState<{ status?: string[] }>({});
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("modified");
+  const [sortBy, setSortBy] = useState("updatedAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Modal: open + the head being edited (null = create)
   const [modalOpen, setModalOpen] = useState(false);
   const [modalHead, setModalHead] = useState<BudgetHeadDetail | null>(null);
 
-  useEffect(() => setPage(1), [searchTerm]);
-  useEffect(() => setPage(1), [filters]);
+  // ── Search, filter and sort (all in the browser) ──
+  const processed = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    const statuses = filters.status ?? [];
+    const rows = heads.filter(
+      (h) =>
+        (statuses.length === 0 || statuses.includes(h.status)) &&
+        (!q ||
+          [h.headName, h.parentHead, h.glCode, h.headType, h.controlLevel, h.costCentre, h.programme, h.projectCode].some((v) =>
+            (v ?? "").toLowerCase().includes(q),
+          )),
+    );
+    const dir = sortOrder === "asc" ? 1 : -1;
+    return [...rows].sort((a: any, b: any) => {
+      const av = a[sortBy] ?? "";
+      const bv = b[sortBy] ?? "";
+      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
+      return String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: "base" }) * dir;
+    });
+  }, [heads, searchTerm, filters, sortBy, sortOrder]);
 
-  const statusParam = filters.status && filters.status.length > 0 ? filters.status.join(",") : undefined;
-
-  const fetchHeads = useCallback(async () => {
-    if (!mountedRef.current) return;
-    setIsFetching(true);
-    try {
-      const res = await getAllBudgetHeads(page, pageSize, mapSortField(sortBy), sortOrder, searchTerm, statusParam);
-      if (!res || res.status_code !== 200) {
-        showApiError(res || "Failed to fetch budget heads");
-        setHeads([]);
-        setTotalPages(1);
-        setTotalItems(0);
-        return;
-      }
-      if (!mountedRef.current) return;
-      const mapped = res.data.map(mapRow);
-      setHeads(mapped);
-      setTotalPages(res.pagination?.total_pages || 1);
-      setTotalItems(res.pagination?.total || mapped.length);
-    } catch (err) {
-      showApiError(err);
-      setHeads([]);
-      setTotalPages(1);
-      setTotalItems(0);
-    } finally {
-      if (mountedRef.current) {
-        setIsFetching(false);
-        setIsInitialLoad(false);
-      }
-    }
-  }, [page, pageSize, sortBy, sortOrder, searchTerm, statusParam]);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    fetchHeads();
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isInitialLoad) return;
-    fetchHeads();
-  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
+  const totalItems = processed.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageRows = processed.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleSortChange = ({ sortBy: key, sortOrder: order }: { sortBy: string; sortOrder: "asc" | "desc" }) => {
     setSortBy(key);
@@ -141,28 +106,37 @@ const BudgetHeadTable: React.FC = () => {
     setPage(1);
   };
 
-  // ── Modal open helpers ──
+  // ── Modal ──
   const handleAdd = () => {
     setModalHead(null);
     setModalOpen(true);
   };
 
-  const handleEdit = async (id: string, e?: React.MouseEvent) => {
+  const handleEdit = (h: BudgetHeadSummary, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    try {
-      showLoading("Loading budget head...");
-      const res = await getBudgetHeadById(id);
-      closeSwal();
-      if (!isOk(res)) {
-        showApiError("Failed to load budget head");
-        return;
-      }
-      setModalHead(mapRow(res.message?.data ?? res.data));
-      setModalOpen(true);
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
+    setModalHead(h);
+    setModalOpen(true);
+  };
+
+  /** Returns an error message to show in the form, or nothing when saved. */
+  const handleSubmit = (data: BudgetHeadDetail): string | void => {
+    const duplicate = heads.some(
+      (h) =>
+        h.id !== data.id &&
+        h.headName.trim().toLowerCase() === data.headName.trim().toLowerCase() &&
+        h.glCode.trim() === data.glCode.trim(),
+    );
+    if (duplicate) return "A budget head with this name and GL code already exists.";
+
+    if (data.id) {
+      setHeads((prev) => prev.map((h) => (h.id === data.id ? { ...h, ...data, updatedAt: today() } : h)));
+      showSuccess("Budget head updated");
+    } else {
+      const created: BudgetHeadSummary = { ...data, id: `BH-${Date.now()}`, usageCount: 0, updatedAt: today() };
+      setHeads((prev) => [created, ...prev]);
+      showSuccess("Budget head created");
     }
+    setPage(1);
   };
 
   // ── Status / delete ──
@@ -181,20 +155,8 @@ const BudgetHeadTable: React.FC = () => {
       });
       if (!result.isConfirmed) return;
     }
-    try {
-      showLoading("Updating status...");
-      const res = await updateBudgetHeadStatus(h.id, next);
-      closeSwal();
-      if (!isOk(res)) {
-        showApiError(res?.message?.message || "Failed to update status");
-        return;
-      }
-      setHeads((prev) => prev.map((x) => (x.id === h.id ? { ...x, status: next } : x)));
-      showSuccess(`Budget head ${next === "Active" ? "activated" : "deactivated"}`);
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
+    setHeads((prev) => prev.map((x) => (x.id === h.id ? { ...x, status: next, updatedAt: today() } : x)));
+    showSuccess(`Budget head ${next === "Active" ? "activated" : "deactivated"}`);
   };
 
   const handleDelete = async (h: BudgetHeadSummary, e?: React.MouseEvent) => {
@@ -210,68 +172,40 @@ const BudgetHeadTable: React.FC = () => {
       reverseButtons: true,
     });
     if (!result.isConfirmed) return;
-    try {
-      showLoading("Deleting budget head...");
-      const res = await deleteBudgetHeadById(h.id);
-      closeSwal();
-      if (!isOk(res)) {
-        showApiError(res?.message?.message || "Failed to delete budget head");
-        return;
-      }
-      setHeads((prev) => prev.filter((x) => x.id !== h.id));
-      showSuccess("Budget head deleted");
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
+    setHeads((prev) => prev.filter((x) => x.id !== h.id));
+    showSuccess("Budget head deleted");
   };
 
-  // ── Export (all pages for current filters) ──
-  const handleExportExcel = async () => {
-    try {
-      showLoading("Exporting budget heads...");
-      let all: BudgetHeadSummary[] = [];
-      let current = 1;
-      let total = 1;
-      do {
-        const res = await getAllBudgetHeads(current, 100, mapSortField(sortBy), sortOrder, searchTerm, statusParam);
-        if (res?.status_code === 200) {
-          all = [...all, ...res.data.map(mapRow)];
-          total = res.pagination?.total_pages || 1;
-        }
-        current++;
-      } while (current <= total);
-
-      if (!all.length) {
-        closeSwal();
-        showApiError("No budget heads to export");
-        return;
-      }
-      const sheet = XLSX.utils.json_to_sheet(
-        all.map((h) => ({
-          "Budget Head": h.headName,
-          "Sub-head": h.subHead,
-          "GL Code": h.glCode,
-          "Cost Centre": h.costCentre,
-          Programme: h.programme,
-          "Project Code": h.projectCode,
-          Status: h.status,
-        })),
-      );
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, sheet, "Budget Heads");
-      saveAs(
-        new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        }),
-        "Budget_Heads.xlsx",
-      );
-      closeSwal();
-      showSuccess("Budget heads exported successfully");
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
+  // ── Export (everything matching the current search and filters) ──
+  const handleExportExcel = () => {
+    if (!processed.length) {
+      showApiError("No budget heads to export");
+      return;
     }
+    const sheet = XLSX.utils.json_to_sheet(
+      processed.map((h) => ({
+        "Budget Head": h.headName,
+        "Parent Head": h.parentHead,
+        Type: h.headType,
+        "GL Code": h.glCode,
+        Control: h.controlLevel,
+        "Default Cap": h.controlLevel === "Capped" ? h.defaultCap : "",
+        "Default Cost Centre": h.costCentre,
+        Programme: h.programme,
+        "Project Code": h.projectCode,
+        "Documents Required": h.attachmentRequired ? "Yes" : "No",
+        Status: h.status,
+      })),
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, "Budget Heads");
+    saveAs(
+      new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+      "Budget_Heads.xlsx",
+    );
+    showSuccess("Budget heads exported successfully");
   };
 
   // ── Columns ──
@@ -285,10 +219,17 @@ const BudgetHeadTable: React.FC = () => {
         render: (h) => (
           <div className="py-1.5">
             <span className="block font-medium">{h.headName}</span>
-            {h.subHead && <span className="block text-xs text-muted">{h.subHead}</span>}
+            {h.parentHead && <span className="block text-xs text-muted">Under {h.parentHead}</span>}
           </div>
         ),
         tooltip: (h) => `Budget Head: ${h.headName}`,
+      },
+      {
+        key: "headType",
+        header: "Type",
+        align: "left",
+        sortable: true,
+        render: (h) => <div className="py-1.5">{h.headType}</div>,
       },
       {
         key: "glCode",
@@ -298,28 +239,46 @@ const BudgetHeadTable: React.FC = () => {
         render: (h) => <div className="py-1.5 whitespace-nowrap">{h.glCode}</div>,
       },
       {
-        key: "costCentre",
-        header: "Cost Centre",
+        key: "controlLevel",
+        header: "Control",
         align: "left",
         sortable: true,
-        render: (h) => <div className="py-1.5">{h.costCentre}</div>,
+        render: (h) => (
+          <div className="py-1.5">
+            <span className={`rounded-full px-2 py-0.5 text-xs ${CONTROL_STYLE[h.controlLevel]}`}>{h.controlLevel}</span>
+            {h.controlLevel === "Capped" && h.defaultCap && (
+              <span className="ml-1.5 text-xs text-muted">up to {Number(h.defaultCap).toLocaleString()}</span>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: "costCentre",
+        header: "Default Cost Centre",
+        align: "left",
+        sortable: true,
+        render: (h) => <div className="py-1.5">{h.costCentre || "—"}</div>,
       },
       {
         key: "programme",
         header: "Programme / Project",
         align: "left",
         sortable: true,
-        render: (h) => (
-          <div className="py-1.5">
-            <span className="block">{h.programme}</span>
-            {h.projectCode && <span className="block text-xs text-muted">{h.projectCode}</span>}
-          </div>
-        ),
+        render: (h) =>
+          h.programme || h.projectCode ? (
+            <div className="py-1.5">
+              <span className="block">{h.programme || "—"}</span>
+              {h.projectCode && <span className="block text-xs text-muted">{h.projectCode}</span>}
+            </div>
+          ) : (
+            <div className="py-1.5">—</div>
+          ),
       },
       {
         key: "usageCount",
         header: "Used in plans",
         align: "center",
+        sortable: true,
         render: (h) => <div className="py-1.5">{h.usageCount}</div>,
       },
       {
@@ -359,7 +318,7 @@ const BudgetHeadTable: React.FC = () => {
           return (
             <div className="flex items-center justify-center gap-2">
               <PermissionGate module={BUDGET_MODULE} action="write">
-                <ActionButton type="edit" onClick={(e) => handleEdit(h.id, e)} iconOnly title="Edit budget head" />
+                <ActionButton type="edit" onClick={(e) => handleEdit(h, e)} iconOnly title="Edit budget head" />
               </PermissionGate>
               <div className={isMenuEmpty ? "pointer-events-none opacity-40" : ""}>
                 <ActionMenu
@@ -372,18 +331,18 @@ const BudgetHeadTable: React.FC = () => {
         },
       },
     ],
-    [can, handleEdit, handleDelete, handleToggleStatus],
+    [can],
   );
 
   return (
     <div className="h-full min-h-0">
       <Table
         columns={columns}
-        data={heads}
+        data={pageRows}
         rowKey={(row) => row.id}
         tableId="budget-heads"
-        loading={isInitialLoad}
-        isFetching={isFetching}
+        loading={false}
+        isFetching={false}
         showToolbar
         searchValue={searchTerm}
         onSearch={(q) => {
@@ -396,7 +355,7 @@ const BudgetHeadTable: React.FC = () => {
         enableColumnSelector
         enableExport={can(BUDGET_MODULE, "export")}
         onExport={handleExportExcel}
-        currentPage={page}
+        currentPage={currentPage}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
@@ -409,7 +368,7 @@ const BudgetHeadTable: React.FC = () => {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
-        onRowDoubleClick={(h) => can(BUDGET_MODULE, "write") && handleEdit(h.id)}
+        onRowDoubleClick={(h) => can(BUDGET_MODULE, "write") && handleEdit(h)}
         multiSelectFilters={[
           {
             key: "status",
@@ -431,7 +390,7 @@ const BudgetHeadTable: React.FC = () => {
           setModalOpen(false);
           setModalHead(null);
         }}
-        onSaved={fetchHeads}
+        onSubmit={handleSubmit}
       />
     </div>
   );

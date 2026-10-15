@@ -19,6 +19,7 @@ import { useUrlTab } from "../../hooks/useUrlTab";
 import { usePermission } from "../../hooks/permission/usePermission";
 import Budget from "../BudgetManagement/Budget/budget";
 import BudgetHeadTable from "./budgethead/budgetHead";
+import BudgetSetup from "./BudgetSetup";
 
 import CreateBudget from "../BudgetManagement/Budget/addBudgetModal";
 
@@ -39,7 +40,6 @@ const BUDGET_BASE_PATH = "/Budget-Management";
 const BUDGET_TABS = [
     { id: "setup", label: "Setup", icon: <Settings2 size={14} />, modules: ["Budget Head"] },
   { id: "budget", label: "Budget", icon: <Wallet size={14} />, modules: ["Budget"] },
-  { id: "view", label: "View", icon: <Eye size={14} />, modules: ["Budget"] },
   { id: "transfer", label: "Transfer", icon: <ArrowLeftRight size={14} />, modules: ["Budget"] },
   { id: "supplementary", label: "Supplementary Budget", icon: <PlusCircle size={14} />, modules: ["Budget"] },
   { id: "variance", label: "Variance", icon: <TrendingUp size={14} />, modules: ["Budget"] },
@@ -77,7 +77,7 @@ const BudgetManagement: React.FC = () => {
       <AppPageBody>
         <Suspense fallback={<AppSkeleton />}>
        <HrContentFrame>
-{tab === "setup" && <BudgetHeadTable />}
+{tab === "setup" && <BudgetSetup />}
 
 {tab === "budget" &&
   (creating ? (
@@ -88,7 +88,6 @@ const BudgetManagement: React.FC = () => {
   ) : (
     <Budget onAddBudget={() => setCreating(true)} />
   ))}
-{tab === "view" && <TabPlaceholder title="View" />}
 
 
             {tab === "transfer" && <TabPlaceholder title="Transfer" />}
