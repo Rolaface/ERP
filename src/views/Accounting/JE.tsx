@@ -110,8 +110,30 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [filters, setFilters] = useState({
     from_date: "",
     to_date: "",
-    orderBy: "creation desc",
+    date_basis: "creation",
   });
+  const [sortBy, setSortBy] = useState<string>("posting_date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    name: "name",
+    posting_date: "posting_date",
+    total_debit: "total_debit",
+    total_credit: "total_credit",
+    user_remark: "user_remark",
+  };
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setCurrentPage(1);
+  };
 
   const fetchJE = useCallback(async () => {
     setLoading(true);
@@ -128,15 +150,10 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
 
       const limitStart = (currentPage - 1) * pageSize;
 
-      // let apiFilters: any = undefined;
-      // if (filters.from_date && filters.to_date) {
-      //   const filterField = filters.orderBy.startsWith("posting_date") ? "posting_date" : "creation";
-      //   apiFilters = [[filterField, "between", [filters.from_date, filters.to_date]]];
-      // }
       let apiFilters: any[][] = [];
 
       if (filters.from_date && filters.to_date) {
-        const filterField = filters.orderBy.startsWith("posting_date")
+        const filterField = filters.date_basis === "posting_date"
           ? "posting_date"
           : "creation";
 
@@ -144,11 +161,13 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
           apiFilters.push([filterField, ">=", `${filters.from_date} 00:00:00`]);
           apiFilters.push([filterField, "<=", `${filters.to_date} 23:59:59`]);
         } else {
-          // Standard Date fields (like posting_date) work perfectly just like your Leave App code!
           apiFilters.push([filterField, ">=", filters.from_date]);
           apiFilters.push([filterField, "<=", filters.to_date]);
         }
       }
+
+      const apiSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
+      const orderBy = `${apiSortBy} ${sortOrder}`;
 
       const res = await getJournalEntries(
         fields,
@@ -156,7 +175,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         limitStart,
         pageSize,
         searchTerm || undefined,
-        filters.orderBy,
+        orderBy,
       );
       const entriesData = res?.data || res?.message?.data;
       const pagination = res?.pagination || res?.message?.pagination;
@@ -186,7 +205,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pageSize, searchTerm, filters]);
+  }, [currentPage, pageSize, searchTerm, filters, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchJE();
@@ -342,6 +361,7 @@ const handleSubmitEntry = async (id: string) => {
       key: "name",
       header: "Entry Number",
       align: "left",
+      sortable: true,
       render: (row: JournalEntry) => (
         <span className="font-semibold text-main flex items-center gap-2">
           <FileText size={14} className="text-muted" />
@@ -353,6 +373,7 @@ const handleSubmitEntry = async (id: string) => {
       key: "posting_date",
       header: "Posting Date",
       align: "left",
+      sortable: true,
       render: (row: JournalEntry) => (
         <span className="text-xs text-muted">
           {formatDate(row.posting_date) || "—"}
@@ -387,6 +408,7 @@ const handleSubmitEntry = async (id: string) => {
       key: "total_debit",
       header: "Total Debit",
       align: "right",
+      sortable: true,
       render: (row: JournalEntry) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {(row.total_debit || 0).toFixed(2)}
@@ -397,6 +419,7 @@ const handleSubmitEntry = async (id: string) => {
       key: "total_credit",
       header: "Total Credit",
       align: "right",
+      sortable: true,
       render: (row: JournalEntry) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {(row.total_credit || 0).toFixed(2)}
@@ -407,6 +430,7 @@ const handleSubmitEntry = async (id: string) => {
       key: "user_remark",
       header: "Remark",
       align: "left",
+      sortable: true,
       render: (row: JournalEntry) => (
         <span className="text-xs text-muted truncate max-w-[200px] block">
           {row.user_remark || "—"}
@@ -517,15 +541,15 @@ const handleSubmitEntry = async (id: string) => {
               }}
             />
             <select
-              value={filters.orderBy}
+              value={filters.date_basis}
               onChange={(e) => {
-                setFilters((prev) => ({ ...prev, orderBy: e.target.value }));
+                setFilters((prev) => ({ ...prev, date_basis: e.target.value }));
                 setCurrentPage(1);
               }}
               className="border-gray-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 py-1 px-2 border outline-none"
             >
-              <option value="posting_date desc">Posting Date </option>
-              <option value="creation desc">Creation Date </option>
+              <option value="creation">Creation Date</option>
+              <option value="posting_date">Posting Date</option>
             </select>
           </>
         }
@@ -542,6 +566,9 @@ const handleSubmitEntry = async (id: string) => {
         addLabel="New Entry"
         onAdd={handleAdd}
         enableColumnSelector
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         currentPage={currentPage}
         pageSize={pageSize}
         totalItems={totalItems}
