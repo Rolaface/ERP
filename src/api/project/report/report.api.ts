@@ -38,17 +38,28 @@ export interface DocFieldMeta {
   hidden?: 0 | 1;
 }
 
+export type TimesheetActivityGroupBy =
+  | "employee"
+  | "project"
+  | "date"
+  | "month";
+
 export interface TimesheetActivityEntry {
   timesheet: string;
-timesheet_title: string | null;
+  timesheet_title: string | null;
   employee: string | null;
   employee_name: string | null;
+  designation: string | null;
   status: string;
   detail_id: string;
   from_time: string;
   to_time: string;
   date: string;
   day_name: string;
+  month: string;
+  month_name: string;
+  work_days: number;
+  project_work_days: number;
   hours: number;
   project: string | null;
   project_name: string | null;
@@ -69,36 +80,47 @@ timesheet_title: string | null;
 export interface TimesheetActivityGroup {
   group: string;
   group_id: string;
-  entries: TimesheetActivityEntry[];
+  level: TimesheetActivityGroupBy;
+  day_name?: string | null;
   total_hours: number;
   billable_hours: number;
   non_billable_hours: number;
   total_billable_amount: number;
+  total_costing_amount: number;
+  work_days: number;
+  entry_count: number;
+  children?: TimesheetActivityGroup[];
+  entries?: TimesheetActivityEntry[];
 }
 
 export interface TimesheetActivityResponse {
   success: boolean;
+  group_by?: TimesheetActivityGroupBy[];
   summary: {
     total_entries: number;
     total_employees: number;
     total_projects: number;
+    total_work_days: number;
+    total_months: number;
     total_hours: number;
     billable_hours: number;
     non_billable_hours: number;
     total_billable_amount: number;
     total_costing_amount: number;
   };
-  pagination: PaginationMeta;
+  grouped_data: TimesheetActivityGroup[];
   data: TimesheetActivityEntry[];
+  groups?: TimesheetActivityGroup[];
 }
-export interface PaginationMeta {
-  page: number;
-  page_size: number;
-  total: number;
-  total_pages: number;
-  has_next: boolean;
-  has_prev: boolean;
-}
+
+export const collectGroupEntries = (
+  groups: TimesheetActivityGroup[],
+): TimesheetActivityEntry[] =>
+  groups.flatMap((group) =>
+    group.children
+      ? collectGroupEntries(group.children)
+      : (group.entries ?? []),
+  );
 
 export async function fetchTimesheetActivityReport(
   params: Record<string, unknown>,
@@ -106,7 +128,16 @@ export async function fetchTimesheetActivityReport(
   const resp: AxiosResponse = await api.get(ReportAPI.TIMESHEET_ACTIVITY, {
     params,
   });
-  return resp.data?.message;
+  const msg = resp.data?.message;
+
+  if (!msg?.group_by?.length) return msg;
+
+  const groups: TimesheetActivityGroup[] = msg.data ?? [];
+  return {
+    ...msg,
+    groups,
+    data: collectGroupEntries(groups),
+  };
 }
 const DOCTYPE_META_URL = API.project.report.DOCTYPE_META_URL;
 const CUSTOM_FIELD_DATA_URL = API.project.report.CUSTOM_FIELD_DATA_URL;

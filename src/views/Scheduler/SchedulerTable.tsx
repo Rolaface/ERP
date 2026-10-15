@@ -15,6 +15,9 @@ const schedulerPage: React.FC = () => {
   const {
     data,
     loading,
+    sortBy,
+    sortOrder,
+    handleSortChange,
     openAdd,
     openView,
     openEdit,
@@ -27,6 +30,7 @@ const schedulerPage: React.FC = () => {
       key: "schedulerName",
       header: "Scheduler Name",
       align: "left",
+      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span className="block">{row.schedulerName || "—"}</span>
@@ -37,6 +41,7 @@ const schedulerPage: React.FC = () => {
       key: "frequency",
       header: "Frequency",
       align: "left",
+      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span className="block text-muted">{row.frequency || "—"}</span>
@@ -113,6 +118,9 @@ const schedulerPage: React.FC = () => {
           data={data}
           showToolbar
           loading={loading}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
           enableAdd
           addLabel="Add Scheduler"
           onAdd={openAdd}

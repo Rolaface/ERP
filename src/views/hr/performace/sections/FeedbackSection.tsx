@@ -30,11 +30,37 @@ export default function FeedbackSection() {
   const [page, setPage] = useState(1);
   const [, setLoading] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
+  const [sortBy, setSortBy] = useState<string>("creation");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    creation: "creation",
+    criteria: "criteria",
+  };
+
+  const handleSortChange = ({
+    sortBy: nextSortBy,
+    sortOrder: nextSortOrder,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(nextSortBy);
+    setSortOrder(nextSortOrder);
+    setPage(1);
+  };
 
   const fetchFeedbacks = useCallback(async () => {
     try {
       setLoading(true);
-      const resp = await getFeedbackList({ page, pageSize: PAGE_SIZE, search });
+      const apiSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
+      const resp = await getFeedbackList({
+        page,
+        pageSize: PAGE_SIZE,
+        search,
+        sortBy: apiSortBy,
+        sortOrder,
+      });
       const mapped: FeedbackRow[] = (resp.data || []).map((r) => ({
         id: r.criteria,
         criteria: r.criteria,
@@ -47,7 +73,7 @@ export default function FeedbackSection() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchFeedbacks();
@@ -117,8 +143,8 @@ export default function FeedbackSection() {
       key: "creation",
       header: "Date Created",
       align: "center",
+      sortable: true,
       render: (row) => <DateDisplay date={row.creation} />,
-      
     },
     {
       key: "criteria",
@@ -177,6 +203,9 @@ export default function FeedbackSection() {
       pageSize={PAGE_SIZE}
       totalItems={totalItems}
       onPageChange={setPage}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      onSortChange={handleSortChange}
       onRowDoubleClick={(row) => openDetail(row.id, "view")}
     />
     </div>

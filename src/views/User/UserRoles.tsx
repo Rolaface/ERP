@@ -73,15 +73,33 @@ const UserRolePage: React.FC = () => {
   const { refreshPermissions } = useAuth();
   const { can } = usePermission();
 
+  const [sortBy, setSortBy] = useState("role");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    role: "role_name",
+  };
+
   const refreshKey = useDataRefreshStore(
     (state) => state.refreshFlags[REFRESH_KEYS.USER_ROLE_LIST]
   );
 
-
-  const fetchRoles = async (search?: string, currentPage?: number, currentPageSize?: number) => {
+  const fetchRoles = async (
+    search?: string,
+    currentPage?: number,
+    currentPageSize?: number,
+    currentSortBy = SORT_FIELD_MAP[sortBy] || sortBy,
+    currentSortOrder = sortOrder
+  ) => {
     setLoading(true);
     try {
-      const response = await getUserRoles(search, currentPage, currentPageSize);
+      const response = await getUserRoles(
+        search,
+        currentPage,
+        currentPageSize,
+        currentSortBy,
+        currentSortOrder
+      );
       if (response.status !== "success") throw new Error(response.message ?? "Failed to fetch roles");
       setRoles(response.data.map(mapApiRoleToUserRole));
       setTotalItems(response.pagination.total);
@@ -93,17 +111,29 @@ const UserRolePage: React.FC = () => {
     }
   };
 
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
+  };
+
   useEffect(() => {
-    fetchRoles(searchQuery, page, pageSize);
-  }, [page, pageSize]);
+    fetchRoles(searchQuery, page, pageSize, SORT_FIELD_MAP[sortBy] || sortBy, sortOrder);
+  }, [page, pageSize, sortBy, sortOrder]);
 
   const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(REFRESH_KEYS.USER_ROLE_LIST, () => {
-      fetchRoles(searchQuery, page, pageSize);
+      fetchRoles(searchQuery, page, pageSize, SORT_FIELD_MAP[sortBy] || sortBy, sortOrder);
     });
     return () => unsubscribe();
-  }, [subscribeToRefresh]);
+  }, [subscribeToRefresh, sortBy, sortOrder]);
 
   const openRoleModal = async (row: UserRole, isEdit: boolean, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -203,6 +233,7 @@ const handleView = (row: UserRole) => openRoleModal(row, false);
     {
       key: "role",
       header: "Role Name",
+      sortable: true,
       render: (row) => (
         <span className="font-semibold text-main text-sm">{row.role}</span>
       ),
@@ -330,6 +361,9 @@ const handleView = (row: UserRole) => openRoleModal(row, false);
           setPage(1);
           fetchRoles(q, 1, pageSize);
         }}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         enableAdd={can(USER_ROLE_MODULE, "create")}
         addLabel="Add Role"
         onAdd={() =>

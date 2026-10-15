@@ -30,12 +30,39 @@ const ModeOfPaymentSetup: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const { can } = usePermission();
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    name: "name",
+    type: "type",
+  };
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
+  };
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getAllModeOfPayment(page, pageSize, search);
+      const backendSortBy = SORT_FIELD_MAP[sortBy] || "name";
+      const res = await getAllModeOfPayment(
+        page,
+        pageSize,
+        search,
+        undefined,
+        backendSortBy,
+        sortOrder
+      );
       setData(Array.isArray(res.data) ? res.data : []);
       setTotalPages(res.pagination.total_pages);
       setTotalItems(res.pagination.total);
@@ -44,7 +71,7 @@ const ModeOfPaymentSetup: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search]);
+  }, [page, pageSize, search, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchData();
@@ -99,8 +126,8 @@ const ModeOfPaymentSetup: React.FC = () => {
     }
   };
   const columns: Column<any>[] = [
-    { key: "name", header: "Mode" },
-    { key: "type", header: "Type" },
+    { key: "name", header: "Mode", sortable: true },
+    { key: "type", header: "Type", sortable: true },
     {
       key: "defaultAccount",
       header: "GL Account",
@@ -157,6 +184,9 @@ const ModeOfPaymentSetup: React.FC = () => {
           loading={loading}
           rowKey={(r) => String(r.id)}
           showToolbar
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
           enableAdd={can(MODE_OF_PAYMENT_MODULE, "create")}
           addLabel="Add Mode of Payment"
           onAdd={() =>

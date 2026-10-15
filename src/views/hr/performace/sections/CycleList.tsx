@@ -41,6 +41,26 @@ const CycleList = () => {
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [sortBy, setSortBy] = useState<string>("cycle_name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    cycle_name: "cycle_name",
+    start_date: "start_date",
+    end_date: "end_date",
+  };
+
+  const handleSortChange = ({
+    sortBy: nextSortBy,
+    sortOrder: nextSortOrder,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(nextSortBy);
+    setSortOrder(nextSortOrder);
+    setPage(1);
+  };
 
   // ── Create modal ──
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -57,7 +77,14 @@ const CycleList = () => {
   const fetchCycles = useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await getCycleList({ page, pageSize, search });
+      const apiSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
+      const resp = await getCycleList({
+        page,
+        pageSize,
+        search,
+        sortBy: apiSortBy,
+        sortOrder,
+      });
       setCycles(resp.data);
       setTotalPages(resp.pagination?.page_count ?? 1);
       setTotalItems(resp.pagination?.total ?? resp.data.length);
@@ -66,7 +93,7 @@ const CycleList = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search]);
+  }, [page, pageSize, search, sortBy, sortOrder]);
 
   useEffect(() => { fetchCycles(); }, [fetchCycles]);
 
@@ -201,12 +228,14 @@ const CycleList = () => {
       key: "start_date",
       header: "Start Date",
       align: "center",
+      sortable: true,
       render: (row) => <DateDisplay date={row.start_date} />,
     },
     {
       key: "end_date",
       header: "End Date",
       align: "center",
+      sortable: true,
       render: (row) => <DateDisplay date={row.end_date} />,
     },
     {
@@ -274,6 +303,9 @@ const CycleList = () => {
 
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         onRowDoubleClick={(row) => handleView(row)}
       />
 

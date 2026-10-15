@@ -14,16 +14,35 @@ import { showConfirm, showSuccess, showApiError } from "../utils/alert";
 export const useShedular = () => {
   const [data, setData] = useState<SchedulerRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("schedulerName");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    schedulerName: "scheduler_name",
+    frequency: "frequency",
+  };
+
+  const handleSortChange = ({
+    sortBy: nextSortBy,
+    sortOrder: nextSortOrder,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(nextSortBy);
+    setSortOrder(nextSortOrder);
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getAllShedulers();
+      const apiSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
+      const result = await getAllShedulers(1, 10, "", apiSortBy, sortOrder);
       setData(result.data);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sortBy, sortOrder]);
 
   useEffect(() => {
     fetchData();
@@ -107,6 +126,9 @@ export const useShedular = () => {
   return {
     data,
     loading,
+    sortBy,
+    sortOrder,
+    handleSortChange,
     openAdd,
     openView,
     openEdit,

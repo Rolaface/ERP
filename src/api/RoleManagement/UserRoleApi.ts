@@ -49,7 +49,9 @@ export interface GetUserRolesResponse {
 export async function getUserRoles(
   search?: string,
   page?: number,
-  pageSize?: number
+  pageSize?: number,
+  sortBy?: string,
+  sortOrder: "asc" | "desc" = "asc"
 ): Promise<GetUserRolesResponse> {
   const resp: AxiosResponse<GetUserRolesResponse> = await api.get(
     UserRoleAPI.getUserRoles,
@@ -58,6 +60,9 @@ export async function getUserRoles(
         ...(search ? { search } : {}),
         ...(page ? { page } : {}),
         ...(pageSize ? { page_size: pageSize } : {}),
+        ...(sortBy && {
+          order_by: `${sortBy} ${sortOrder}`,
+        }),
       },
     }
   );

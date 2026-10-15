@@ -30,10 +30,14 @@ export async function getFeedbackList({
   page = 1,
   pageSize = 10,
   search = "",
+  sortBy,
+  sortOrder,
 }: {
   page?: number;
   pageSize?: number;
   search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }): Promise<GetFeedbackListResponse> {
   const start = (page - 1) * pageSize;
 
@@ -43,6 +47,8 @@ export async function getFeedbackList({
     pageSize,
     search,
     searchFields: ["criteria"],
+    sortBy,
+    sortOrder,
   });
 
   const resp: AxiosResponse = await api.get(

@@ -252,6 +252,7 @@ const ItemsCategory: React.FC = () => {
       key: "item_group_name",
       header: "Group Name",
       align: "left",
+      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span
@@ -269,6 +270,7 @@ const ItemsCategory: React.FC = () => {
       key: "name",
       header: "ID",
       align: "left",
+      sortable: true,
       render: (row) =>
         <div className="py-1.5">
           <span className="text-xs text-muted">{row.name}</span>
@@ -278,6 +280,7 @@ const ItemsCategory: React.FC = () => {
       key: "item_count",
       header: "Item Count",
       align: "center",
+      sortable: true,
       render: (row) => {
         if (row.item_count === 0) return <span className="text-muted text-xs">—</span>;
         return (

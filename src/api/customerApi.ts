@@ -22,6 +22,8 @@ export async function getAllCustomers(
   taxCategory?: string,
   search?: string,
   status?: string,
+  sortBy: string = "",
+  sortOrder: "asc" | "desc" = "asc",
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(CustomerAPI.getAll, {
     params: {
@@ -30,6 +32,7 @@ export async function getAllCustomers(
       status,
       ...(taxCategory && { taxCategory }),
       ...(search && { search }),
+      ...(sortBy && { order_by: `${sortBy} ${sortOrder ?? "asc"}` }),
     },
   });
   return resp.data;
