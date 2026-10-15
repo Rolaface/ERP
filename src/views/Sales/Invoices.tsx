@@ -89,6 +89,7 @@ const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid", "Cancelled"];
 const SORT_FIELD_MAP: Record<string, string> = {
   customerName: "customer_name",
   invoiceNumber: "name",
+  dateOfInvoice: "posting_date",
   dueDate: "due_date",
   total: "grand_total",
   outstandingAmount: "outstanding_amount",
@@ -767,6 +768,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         key: "dateOfInvoice",
         header: "Date",
         align: "center",
+        sortable: true,
         render: (inv) => (
           <div className="py-1.5">
             <span className="block">{formatDate(inv.dateOfInvoice)}</span>

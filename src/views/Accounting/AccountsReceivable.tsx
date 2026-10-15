@@ -10,6 +10,7 @@ import {
   getCoreRowModel,
   flexRender,
   type ColumnDef,
+  type SortingState,
 } from "@tanstack/react-table";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
@@ -60,6 +61,17 @@ import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+
+const SORT_FIELD_MAP: Record<string, string> = {
+  id: "voucher_no",
+  customer: "customer",
+  voucherType: "voucher_type",
+  invoicedAmount: "invoiced_amount",
+  paidAmount: "paid_amount",
+  outstandingAmount: "outstanding_amount",
+  due: "due_date",
+  days: "age",
+};
 type ReceivableVoucherType =
   | "Sales Invoice"
   | "Payment Entry"
@@ -409,6 +421,7 @@ const AccountsReceivable = () => {
   const [pageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   // Modals
   const [company, setCompany] = useState<any | null>(null);
@@ -498,18 +511,31 @@ const AccountsReceivable = () => {
     selectedCustomers,
     selectedReceivableAccount,
     selectedVoucherType,
+    sorting,
   ]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
+      const currentSort = sorting[0];
+      const backendSortField = currentSort
+        ? SORT_FIELD_MAP[currentSort.id] || currentSort.id
+        : undefined;
+      const backendSortOrder = currentSort
+        ? currentSort.desc
+          ? "desc"
+          : "asc"
+        : undefined;
+      const computedOrderBy =
+        backendSortField && backendSortOrder
+          ? `${backendSortField} ${backendSortOrder}`
+          : undefined;
+
       const response: any = await getAllReceivables({
         page,
         page_size: pageSize,
         search: searchTerm,
-        ...(filterStatus && filterStatus !== "all"
-          ? { status: filterStatus }
-          : {}),
+        status: filterStatus.length ? filterStatus.join(",") : undefined,
         posting_date: postingDate || undefined,
         cost_center: selectedCostCenter || undefined,
         party: selectedCustomers.length
@@ -606,6 +632,7 @@ const AccountsReceivable = () => {
     selectedCustomers,
     selectedReceivableAccount,
     selectedVoucherType,
+    sorting,
   ]);
 
   useEffect(() => {
@@ -744,6 +771,7 @@ const AccountsReceivable = () => {
         id: "status",
         accessorKey: "status",
         header: "Status",
+        enableSorting: false,
         size: 100,
         cell: ({ row }) =>
           row.original.isSummary ? null : (
@@ -753,6 +781,7 @@ const AccountsReceivable = () => {
       {
         id: "actions",
         header: "Actions",
+        enableSorting: false,
         size: 70,
         meta: { align: "center" },
         cell: ({ row }) =>
@@ -774,8 +803,11 @@ const AccountsReceivable = () => {
   const table = useReactTable({
     data: receivables,
     columns,
+    state: { sorting },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
+    manualSorting: true,
     pageCount: totalPages,
   });
 
@@ -1247,14 +1279,33 @@ const AccountsReceivable = () => {
                     return (
                       <th
                         key={header.id}
-                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest
-                                    text-muted whitespace-nowrap bg-card
-                                    border-b border-[var(--border)] ${align}`}
+                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align} ${
+                          header.column.getCanSort()
+                            ? "cursor-pointer select-none hover:text-main"
+                            : ""
+                        }`}
+                        onClick={header.column.getToggleSortingHandler()}
                       >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                        <div
+                          className={`inline-flex items-center gap-1 ${
+                            align === "text-right"
+                              ? "justify-end"
+                              : "justify-start"
+                          }`}
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                          {header.column.getCanSort() && (
+                            <span className="text-[10px] text-muted">
+                              {{
+                                asc: " ↑",
+                                desc: " ↓",
+                              }[header.column.getIsSorted() as string] ?? " ↕"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                     );
                   })}

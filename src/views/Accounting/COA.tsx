@@ -9,9 +9,11 @@ import {
   useReactTable,
   getCoreRowModel,
   getExpandedRowModel,
+  getSortedRowModel,
   flexRender,
   type ColumnDef,
   type ExpandedState,
+  type SortingState,
 } from "@tanstack/react-table";
 import { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
 import {
@@ -259,6 +261,7 @@ const COATab: React.FC<COATabProps> = ({
   const [viewAccount, setViewAccount] = useState<COAAccount | null>(null);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allExpanded, setAllExpanded] = useState(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   // Extract unique currency codes from the COA tree
   // e.g. coaData has GHS + USD accounts → currencyCodes = ["GHS", "USD"]
@@ -444,6 +447,7 @@ const COATab: React.FC<COATabProps> = ({
     () => [
       {
         id: "name",
+        accessorKey: "account_name",
         header: "Account Name",
         size: 280,
         cell: ({ row }) => {
@@ -501,6 +505,7 @@ const COATab: React.FC<COATabProps> = ({
       },
       {
         id: "account_type",
+        accessorKey: "account_type",
         header: "Account Type",
         size: 160,
         cell: ({ row }) => (
@@ -511,6 +516,7 @@ const COATab: React.FC<COATabProps> = ({
       },
       {
         id: "root_type",
+        accessorKey: "root_type",
         header: "Root Type",
         size: 130,
         cell: ({ row }) => {
@@ -536,6 +542,8 @@ const COATab: React.FC<COATabProps> = ({
       },
       {
         id: "balance",
+        accessorFn: (row) =>
+          row.balance_in_account_currency ?? row.balance ?? 0,
         // Balance in the account's OWN currency, formatted per that
         // currency's number_format pattern.
         // Debtors (GHS) → "₵ 6,891.00"  |  Debtor-USD → "$ 574,350.00"
@@ -559,6 +567,7 @@ const COATab: React.FC<COATabProps> = ({
       },
       {
         id: "balance_base",
+        accessorFn: (row) => row.balance ?? 0,
         // Balance converted to base currency (from API: base_currency = "GHS")
         // Header: "Balance (₵ GHS)" | Cell: "₵ 3,688,944,999.00"
         // header: `Balance (${getSymbol(coaData?.base_currency)} ${coaData?.base_currency ?? ""})`,
@@ -584,6 +593,7 @@ const COATab: React.FC<COATabProps> = ({
         id: "actions",
         header: "",
         size: 60,
+        enableSorting: false,
         meta: { align: "right" },
         cell: ({ row }) => {
           const node = row.original;
@@ -631,14 +641,16 @@ const COATab: React.FC<COATabProps> = ({
   const table = useReactTable({
     data: tableData,
     columns,
-    state: { expanded },
+    state: { expanded, sorting },
     onExpandedChange: (updater) => {
       setExpanded(updater);
       setAllExpanded(false);
     },
+    onSortingChange: setSorting,
     getSubRows: (row) => row.children,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
 
   if (error && !coaData) {
@@ -705,12 +717,34 @@ const COATab: React.FC<COATabProps> = ({
                       return (
                         <th
                           key={header.id}
-                          className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align}`}
+                          className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align} ${
+                            header.column.getCanSort()
+                              ? "cursor-pointer select-none hover:text-main"
+                              : ""
+                          }`}
+                          onClick={header.column.getToggleSortingHandler()}
                         >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                          <div
+                            className={`inline-flex items-center gap-1 ${
+                              align === "text-right"
+                                ? "justify-end"
+                                : "justify-start"
+                            }`}
+                          >
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                            {header.column.getCanSort() && (
+                              <span className="text-[10px] text-muted">
+                                {{
+                                  asc: " ↑",
+                                  desc: " ↓",
+                                }[header.column.getIsSorted() as string] ??
+                                  " ↕"}
+                              </span>
+                            )}
+                          </div>
                         </th>
                       );
                     })}
