@@ -8,8 +8,10 @@ import React, {
 import {
   useReactTable,
   getCoreRowModel,
+  getSortedRowModel,
   flexRender,
   type ColumnDef,
+  type SortingState,
 } from "@tanstack/react-table";
 import {
   FaDownload,
@@ -57,14 +59,11 @@ import { showApiError } from "../../utils/alert";
 import { useCompanyStore } from "../../store/companyStore";
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+import MultiSelectFilter from "../../components/ui/modal/MultiSelectFilter";
+
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
-type PayableVoucherType =
-  | "Purchase Invoice"
-  | "Payment Entry"
-  | "Journal Entry"
-  | "Expense Claim";
 
 type PayableRecord = {
   posting_date?: string;
@@ -318,52 +317,24 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 };
 
 // ── Filter Dropdown ───────────────────────────────────────────────────────────
-const FilterDropdown: React.FC<{
-  label: string;
-  active: boolean;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-  width?: string;
-}> = ({ label, active, isOpen, onToggle, children, width = "w-48" }) => (
-  <div className="relative">
-    <button
-      onClick={onToggle}
-      className={`h-7 px-2.5 text-[11px] font-semibold border rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
-        active
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40"
-      }`}
-    >
-      {label}
-    </button>
-    {isOpen && (
-      <div
-        className={`absolute top-full left-0 mt-1.5 bg-card border border-[var(--border)] rounded-lg z-30 ${width} shadow-xl py-1 max-h-56 overflow-y-auto`}
-      >
-        {children}
-      </div>
-    )}
-  </div>
-);
 
-const DropdownItem: React.FC<{
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}> = ({ active, onClick, children }) => (
-  <button
-    onClick={onClick}
-    className={`w-full text-left px-3 py-1.5 text-xs flex justify-between items-center transition-colors ${
-      active
-        ? "bg-primary/10 text-primary font-semibold"
-        : "text-main hover:bg-row-hover"
-    }`}
-  >
-    {children}
-    {active && <FaCheck className="text-[9px] shrink-0" />}
-  </button>
-);
+const STATUS_OPTIONS = [
+  { label: "Pending", value: "pending" },
+  { label: "Overdue", value: "overdue" },
+  { label: "Paid", value: "paid" },
+];
+
+const VOUCHER_TYPE_OPTIONS = [
+  { label: "Purchase Invoice", value: "Purchase Invoice" },
+  { label: "Payment Entry", value: "Payment Entry" },
+  { label: "Journal Entry", value: "Journal Entry" },
+  { label: "Expense Claim", value: "Expense Claim" },
+];
+
+const GROUP_BY_OPTIONS = [
+  { label: "Supplier", value: "supplier" },
+  { label: "Voucher", value: "voucher" },
+];
 
 // ── Main Component ────────────────────────────────────────────────────────────
 const AccountsPayable = () => {
@@ -372,18 +343,14 @@ const AccountsPayable = () => {
   const sym = currencySymbol || "–";
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState<string[]>([]);
   const [postingDate, setPostingDate] = useState(getTodayDate());
   const [selectedGroupBy, setSelectedGroupBy] = useState<string[]>([]);
-  const [selectedVoucherType, setSelectedVoucherType] = useState<
-    PayableVoucherType | ""
-  >("");
-  const [selectedCostCenter, setSelectedCostCenter] = useState("");
+  const [selectedVoucherType, setSelectedVoucherType] = useState<string[]>([]);
+  const [selectedCostCenter, setSelectedCostCenter] = useState<string[]>([]);
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
-  const [selectedPayableAccount, setSelectedPayableAccount] = useState("");
+  const [selectedPayableAccount, setSelectedPayableAccount] = useState<string[]>([]);
 
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [costCenterOptions, setCostCenterOptions] = useState<LookupOption[]>(
     [],
@@ -402,6 +369,7 @@ const AccountsPayable = () => {
   const [pageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const [company, setCompany] = useState<any | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -458,18 +426,6 @@ const AccountsPayable = () => {
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      )
-        setActiveDropdown(null);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
     Promise.all([
       getCompanyCostCenters(),
       getSupplierList(),
@@ -509,19 +465,17 @@ const AccountsPayable = () => {
         page,
         page_size: pageSize,
         search: searchTerm,
-        ...(filterStatus && filterStatus !== "all"
-          ? { status: filterStatus }
-          : {}),
+        status: filterStatus.length ? filterStatus.join(",") : undefined,
         posting_date: postingDate || undefined,
-        cost_center: selectedCostCenter || undefined,
-        party: selectedSuppliers.length
-          ? selectedSuppliers.join(",")
+        cost_center: selectedCostCenter.length ? selectedCostCenter.join(",") : undefined,
+        party: selectedSuppliers.length ? selectedSuppliers.join(",") : undefined,
+        payable_account: selectedPayableAccount.length
+          ? selectedPayableAccount.join(",")
           : undefined,
-        payable_account: selectedPayableAccount || undefined,
-        group_by: selectedGroupBy.length
-          ? (selectedGroupBy.join(",") as any)
+        group_by: selectedGroupBy.length ? (selectedGroupBy.join(",") as any) : undefined,
+        voucher_type: selectedVoucherType.length
+          ? (selectedVoucherType.join(",") as any)
           : undefined,
-        voucher_type: selectedVoucherType || undefined,
       });
 
       if (response?.message?.data) {
@@ -741,6 +695,7 @@ const AccountsPayable = () => {
         id: "status",
         accessorKey: "status",
         header: "Status",
+        enableSorting: false,
         cell: ({ row }) =>
           row.original.isSummary ? null : (
             <StatusBadge status={row.original.status} />
@@ -749,6 +704,7 @@ const AccountsPayable = () => {
       {
         id: "actions",
         header: "Actions",
+        enableSorting: false,
         meta: { align: "center" },
         cell: ({ row }) =>
           row.original.isSummary ? null : (
@@ -769,7 +725,10 @@ const AccountsPayable = () => {
   const table = useReactTable({
     data: payables,
     columns,
+    state: { sorting },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     manualPagination: true,
     pageCount: totalPages,
   });
@@ -846,14 +805,16 @@ const AccountsPayable = () => {
         page: 1,
         page_size: 999999,
         search: searchTerm,
+        status: filterStatus.length ? filterStatus.join(",") : undefined,
         posting_date: postingDate || undefined,
-        cost_center: selectedCostCenter || undefined,
-        party: selectedSuppliers.length
-          ? selectedSuppliers.join(",")
+        cost_center: selectedCostCenter.length ? selectedCostCenter.join(",") : undefined,
+        party: selectedSuppliers.length ? selectedSuppliers.join(",") : undefined,
+        payable_account: selectedPayableAccount.length
+          ? selectedPayableAccount.join(",")
           : undefined,
-        payable_account: selectedPayableAccount || undefined,
-        group_by: selectedGroupBy.length
-          ? (selectedGroupBy.join(",") as any)
+        group_by: selectedGroupBy.length ? (selectedGroupBy.join(",") as any) : undefined,
+        voucher_type: selectedVoucherType.length
+          ? (selectedVoucherType.join(",") as any)
           : undefined,
       });
       if (!res?.message?.data) {
@@ -903,46 +864,29 @@ const AccountsPayable = () => {
     }
   };
 
-  const handleMultiSelect = (
-    value: string,
-    selected: string[],
-    setSelected: React.Dispatch<React.SetStateAction<string[]>>,
-  ) => {
-    setSelected(
-      selected.includes(value)
-        ? selected.filter((i) => i !== value)
-        : [...selected, value],
-    );
-  };
+
 
   const hasActiveFilters =
     selectedSuppliers.length > 0 ||
-    selectedCostCenter !== "" ||
-    selectedPayableAccount !== "" ||
-    selectedVoucherType !== "" ||
+    selectedCostCenter.length > 0 ||
+    selectedPayableAccount.length > 0 ||
+    selectedVoucherType.length > 0 ||
     selectedGroupBy.length > 0 ||
-    filterStatus !== "all" ||
+    filterStatus.length > 0 ||
     searchTerm !== "" ||
     postingDate !== getTodayDate();
 
   const clearAll = () => {
     setSearchTerm("");
-    setFilterStatus("all");
-    setSelectedVoucherType("");
+    setFilterStatus([]);
+    setSelectedVoucherType([]);
     setSelectedGroupBy([]);
     setSelectedSuppliers([]);
-    setSelectedCostCenter("");
-    setSelectedPayableAccount("");
+    setSelectedCostCenter([]);
+    setSelectedPayableAccount([]);
     setPostingDate(getTodayDate());
-    setActiveDropdown(null);
   };
 
-  const voucherTypeOptions: PayableVoucherType[] = [
-    "Purchase Invoice",
-    "Payment Entry",
-    "Journal Entry",
-    "Expense Claim",
-  ];
 
   return (
     <div className="flex flex-col gap-3 h-full min-h-0">
@@ -968,7 +912,7 @@ const AccountsPayable = () => {
 
       {/* Filter Bar */}
       <div
-        ref={dropdownRef}
+        
         className="bg-card border border-[var(--border)] rounded-lg px-3 py-2 flex flex-wrap items-center gap-2"
       >
         <div className="flex items-center gap-1.5 mr-1">
@@ -986,192 +930,60 @@ const AccountsPayable = () => {
             onChange={(_, value) => setPostingDate(value)}
           />
         </div>
-        <FilterDropdown
-          label={filterStatus === "all" ? "Status" : filterStatus}
-          active={filterStatus !== "all"}
-          isOpen={activeDropdown === "status"}
-          onToggle={() =>
-            setActiveDropdown(activeDropdown === "status" ? null : "status")
-          }
-        >
-          {["all", "pending", "overdue", "paid"].map((s) => (
-            <DropdownItem
-              key={s}
-              active={filterStatus === s}
-              onClick={() => {
-                setFilterStatus(s);
-                setActiveDropdown(null);
-              }}
-            >
-              <span className="capitalize">
-                {s === "all" ? "All Statuses" : s}
-              </span>
-            </DropdownItem>
-          ))}
-        </FilterDropdown>
 
-        <FilterDropdown
-          label={selectedVoucherType || "Voucher Type"}
-          active={selectedVoucherType !== ""}
-          isOpen={activeDropdown === "voucherType"}
-          onToggle={() =>
-            setActiveDropdown(
-              activeDropdown === "voucherType" ? null : "voucherType",
-            )
-          }
-          width="w-52"
-        >
-          <DropdownItem
-            active={selectedVoucherType === ""}
-            onClick={() => {
-              setSelectedVoucherType("");
-              setActiveDropdown(null);
-            }}
-          >
-            All Types
-          </DropdownItem>
-          {voucherTypeOptions.map((opt) => (
-            <DropdownItem
-              key={opt}
-              active={selectedVoucherType === opt}
-              onClick={() => {
-                setSelectedVoucherType(opt);
-                setActiveDropdown(null);
-              }}
-            >
-              {opt}
-            </DropdownItem>
-          ))}
-        </FilterDropdown>
+        <MultiSelectFilter
+          options={STATUS_OPTIONS}
+          values={filterStatus}
+          onChange={setFilterStatus}
+          placeholder="Status"
+          panelTitle="Status"
+        />
 
-        <FilterDropdown
-          label={`Group By${selectedGroupBy.length ? ` (${selectedGroupBy.length})` : ""}`}
-          active={selectedGroupBy.length > 0}
-          isOpen={activeDropdown === "groupBy"}
-          onToggle={() =>
-            setActiveDropdown(activeDropdown === "groupBy" ? null : "groupBy")
-          }
-        >
-          {["supplier", "voucher"].map((opt) => (
-            <label
-              key={opt}
-              className="flex items-center gap-2 px-3 py-1.5 hover:bg-row-hover cursor-pointer text-xs text-main transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={selectedGroupBy.includes(opt)}
-                onChange={() =>
-                  handleMultiSelect(opt, selectedGroupBy, setSelectedGroupBy)
-                }
-                className="rounded border-[var(--border)] text-primary focus:ring-primary/50 cursor-pointer"
-              />
-              <span className="capitalize">{opt}</span>
-            </label>
-          ))}
-        </FilterDropdown>
+        <MultiSelectFilter
+          options={VOUCHER_TYPE_OPTIONS}
+          values={selectedVoucherType}
+          onChange={setSelectedVoucherType}
+          placeholder="Voucher Type"
+          panelTitle="Voucher Type"
+        />
 
-        <FilterDropdown
-          label={`Supplier${selectedSuppliers.length ? ` (${selectedSuppliers.length})` : ""}`}
-          active={selectedSuppliers.length > 0}
-          isOpen={activeDropdown === "supplier"}
-          onToggle={() =>
-            setActiveDropdown(activeDropdown === "supplier" ? null : "supplier")
-          }
-          width="w-60"
-        >
-          {supplierOptions.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-muted text-center">
-              No options
-            </div>
-          ) : (
-            supplierOptions.map((opt) => (
-              <label
-                key={opt.value}
-                className="flex items-center gap-2 px-3 py-1.5 hover:bg-row-hover cursor-pointer text-xs text-main transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedSuppliers.includes(opt.value)}
-                  onChange={() =>
-                    handleMultiSelect(
-                      opt.value,
-                      selectedSuppliers,
-                      setSelectedSuppliers,
-                    )
-                  }
-                  className="rounded border-[var(--border)] text-primary focus:ring-primary/50 cursor-pointer"
-                />
-                <span className="truncate">{opt.label}</span>
-              </label>
-            ))
-          )}
-        </FilterDropdown>
+        <MultiSelectFilter
+          options={GROUP_BY_OPTIONS}
+          values={selectedGroupBy}
+          onChange={setSelectedGroupBy}
+          placeholder="Group By"
+          panelTitle="Group By"
+        />
 
-        <FilterDropdown
-          label="Cost Center"
-          active={selectedCostCenter !== ""}
-          isOpen={activeDropdown === "costCenter"}
-          onToggle={() =>
-            setActiveDropdown(
-              activeDropdown === "costCenter" ? null : "costCenter",
-            )
-          }
-          width="w-60"
-        >
-          <DropdownItem
-            active={selectedCostCenter === ""}
-            onClick={() => {
-              setSelectedCostCenter("");
-              setActiveDropdown(null);
-            }}
-          >
-            All Cost Centers
-          </DropdownItem>
-          {costCenterOptions.map((opt) => (
-            <DropdownItem
-              key={opt.value}
-              active={selectedCostCenter === opt.value}
-              onClick={() => {
-                setSelectedCostCenter(opt.value);
-                setActiveDropdown(null);
-              }}
-            >
-              <span className="truncate pr-2">{opt.label}</span>
-            </DropdownItem>
-          ))}
-        </FilterDropdown>
+        <MultiSelectFilter
+          options={supplierOptions}
+          values={selectedSuppliers}
+          onChange={setSelectedSuppliers}
+          placeholder="Supplier"
+          panelTitle="Supplier"
+          searchable
+          searchPlaceholder="Search supplier..."
+        />
 
-        <FilterDropdown
-          label="Account"
-          active={selectedPayableAccount !== ""}
-          isOpen={activeDropdown === "account"}
-          onToggle={() =>
-            setActiveDropdown(activeDropdown === "account" ? null : "account")
-          }
-          width="w-60"
-        >
-          <DropdownItem
-            active={selectedPayableAccount === ""}
-            onClick={() => {
-              setSelectedPayableAccount("");
-              setActiveDropdown(null);
-            }}
-          >
-            All Accounts
-          </DropdownItem>
-          {payableAccountOptions.map((opt) => (
-            <DropdownItem
-              key={opt.value}
-              active={selectedPayableAccount === opt.value}
-              onClick={() => {
-                setSelectedPayableAccount(opt.value);
-                setActiveDropdown(null);
-              }}
-            >
-              <span className="truncate pr-2">{opt.label}</span>
-            </DropdownItem>
-          ))}
-        </FilterDropdown>
+        <MultiSelectFilter
+          options={costCenterOptions}
+          values={selectedCostCenter}
+          onChange={setSelectedCostCenter}
+          placeholder="Cost Center"
+          panelTitle="Cost Center"
+          searchable
+          searchPlaceholder="Search cost center..."
+        />
+
+        <MultiSelectFilter
+          options={payableAccountOptions}
+          values={selectedPayableAccount}
+          onChange={setSelectedPayableAccount}
+          placeholder="Account"
+          panelTitle="Account"
+          searchable
+          searchPlaceholder="Search account..."
+        />
 
         {hasActiveFilters && (
           <button
@@ -1226,12 +1038,33 @@ const AccountsPayable = () => {
                     return (
                       <th
                         key={header.id}
-                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align}`}
+                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align} ${
+                          header.column.getCanSort()
+                            ? "cursor-pointer select-none hover:text-main"
+                            : ""
+                        }`}
+                        onClick={header.column.getToggleSortingHandler()}
                       >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                        <div
+                          className={`inline-flex items-center gap-1 ${
+                            align === "text-right"
+                              ? "justify-end"
+                              : "justify-start"
+                          }`}
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                          {header.column.getCanSort() && (
+                            <span className="text-[10px] text-muted">
+                              {{
+                                asc: " ↑",
+                                desc: " ↓",
+                              }[header.column.getIsSorted() as string] ?? " ↕"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                     );
                   })}

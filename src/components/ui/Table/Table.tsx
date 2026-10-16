@@ -406,10 +406,10 @@ const TableInner = <T extends Record<string, any>>({
                         "border-b-2 border-[var(--border)]",
                       ].join(" ")}
                     >
-                      <span className="inline-flex max-w-full items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
-                        {column.header}
+                      <span className="inline-flex max-w-full items-center gap-1.5 overflow-hidden whitespace-nowrap">
+                        <span className="min-w-0 truncate">{column.header}</span>
                         {isSortable && (
-                          <span className="inline-flex opacity-60">
+                          <span className="inline-flex shrink-0 opacity-60">
                             {isAsc ? (
                               <FaSortUp
                                 size={10}

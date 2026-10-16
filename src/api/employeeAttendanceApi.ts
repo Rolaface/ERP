@@ -53,10 +53,14 @@ export async function getEmployeeByEmployeeId(id: string, customFilters?: any[])
 //   return resp.data;
 // }
 
-export async function getAllEmployee(customFilters?: any[]): Promise<any> {
+export async function getAllEmployee(
+  customFilters?: any[],
+  sortBy?: string,
+  sortOrder: "asc" | "desc" = "desc",
+): Promise<any> {
    const params: any = {
     fields: JSON.stringify(["*"]),
-    order_by: "time asc",          
+    order_by: sortBy ? `${sortBy} ${sortOrder}` : "time desc",          
    };
 
    // Append filters if they are provided

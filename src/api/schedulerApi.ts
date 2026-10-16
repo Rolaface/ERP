@@ -70,6 +70,8 @@ export async function getAllShedulers(
   page = 1,
   pageSize = 10,
   search = "",
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<SchedulerListResponse> {
   const start = (page - 1) * pageSize;
   const encodedSearch = encodeURIComponent(search);
@@ -78,8 +80,12 @@ export async function getAllShedulers(
     ? `&or_filters=[["scheduler_name","like","%${encodedSearch}%"]]`
     : "";
 
+  const orderByParam = sortBy && sortOrder
+    ? `&order_by=${encodeURIComponent(`${sortBy} ${sortOrder}`)}&sortBy=${encodeURIComponent(sortBy)}&sortOrder=${encodeURIComponent(sortOrder)}`
+    : "";
+
   const resp: AxiosResponse = await api.get(
-    `${SCHEDULER_URL}?fields=["name","scheduler_name","frequency","enabled"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}${searchFilters}`,
+    `${SCHEDULER_URL}?fields=["name","scheduler_name","frequency","enabled"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}${searchFilters}${orderByParam}`,
   );
 
   const items: SchedulerDoc[] = resp.data?.data ?? [];

@@ -233,6 +233,8 @@ export async function getAllPayrollEntries(
   search = "",
   fromDate?: string, 
   toDate?: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<any> {
   const queryParams = new URLSearchParams({
     page: String(page),
@@ -244,6 +246,10 @@ export async function getAllPayrollEntries(
   }
   if (fromDate)       queryParams.append("from_date", fromDate);  
   if (toDate)         queryParams.append("to_date",   toDate); 
+  if (sortBy) {
+    queryParams.append("sort_by", sortBy);
+    queryParams.append("sort_order", sortOrder || "asc");
+  }
 
   const resp: AxiosResponse = await api.get(
     `${API.payroll.payrollentry.getPayrollEntryList}?${queryParams.toString()}`,

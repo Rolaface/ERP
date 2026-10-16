@@ -18,6 +18,7 @@ import ActionButton, { ActionGroup, ActionMenu } from "../../../components/ui/Ta
 import { openLeaveApplyModal } from "../../../store/modalStore";
 import LeaveBalanceTable from "./LeaveBalanceTable";
 import { useUrlTab } from "../../../hooks/useUrlTab";
+import MultiSelectFilter from "../../../components/ui/modal/MultiSelectFilter";
 
 interface MenuAction {
   label: string;
@@ -26,6 +27,21 @@ interface MenuAction {
   danger?: boolean;
   dividerBefore?: boolean;
 }
+
+const SORT_FIELD_MAP: Record<string, string> = {
+  employee_name: "employee_name",
+  leave_type: "leave_type",
+  from_date: "from_date",
+  to_date: "to_date",
+  total_leave_days: "total_leave_days",
+  description: "description",
+};
+const STATUS_OPTIONS = [
+  { label: "Pending Approval", value: "Open" },
+  { label: "Approved", value: "Approved" },
+  { label: "Rejected", value: "Rejected" },
+  { label: "Cancelled", value: "Cancelled" },
+];
 
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function LeaveApproval() {
@@ -41,9 +57,15 @@ export default function LeaveApproval() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showHistory] = useState(false);
   // const [filters, setFilters] = useState({ from_date: "", to_date: "" });
-  const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "Open" });
+  const [filters, setFilters] = useState<{
+  from_date: string;
+  to_date: string;
+  status: string[];
+}>({ from_date: "", to_date: "", status: ["Open"] });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState<string>("from_date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 const leaveTabs = useMemo(
    () => [{ id: "applications" }, { id: "balance" }] as const,
    [],
@@ -54,13 +76,25 @@ const leaveTabs = useMemo(
    param: "view",
  });
 
+  const handleSortChange = ({
+    sortBy: nextSortBy,
+    sortOrder: nextSortOrder,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(nextSortBy);
+    setSortOrder(nextSortOrder);
+    setPage(1);
+  };
+
   // useEffect(() => {
   //   getAllLeaveApplied();
   // // }, [showHistory, filters.from_date, filters.to_date]); 
   // }, [showHistory, filters.from_date, filters.to_date, filters.status]);
   useEffect(() => {
     getAllLeaveApplied();
-  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize, searchTerm]);
+  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize, searchTerm, sortBy, sortOrder]);
 
   const getAllLeaveApplied = async () => {
     try {
@@ -73,9 +107,9 @@ const leaveTabs = useMemo(
       if (!isAdmin) {
         apiFilters.push(["leave_approver", "=", user?.email]);
       }
-      if (filters.status) {
-        apiFilters.push(["status", "=", filters.status]);
-      }
+      if (filters.status.length > 0) {
+  apiFilters.push(["status", "in", filters.status]);
+}
       // else if (showHistory) {
       //     apiFilters.push([
       //       "status",
@@ -96,9 +130,17 @@ const leaveTabs = useMemo(
       // const response = await getAllLeaveApplications(apiFilters);
       const limit_start = (page - 1) * pageSize;
       const limit_page_length = pageSize;
+      const backendSortField = SORT_FIELD_MAP[sortBy] || sortBy;
 
       // Pass the pagination params to your API call
-      const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length, searchTerm);
+      const response = await getAllLeaveApplications(
+        apiFilters,
+        limit_start,
+        limit_page_length,
+        searchTerm,
+        backendSortField,
+        sortOrder,
+      );
     
       setData(response || []);
     } catch (err) {
@@ -167,27 +209,35 @@ const leaveTabs = useMemo(
       key: "employee_name",
       header: "Employee Name",
       align: "left",
+      sortable: true,
       render: (e) => <span className=" font-base">{e.employee_name || "-"}</span>,
     },
     {
       key: "leave_type",
       header: "Leave Type",
       align: "left",
+      sortable: true,
       render: (e) => <span className="font-base">{e.leave_type || "-"}</span>,
     },
-    { key: "from_date", header: "From Date", align: "left",
+    {
+      key: "from_date",
+      header: "From Date",
+      align: "left",
+      sortable: true,
       render: (e) => (formatDate(e.from_date) || "-"),
-     },
+    },
     {
       key: "to_date",
       header: "To Date",
       align: "left",
+      sortable: true,
       render: (e) => (e.half_day === 1 ? formatDate(e.from_date) : formatDate(e.to_date) || "-"),
     },
     {
       key: "total_leave_days",
       header: "No of Days",
       align: "left",
+      sortable: true,
       // render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
       render: (e) => <span className="font-medium">{e.total_leave_days || "—"}</span>,
     },
@@ -195,6 +245,7 @@ const leaveTabs = useMemo(
       key: "description",
       header: "Reason",
       align: "left",
+      sortable: true,
       render: (e) => (
         <div className=" font-base" title={e.description}>
           {e.description || "-"}
@@ -290,21 +341,16 @@ const leaveTabs = useMemo(
                 setPage(1);
               }}
             />
-            <select
-              value={filters.status}
-              // disabled={!showHistory} 
-              onChange={(e) => {
-                setFilters((prev) => ({ ...prev, status: e.target.value }));
-                setPage(1);
-              }}
-              className="border-gray-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 py-1 px-2 border outline-none"
-            >
-              <option value="">All Statuses</option>
-              <option value="Open">Pending Approval</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-                      <option value="Cancelled">Cancelled</option>
-            </select>
+            <MultiSelectFilter
+  options={STATUS_OPTIONS}
+  values={filters.status}
+  onChange={(v) => {
+    setFilters((prev) => ({ ...prev, status: v }));
+    setPage(1);
+  }}
+  placeholder="Status"
+  panelTitle="Status"
+/>
                        <button
               type="button"
               onClick={() => setViewMode("balance")}
@@ -338,6 +384,9 @@ const leaveTabs = useMemo(
           setPage(1);
         }}
         onPageChange={setPage}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         onRowDoubleClick={(row) =>
           openLeaveApplyModal({ ...row, _isView: true } as any, true, { onSuccess: getAllLeaveApplied })
         }

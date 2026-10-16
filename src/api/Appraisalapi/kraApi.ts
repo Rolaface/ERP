@@ -28,10 +28,14 @@ export async function getKRAList({
   page = 1,
   pageSize = 10,
   search = "",
+  sortBy,
+  sortOrder,
 }: {
   page?: number;
   pageSize?: number;
   search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }): Promise<GetKRAListResponse> {
   const start = (page - 1) * pageSize;
 
@@ -41,6 +45,8 @@ export async function getKRAList({
     pageSize,
     search,
     searchFields: ["name", "title","description","creation"],
+    sortBy,
+    sortOrder,
   });
 
   const resp: AxiosResponse = await api.get(

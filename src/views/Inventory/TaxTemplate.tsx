@@ -58,7 +58,26 @@ const TaxTemplate: React.FC<Props> = () => {
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [sortBy, setSortBy] = useState<string>("title");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    title: "title",
+    description: "title",
+  };
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: direction,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(direction);
+    setPage(1);
+  };
 
   const toggleExpand = (name: string) => {
     setExpandedRows((prev) => {
@@ -181,7 +200,14 @@ const TaxTemplate: React.FC<Props> = () => {
   const fetchTemplates = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getAllTemplates(page, pageSize, searchTerm || undefined);
+      const apiSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
+      const res = await getAllTemplates(
+        page,
+        pageSize,
+        searchTerm || undefined,
+        apiSortBy,
+        sortOrder
+      );
       const list: TaxTemplateSummary[] = res?.data?.templates ?? [];
       const pagination = res?.data?.pagination;
       setTemplates(list);
@@ -194,7 +220,7 @@ const TaxTemplate: React.FC<Props> = () => {
       setLoading(false);
       setInitialLoad(false);
     }
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchTemplates();
@@ -287,6 +313,7 @@ const TaxTemplate: React.FC<Props> = () => {
       key: "title",
       header: "Code",
       align: "left",
+      sortable: true,
       render: (tc) => {
         const separatorIdx = tc.title.indexOf(" | ");
         const code = separatorIdx !== -1 ? tc.title.slice(0, separatorIdx) : tc.title;
@@ -302,9 +329,10 @@ const TaxTemplate: React.FC<Props> = () => {
       },
     },
     {
-      key: "title" as any,
+      key: "description",
       header: "Description",
       align: "left",
+      sortable: true,
       render: (tc) => {
         const separatorIdx = tc.title.indexOf(" | ");
         const desc = separatorIdx !== -1 ? tc.title.slice(separatorIdx + 3) : "";
@@ -461,6 +489,9 @@ const TaxTemplate: React.FC<Props> = () => {
           setSearchTerm(val);
           setPage(1); // reset page on search
         }}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         enableAdd={can(TAX_TEMPLATE_MODULE, "create")}
         addLabel="Add Tax Template"
         onAdd={openCreate}

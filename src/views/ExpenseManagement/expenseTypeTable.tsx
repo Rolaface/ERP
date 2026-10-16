@@ -25,6 +25,11 @@ interface ExpenseType {
   account: string;
 }
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  expense_type: "name",
+  account: "name",
+};
+
 const ExpenseTypeTable: React.FC = () => {
   const mountedRef = useRef(true);
   const { can } = usePermission();
@@ -47,7 +52,8 @@ const fetchExpenseTypes = useCallback(async () => {
   if (!mountedRef.current) return;
   setIsFetching(true);
   try {
-    const res = await getExpenseClaimTypes(searchTerm, page, pageSize);
+    const backendSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
+    const res = await getExpenseClaimTypes(searchTerm, page, pageSize, backendSortBy, sortOrder);
     if (!mountedRef.current) return;
     setExpenseTypes(res.data.map((item) => ({
       id:           item.name,
@@ -163,6 +169,7 @@ const handleExportExcel = async () => {
       {
         key:      "expense_type",
         header:   "Expense Type",
+        sortable: true,
         align:    "left",
         render:   (et) => (
           <div className="py-1.5">
@@ -174,6 +181,7 @@ const handleExportExcel = async () => {
       {
         key: "account",
         header: "GL Account",
+        sortable: true,
         align: "left",
         render: (et) => (
           <div className="py-1.5">

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { getAllTaxCategories } from "../../api/taxCategoryApi";
 import { showApiError, showSuccess } from "../../utils/alert";
@@ -98,6 +98,15 @@ const flattenItemDetail = (fullItem: any): Item => {
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  id: "name",
+  brand: "brand",
+  itemName: "item_name",
+  itemGroup: "item_group",
+};
+
+const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? "name";
+
 const Items: React.FC = () => {
   const {
     openItemCreate,
@@ -119,7 +128,21 @@ const Items: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [filters, setFilters] = useState<ItemFilters>({});
+  const [sortBy, setSortBy] = useState("id");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { can } = usePermission();
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
+  };
 
   /* ── View mode — "table" or "detail" ── */
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
@@ -170,7 +193,13 @@ const Items: React.FC = () => {
   const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getAllItems(page, pageSize, filters);
+      const mappedSort = mapSortField(sortBy);
+      const res = await getAllItems(page, pageSize, {
+        ...filters,
+        sortBy: mappedSort,
+        sortOrder,
+        order_by: `${mappedSort} ${sortOrder}`,
+      });
       const rawList = Array.isArray(res?.data?.data) ? res.data.data : [];
       const pagination = res?.data?.pagination;
 
@@ -209,7 +238,7 @@ const Items: React.FC = () => {
       setLoading(false);
       setInitialLoad(false);
     }
-  }, [filters, page, pageSize]);
+  }, [filters, page, pageSize, sortBy, sortOrder]);
 
   useEffect(() => {
     void fetchItems();
@@ -413,9 +442,10 @@ const handleAddPurchaseInvoice = useCallback(() => {
       key: "id",
       header: "Item Code",
       align: "left",
+      sortable: true,
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">{i.id}</span>
+          <span className="block break-words">{i.id}</span>
         </div>
       ),
       tooltip: (i) => i.id,
@@ -424,9 +454,10 @@ const handleAddPurchaseInvoice = useCallback(() => {
       key: "brand",
       header: "Brand",
       align: "center",
+      sortable: true,
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">{i.brand || "-"}</span>
+          <span className="block break-words">{i.brand || "-"}</span>
         </div>
       ),
       tooltip: (i) => i.brand || "-",
@@ -435,9 +466,10 @@ const handleAddPurchaseInvoice = useCallback(() => {
       key: "itemName",
       header: "Name",
       align: "center",
+      sortable: true,
       render: (i) => (
         <div className="py-1.5">
-          <span className="block font-medium">{i.itemName}</span>
+          <span className="block font-medium break-words">{i.itemName}</span>
         </div>
       ),
       tooltip: (i) => i.itemName,
@@ -446,9 +478,10 @@ const handleAddPurchaseInvoice = useCallback(() => {
       key: "itemGroup",
       header: "Category",
       align: "center",
+      sortable: true,
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">{i.itemGroup}</span>
+          <span className="block break-words">{i.itemGroup}</span>
         </div>
       ),
       tooltip: (i) => i.itemGroup,
@@ -459,7 +492,7 @@ const handleAddPurchaseInvoice = useCallback(() => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">{i.minStockLevel ?? "-"}</span>
+          <span className="block break-words">{i.minStockLevel ?? "-"}</span>
         </div>
       ),
       tooltip: (i) => i.minStockLevel ?? "-",
@@ -470,7 +503,7 @@ const handleAddPurchaseInvoice = useCallback(() => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">{i.maxStockLevel ?? "-"}</span>
+          <span className="block break-words">{i.maxStockLevel ?? "-"}</span>
         </div>
       ),
       tooltip: (i) => i.maxStockLevel ?? "-",
@@ -481,7 +514,7 @@ const handleAddPurchaseInvoice = useCallback(() => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">{i.preferredVendorName || "-"}</span>
+          <span className="block break-words">{i.preferredVendorName || "-"}</span>
         </div>
       ),
       tooltip: (i) => i.preferredVendorName || "-",
@@ -492,7 +525,7 @@ const handleAddPurchaseInvoice = useCallback(() => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">{i.sellingPrice}</span>
+          <span className="block break-words">{i.sellingPrice}</span>
         </div>
       ),
       tooltip: (i) => i.sellingPrice,
@@ -503,24 +536,24 @@ const handleAddPurchaseInvoice = useCallback(() => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">{i.rrp_rate}</span>
+          <span className="block break-words">{i.rrp_rate}</span>
         </div>
       ),
       tooltip: (i) => i.rrp_rate,
     },
     {
-  key: "taxTitle",
-  header: "Tax Title",
-  align: "center",
-  render: (i) => (
-    <div className="py-1.5">
-      <span className="block">
-        {i.taxTitle || "-"}
-      </span>
-    </div>
-  ),
-  tooltip: (i) => i.taxTitle || "-",
-},
+      key: "taxTitle",
+      header: "Tax Title",
+      align: "center",
+      render: (i) => (
+        <div className="py-1.5">
+          <span className="block break-words">
+            {i.taxTitle || "-"}
+          </span>
+        </div>
+      ),
+      tooltip: (i) => i.taxTitle || "-",
+    },
     {
       key: "actions",
       header: "Actions",
@@ -580,12 +613,15 @@ const handleAddPurchaseInvoice = useCallback(() => {
             totalPages={totalPages}
             pageSize={pageSize}
             totalItems={totalItems}
-             pageSizeOptions={[20, 50, 100,200]}
+            pageSizeOptions={[20, 50, 100, 200]}
             onPageSizeChange={(size) => {
               setPageSize(size);
               setPage(1);
             }}
             onPageChange={setPage}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortChange={handleSortChange}
             onRowDoubleClick={handleRowClick}
           />
         </div>

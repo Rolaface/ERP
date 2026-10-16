@@ -6,7 +6,8 @@ import React, {
   useMemo,
 } from "react";
 import { Ban, CheckCircle2, XCircle } from "lucide-react";
-import { FilterSelect } from "../../components/ui/modal/modalComponent";
+// import { FilterSelect } from "../../components/ui/modal/modalComponent";
+import MultiSelectFilter from "../../components/ui/modal/MultiSelectFilter";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionMenu,
@@ -82,11 +83,22 @@ const ExpenseHistory: React.FC = () => {
   const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   const [filters, setFilters] = useState<{
-    status?: string;
+    status?: string[];
     category?: string;
     from_date?: string;
     to_date?: string;
   }>({});
+
+const SORT_FIELD_MAP: Record<string, string> = {
+  claimName: "name",
+  date: "posting_date",
+  expenseDate: "expense_date",
+  approver: "expense_approver",
+  name: "employee_name",
+  category: "expense_type",
+  amount: "total_claimed_amount",
+  status: "approval_status",
+};
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -108,12 +120,15 @@ const ExpenseHistory: React.FC = () => {
     if (!mountedRef.current) return;
     setIsFetching(true);
     try {
+      const backendSortBy = SORT_FIELD_MAP[sortBy] || sortBy;
       const res = await getExpenseClaims(
         searchTerm,
         page,
         pageSize,
         isEmployeeView ? (user?.employeeId ?? undefined) : undefined,
         filters.status,
+        backendSortBy,
+        sortOrder,
       );
       if (!mountedRef.current) return;
       setExpenses(
@@ -400,6 +415,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "claimName",
         header: "Name",
+        sortable: true,
         align: "left",
         render: (exp) => (
           <div className="py-1.5">
@@ -411,6 +427,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "date",
         header: "Date",
+        sortable: true,
         align: "center",
         render: (exp) => (
           <div className="py-1.5">
@@ -418,19 +435,21 @@ const ExpenseHistory: React.FC = () => {
           </div>
         ),
       },
-          {
-     key: "expenseDate",
-     header: "Expense Date",
-    align: "center",
-    render: (exp) => (
-       <div className="py-1.5">
-         <span className="block">{formatDate(exp.expenseDate)}</span>
-        </div>
-     ),
-    },
+      {
+        key: "expenseDate",
+        header: "Expense Date",
+        sortable: true,
+        align: "center",
+        render: (exp) => (
+          <div className="py-1.5">
+            <span className="block">{formatDate(exp.expenseDate)}</span>
+          </div>
+        ),
+      },
       {
         key: "approver",
         header: "Approver",
+        sortable: true,
         align: "left",
         render: (exp) => (
           <div className="py-1.5">
@@ -442,6 +461,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "name",
         header: "EMP Name",
+        sortable: true,
         align: "left",
         render: (exp) => (
           <div className="py-1.5">
@@ -454,6 +474,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "category",
         header: "Category",
+        sortable: true,
         align: "center",
         render: (exp) => (
           <div className="py-1.5">
@@ -465,6 +486,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "amount",
         header: "Amount",
+        sortable: true,
         align: "center",
         render: (exp) => (
           <div className="py-1.5">
@@ -626,18 +648,18 @@ const ExpenseHistory: React.FC = () => {
           setPage(1);
         }}
         extraFilters={
-          <>
-            <FilterSelect
-              value={filters.status ?? ""}
-              options={statusOptions}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  status: e.target.value || undefined,
-                }))
-              }
-            />
-          </>
+          <MultiSelectFilter
+            options={statusOptions}
+            values={filters.status ?? []}
+            onChange={(v) =>
+              setFilters((prev) => ({
+                ...prev,
+                status: v.length ? v : undefined,
+              }))
+            }
+            placeholder="Status"
+            panelTitle="Status"
+          />
         }
       />
       {detailClaim !== null && (

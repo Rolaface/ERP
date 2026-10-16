@@ -14,6 +14,8 @@ export async function getAllCurrencyExchanges(
   from_currency?: string,
   to_currency?: string,
   date?: string,
+  sortBy?: string,
+  sortOrder: "asc" | "desc" = "asc",
 ): Promise<any> {
   const params: Record<string, any> = { page, page_size };
 
@@ -21,6 +23,7 @@ export async function getAllCurrencyExchanges(
   if (from_currency)  params.from_currency = from_currency;
   if (to_currency)    params.to_currency   = to_currency;
   if (date)           params.date          = date;
+  if (sortBy)         params.order_by      = `${sortBy} ${sortOrder}`;
 
   const resp: AxiosResponse = await api.get(
     CurrencyExchangeAPI.getAll,

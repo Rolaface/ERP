@@ -9,6 +9,9 @@ export const ItemAPI = API.item;
 export interface ItemFilters {
   search?: string;
   taxCategory?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  order_by?: string;
 }
 
 export async function getAllItems(
@@ -17,8 +20,12 @@ export async function getAllItems(
   filters?: ItemFilters,
   search = "",
 ): Promise<any> {
+  const { sortBy, sortOrder, order_by, ...restFilters } = filters || {};
+  const computedOrderBy =
+    order_by || (sortBy ? `${sortBy} ${sortOrder ?? "asc"}` : undefined);
+
   const cleanedFilters = Object.fromEntries(
-    Object.entries(filters || {}).filter(
+    Object.entries(restFilters).filter(
       ([_, v]) => v !== undefined && v !== "",
     ),
   );
@@ -29,6 +36,7 @@ export async function getAllItems(
       page_size,
       search,
       ...cleanedFilters,
+      ...(computedOrderBy && { order_by: computedOrderBy }),
     },
   });
 

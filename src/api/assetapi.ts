@@ -74,6 +74,8 @@ export async function getAssets(paramsObj?: {
   search?: string;
   page?: number;
   page_size?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }) {
   try {
     const start = paramsObj?.page && paramsObj?.page_size
@@ -86,6 +88,8 @@ export async function getAssets(paramsObj?: {
       pageSize: paramsObj?.page_size,
       search: paramsObj?.search,
       searchFields: ["name", "asset_category", "location"],
+      sortBy: paramsObj?.sortBy,
+      sortOrder: paramsObj?.sortOrder,
     });
 
     const resp: AxiosResponse = await api.get(`${API.Assets.getall}?${query}`);

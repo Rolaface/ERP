@@ -15,11 +15,14 @@ import { getAllProjects } from "../../../api/project/projectapi/project.api";
 import {
   fetchTimesheetActivityReport,
   getEmployeeOptions,
+  type TimesheetActivityGroup,
+  type TimesheetActivityGroupBy,
   type TimesheetActivityResponse,
 } from "../../../api/project/report/report.api";
 import { formatAmount } from "../../../utils/day-time formatter/Format";
 import { formatDate } from "../../../components/UI_Utils/Datedisplay";
 import type { ReportViewProps } from "../reportOptions";
+import { downloadTimesheetSummaryExcel } from "./Timesheetsummaryexcel";
 
 const FIRST_PAGE = 1;
 const UNPAGED = 0;
@@ -38,11 +41,6 @@ const thCls =
   "px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)]";
 const tdCls = "px-3 py-1 text-xs text-main whitespace-nowrap";
 
-const csvCell = (v: unknown) => {
-  const s = v === null || v === undefined ? "" : String(v);
-  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
-
 const filterOptions = async (options: Option[], query: string) => {
   const term = query.trim().toLowerCase();
   return term
@@ -50,24 +48,46 @@ const filterOptions = async (options: Option[], query: string) => {
     : options;
 };
 
-const EXPORT_COLS: [string, string][] = [
-  ["date", "Date"],
-  ["day_name", "Day"],
-  ["timesheet", "Timesheet"],
-  ["timesheet_title", "Timesheet Title"],
-  ["employee_name", "Employee"],
-  ["project_name", "Project"],
-  ["customer_name", "Customer"],
-  ["task_name", "Task"],
-  ["activity_type", "Activity Type"],
-  ["description", "Description"],
-  ["hours", "Hours"],
-  ["is_billable", "Billable"],
-  ["billing_rate", "Billing Rate"],
-  ["billing_amount", "Billing Amount"],
-  ["costing_rate", "Costing Rate"],
-  ["costing_amount", "Costing Amount"],
+const GROUP_BY_OPTIONS: Option[] = [
+  { value: "employee", label: "Employee" },
+  { value: "project", label: "Project" },
+  { value: "date", label: "Date" },
+  { value: "month", label: "Month" },
 ];
+
+const GROUP_COLUMN_LABEL: Record<TimesheetActivityGroupBy, string> = {
+  employee: "Employee",
+  project: "Project",
+  date: "Date",
+  month: "Month",
+};
+
+const fetchGroupByOptions = (q: string) => filterOptions(GROUP_BY_OPTIONS, q);
+
+const hours = (value: number) => Number(value || 0).toFixed(2);
+
+const getGroupLabel = (group: TimesheetActivityGroup) =>
+  group.level === "date"
+    ? `${formatDate(group.group_id)}${
+        group.day_name ? ` (${group.day_name.slice(0, 3)})` : ""
+      }`
+    : group.group || "—";
+
+interface LeafRow {
+  path: TimesheetActivityGroup[];
+  leaf: TimesheetActivityGroup;
+}
+
+const flattenLeaves = (
+  groups: TimesheetActivityGroup[],
+  path: TimesheetActivityGroup[] = [],
+): LeafRow[] =>
+  groups.flatMap((group) => {
+    const nextPath = [...path, group];
+    return group.children?.length
+      ? flattenLeaves(group.children, nextPath)
+      : [{ path: nextPath, leaf: group }];
+  });
 
 const TABLE_HEADERS = [
   "Date",
@@ -91,6 +111,9 @@ const TimesheetActivityView: React.FC<ReportViewProps> = ({ leading }) => {
   const [toDate, setToDate] = useState<string | undefined>(today());
   const [employeeIds, setEmployeeIds] = useState<string[]>([]);
   const [projectIds, setProjectIds] = useState<string[]>([]);
+  const [groupLevels, setGroupLevels] = useState<TimesheetActivityGroupBy[]>(
+    [],
+  );
   const [includeNonBillable, setIncludeNonBillable] = useState(true);
 
   const [employees, setEmployees] = useState<Option[]>([]);
@@ -116,6 +139,7 @@ const TimesheetActivityView: React.FC<ReportViewProps> = ({ leading }) => {
     from_date: fromDate,
     to_date: toDate,
     include_non_billable: includeNonBillable ? 1 : 0,
+    ...(groupLevels.length > 0 && { group_by: groupLevels.join(",") }),
     ...(employeeIds.length > 0 && { employees: JSON.stringify(employeeIds) }),
     ...(projectIds.length > 0 && { projects: JSON.stringify(projectIds) }),
   });
@@ -187,27 +211,23 @@ const TimesheetActivityView: React.FC<ReportViewProps> = ({ leading }) => {
   }, []);
 
   const handleExport = async () => {
-    if (!appliedParams.current || !result?.pagination.total) return;
+    if (!appliedParams.current || !result?.summary.total_entries) return;
     setLoading(true);
     try {
+      const exportParams = { ...appliedParams.current };
+      delete exportParams.group_by;
+
       const all = await fetchTimesheetActivityReport({
-        ...appliedParams.current,
+        ...exportParams,
         page_size: UNPAGED,
       });
-      const csv = [
-        EXPORT_COLS.map(([, l]) => csvCell(l)).join(","),
-        ...all.data.map((r) =>
-          EXPORT_COLS.map(([k]) => csvCell((r as any)[k])).join(","),
-        ),
-      ].join("\r\n");
-      const url = URL.createObjectURL(
-        new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }),
+
+      await downloadTimesheetSummaryExcel(
+        all.data,
+        String(exportParams.from_date),
+        String(exportParams.to_date),
+        `Timesheet_Monthly_Summary_${today()}.xlsx`,
       );
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Timesheet_Activity_Report_${today()}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
     } catch (err: any) {
       setError(
         err?.response?.data?.exception ||
@@ -233,6 +253,13 @@ const TimesheetActivityView: React.FC<ReportViewProps> = ({ leading }) => {
       ["Costing Amount", formatAmount(s.total_costing_amount)],
     ] as [string, string | number][];
   }, [result]);
+
+  const activeGroupBy = result?.group_by ?? [];
+  const leafRows = useMemo(
+    () => flattenLeaves(result?.groups ?? []),
+    [result?.groups],
+  );
+  const showGroupedView = activeGroupBy.length > 0 && leafRows.length > 0;
 
   return (
     <div className="flex flex-col gap-3 h-full min-h-0">
@@ -269,6 +296,18 @@ const TimesheetActivityView: React.FC<ReportViewProps> = ({ leading }) => {
             maxVisibleChips={1}
           />
         </div>
+        <div className="flex flex-col gap-1 min-w-[200px] max-w-[260px]">
+          <label className={labelCls}>Group By</label>
+          <MultiSearchSelect
+            values={groupLevels}
+            onChange={(values) =>
+              setGroupLevels(values as TimesheetActivityGroupBy[])
+            }
+            fetchOptions={fetchGroupByOptions}
+            placeholder="No Grouping"
+            maxVisibleChips={2}
+          />
+        </div>
         <label className="h-8 flex items-center gap-1.5 text-xs text-main cursor-pointer whitespace-nowrap">
           <input
             type="checkbox"
@@ -293,10 +332,10 @@ const TimesheetActivityView: React.FC<ReportViewProps> = ({ leading }) => {
         </button>
         <button
           onClick={handleExport}
-          disabled={loading || !result?.pagination.total}
+          disabled={loading || !result?.summary.total_entries}
           className="ml-auto h-8 flex items-center gap-1.5 px-3 text-xs font-semibold border border-[var(--border)] rounded-md bg-card text-main disabled:opacity-50"
         >
-          <Download size={12} /> Export
+          <Download size={12} /> Export Excel
         </button>
       </div>
 
@@ -327,10 +366,96 @@ const TimesheetActivityView: React.FC<ReportViewProps> = ({ leading }) => {
           <div className="flex justify-center items-center py-14">
             <Loader2 size={20} className="animate-spin text-muted" />
           </div>
-        ) : !result?.data.length ? (
+        ) : !result?.data.length && !leafRows.length ? (
           <div className="py-14 text-center text-xs text-muted">
             No data found for the selected filters.
           </div>
+        ) : showGroupedView ? (
+          <table className="w-max min-w-full text-left border-collapse">
+            <thead className="sticky top-0 z-10">
+              <tr>
+                {activeGroupBy.map((level) => (
+                  <th key={level} className={thCls}>
+                    {GROUP_COLUMN_LABEL[level]}
+                  </th>
+                ))}
+                <th className={`${thCls} text-right`}>Work Days</th>
+                <th className={`${thCls} text-right`}>Total Hours</th>
+                <th className={`${thCls} text-right`}>Billable Hours</th>
+                <th className={`${thCls} text-right`}>Non-Billable Hours</th>
+                <th className={`${thCls} text-right`}>Billable Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leafRows.map(({ path, leaf }, rowIndex) => {
+                const previousPath = leafRows[rowIndex - 1]?.path;
+                let changed = false;
+
+                return (
+                  <tr
+                    key={path.map((node) => node.group_id).join("/")}
+                    className="hover:bg-[var(--row-hover)] h-[36px]"
+                    style={{
+                      borderBottom: "1px solid rgba(128,128,128,0.12)",
+                    }}
+                  >
+                    {path.map((node, level) => {
+                      if (previousPath?.[level]?.group_id !== node.group_id) {
+                        changed = true;
+                      }
+                      return (
+                        <td key={level} className={`${tdCls} font-medium`}>
+                          {changed ? getGroupLabel(node) : ""}
+                        </td>
+                      );
+                    })}
+                    <td className={`${tdCls} text-right tabular-nums`}>
+                      {leaf.work_days}
+                    </td>
+                    <td className={`${tdCls} text-right tabular-nums`}>
+                      {hours(leaf.total_hours)}
+                    </td>
+                    <td className={`${tdCls} text-right tabular-nums`}>
+                      {hours(leaf.billable_hours)}
+                    </td>
+                    <td className={`${tdCls} text-right tabular-nums`}>
+                      {hours(leaf.non_billable_hours)}
+                    </td>
+                    <td
+                      className={`${tdCls} text-right tabular-nums font-medium`}
+                    >
+                      {formatAmount(leaf.total_billable_amount)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            {result && (
+              <tfoot>
+                <tr className="bg-[var(--row-hover)] font-bold">
+                  <td
+                    className={tdCls}
+                    colSpan={activeGroupBy.length}
+                  >
+                    Total
+                  </td>
+                  <td className={tdCls} />
+                  <td className={`${tdCls} text-right tabular-nums`}>
+                    {hours(result.summary.total_hours)}
+                  </td>
+                  <td className={`${tdCls} text-right tabular-nums`}>
+                    {hours(result.summary.billable_hours)}
+                  </td>
+                  <td className={`${tdCls} text-right tabular-nums`}>
+                    {hours(result.summary.non_billable_hours)}
+                  </td>
+                  <td className={`${tdCls} text-right tabular-nums`}>
+                    {formatAmount(result.summary.total_billable_amount)}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
         ) : (
           <table className="w-max min-w-full text-left border-collapse">
             <thead className="sticky top-0 z-10">
@@ -343,7 +468,7 @@ const TimesheetActivityView: React.FC<ReportViewProps> = ({ leading }) => {
               </tr>
             </thead>
             <tbody>
-              {result.data.map((e) => (
+              {(result?.data ?? []).map((e) => (
                 <tr
                   key={e.detail_id}
                   className="hover:bg-[var(--row-hover)] h-[36px]"

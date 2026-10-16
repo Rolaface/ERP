@@ -37,6 +37,14 @@ interface LeaveApplyTableProps {
   onAfterApply?: () => void;
 }
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  leave_type: "leave_type",
+  from_date: "from_date",
+  to_date: "to_date",
+  total_leave_days: "total_leave_days",
+  description: "description",
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
@@ -46,15 +54,29 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState<string>("from_date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showHistory, setShowHistory] = useState(false);
   // const [filters, setFilters] = useState({ from_date: "", to_date: "" });
   const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "Open" });
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
+  const handleSortChange = ({
+    sortBy: nextSortBy,
+    sortOrder: nextSortOrder,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(nextSortBy);
+    setSortOrder(nextSortOrder);
+    setPage(1);
+  };
+
   useEffect(() => {
     fetchLeaves();
     // }, [showHistory, filters.from_date, filters.to_date]);
-  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize, searchTerm]);
+  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize, searchTerm, sortBy, sortOrder]);
 
   const fetchLeaves = async () => {
     try {
@@ -93,8 +115,16 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
       // const response = await getAllLeaveApplications(apiFilters);
       const limit_start = (page - 1) * pageSize;
       const limit_page_length = pageSize;
+      const backendSortField = SORT_FIELD_MAP[sortBy] || sortBy;
 
-      const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length, searchTerm);
+      const response = await getAllLeaveApplications(
+        apiFilters,
+        limit_start,
+        limit_page_length,
+        searchTerm,
+        backendSortField,
+        sortOrder,
+      );
       setData(response || []);
     } catch (err) {
       console.error("Failed to fetch leave applications", err);
@@ -187,27 +217,35 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
       key: "leave_type",
       header: "Leave Type",
       align: "left",
+      sortable: true,
       render: (e) => <span className="font-medium">{e.leave_type || "—"}</span>,
     },
-    { key: "from_date", header: "From Date", align: "left", render: (e) => (formatDate(e.from_date) || "—"), },
+    {
+      key: "from_date",
+      header: "From Date",
+      align: "left",
+      sortable: true,
+      render: (e) => (formatDate(e.from_date) || "—"),
+    },
     {
       key: "to_date",
       header: "To Date",
-      align:  "left",
-      // render: (e) => (e.half_day === 1 ? "Half Day" : formatDate(e.to_date) || "—"),
+      align: "left",
+      sortable: true,
       render: (e) => (e.half_day === 1 ? formatDate(e.from_date) : formatDate(e.to_date) || "-"),
     },
     {
       key: "total_leave_days",
       header: "No of Days",
       align: "left",
-      // render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
+      sortable: true,
       render: (e) => <span className="font-medium">{e.total_leave_days || "—"}</span>,
     },
     {
       key: "description",
       header: "Reason",
       align: "left",
+      sortable: true,
       render: (e) => (
         <div className="max-w-xs truncate" title={e.description}>
           {e.description || "—"}
@@ -363,6 +401,9 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
 
       onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
       onPageChange={setPage}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      onSortChange={handleSortChange}
       onRowDoubleClick={(row) =>
         openLeaveApplyModal({ ...row, _isView: true } as any, true, { onSuccess: fetchLeaves })
       }

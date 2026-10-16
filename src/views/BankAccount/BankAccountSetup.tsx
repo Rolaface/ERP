@@ -40,6 +40,19 @@ const BankAccountSetup: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [sortBy, setSortBy] = useState("dateAdded");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    dateAdded: "creation",
+    accountFor: "is_company_account",
+    bankName: "bank",
+    accountNo: "bank_account_no",
+    accountHolderName: "account_name",
+    sortCode: "branch_code",
+    isDefault: "is_default",
+  };
+
   const { can } = usePermission();
 
   const fetchAccounts = useCallback(async () => {
@@ -50,6 +63,9 @@ const BankAccountSetup: React.FC = () => {
         page,
         search,
         page_size: pageSize,
+        sortBy: SORT_FIELD_MAP[sortBy] || sortBy,
+        sortOrder,
+        order_by: `${SORT_FIELD_MAP[sortBy] || sortBy} ${sortOrder}`,
       });
 
       setBankAccounts(res.data || []);
@@ -60,7 +76,19 @@ const BankAccountSetup: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search]);
+  }, [page, pageSize, search, sortBy, sortOrder]);
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
+  };
 
   useEffect(() => {
     fetchAccounts();
@@ -160,6 +188,7 @@ const BankAccountSetup: React.FC = () => {
       key: "dateAdded",
       header: "Date Added",
       align: "center",
+      sortable: true,
       tooltip: (row) => (row.dateAdded ? formatDate(row.dateAdded) : "—"),
       render: (row) => (
         <div className="py-1.5">
@@ -173,6 +202,7 @@ const BankAccountSetup: React.FC = () => {
       key: "accountFor",
       header: "Acc For",
       align: "center",
+      sortable: true,
       tooltip: (row) =>
         Number(row.isCompanyAccount) === 1 ? "Company" : row.accountFor || "—",
       render: (row) => (
@@ -189,6 +219,7 @@ const BankAccountSetup: React.FC = () => {
       key: "bankName",
       header: "Bank",
       align: "center",
+      sortable: true,
       tooltip: (row) => row.bankName || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -200,6 +231,7 @@ const BankAccountSetup: React.FC = () => {
       key: "accountNo",
       header: "Acc No",
       align: "center",
+      sortable: true,
       tooltip: (row) => row.accountNo || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -228,6 +260,7 @@ const BankAccountSetup: React.FC = () => {
       key: "accountHolderName",
       header: "Acc Holder",
       align: "center",
+      sortable: true,
       tooltip: (row) => String(row.accountHolderName || "—"),
       render: (row) => (
         <div className="py-1.5">
@@ -239,6 +272,7 @@ const BankAccountSetup: React.FC = () => {
       key: "sortCode",
       header: "IFSC/Sort",
       align: "center",
+      sortable: true,
       tooltip: (row) => row.sortCode || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -261,6 +295,7 @@ const BankAccountSetup: React.FC = () => {
       key: "isDefault",
       header: "Default",
       align: "center",
+      sortable: true,
       tooltip: (row) => (row.isDefault ? "Default account" : "Not default"),
       render: (row) => (
         <div className="py-1.5">
@@ -350,6 +385,9 @@ const BankAccountSetup: React.FC = () => {
           showToolbar
           searchValue={search}
           onSearch={setSearch}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
           enableAdd={can(BANK_ACCOUNT_MODULE, "create")}
           currentPage={page}
           totalPages={totalPages}

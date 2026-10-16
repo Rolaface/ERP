@@ -23,6 +23,18 @@ const BankDetails: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [sortBy, setSortBy] = useState("dateAdded");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const SORT_FIELD_MAP: Record<string, string> = {
+    dateAdded: "creation",
+    accountFor: "is_company_account",
+    bankName: "bank",
+    accountNo: "bank_account_no",
+    accountHolderName: "account_name",
+    sortCode: "branch_code",
+    isDefault: "is_default",
+  };
 
   const { isVisible, toggle, reveal } = useMaskedRows();
 
@@ -34,6 +46,9 @@ const BankDetails: React.FC = () => {
         company: true,
         page,
         page_size: pageSize,
+        sortBy: SORT_FIELD_MAP[sortBy] || sortBy,
+        sortOrder,
+        order_by: `${SORT_FIELD_MAP[sortBy] || sortBy} ${sortOrder}`,
       });
       setBankAccounts(res.data);
       setTotalPages(res.pagination.total_pages);
@@ -43,7 +58,19 @@ const BankDetails: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize]);
+  }, [page, pageSize, sortBy, sortOrder]);
+
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
+  };
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
   const filteredData = useMemo(() => {
@@ -77,6 +104,7 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
       key: "dateAdded",
       header: "Date Added",
       align: "center",
+      sortable: true,
       tooltip: (row) => row.dateAdded ? formatDate(row.dateAdded) : "—",
       render: (row) => (
         <div className="py-1.5">
@@ -88,6 +116,7 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
       key: "accountFor",
       header: "Acc For",
       align: "center",
+      sortable: true,
       tooltip: (row) => Number(row.isCompanyAccount) === 1 ? "Company" : row.accountFor || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -101,6 +130,7 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
       key: "bankName",
       header: "Bank",
       align: "center",
+      sortable: true,
       tooltip: (row) => row.bankName || "—",
       render: (row) => (
         <div className="flex items-center gap-2 py-1.5">
@@ -113,6 +143,7 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
       key: "accountNo",
       header: "Acc No",
       align: "center",
+      sortable: true,
       tooltip: (row) => row.accountNo || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -139,6 +170,7 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
       key: "accountHolderName",
       header: "Acc Holder",
       align: "center",
+      sortable: true,
       tooltip: (row) => String(row.accountHolderName || "—"),
       render: (row) => (
         <div className="py-1.5">
@@ -150,6 +182,7 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
       key: "sortCode",
       header: "IFSC/Sort",
       align: "center",
+      sortable: true,
       tooltip: (row) => row.sortCode || "—",
       render: (row) => (
         <div className="py-1.5">
@@ -172,6 +205,7 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
       key: "isDefault",
       header: "Default",
       align: "center",
+      sortable: true,
       tooltip: (row) => (row.isDefault ? "Default account" : "Not default"),
       render: (row) => (
         <div className="py-1.5">
@@ -226,6 +260,9 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
         showToolbar
         searchValue={search}
         onSearch={setSearch}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         enableAdd
         enableColumnSelector
         tableId="bank-details"

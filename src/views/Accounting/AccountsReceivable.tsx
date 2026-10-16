@@ -10,6 +10,7 @@ import {
   getCoreRowModel,
   flexRender,
   type ColumnDef,
+  type SortingState,
 } from "@tanstack/react-table";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
@@ -25,7 +26,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
- 
+
   Users,
   ReceiptText,
   SlidersHorizontal,
@@ -58,8 +59,20 @@ import { showApiError } from "../../utils/alert";
 import { useCompanyStore } from "../../store/companyStore";
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+import MultiSelectFilter from "../../components/ui/modal/MultiSelectFilter";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+
+const SORT_FIELD_MAP: Record<string, string> = {
+  id: "voucher_no",
+  customer: "customer",
+  voucherType: "voucher_type",
+  invoicedAmount: "invoiced_amount",
+  paidAmount: "paid_amount",
+  outstandingAmount: "outstanding_amount",
+  due: "due_date",
+  days: "age",
+};
 type ReceivableVoucherType =
   | "Sales Invoice"
   | "Payment Entry"
@@ -367,6 +380,23 @@ const DropdownItem: React.FC<{
   </button>
 );
 
+const STATUS_OPTIONS = [
+  { label: "Pending", value: "pending" },
+  { label: "Overdue", value: "overdue" },
+  { label: "Paid", value: "paid" },
+];
+
+const VOUCHER_TYPE_OPTIONS = [
+  { label: "Sales Invoice", value: "Sales Invoice" },
+  { label: "Payment Entry", value: "Payment Entry" },
+  { label: "Journal Entry", value: "Journal Entry" },
+];
+
+const GROUP_BY_OPTIONS = [
+  { label: "Customer", value: "customer" },
+  { label: "Voucher", value: "voucher" },
+];
+
 // ── Main Component ────────────────────────────────────────────────────────────
 const AccountsReceivable = () => {
   const getTodayDate = () => new Date().toISOString().split("T")[0];
@@ -375,19 +405,12 @@ const AccountsReceivable = () => {
 
   // Filter state
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [postingDate, setPostingDate] = useState(getTodayDate());
+  const [filterStatus, setFilterStatus] = useState<string[]>([]); const [postingDate, setPostingDate] = useState(getTodayDate());
   const [selectedGroupBy, setSelectedGroupBy] = useState<string[]>([]);
-  const [selectedVoucherType, setSelectedVoucherType] = useState<
-    ReceivableVoucherType | ""
-  >("");
-  const [selectedCostCenter, setSelectedCostCenter] = useState("");
-  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
-  const [selectedReceivableAccount, setSelectedReceivableAccount] =
-    useState("");
+  const [selectedVoucherType, setSelectedVoucherType] = useState<string[]>([]);
+  const [selectedCostCenter, setSelectedCostCenter] = useState<string[]>([]); const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
+  const [selectedReceivableAccount, setSelectedReceivableAccount] = useState<string[]>([]);
 
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Lookup data
   const [costCenterOptions, setCostCenterOptions] = useState<LookupOption[]>(
@@ -409,6 +432,7 @@ const AccountsReceivable = () => {
   const [pageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   // Modals
   const [company, setCompany] = useState<any | null>(null);
@@ -456,18 +480,6 @@ const AccountsReceivable = () => {
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      )
-        setActiveDropdown(null);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
     Promise.all([
       getCompanyCostCenters(),
       getCustomerList(),
@@ -498,28 +510,41 @@ const AccountsReceivable = () => {
     selectedCustomers,
     selectedReceivableAccount,
     selectedVoucherType,
+    sorting,
   ]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
+      const currentSort = sorting[0];
+      const backendSortField = currentSort
+        ? SORT_FIELD_MAP[currentSort.id] || currentSort.id
+        : undefined;
+      const backendSortOrder = currentSort
+        ? currentSort.desc
+          ? "desc"
+          : "asc"
+        : undefined;
+      const computedOrderBy =
+        backendSortField && backendSortOrder
+          ? `${backendSortField} ${backendSortOrder}`
+          : undefined;
+
       const response: any = await getAllReceivables({
         page,
         page_size: pageSize,
         search: searchTerm,
-        ...(filterStatus && filterStatus !== "all"
-          ? { status: filterStatus }
-          : {}),
+        status: filterStatus.length ? filterStatus.join(",") : undefined,
         posting_date: postingDate || undefined,
-        cost_center: selectedCostCenter || undefined,
-        party: selectedCustomers.length
-          ? selectedCustomers.join(",")
+        cost_center: selectedCostCenter.length ? selectedCostCenter.join(",") : undefined,
+        party: selectedCustomers.length ? selectedCustomers.join(",") : undefined,
+        receivable_account: selectedReceivableAccount.length
+          ? selectedReceivableAccount.join(",")
           : undefined,
-        receivable_account: selectedReceivableAccount || undefined,
-        group_by: selectedGroupBy.length
-          ? (selectedGroupBy.join(",") as any)
+        group_by: selectedGroupBy.length ? (selectedGroupBy.join(",") as any) : undefined,
+        voucher_type: selectedVoucherType.length
+          ? (selectedVoucherType.join(",") as any)
           : undefined,
-        voucher_type: selectedVoucherType || undefined,
       });
 
       if (response?.message?.data) {
@@ -606,6 +631,7 @@ const AccountsReceivable = () => {
     selectedCustomers,
     selectedReceivableAccount,
     selectedVoucherType,
+    sorting,
   ]);
 
   useEffect(() => {
@@ -744,6 +770,7 @@ const AccountsReceivable = () => {
         id: "status",
         accessorKey: "status",
         header: "Status",
+        enableSorting: false,
         size: 100,
         cell: ({ row }) =>
           row.original.isSummary ? null : (
@@ -753,6 +780,7 @@ const AccountsReceivable = () => {
       {
         id: "actions",
         header: "Actions",
+        enableSorting: false,
         size: 70,
         meta: { align: "center" },
         cell: ({ row }) =>
@@ -774,8 +802,11 @@ const AccountsReceivable = () => {
   const table = useReactTable({
     data: receivables,
     columns,
+    state: { sorting },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
+    manualSorting: true,
     pageCount: totalPages,
   });
 
@@ -852,19 +883,21 @@ const AccountsReceivable = () => {
     try {
       setIsExporting(true);
       const res: any = await getAllReceivables({
-        page: 1,
-        page_size: 999999,
-        search: searchTerm,
-        posting_date: postingDate || undefined,
-        cost_center: selectedCostCenter || undefined,
-        party: selectedCustomers.length
-          ? selectedCustomers.join(",")
-          : undefined,
-        receivable_account: selectedReceivableAccount || undefined,
-        group_by: selectedGroupBy.length
-          ? (selectedGroupBy.join(",") as any)
-          : undefined,
-      });
+  page: 1,
+  page_size: 999999,
+  search: searchTerm,
+  status: filterStatus.length ? filterStatus.join(",") : undefined,
+  posting_date: postingDate || undefined,
+  cost_center: selectedCostCenter.length ? selectedCostCenter.join(",") : undefined,
+  party: selectedCustomers.length ? selectedCustomers.join(",") : undefined,
+  receivable_account: selectedReceivableAccount.length
+    ? selectedReceivableAccount.join(",")
+    : undefined,
+  group_by: selectedGroupBy.length ? (selectedGroupBy.join(",") as any) : undefined,
+  voucher_type: selectedVoucherType.length
+    ? (selectedVoucherType.join(",") as any)
+    : undefined,
+});
       if (!res?.message?.data) {
         alert("No data to export.");
         return;
@@ -911,38 +944,27 @@ const AccountsReceivable = () => {
     }
   };
 
-  const handleMultiSelect = (
-    value: string,
-    selected: string[],
-    setSelected: React.Dispatch<React.SetStateAction<string[]>>,
-  ) => {
-    setSelected(
-      selected.includes(value)
-        ? selected.filter((i) => i !== value)
-        : [...selected, value],
-    );
-  };
+
 
   const hasActiveFilters =
     selectedCustomers.length > 0 ||
-    selectedCostCenter !== "" ||
-    selectedReceivableAccount !== "" ||
-    selectedVoucherType !== "" ||
+    selectedCostCenter.length > 0 ||
+    selectedReceivableAccount.length > 0 ||
+    selectedVoucherType.length > 0 ||
     selectedGroupBy.length > 0 ||
-    filterStatus !== "all" ||
+    filterStatus.length > 0 ||
     searchTerm !== "" ||
     postingDate !== getTodayDate();
 
   const clearAll = () => {
     setSearchTerm("");
-    setFilterStatus("all");
-    setSelectedVoucherType("");
+    setFilterStatus([]);
+    setSelectedVoucherType([]);
     setSelectedGroupBy([]);
     setSelectedCustomers([]);
-    setSelectedCostCenter("");
-    setSelectedReceivableAccount("");
+    setSelectedCostCenter([]);
+    setSelectedReceivableAccount([]);
     setPostingDate(getTodayDate());
-    setActiveDropdown(null);
   };
 
   const voucherTypeOptions: ReceivableVoucherType[] = [
@@ -974,9 +996,63 @@ const AccountsReceivable = () => {
 
       {/* ── Filter Bar ── */}
       <div
-        ref={dropdownRef}
+
         className="bg-card border border-[var(--border)] rounded-lg px-3 py-2 flex flex-wrap items-center gap-2"
       >
+
+        <MultiSelectFilter
+          options={STATUS_OPTIONS}
+          values={filterStatus}
+          onChange={setFilterStatus}
+          placeholder="Status"
+          panelTitle="Status"
+        />
+
+        <MultiSelectFilter
+          options={VOUCHER_TYPE_OPTIONS}
+          values={selectedVoucherType}
+          onChange={setSelectedVoucherType}
+          placeholder="Voucher Type"
+          panelTitle="Voucher Type"
+        />
+
+        <MultiSelectFilter
+          options={GROUP_BY_OPTIONS}
+          values={selectedGroupBy}
+          onChange={setSelectedGroupBy}
+          placeholder="Group By"
+          panelTitle="Group By"
+        />
+
+        <MultiSelectFilter
+          options={customerOptions}
+          values={selectedCustomers}
+          onChange={setSelectedCustomers}
+          placeholder="Customer"
+          panelTitle="Customer"
+          searchable
+          searchPlaceholder="Search customer..."
+        />
+
+        <MultiSelectFilter
+          options={costCenterOptions}
+          values={selectedCostCenter}
+          onChange={setSelectedCostCenter}
+          placeholder="Cost Center"
+          panelTitle="Cost Center"
+          searchable
+          searchPlaceholder="Search cost center..."
+        />
+
+        <MultiSelectFilter
+          options={receivableAccountOptions}
+          values={selectedReceivableAccount}
+          onChange={setSelectedReceivableAccount}
+          placeholder="Account"
+          panelTitle="Account"
+          searchable
+          searchPlaceholder="Search account..."
+        />
         {/* Icon + label */}
         <div className="flex items-center gap-1.5 mr-1">
           <SlidersHorizontal size={11} className="text-muted" />
@@ -996,198 +1072,7 @@ const AccountsReceivable = () => {
           />
         </div>
 
-        {/* Status */}
-        <FilterDropdown
-          label={filterStatus === "all" ? "Status" : filterStatus}
-          active={filterStatus !== "all"}
-          isOpen={activeDropdown === "status"}
-          onToggle={() =>
-            setActiveDropdown(activeDropdown === "status" ? null : "status")
-          }
-        >
-          {["all", "pending", "overdue", "paid"].map((s) => (
-            <DropdownItem
-              key={s}
-              active={filterStatus === s}
-              onClick={() => {
-                setFilterStatus(s);
-                setActiveDropdown(null);
-              }}
-            >
-              <span className="capitalize">
-                {s === "all" ? "All Statuses" : s}
-              </span>
-            </DropdownItem>
-          ))}
-        </FilterDropdown>
 
-        {/* Voucher Type */}
-        <FilterDropdown
-          label={selectedVoucherType || "Voucher Type"}
-          active={selectedVoucherType !== ""}
-          isOpen={activeDropdown === "voucherType"}
-          onToggle={() =>
-            setActiveDropdown(
-              activeDropdown === "voucherType" ? null : "voucherType",
-            )
-          }
-          width="w-52"
-        >
-          <DropdownItem
-            active={selectedVoucherType === ""}
-            onClick={() => {
-              setSelectedVoucherType("");
-              setActiveDropdown(null);
-            }}
-          >
-            All Types
-          </DropdownItem>
-          {voucherTypeOptions.map((opt) => (
-            <DropdownItem
-              key={opt}
-              active={selectedVoucherType === opt}
-              onClick={() => {
-                setSelectedVoucherType(opt);
-                setActiveDropdown(null);
-              }}
-            >
-              {opt}
-            </DropdownItem>
-          ))}
-        </FilterDropdown>
-
-        {/* Group By */}
-        <FilterDropdown
-          label={`Group By${selectedGroupBy.length ? ` (${selectedGroupBy.length})` : ""}`}
-          active={selectedGroupBy.length > 0}
-          isOpen={activeDropdown === "groupBy"}
-          onToggle={() =>
-            setActiveDropdown(activeDropdown === "groupBy" ? null : "groupBy")
-          }
-        >
-          {["customer", "voucher"].map((opt) => (
-            <label
-              key={opt}
-              className="flex items-center gap-2 px-3 py-1.5 hover:bg-row-hover cursor-pointer text-xs text-main transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={selectedGroupBy.includes(opt)}
-                onChange={() =>
-                  handleMultiSelect(opt, selectedGroupBy, setSelectedGroupBy)
-                }
-                className="rounded border-[var(--border)] text-primary focus:ring-primary/50 cursor-pointer"
-              />
-              <span className="capitalize">{opt}</span>
-            </label>
-          ))}
-        </FilterDropdown>
-
-        {/* Customer */}
-        <FilterDropdown
-          label={`Customer${selectedCustomers.length ? ` (${selectedCustomers.length})` : ""}`}
-          active={selectedCustomers.length > 0}
-          isOpen={activeDropdown === "customer"}
-          onToggle={() =>
-            setActiveDropdown(activeDropdown === "customer" ? null : "customer")
-          }
-          width="w-60"
-        >
-          {customerOptions.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-muted text-center">
-              No options
-            </div>
-          ) : (
-            customerOptions.map((opt) => (
-              <label
-                key={opt.value}
-                className="flex items-center gap-2 px-3 py-1.5 hover:bg-row-hover cursor-pointer text-xs text-main transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedCustomers.includes(opt.value)}
-                  onChange={() =>
-                    handleMultiSelect(
-                      opt.value,
-                      selectedCustomers,
-                      setSelectedCustomers,
-                    )
-                  }
-                  className="rounded border-[var(--border)] text-primary focus:ring-primary/50 cursor-pointer"
-                />
-                <span className="truncate">{opt.label}</span>
-              </label>
-            ))
-          )}
-        </FilterDropdown>
-
-        {/* Cost Center */}
-        <FilterDropdown
-          label="Cost Center"
-          active={selectedCostCenter !== ""}
-          isOpen={activeDropdown === "costCenter"}
-          onToggle={() =>
-            setActiveDropdown(
-              activeDropdown === "costCenter" ? null : "costCenter",
-            )
-          }
-          width="w-60"
-        >
-          <DropdownItem
-            active={selectedCostCenter === ""}
-            onClick={() => {
-              setSelectedCostCenter("");
-              setActiveDropdown(null);
-            }}
-          >
-            All Cost Centers
-          </DropdownItem>
-          {costCenterOptions.map((opt) => (
-            <DropdownItem
-              key={opt.value}
-              active={selectedCostCenter === opt.value}
-              onClick={() => {
-                setSelectedCostCenter(opt.value);
-                setActiveDropdown(null);
-              }}
-            >
-              <span className="truncate pr-2">{opt.label}</span>
-            </DropdownItem>
-          ))}
-        </FilterDropdown>
-
-        {/* Account */}
-        <FilterDropdown
-          label="Account"
-          active={selectedReceivableAccount !== ""}
-          isOpen={activeDropdown === "account"}
-          onToggle={() =>
-            setActiveDropdown(activeDropdown === "account" ? null : "account")
-          }
-          width="w-60"
-        >
-          <DropdownItem
-            active={selectedReceivableAccount === ""}
-            onClick={() => {
-              setSelectedReceivableAccount("");
-              setActiveDropdown(null);
-            }}
-          >
-            All Accounts
-          </DropdownItem>
-          {receivableAccountOptions.map((opt) => (
-            <DropdownItem
-              key={opt.value}
-              active={selectedReceivableAccount === opt.value}
-              onClick={() => {
-                setSelectedReceivableAccount(opt.value);
-                setActiveDropdown(null);
-              }}
-            >
-              <span className="truncate pr-2">{opt.label}</span>
-            </DropdownItem>
-          ))}
-        </FilterDropdown>
 
         {/* Clear All */}
         {hasActiveFilters && (
@@ -1247,14 +1132,33 @@ const AccountsReceivable = () => {
                     return (
                       <th
                         key={header.id}
-                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest
-                                    text-muted whitespace-nowrap bg-card
-                                    border-b border-[var(--border)] ${align}`}
+                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align} ${
+                          header.column.getCanSort()
+                            ? "cursor-pointer select-none hover:text-main"
+                            : ""
+                        }`}
+                        onClick={header.column.getToggleSortingHandler()}
                       >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                        <div
+                          className={`inline-flex items-center gap-1 ${
+                            align === "text-right"
+                              ? "justify-end"
+                              : "justify-start"
+                          }`}
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                          {header.column.getCanSort() && (
+                            <span className="text-[10px] text-muted">
+                              {{
+                                asc: " ↑",
+                                desc: " ↓",
+                              }[header.column.getIsSorted() as string] ?? " ↕"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                     );
                   })}
