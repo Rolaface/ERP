@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Plus } from "lucide-react";
 import { usePermission } from "../../../../hooks/permission/usePermission";
 import { useHRView } from "../../../../hooks/permission/useHRView";
 import {
@@ -24,6 +25,7 @@ import {
   fetchProjectOptions,
   fetchUserOptions,
 } from "../components/Taskoptionfetchers";
+import { openTaskFormModal } from "../../../../components/project management/task/Taskform.modal ";
 import {
   CONTENT_HEIGHT,
   EMPLOYEE_DEFAULT_VIEW,
@@ -57,6 +59,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
   const isEmployee = viewMode === "employee";
 
   const canWriteTask = can(TASK_MODULE, "write");
+  const canCreateTask = can(TASK_MODULE, "create");
   const canLogTime = can(TIMESHEET_MODULE, "create");
   const canBulkSelect = canLogTime || canWriteTask;
 
@@ -353,7 +356,7 @@ const HrTaskView: React.FC<HrTaskViewProps> = ({ currentUserEmail }) => {
             canEdit={canWriteTask}
             canEditTask={() => canWriteTask}
             onView={drawer.handleView}
-            toolbarRight={viewSelector}
+            toolbarRight={toolbarActions}
             taskNames={isEmployee ? assigned.assignedNames : undefined}
             showProgress={!isEmployee}
           />

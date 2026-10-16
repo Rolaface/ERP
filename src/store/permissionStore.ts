@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 export interface RawPermission {
   module: string;
+  select:0|1;
   read: 0 | 1;
   write: 0 | 1;
   create: 0 | 1;
@@ -11,9 +12,11 @@ export interface RawPermission {
   export: 0 | 1;
   submit: 0 | 1;
   cancel: 0 | 1;
+
 }
 
 export interface NormalizedPermission {
+  select:boolean;
   read: boolean;
   write: boolean;
   create: boolean;
@@ -26,6 +29,7 @@ export interface NormalizedPermission {
 }
 
 export type PermissionAction =
+  |"select"
   | "read"
   | "write"
   | "create"
@@ -63,6 +67,7 @@ export const usePermissionStore = create<PermissionState>((set, get) => ({
     const map = new Map<string, NormalizedPermission>();
     for (const entry of raw) {
       map.set(entry.module, {
+        select: entry.select===1,
         read:   entry.read   === 1,
         write:  entry.write  === 1,
         create: entry.create === 1,

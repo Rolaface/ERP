@@ -50,6 +50,8 @@ const Scheduler = lazy(() => import("../views/Scheduler/SchedulerTable"));
 const Imports = lazy(() => import("../views/Import/importdata"));
 const SelectLmsMode = lazy(() => import("../views/SelectLmsMode"));
 const Subscription = lazy(() => import("../views/Subscription/MySubscription"))
+const ProjectManagement = lazy(() => import("../views/project_management/ProjectManagement"));
+const BudgetManagement = lazy(() => import("../views/BudgetManagement/BudgetManagement"));
 
 // ── Component Helpers ──
 interface PermissionRouteProps {
@@ -250,6 +252,21 @@ const router = createBrowserRouter(
                 </PermissionRoute>
               }
             />
+            <Route
+  path="/project-management/*"
+  element={
+    <PermissionRoute modules={["Task", "Timesheet"]}>
+      <ProjectManagement />
+    </PermissionRoute>
+  }
+/>
+
+           <Route
+  path="/budget-management/*"
+  element={
+      <BudgetManagement />
+  }
+/>
             <Route
               path="/ledger"
               element={

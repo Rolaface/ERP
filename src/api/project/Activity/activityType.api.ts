@@ -1,8 +1,8 @@
 import type { AxiosResponse } from "axios";
 
-import { createAxiosInstance } from "../../../axiosInstance";
-import { buildListParams } from "../../../../api/utils/queryBuilder";
-import { ERP_BASE, API } from "../../../../config/api";
+import { createAxiosInstance } from "../../axiosInstance";
+import { buildListParams } from "../../../api/utils/queryBuilder";
+import { ERP_BASE, API } from "../../../config/api";
 
 const api = createAxiosInstance(ERP_BASE);
 

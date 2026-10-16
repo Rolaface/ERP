@@ -28,6 +28,7 @@ import AppSkeleton from "../../components/ui/AppSkeleton";
 import { useUrlTab } from "../../hooks/useUrlTab";
 import { HrContentFrame, HrPrimaryTabs, HrSecondaryTabs } from "./components/HrTabLayout";
 import { usePermission } from "../../hooks/permission/usePermission";
+import { hasAnyReportPermission } from "../project_management/reportOptions";
 import { useHRView } from "../../hooks/permission/useHRView";
 import { usePermissionStore } from "../../store/permissionStore";
 
@@ -156,7 +157,7 @@ const TASK_TIMESHEET_SUB_TABS = [
     id: "reports",
     label: "Reports",
     icon: <FaFileAlt size={14} />,
-    module: "Timesheet" as const,
+    module: "Report" as const,
     action: "read" as const,
   },
 ] as const;
@@ -178,7 +179,12 @@ const HrPayrollModule: React.FC = () => {
 
   // Sub-tabs filtered by each one's own permission — fully independent checks
   const visibleTaskTimesheetSubTabs = useMemo(
-    () => TASK_TIMESHEET_SUB_TABS.filter((t) => can(t.module, t.action)),
+    () =>
+      TASK_TIMESHEET_SUB_TABS.filter((t) =>
+        t.id === "reports"
+          ? hasAnyReportPermission(can)
+          : can(t.module, t.action),
+      ),
     [can],
   );
 
@@ -345,8 +351,7 @@ const HrPayrollModule: React.FC = () => {
               can("Timesheet", "read") && (
                 <HrAttendanceTimesheet mode="timesheet" />
               )}
-            {taskTimesheetSubTab === "reports" &&
-              can("Timesheet", "read") && <ReportsTab />}
+            {taskTimesheetSubTab === "reports" && <ReportsTab />}
           </div>
         );
       case "performance-growth":
