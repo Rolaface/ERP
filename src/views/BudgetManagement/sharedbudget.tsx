@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import React, { useEffect, useId, useMemo, useState } from "react";
+import { MinimizableModal } from "../../components/common/MinimizableModal";
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -114,30 +114,25 @@ export const FormModal: React.FC<{
   wide?: boolean;
   children: React.ReactNode;
 }> = ({ title, submitLabel, onClose, onSubmit, wide, children }) => {
+  const modalId = useId();
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        className={`flex max-h-[92vh] w-full flex-col rounded-xl bg-[var(--card,#fff)] shadow-xl ${wide ? "max-w-2xl" : "max-w-xl"}`}
-      >
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
-          <h3 className="text-base font-semibold text-main">{title}</h3>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-muted hover:text-main">
-            <X size={18} />
-          </button>
-        </div>
-        <div className="flex flex-col gap-4 overflow-y-auto px-5 py-4">{children}</div>
-        <div className="flex justify-end gap-2 border-t border-[var(--border)] px-5 py-3">
+    <MinimizableModal
+      modalId={`form-modal-${modalId}`}
+      isOpen
+      onClose={onClose}
+      title={title}
+      maxWidth={wide ? "2xl" : "xl"}
+      height="auto"
+      hideMinimize
+      footer={
+        <div className="flex w-full justify-end gap-2">
           <button type="button" onClick={onClose} className={btnGhost}>
             Cancel
           </button>
@@ -145,8 +140,10 @@ export const FormModal: React.FC<{
             {submitLabel}
           </button>
         </div>
-      </div>
-    </div>
+      }
+    >
+      <div className="flex flex-col gap-4">{children}</div>
+    </MinimizableModal>
   );
 };
 

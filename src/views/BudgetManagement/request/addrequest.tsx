@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Paperclip, Save, Send, X } from "lucide-react";
 
 import { showApiError } from "../../../utils/alert";
 import { fireManagedSwal } from "../../../utils/swalManager";
+import { MinimizableModal } from "../../../components/common/MinimizableModal";
 
 
 export type BudgetRequestStatus = "Inputs Pending" | "Draft" | "Submitted";
@@ -83,6 +84,7 @@ interface Props {
 
 const BudgetRequestModal: React.FC<Props> = ({ open, initial, onClose, onSubmit }) => {
   const fileRef = useRef<HTMLInputElement>(null);
+  const modalId = useId();
 
   const [planIdx, setPlanIdx] = useState(0);
   const [lines, setLines] = useState<RequestLine[]>([]);
@@ -201,169 +203,16 @@ const BudgetRequestModal: React.FC<Props> = ({ open, initial, onClose, onSubmit 
 
   // ── Render ──
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col rounded-lg bg-white shadow-xl">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3">
-          <h3 className="text-base font-semibold">
-            {readOnly ? "View" : isEdit ? "Edit" : "Add"} Branch Budget Requirements
-          </h3>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-gray-500 hover:text-gray-800">
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="space-y-4 overflow-y-auto px-5 py-4">
-          {formError && <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>}
-
-          {/* Plan info */}
-          <div className="rounded-md border border-gray-200 p-3 text-sm">
-            {!isEdit && (
-              <div className="mb-3">
-                <label htmlFor="plan" className="mb-1 block text-xs font-medium text-muted">
-                  Budget Plan
-                </label>
-                <select
-                  id="plan"
-                  value={planIdx}
-                  onChange={(e) => handlePlanChange(Number(e.target.value))}
-                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-gray-400"
-                >
-                  {PLAN_OPTIONS.map((p, i) => (
-                    <option key={p.budgetId} value={i}>
-                      {p.planName} — {p.branch} ({p.budgetId})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
-              <Info label="Budget Plan" value={plan.planName} />
-              <Info label="Budget ID" value={plan.budgetId} />
-              <Info label="Branch" value={plan.branch} />
-              <Info label="Financial Year" value={plan.financialYear} />
-              <div className="flex gap-2">
-                <dt className="text-muted">Status:</dt>
-                <dd>
-                  <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLE[plan.status]}`}>{plan.status}</span>
-                </dd>
-              </div>
-            </dl>
-          </div>
-
-          {/* Requirements */}
-          <div className="rounded-md border border-gray-200">
-            <div className="border-b border-gray-200 px-3 py-2 text-sm font-medium">Enter Budget Requirements</div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 text-left text-xs uppercase text-muted">
-                    <th className="px-3 py-2 font-medium">Budget Head</th>
-                    <th className="px-3 py-2 text-right font-medium"> Actual</th>
-                    <th className="px-3 py-2 text-right font-medium">Requested Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lines.map((l) => (
-                    <tr key={l.id} className="border-b border-gray-100 last:border-0">
-                      <td className="px-3 py-2">{l.headName}</td>
-                      <td className="whitespace-nowrap px-3 py-2 text-right">{formatINR(l.previousActual)}</td>
-                      <td className="px-3 py-2">
-                        <div className="ml-auto w-40">
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={l.requested ? `₹${Number(l.requested).toLocaleString("en-IN")}` : ""}
-                            onChange={(e) => handleAmount(l.id, e.target.value)}
-                            disabled={readOnly}
-                            placeholder="₹0"
-                            aria-label={`Requested amount for ${l.headName}`}
-                            className={`w-full rounded-md border px-2 py-1.5 text-right text-sm outline-none focus:ring-1 disabled:bg-gray-50 disabled:text-gray-500 ${
-                              lineErrors[l.id] ? "border-red-400 focus:ring-red-400" : "border-gray-300 focus:ring-gray-400"
-                            }`}
-                          />
-                          {lineErrors[l.id] && <span className="mt-0.5 block text-right text-xs text-red-500">{lineErrors[l.id]}</span>}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="space-y-1 border-t border-gray-200 px-3 py-2 text-sm">
-              <div className="flex gap-3">
-                <span className="text-muted">Total  Actual:</span>
-                <span className="font-medium">{formatINR(totalPrevious)}</span>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-muted">Total Requested:</span>
-                <span className="font-medium">{formatINR(totalRequested)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Justification */}
-          <div>
-            <label htmlFor="justification" className="mb-1 block text-sm font-medium">
-              Justification
-            </label>
-            <textarea
-              id="justification"
-              rows={3}
-              value={justification}
-              onChange={(e) => {
-                setJustification(e.target.value);
-                setJustificationError("");
-                setFormError("");
-              }}
-              disabled={readOnly}
-              placeholder="Explain the branch's budget requirements"
-              className={`w-full resize-y rounded-md border px-3 py-2 text-sm outline-none focus:ring-1 disabled:bg-gray-50 disabled:text-gray-500 ${
-                justificationError ? "border-red-400 focus:ring-red-400" : "border-gray-300 focus:ring-gray-400"
-              }`}
-            />
-            {justificationError && <span className="mt-0.5 block text-xs text-red-500">{justificationError}</span>}
-          </div>
-
-          {/* Attachments */}
-          <div>
-            <span className="mb-1 block text-sm font-medium">Attachments</span>
-            <input ref={fileRef} type="file" multiple className="hidden" onChange={handleFiles} />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={readOnly}
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Paperclip size={14} /> Upload Document
-            </button>
-            {attachments.length > 0 && (
-              <ul className="mt-2 space-y-1">
-                {attachments.map((f, i) => (
-                  <li key={`${f.name}-${f.size}`} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-1.5 text-xs">
-                    <span className="truncate">
-                      {f.name} <span className="text-muted">({Math.ceil(f.size / 1024)} KB)</span>
-                    </span>
-                    {!readOnly && (
-                      <button
-                        type="button"
-                        onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}
-                        aria-label={`Remove ${f.name}`}
-                        className="ml-2 text-gray-500 hover:text-red-600"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-gray-200 px-5 py-3">
+    <MinimizableModal
+      modalId={`budget-request-${modalId}`}
+      isOpen={open}
+      onClose={onClose}
+      title={`${readOnly ? "View" : isEdit ? "Edit" : "Add"} Branch Budget Requirements`}
+      maxWidth="4xl"
+      height="auto"
+      hideMinimize
+      footer={
+        <>
           <button type="button" onClick={onClose} className="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
             {readOnly ? "Close" : "Cancel"}
           </button>
@@ -385,9 +234,157 @@ const BudgetRequestModal: React.FC<Props> = ({ open, initial, onClose, onSubmit 
               </button>
             </div>
           )}
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {formError && <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>}
+
+        {/* Plan info */}
+        <div className="rounded-md border border-gray-200 p-3 text-sm">
+          {!isEdit && (
+            <div className="mb-3">
+              <label htmlFor="plan" className="mb-1 block text-xs font-medium text-muted">
+                Budget Plan
+              </label>
+              <select
+                id="plan"
+                value={planIdx}
+                onChange={(e) => handlePlanChange(Number(e.target.value))}
+                className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-gray-400"
+              >
+                {PLAN_OPTIONS.map((p, i) => (
+                  <option key={p.budgetId} value={i}>
+                    {p.planName} — {p.branch} ({p.budgetId})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+            <Info label="Budget Plan" value={plan.planName} />
+            <Info label="Budget ID" value={plan.budgetId} />
+            <Info label="Branch" value={plan.branch} />
+            <Info label="Financial Year" value={plan.financialYear} />
+            <div className="flex gap-2">
+              <dt className="text-muted">Status:</dt>
+              <dd>
+                <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLE[plan.status]}`}>{plan.status}</span>
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        {/* Requirements */}
+        <div className="rounded-md border border-gray-200">
+          <div className="border-b border-gray-200 px-3 py-2 text-sm font-medium">Enter Budget Requirements</div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-xs uppercase text-muted">
+                  <th className="px-3 py-2 font-medium">Budget Head</th>
+                  <th className="px-3 py-2 text-right font-medium"> Actual</th>
+                  <th className="px-3 py-2 text-right font-medium">Requested Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((l) => (
+                  <tr key={l.id} className="border-b border-gray-100 last:border-0">
+                    <td className="px-3 py-2">{l.headName}</td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right">{formatINR(l.previousActual)}</td>
+                    <td className="px-3 py-2">
+                      <div className="ml-auto w-40">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={l.requested ? `₹${Number(l.requested).toLocaleString("en-IN")}` : ""}
+                          onChange={(e) => handleAmount(l.id, e.target.value)}
+                          disabled={readOnly}
+                          placeholder="₹0"
+                          aria-label={`Requested amount for ${l.headName}`}
+                          className={`w-full rounded-md border px-2 py-1.5 text-right text-sm outline-none focus:ring-1 disabled:bg-gray-50 disabled:text-gray-500 ${
+                            lineErrors[l.id] ? "border-red-400 focus:ring-red-400" : "border-gray-300 focus:ring-gray-400"
+                          }`}
+                        />
+                        {lineErrors[l.id] && <span className="mt-0.5 block text-right text-xs text-red-500">{lineErrors[l.id]}</span>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="space-y-1 border-t border-gray-200 px-3 py-2 text-sm">
+            <div className="flex gap-3">
+              <span className="text-muted">Total  Actual:</span>
+              <span className="font-medium">{formatINR(totalPrevious)}</span>
+            </div>
+            <div className="flex gap-3">
+              <span className="text-muted">Total Requested:</span>
+              <span className="font-medium">{formatINR(totalRequested)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Justification */}
+        <div>
+          <label htmlFor="justification" className="mb-1 block text-sm font-medium">
+            Justification
+          </label>
+          <textarea
+            id="justification"
+            rows={3}
+            value={justification}
+            onChange={(e) => {
+              setJustification(e.target.value);
+              setJustificationError("");
+              setFormError("");
+            }}
+            disabled={readOnly}
+            placeholder="Explain the branch's budget requirements"
+            className={`w-full resize-y rounded-md border px-3 py-2 text-sm outline-none focus:ring-1 disabled:bg-gray-50 disabled:text-gray-500 ${
+              justificationError ? "border-red-400 focus:ring-red-400" : "border-gray-300 focus:ring-gray-400"
+            }`}
+          />
+          {justificationError && <span className="mt-0.5 block text-xs text-red-500">{justificationError}</span>}
+        </div>
+
+        {/* Attachments */}
+        <div>
+          <span className="mb-1 block text-sm font-medium">Attachments</span>
+          <input ref={fileRef} type="file" multiple className="hidden" onChange={handleFiles} />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={readOnly}
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Paperclip size={14} /> Upload Document
+          </button>
+          {attachments.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {attachments.map((f, i) => (
+                <li key={`${f.name}-${f.size}`} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-1.5 text-xs">
+                  <span className="truncate">
+                    {f.name} <span className="text-muted">({Math.ceil(f.size / 1024)} KB)</span>
+                  </span>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}
+                      aria-label={`Remove ${f.name}`}
+                      className="ml-2 text-gray-500 hover:text-red-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
-    </div>
+    </MinimizableModal>
   );
 };
 

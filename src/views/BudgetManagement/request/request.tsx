@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from "react";
-import { Save, Send, X } from "lucide-react";
+import React, { useId, useMemo, useState } from "react";
+import { Save, Send } from "lucide-react";
 
 import Table from "../../../components/ui/Table/Table";
 import ActionButton from "../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../components/ui/Table/type";
+import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import PermissionGate from "../../PermissionGate";
 import { usePermission } from "../../../hooks/permission/usePermission";
 import { showSuccess } from "../../../utils/alert";
@@ -124,6 +125,7 @@ const RequestForm: React.FC<{
   onClose: () => void;
   onSave: (data: Omit<ReqRow, "id" | "updatedAt">, status: ReqStatus) => void;
 }> = ({ mode, initial, onClose, onSave }) => {
+  const modalId = useId();
   const readOnly = mode === "view";
   const [planCode, setPlanCode] = useState(initial?.planCode ?? OPEN_PLANS[0]?.code ?? "");
   const plan = PLANS.find((p) => p.code === planCode);
@@ -151,102 +153,16 @@ const RequestForm: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-label="Branch budget request" className="flex max-h-[92vh] w-full max-w-4xl flex-col rounded-xl bg-[var(--card,#fff)] shadow-xl">
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
-          <h3 className="text-base font-semibold text-main">
-            {mode === "new" ? "Add branch budget requirements" : mode === "edit" ? `Edit ${initial?.id}` : `Request ${initial?.id}`}
-          </h3>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-muted hover:text-main">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-4 overflow-y-auto px-5 py-4">
-          <section className={`${sectionCard} p-4`}>
-            <div className="grid grid-cols-2 items-start gap-4 md:grid-cols-4">
-              <div className="col-span-2">
-                <Field label="Budget plan">
-                  <select value={planCode} onChange={(e) => setPlanCode(e.target.value)} disabled={mode !== "new"} className={inputCls} aria-label="Budget plan">
-                    {(mode === "new" ? OPEN_PLANS : PLANS.filter((p) => p.code === planCode)).map((p) => (
-                      <option key={p.code} value={p.code}>
-                        {p.code} · {p.name} ({p.financialYear})
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-              <ReadOnly label="Branch" value={`${BRANCH.name} (${BRANCH.code})`} />
-              <ReadOnly label="Input deadline" value={plan ? formatDate(plan.deadline) : "—"} />
-            </div>
-          </section>
-
-          {/* Head wise requirements */}
-          <section className={`${sectionCard} overflow-x-auto`}>
-            <table className="w-full min-w-[720px] text-sm">
-              <thead>
-                <tr className="bg-[var(--border)]/15 text-left text-xs font-medium text-muted">
-                  <th className="px-4 py-2">Budget head</th>
-                  <th className="px-4 py-2 text-right">Previous budget</th>
-                  <th className="px-4 py-2 text-right">Previous actual</th>
-                  <th className="px-4 py-2">Limit</th>
-                  <th className="w-48 px-4 py-2 text-right">Requested amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {LINES.map((l) => (
-                  <tr key={l.id} className="border-t border-[var(--border)] text-main">
-                    <td className="px-4 py-2">
-                      <span className="block font-medium">{l.name}</span>
-                      <span className="block text-xs text-muted">{l.code}</span>
-                    </td>
-                    <td className="px-4 py-2 text-right text-muted">{fmt(l.prevBudget)}</td>
-                    <td className="px-4 py-2 text-right text-muted">{fmt(l.prevActual)}</td>
-                    <td className="px-4 py-2">
-                      <StatusPill value={l.control} />
-                      {l.control === "Fixed" && <span className="ml-1.5 text-xs text-muted">{inr(l.fixed)}</span>}
-                      {l.control === "Capped" && <span className="ml-1.5 text-xs text-muted">up to {inr(l.cap)}</span>}
-                    </td>
-                    <td className="px-4 py-2">
-                      <input
-                        type="number"
-                        min={0}
-                        disabled={readOnly || l.control === "Fixed"}
-                        value={amounts[l.id] ?? ""}
-                        onChange={(e) => setAmount(l, e.target.value)}
-                        placeholder="₹0"
-                        aria-label={`Requested amount for ${l.name}`}
-                        className={`${inputCls} py-1.5 text-right disabled:opacity-60`}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t border-[var(--border)] bg-[var(--border)]/10 font-semibold text-main">
-                  <td className="px-4 py-2">Total</td>
-                  <td className="px-4 py-2 text-right">{fmt(LINES.reduce((n, l) => n + l.prevBudget, 0))}</td>
-                  <td className="px-4 py-2 text-right">{fmt(LINES.reduce((n, l) => n + l.prevActual, 0))}</td>
-                  <td />
-                  <td className="px-4 py-2 text-right">{fmt(requested)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </section>
-
-          <Field label="Justification">
-            <textarea
-              value={justification}
-              onChange={(e) => setJustification(e.target.value)}
-              disabled={readOnly}
-              rows={3}
-              placeholder="Explain the branch's budget requirements"
-              className={`${inputCls} resize-none disabled:opacity-60`}
-            />
-          </Field>
-        </div>
-
-        <div className="flex justify-end gap-2 border-t border-[var(--border)] px-5 py-3">
+    <MinimizableModal
+      modalId={`branch-budget-request-${modalId}`}
+      isOpen
+      onClose={onClose}
+      title={mode === "new" ? "Add branch budget requirements" : mode === "edit" ? `Edit ${initial?.id}` : `Request ${initial?.id}`}
+      maxWidth="4xl"
+      height="auto"
+      hideMinimize
+      footer={
+        <div className="flex w-full justify-end gap-2">
           <button type="button" onClick={onClose} className={btnGhost}>
             {readOnly ? "Close" : "Cancel"}
           </button>
@@ -261,8 +177,92 @@ const RequestForm: React.FC<{
             </>
           )}
         </div>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <section className={`${sectionCard} p-4`}>
+          <div className="grid grid-cols-2 items-start gap-4 md:grid-cols-4">
+            <div className="col-span-2">
+              <Field label="Budget plan">
+                <select value={planCode} onChange={(e) => setPlanCode(e.target.value)} disabled={mode !== "new"} className={inputCls} aria-label="Budget plan">
+                  {(mode === "new" ? OPEN_PLANS : PLANS.filter((p) => p.code === planCode)).map((p) => (
+                    <option key={p.code} value={p.code}>
+                      {p.code} · {p.name} ({p.financialYear})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <ReadOnly label="Branch" value={`${BRANCH.name} (${BRANCH.code})`} />
+            <ReadOnly label="Input deadline" value={plan ? formatDate(plan.deadline) : "—"} />
+          </div>
+        </section>
+
+        {/* Head wise requirements */}
+        <section className={`${sectionCard} overflow-x-auto`}>
+          <table className="w-full min-w-[720px] text-sm">
+            <thead>
+              <tr className="bg-[var(--border)]/15 text-left text-xs font-medium text-muted">
+                <th className="px-4 py-2">Budget head</th>
+                <th className="px-4 py-2 text-right">Previous budget</th>
+                <th className="px-4 py-2 text-right">Previous actual</th>
+                <th className="px-4 py-2">Limit</th>
+                <th className="w-48 px-4 py-2 text-right">Requested amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LINES.map((l) => (
+                <tr key={l.id} className="border-t border-[var(--border)] text-main">
+                  <td className="px-4 py-2">
+                    <span className="block font-medium">{l.name}</span>
+                    <span className="block text-xs text-muted">{l.code}</span>
+                  </td>
+                  <td className="px-4 py-2 text-right text-muted">{fmt(l.prevBudget)}</td>
+                  <td className="px-4 py-2 text-right text-muted">{fmt(l.prevActual)}</td>
+                  <td className="px-4 py-2">
+                    <StatusPill value={l.control} />
+                    {l.control === "Fixed" && <span className="ml-1.5 text-xs text-muted">{inr(l.fixed)}</span>}
+                    {l.control === "Capped" && <span className="ml-1.5 text-xs text-muted">up to {inr(l.cap)}</span>}
+                  </td>
+                  <td className="px-4 py-2">
+                    <input
+                      type="number"
+                      min={0}
+                      disabled={readOnly || l.control === "Fixed"}
+                      value={amounts[l.id] ?? ""}
+                      onChange={(e) => setAmount(l, e.target.value)}
+                      placeholder="₹0"
+                      aria-label={`Requested amount for ${l.name}`}
+                      className={`${inputCls} py-1.5 text-right disabled:opacity-60`}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-[var(--border)] bg-[var(--border)]/10 font-semibold text-main">
+                <td className="px-4 py-2">Total</td>
+                <td className="px-4 py-2 text-right">{fmt(LINES.reduce((n, l) => n + l.prevBudget, 0))}</td>
+                <td className="px-4 py-2 text-right">{fmt(LINES.reduce((n, l) => n + l.prevActual, 0))}</td>
+                <td />
+                <td className="px-4 py-2 text-right">{fmt(requested)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </section>
+
+        <Field label="Justification">
+          <textarea
+            value={justification}
+            onChange={(e) => setJustification(e.target.value)}
+            disabled={readOnly}
+            rows={3}
+            placeholder="Explain the branch's budget requirements"
+            className={`${inputCls} resize-none disabled:opacity-60`}
+          />
+        </Field>
       </div>
-    </div>
+    </MinimizableModal>
   );
 };
 
