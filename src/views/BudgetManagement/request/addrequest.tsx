@@ -4,7 +4,6 @@ import { Paperclip, Save, Send, X } from "lucide-react";
 import { showApiError } from "../../../utils/alert";
 import { fireManagedSwal } from "../../../utils/swalManager";
 
-// ─── Types / constants ────────────────────────────────────────────────────────
 
 export type BudgetRequestStatus = "Inputs Pending" | "Draft" | "Submitted";
 
@@ -12,7 +11,7 @@ export interface RequestLine {
   id: string;
   headName: string;
   previousActual: number;
-  requested: string; // digit string so the input stays editable
+  requested: string; 
 }
 
 export interface RequestAttachment {
@@ -34,7 +33,6 @@ export interface BudgetRequestDetail {
 
 export type SubmitAction = "draft" | "submit";
 
-// Dummy plans. Replace with an API call later.
 export const PLAN_OPTIONS: Omit<BudgetRequestDetail, "id" | "justification" | "attachments" | "status">[] = [
   {
     budgetId: "BUD-2027-001",
@@ -75,13 +73,11 @@ const STATUS_STYLE: Record<BudgetRequestStatus, string> = {
   Submitted: "bg-emerald-50 text-emerald-700",
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
 
 interface Props {
   open: boolean;
-  initial: BudgetRequestDetail | null; // null = create
+  initial: BudgetRequestDetail | null; 
   onClose: () => void;
-  /** Return an error message to show in the form, or nothing when saved. */
   onSubmit: (data: BudgetRequestDetail, action: SubmitAction) => string | void;
 }
 
@@ -99,7 +95,6 @@ const BudgetRequestModal: React.FC<Props> = ({ open, initial, onClose, onSubmit 
   const isEdit = !!initial?.id;
   const readOnly = initial?.status === "Submitted";
 
-  // Reset whenever the modal opens
   useEffect(() => {
     if (!open) return;
     if (initial) {
@@ -265,7 +260,7 @@ const BudgetRequestModal: React.FC<Props> = ({ open, initial, onClose, onSubmit 
                 <thead>
                   <tr className="border-b border-gray-200 text-left text-xs uppercase text-muted">
                     <th className="px-3 py-2 font-medium">Budget Head</th>
-                    <th className="px-3 py-2 text-right font-medium">Previous Actual</th>
+                    <th className="px-3 py-2 text-right font-medium"> Actual</th>
                     <th className="px-3 py-2 text-right font-medium">Requested Amount</th>
                   </tr>
                 </thead>
@@ -298,7 +293,7 @@ const BudgetRequestModal: React.FC<Props> = ({ open, initial, onClose, onSubmit 
             </div>
             <div className="space-y-1 border-t border-gray-200 px-3 py-2 text-sm">
               <div className="flex gap-3">
-                <span className="text-muted">Total Previous Actual:</span>
+                <span className="text-muted">Total  Actual:</span>
                 <span className="font-medium">{formatINR(totalPrevious)}</span>
               </div>
               <div className="flex gap-3">

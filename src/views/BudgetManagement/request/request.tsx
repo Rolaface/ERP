@@ -1,372 +1,358 @@
 import React, { useMemo, useState } from "react";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
+import { Save, Send, X } from "lucide-react";
 
 import Table from "../../../components/ui/Table/Table";
-import ActionButton, { ActionMenu } from "../../../components/ui/Table/ActionButton";
+import ActionButton from "../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../components/ui/Table/type";
-import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import PermissionGate from "../../PermissionGate";
 import { usePermission } from "../../../hooks/permission/usePermission";
-import { showApiError, showSuccess } from "../../../utils/alert";
-import { fireManagedSwal } from "../../../utils/swalManager";
+import { showSuccess } from "../../../utils/alert";
+import {
+  useLocalTable,
+  inr,
+  fmt,
+  formatDate,
+  today,
+  btnGhost,
+  btnPrimary,
+  sectionCard,
+  inputCls,
+  Field,
+  ReadOnly,
+  StatusPill,
+  HEADS,
+  PLANS,
+  type ControlLevel,
+} from "../sharedbudget";
 
-import BudgetRequestModal, {
-  formatINR,
-  sumPrevious,
-  sumRequested,
-  type BudgetRequestDetail,
-  type SubmitAction,
-} from "../request/addrequest";
+const MODULE = "Request";
+const BRANCH = { code: "BR-0101", name: "Meerut Main" };
 
-// ─── Types / constants ────────────────────────────────────────────────────────
+type ReqStatus = "Draft" | "Submitted" | "Approved" | "Returned";
 
-interface BudgetRequestSummary extends BudgetRequestDetail {
+interface ReqRow {
   id: string;
+  planCode: string;
+  planName: string;
+  financialYear: string;
+  target: number;
+  amounts: Record<string, string>;
+  justification: string;
+  status: ReqStatus;
   updatedAt: string;
 }
 
-const REQUEST_MODULE = "Budget Request";
-const EDITABLE_STATUSES = ["Inputs Pending", "Draft"];
 
-const statusOptions = [
-  { label: "Inputs Pending", value: "Inputs Pending" },
-  { label: "Draft", value: "Draft" },
-  { label: "Submitted", value: "Submitted" },
-];
+interface Line {
+  id: string;
+  name: string;
+  code: string;
+  prevBudget: number;
+  prevActual: number;
+  control: ControlLevel;
+  cap: number;
+  fixed: number;
+}
 
+const PREV: Record<string, { budget: number; actual: number; fixed: number }> = {
+  "H-101": { budget: 500000, actual: 450000, fixed: 480000 },
+  "H-102": { budget: 100000, actual: 90000, fixed: 0 },
+  "H-103": { budget: 90000, actual: 80000, fixed: 0 },
+  "H-104": { budget: 40000, actual: 35000, fixed: 0 },
+  "H-301": { budget: 50000, actual: 40000, fixed: 0 },
+  "H-302": { budget: 80000, actual: 70000, fixed: 0 },
+  "H-303": { budget: 70000, actual: 60000, fixed: 0 },
+};
 
-const SEED_REQUESTS: BudgetRequestSummary[] = [
+const LINES: Line[] = HEADS.filter((h) => PREV[h.id]).map((h) => ({
+  id: h.id,
+  name: h.name,
+  code: h.code,
+  prevBudget: PREV[h.id].budget,
+  prevActual: PREV[h.id].actual,
+  control: h.control,
+  cap: h.cap,
+  fixed: PREV[h.id].fixed,
+}));
+
+const OPEN_PLANS = PLANS.filter((p) => p.status === "Open for input");
+const TARGETS: Record<string, number> = { "BUD-2728-001": 1000000, "BUD-2627-001": 960000 };
+
+const SEED: ReqRow[] = [
   {
     id: "REQ-1001",
-    budgetId: "BUD-2027-001",
-    planName: "Annual Budget FY 2027-28",
-    branch: "Meerut Branch",
-    financialYear: "2027-2028",
-    lines: [
-      { id: "BH-1001", headName: "Office Rent", previousActual: 450000, requested: "500000" },
-      { id: "BH-1002", headName: "Electricity", previousActual: 90000, requested: "100000" },
-      { id: "BH-1003", headName: "IT Equipment", previousActual: 100000, requested: "200000" },
-      { id: "BH-1004", headName: "Staff Training", previousActual: 40000, requested: "60000" },
-      { id: "BH-1005", headName: "Travel Expenses", previousActual: 70000, requested: "80000" },
-    ],
-    justification: "Rent revision and new IT equipment for the branch.",
-    attachments: [],
+    planCode: "BUD-2728-001",
+    planName: "Annual Operating Budget",
+    financialYear: "FY 2027–28",
+    target: 1000000,
+    amounts: { "H-101": "480000", "H-102": "110000", "H-103": "85000", "H-104": "40000", "H-301": "", "H-302": "", "H-303": "" },
+    justification: "Electricity rate revised from April.",
     status: "Draft",
     updatedAt: "2026-10-12",
   },
+  {
+    id: "REQ-0987",
+    planCode: "BUD-2627-001",
+    planName: "Annual Operating Budget",
+    financialYear: "FY 2026–27",
+    target: 960000,
+    amounts: { "H-101": "480000", "H-102": "100000", "H-103": "90000", "H-104": "40000", "H-301": "50000", "H-302": "80000", "H-303": "70000" },
+    justification: "Same as last year with rent revision.",
+    status: "Approved",
+    updatedAt: "2026-02-20",
+  },
 ];
 
-const formatDate = (date: string) => {
-  if (!date) return "—";
-  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-  const [y, m, d] = date.split(/[T ]/)[0].split("-").map(Number);
-  return `${String(d).padStart(2, "0")}-${months[m - 1]}-${y}`;
+const sumAmounts = (a: Record<string, string>) => Object.values(a).reduce((n, v) => n + (Number(v) || 0), 0);
+
+const REQ_PILL: Record<ReqStatus, string> = {
+  Draft: "bg-gray-100 text-gray-700",
+  Submitted: "bg-amber-50 text-amber-700",
+  Approved: "bg-emerald-50 text-emerald-700",
+  Returned: "bg-red-50 text-red-700",
+};
+const ReqPill: React.FC<{ value: ReqStatus }> = ({ value }) => (
+  <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs ${REQ_PILL[value]}`}>{value}</span>
+);
+
+
+type Mode = "new" | "edit" | "view";
+
+const RequestForm: React.FC<{
+  mode: Mode;
+  initial: ReqRow | null;
+  onClose: () => void;
+  onSave: (data: Omit<ReqRow, "id" | "updatedAt">, status: ReqStatus) => void;
+}> = ({ mode, initial, onClose, onSave }) => {
+  const readOnly = mode === "view";
+  const [planCode, setPlanCode] = useState(initial?.planCode ?? OPEN_PLANS[0]?.code ?? "");
+  const plan = PLANS.find((p) => p.code === planCode);
+  const [amounts, setAmounts] = useState<Record<string, string>>(
+    initial?.amounts ?? Object.fromEntries(LINES.map((l) => [l.id, l.control === "Fixed" ? String(l.fixed) : ""])),
+  );
+  const [justification, setJustification] = useState(initial?.justification ?? "");
+
+  const target = TARGETS[planCode] ?? 0;
+  const requested = sumAmounts(amounts);
+  const remaining = target - requested;
+
+  const setAmount = (l: Line, v: string) => {
+    if (l.control === "Fixed") return;
+    const n = Number(v);
+    setAmounts((p) => ({ ...p, [l.id]: l.control === "Capped" && n > l.cap ? String(l.cap) : v }));
+  };
+
+  const save = (status: ReqStatus) => {
+    onSave(
+      { planCode, planName: plan?.name ?? "", financialYear: plan?.financialYear ?? "", target, amounts, justification, status },
+      status,
+    );
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div role="dialog" aria-modal="true" aria-label="Branch budget request" className="flex max-h-[92vh] w-full max-w-4xl flex-col rounded-xl bg-[var(--card,#fff)] shadow-xl">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
+          <h3 className="text-base font-semibold text-main">
+            {mode === "new" ? "Add branch budget requirements" : mode === "edit" ? `Edit ${initial?.id}` : `Request ${initial?.id}`}
+          </h3>
+          <button type="button" onClick={onClose} aria-label="Close" className="text-muted hover:text-main">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4 overflow-y-auto px-5 py-4">
+          <section className={`${sectionCard} p-4`}>
+            <div className="grid grid-cols-2 items-start gap-4 md:grid-cols-4">
+              <div className="col-span-2">
+                <Field label="Budget plan">
+                  <select value={planCode} onChange={(e) => setPlanCode(e.target.value)} disabled={mode !== "new"} className={inputCls} aria-label="Budget plan">
+                    {(mode === "new" ? OPEN_PLANS : PLANS.filter((p) => p.code === planCode)).map((p) => (
+                      <option key={p.code} value={p.code}>
+                        {p.code} · {p.name} ({p.financialYear})
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <ReadOnly label="Branch" value={`${BRANCH.name} (${BRANCH.code})`} />
+              <ReadOnly label="Input deadline" value={plan ? formatDate(plan.deadline) : "—"} />
+            </div>
+          </section>
+
+          {/* Head wise requirements */}
+          <section className={`${sectionCard} overflow-x-auto`}>
+            <table className="w-full min-w-[720px] text-sm">
+              <thead>
+                <tr className="bg-[var(--border)]/15 text-left text-xs font-medium text-muted">
+                  <th className="px-4 py-2">Budget head</th>
+                  <th className="px-4 py-2 text-right">Previous budget</th>
+                  <th className="px-4 py-2 text-right">Previous actual</th>
+                  <th className="px-4 py-2">Limit</th>
+                  <th className="w-48 px-4 py-2 text-right">Requested amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {LINES.map((l) => (
+                  <tr key={l.id} className="border-t border-[var(--border)] text-main">
+                    <td className="px-4 py-2">
+                      <span className="block font-medium">{l.name}</span>
+                      <span className="block text-xs text-muted">{l.code}</span>
+                    </td>
+                    <td className="px-4 py-2 text-right text-muted">{fmt(l.prevBudget)}</td>
+                    <td className="px-4 py-2 text-right text-muted">{fmt(l.prevActual)}</td>
+                    <td className="px-4 py-2">
+                      <StatusPill value={l.control} />
+                      {l.control === "Fixed" && <span className="ml-1.5 text-xs text-muted">{inr(l.fixed)}</span>}
+                      {l.control === "Capped" && <span className="ml-1.5 text-xs text-muted">up to {inr(l.cap)}</span>}
+                    </td>
+                    <td className="px-4 py-2">
+                      <input
+                        type="number"
+                        min={0}
+                        disabled={readOnly || l.control === "Fixed"}
+                        value={amounts[l.id] ?? ""}
+                        onChange={(e) => setAmount(l, e.target.value)}
+                        placeholder="₹0"
+                        aria-label={`Requested amount for ${l.name}`}
+                        className={`${inputCls} py-1.5 text-right disabled:opacity-60`}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-[var(--border)] bg-[var(--border)]/10 font-semibold text-main">
+                  <td className="px-4 py-2">Total</td>
+                  <td className="px-4 py-2 text-right">{fmt(LINES.reduce((n, l) => n + l.prevBudget, 0))}</td>
+                  <td className="px-4 py-2 text-right">{fmt(LINES.reduce((n, l) => n + l.prevActual, 0))}</td>
+                  <td />
+                  <td className="px-4 py-2 text-right">{fmt(requested)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </section>
+
+          <Field label="Justification">
+            <textarea
+              value={justification}
+              onChange={(e) => setJustification(e.target.value)}
+              disabled={readOnly}
+              rows={3}
+              placeholder="Explain the branch's budget requirements"
+              className={`${inputCls} resize-none disabled:opacity-60`}
+            />
+          </Field>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-[var(--border)] px-5 py-3">
+          <button type="button" onClick={onClose} className={btnGhost}>
+            {readOnly ? "Close" : "Cancel"}
+          </button>
+          {!readOnly && (
+            <>
+              <button type="button" onClick={() => save("Draft")} className={`${btnGhost} inline-flex items-center gap-1.5`}>
+                <Save size={14} /> Save draft
+              </button>
+              <button type="button" onClick={() => save("Submitted")} className={btnPrimary}>
+                <Send size={14} /> Submit to Zonal Manager
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
-const today = () => new Date().toISOString().slice(0, 10);
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-const BudgetRequestTable: React.FC = () => {
+const BranchBudgetRequest: React.FC = () => {
   const { can } = usePermission();
+  const [rows, setRows] = useState<ReqRow[]>(SEED);
+  const [modal, setModal] = useState<{ mode: Mode; row: ReqRow | null } | null>(null);
 
-  const [requests, setRequests] = useState<BudgetRequestSummary[]>(SEED_REQUESTS);
+  const { tableProps } = useLocalTable(rows, {
+    searchKeys: ["id", "planCode", "planName", "financialYear", "status"],
+    sortBy: "updatedAt",
+    filters: [{ key: "status", label: "Status", options: ["Draft", "Submitted", "Approved", "Returned"].map((v) => ({ label: v, value: v })) }],
+  });
 
-  const [filters, setFilters] = useState<{ status?: string[] }>({});
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("updatedAt");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-
-  // Modal: open + the request being edited (null = create)
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalRequest, setModalRequest] = useState<BudgetRequestDetail | null>(null);
-
-  // ── Search, filter and sort (all in the browser) ──
-  const processed = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
-    const statuses = filters.status ?? [];
-    const rows = requests
-      .map((r) => ({ ...r, totalPrevious: sumPrevious(r.lines), totalRequested: sumRequested(r.lines) }))
-      .filter(
-        (r) =>
-          (statuses.length === 0 || statuses.includes(r.status)) &&
-          (!q || [r.id, r.budgetId, r.planName, r.branch, r.financialYear].some((v) => (v ?? "").toLowerCase().includes(q))),
-      );
-    const dir = sortOrder === "asc" ? 1 : -1;
-    return [...rows].sort((a: any, b: any) => {
-      const av = a[sortBy] ?? "";
-      const bv = b[sortBy] ?? "";
-      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
-      return String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: "base" }) * dir;
-    });
-  }, [requests, searchTerm, filters, sortBy, sortOrder]);
-
-  const totalItems = processed.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const currentPage = Math.min(page, totalPages);
-  const pageRows = processed.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-  const handleSortChange = ({ sortBy: key, sortOrder: order }: { sortBy: string; sortOrder: "asc" | "desc" }) => {
-    setSortBy(key);
-    setSortOrder(order);
-    setPage(1);
-  };
-
-  // ── Modal ──
-  const handleAdd = () => {
-    setModalRequest(null);
-    setModalOpen(true);
-  };
-
-  const handleOpen = (r: BudgetRequestSummary, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setModalRequest(r);
-    setModalOpen(true);
-  };
-
-  /** Returns an error message to show in the form, or nothing when saved. */
-  const handleSubmit = (data: BudgetRequestDetail, action: SubmitAction): string | void => {
-    const duplicate = requests.some((r) => r.id !== data.id && r.budgetId === data.budgetId && r.branch === data.branch);
-    if (duplicate) return "A request for this budget plan and branch already exists.";
-
-    if (data.id) {
-      setRequests((prev) => prev.map((r) => (r.id === data.id ? { ...r, ...data, id: r.id, updatedAt: today() } : r)));
+  const handleSave = (data: Omit<ReqRow, "id" | "updatedAt">, status: ReqStatus) => {
+    const editing = modal?.row;
+    if (editing) {
+      setRows((p) => p.map((r) => (r.id === editing.id ? { ...r, ...data, updatedAt: today() } : r)));
     } else {
-      const created: BudgetRequestSummary = { ...data, id: `REQ-${Date.now()}`, updatedAt: today() };
-      setRequests((prev) => [created, ...prev]);
+      setRows((p) => [{ ...data, id: `REQ-${Date.now().toString().slice(-4)}`, updatedAt: today() }, ...p]);
     }
-    showSuccess(action === "submit" ? "Budget requirements submitted to Zonal Manager" : "Draft saved");
-    setPage(1);
+    showSuccess(status === "Submitted" ? "Request submitted to Zonal Manager" : "Request saved as draft");
   };
 
-  // ── Delete ──
-  const handleDelete = async (r: BudgetRequestSummary, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const result = await fireManagedSwal({
-      icon: "warning",
-      title: "Are you sure?",
-      text: `Delete budget request ${r.id}?`,
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete",
-      reverseButtons: true,
-    });
-    if (!result.isConfirmed) return;
-    setRequests((prev) => prev.filter((x) => x.id !== r.id));
-    showSuccess("Budget request deleted");
-  };
-
-  // ── Export (everything matching the current search and filters) ──
-  const handleExportExcel = () => {
-    if (!processed.length) {
-      showApiError("No budget requests to export");
-      return;
-    }
-    const sheet = XLSX.utils.json_to_sheet(
-      processed.map((r) => ({
-        "Request ID": r.id,
-        "Budget ID": r.budgetId,
-        "Budget Plan": r.planName,
-        Branch: r.branch,
-        "Financial Year": r.financialYear,
-        "Previous Actual": r.totalPrevious,
-        "Requested Amount": r.totalRequested,
-        Variance: r.totalRequested - r.totalPrevious,
-        Status: r.status,
-        "Last Updated": formatDate(r.updatedAt),
-      })),
-    );
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Budget Requests");
-    saveAs(
-      new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      }),
-      "Budget_Requests.xlsx",
-    );
-    showSuccess("Budget requests exported successfully");
-  };
-
-  // ── Columns ──
-  const columns: Column<(typeof processed)[number]>[] = useMemo(
+  const columns: Column<ReqRow>[] = useMemo(
     () => [
+      { key: "id", header: "Request ID", align: "left", sortable: true, render: (r) => <div className="whitespace-nowrap py-1.5 font-medium">{r.id}</div> },
       {
-        key: "id",
-        header: "Request ID",
-        align: "left",
-        sortable: true,
-        render: (r) => <div className="py-1.5">{r.id}</div>,
-        tooltip: (r) => `Request: ${r.id}`,
-      },
-      {
-        key: "planName",
-        header: "Budget Plan",
+        key: "planCode",
+        header: "Budget plan",
         align: "left",
         sortable: true,
         render: (r) => (
           <div className="py-1.5">
-            <span className="block font-medium">{r.planName}</span>
-            <span className="block text-xs text-muted">{r.budgetId}</span>
+            <span className="block">{r.planName}</span>
+            <span className="block text-xs text-muted">{r.planCode} · {r.financialYear}</span>
           </div>
         ),
       },
-      {
-        key: "branch",
-        header: "Branch",
-        align: "left",
-        sortable: true,
-        render: (r) => <div className="py-1.5">{r.branch || "—"}</div>,
-      },
-      {
-        key: "financialYear",
-        header: "Financial Year",
-        align: "center",
-        sortable: true,
-        render: (r) => <div className="py-1.5">{r.financialYear}</div>,
-      },
-      {
-        key: "totalPrevious",
-        header: "Previous Actual",
-        align: "center",
-        sortable: true,
-        render: (r) => <div className="py-1.5 whitespace-nowrap">{formatINR(r.totalPrevious)}</div>,
-      },
-      {
-        key: "totalRequested",
-        header: "Requested",
-        align: "center",
-        sortable: true,
-        render: (r) => <div className="py-1.5 whitespace-nowrap font-medium">{formatINR(r.totalRequested)}</div>,
-      },
-      {
-        key: "variance",
-        header: "Variance",
-        align: "center",
-        render: (r) => {
-          const v = r.totalRequested - r.totalPrevious;
-          return (
-            <div className={`py-1.5 whitespace-nowrap ${v > 0 ? "text-danger" : ""}`}>
-              {v > 0 ? "+" : ""}
-              {formatINR(v)}
-            </div>
-          );
-        },
-      },
-      {
-        key: "status",
-        header: "Status",
-        align: "center",
-        render: (r) => (
-          <div className="flex items-center justify-center py-1.5">
-            <StatusBadge status={r.status as any} />
-          </div>
-        ),
-      },
-      {
-        key: "updatedAt",
-        header: "Last updated",
-        align: "center",
-        sortable: true,
-        render: (r) => <div className="py-1.5">{formatDate(r.updatedAt)}</div>,
-      },
+      { key: "target", header: "Your target", align: "right", sortable: true, render: (r) => <div className="whitespace-nowrap py-1.5">{inr(r.target)}</div> },
+      { key: "requested", header: "Requested", align: "right", render: (r) => <div className="whitespace-nowrap py-1.5 font-medium">{inr(sumAmounts(r.amounts))}</div> },
+      { key: "status", header: "Status", align: "center", render: (r) => <div className="flex justify-center py-1.5"><ReqPill value={r.status} /></div> },
+      { key: "updatedAt", header: "Last updated", align: "center", sortable: true, render: (r) => <div className="py-1.5">{formatDate(r.updatedAt)}</div> },
       {
         key: "actions",
         header: "Actions",
         align: "center",
         render: (r) => {
-          const isEditable = EDITABLE_STATUSES.includes(r.status);
-          const canDelete = can(REQUEST_MODULE, "delete") && r.status === "Draft";
+          const editable = r.status === "Draft" || r.status === "Returned";
           return (
             <div className="flex items-center justify-center gap-2">
-              <ActionButton type="view" onClick={(e) => handleOpen(r, e)} iconOnly />
-              <PermissionGate module={REQUEST_MODULE} action="write">
+              <ActionButton type="view" iconOnly onClick={(e) => { e?.stopPropagation(); setModal({ mode: "view", row: r }); }} />
+              <PermissionGate module={MODULE} action="write">
                 <ActionButton
                   type="edit"
-                  onClick={(e) => handleOpen(r, e)}
                   iconOnly
-                  disabled={!isEditable}
-                  title={isEditable ? "Edit request" : "Only Inputs Pending / Draft requests can be edited"}
+                  disabled={!editable}
+                  title={editable ? "Edit request" : "Only draft or returned requests can be edited"}
+                  onClick={(e) => { e?.stopPropagation(); setModal({ mode: "edit", row: r }); }}
                 />
               </PermissionGate>
-              <div className={!canDelete ? "pointer-events-none opacity-40" : ""}>
-                <ActionMenu
-                  showDownload={false}
-                  {...(canDelete ? { onDelete: (e: React.MouseEvent) => handleDelete(r, e) } : {})}
-                  customActions={[]}
-                />
-              </div>
             </div>
           );
         },
       },
     ],
-    [can],
+    [],
   );
 
   return (
     <div className="h-full min-h-0">
       <Table
         columns={columns}
-        data={pageRows}
-        rowKey={(row) => row.id}
-        tableId="budget-requests"
+        rowKey={(r) => r.id}
+        tableId="branch-budget-requests"
         loading={false}
         isFetching={false}
         showToolbar
-        searchValue={searchTerm}
-        onSearch={(q) => {
-          setSearchTerm(q);
-          setPage(1);
-        }}
-        enableAdd={can(REQUEST_MODULE, "create")}
+        enableAdd={can(MODULE, "create")}
         addLabel="Add Request"
-        onAdd={handleAdd}
+        onAdd={() => setModal({ mode: "new", row: null })}
         enableColumnSelector
-        enableExport={can(REQUEST_MODULE, "export")}
-        onExport={handleExportExcel}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        totalItems={totalItems}
-        pageSizeOptions={[20, 35, 45, 55, 100]}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
-        onPageChange={setPage}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        onSortChange={handleSortChange}
-        onRowDoubleClick={(r) => handleOpen(r)}
-        multiSelectFilters={[
-          {
-            key: "status",
-            label: "Status",
-            options: statusOptions,
-            values: filters.status ?? [],
-            onChange: (vals) => {
-              setFilters((prev) => ({ ...prev, status: vals.length > 0 ? vals : undefined }));
-              setPage(1);
-            },
-          },
-        ]}
+        enableExport={false}
+        onRowDoubleClick={(r) => setModal({ mode: "view", row: r })}
+        {...tableProps}
       />
-
-      <BudgetRequestModal
-        open={modalOpen}
-        initial={modalRequest}
-        onClose={() => {
-          setModalOpen(false);
-          setModalRequest(null);
-        }}
-        onSubmit={handleSubmit}
-      />
+      {modal && <RequestForm key={modal.row?.id ?? "new"} mode={modal.mode} initial={modal.row} onClose={() => setModal(null)} onSave={handleSave} />}
     </div>
   );
 };
 
-export default BudgetRequestTable;
+export default BranchBudgetRequest;

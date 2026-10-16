@@ -1,10 +1,13 @@
 import React, { useState } from "react";
-import { Layers } from "lucide-react";
+import { Layers, GitBranch } from "lucide-react";
 
 import BudgetHeadTable from "./budgethead/budgetHead";
+import ApprovalWorkflow from "./ApprovalWorkflow";
 
-// Add more setup sections here later (cost centres, workflows, rates...).
-const SETUP_TABS = [{ id: "budget-head", label: "Budget Head", icon: <Layers size={14} /> }];
+const SETUP_TABS = [
+  { id: "budget-head", label: "Budget Head", icon: <Layers size={14} /> },
+  { id: "workflow", label: "Approval Workflow", icon: <GitBranch size={14} /> },
+];
 
 const BudgetSetup: React.FC = () => {
   const [active, setActive] = useState(SETUP_TABS[0].id);
@@ -32,7 +35,10 @@ const BudgetSetup: React.FC = () => {
         })}
       </div>
 
-      <div className="min-h-0 flex-1">{active === "budget-head" && <BudgetHeadTable />}</div>
+      <div className="min-h-0 flex-1">
+        {active === "budget-head" && <BudgetHeadTable />}
+        {active === "workflow" && <ApprovalWorkflow />}
+      </div>
     </div>
   );
 };
