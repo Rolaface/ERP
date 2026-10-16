@@ -18,7 +18,7 @@ import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openEmployeeAdvanceModal } from "../../store/modalStore";
 import { getAllAdvances, getAdvanceById, getAdvanceByIdForView, deleteEmployeeAdvance, updateAdvanceStatus } from "../../api/expenseClaimApi";
 import EmployeeAdvanceDetailView, { EmployeeAdvanceDetail } from "../../views/ExpenseManagement/advanceDetailView";
-import MultiSelectFilter from "../../components/ui/modal/MultiSelectFilter";
+import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import {
   ACTION_ICONS,
 } from "../../components/UI_Utils/statusActionIcons";
@@ -158,7 +158,8 @@ const SORT_FIELD_MAP: Record<string, string> = {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState<{ status?: string[] }>({}); const [sortBy, setSortBy] = useState("posting_date");
+  const [filters, setFilters] = useState<{ status?: string }>({});
+  const [sortBy, setSortBy] = useState("posting_date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   useEffect(() => { setPage(1); }, [searchTerm, filters]);
@@ -520,17 +521,15 @@ const SORT_FIELD_MAP: Record<string, string> = {
             searchValue={searchTerm}
             onSearch={(q) => { setSearchTerm(q); setPage(1); }}
             extraFilters={
-              <MultiSelectFilter
+              <FilterSelect
+                value={filters.status ?? ""}
                 options={statusOptions}
-                values={filters.status ?? []}
-                onChange={(v) =>
+                onChange={(e) =>
                   setFilters((prev) => ({
                     ...prev,
-                    status: v.length ? v : undefined,
+                    status: e.target.value || undefined,
                   }))
                 }
-                placeholder="Status"
-                panelTitle="Status"
               />
             }
             enableAdd={can(EMPLOYEE_ADVANCE_MODULE, "create")}
